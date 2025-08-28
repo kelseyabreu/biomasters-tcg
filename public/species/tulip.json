@@ -1,0 +1,208 @@
+{
+  "archetypeName": "tulip",
+  "identity": {
+    "speciesName": "tulip",
+    "commonName": "Garden Tulip",
+    "scientificName": "Tulipa gesneriana",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Liliopsida",
+      "order": "Liliales",
+      "family": "Liliaceae",
+      "genus": "Tulipa",
+      "species": "gesneriana"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 0.4
+  },
+  "body": {
+    "mass_kg": 0.08,
+    "waterRatio": 0.88,
+    "carbonRatio": 0.40,
+    "nitrogenRatio": 0.025,
+    "phosphorusRatio": 0.003,
+    "otherMineralsRatio": 0.062
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 25.0,
+    "HerbaceousBiomass_gm2": 35.0,
+    "FruitSeedBiomass_gm2": 8.0,
+    "RootBiomass_gm2": 12.0,
+    "N_gm2": 2.0,
+    "P_gm2": 0.24,
+    "K_gm2": 1.2,
+    "C_gm2": 32.0,
+    "NonNPK_gm2": 4.96,
+    "LigninContent_pct": 6.0,
+    "CurrentGrowthRate": 2.5,
+    "CurrentYieldRate": 3.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 365,
+    "lifeStages": [
+      {
+        "name": "Bulb",
+        "endAge_days": 120,
+        "modifiers": {
+          "mass_multiplier": 0.3,
+          "photosynthesis_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Sprouting",
+        "endAge_days": 150,
+        "modifiers": {
+          "mass_multiplier": 0.6,
+          "photosynthesis_modifier": 0.5,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Flowering",
+        "endAge_days": 210,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "photosynthesis_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senescent",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.7,
+          "photosynthesis_modifier": 0.3,
+          "is_fertile": false,
+          "health_decline_rate": 0.3
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 15,
+      "offspringCount": 50,
+      "gestation_Days": 60,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 30.0,
+    "proteinTurnoverRate": 0.15,
+    "metabolic_Rate_kJ_per_hr": 1.2,
+    "energy_Reserves_Max_kJ": 80,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.90,
+    "osmoticPressure": 0.4,
+    "specialized": {
+      "organType": "bulb",
+      "capacity_L": 0.03,
+      "efficiency": 0.85
+    },
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.004,
+      "surfaceArea_m2": 0.2,
+      "temperatureModifier": 1.4
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.8,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.85,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "Max_Carbon_Fixation_Rate_umol_per_m2_per_s": 42.0,
+          "Water_Use_Efficiency_g_per_mm": 2.8,
+          "NitrogenFixation_mgN_per_hr": 0,
+          "lightSaturation": 1000,
+          "leafArea": 0.12,
+          "photosyntheticPathway": "C3",
+          "optimal_Light_PAR": 1000,
+          "optimal_Soil_Moisture_Pct": 65,
+          "optimal_CO2_ppm": 400
+        }
+      },
+      {
+        "method": "Root_Uptake",
+        "preference_weight": 10.0,
+        "rateDataClass": "FRootUptakeRates",
+        "rateData": {
+          "UptakeRate_N_mg_per_hr": 8,
+          "UptakeRate_P_mg_per_hr": 1,
+          "UptakeRate_K_mg_per_hr": 5,
+          "UptakeRate_Water_L_per_hr": 0.08,
+          "rootMass": 0.012,
+          "Wilting_Point_Water_Potential_MPa": -1.5,
+          "Optimal_Water_Potential_MPa": -0.3,
+          "energyCost_per_mg_N": 0.12,
+          "energyCost_per_mg_P": 0.10,
+          "energyCost_per_mg_K": 0.06
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.88,
+      "nitrogen_Efficiency_pct": 0.85,
+      "phosphorus_Efficiency_pct": 0.90,
+      "potassium_Efficiency_pct": 0.88,
+      "otherMinerals_Efficiency_pct": 0.80
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -10,
+    "temperatureMaximum_C": 30,
+    "temperatureOptimalMin_C": 12,
+    "temperatureOptimalMax_C": 20,
+    "moistureOptimal_pct": 70,
+    "moistureTolerance_pct": 25,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 1000,
+    "lightSaturation_PAR": 1400,
+    "lightCompensation_PAR": 100,
+    "pHOptimal": 6.8,
+    "pHTolerance": 1.0
+  }
+}

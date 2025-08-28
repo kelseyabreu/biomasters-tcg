@@ -1,0 +1,215 @@
+{
+  "archetypeName": "earthworm",
+  "identity": {
+    "speciesName": "earthworm",
+    "commonName": "Common Earthworm",
+    "scientificName": "Lumbricus terrestris",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Annelida",
+      "class": "Clitellata",
+      "order": "Opisthopora",
+      "family": "Lumbricidae",
+      "genus": "Lumbricus",
+      "species": "terrestris"
+    }
+  },
+  "rendering": {
+    "modelFile": "detritivore.glb",
+    "scale": 0.5
+  },
+  "body": {
+    "mass_kg": 0.01,
+    "waterRatio": 0.80,
+    "carbonRatio": 0.12,
+    "nitrogenRatio": 0.02,
+    "phosphorusRatio": 0.003,
+    "otherMineralsRatio": 0.057
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1460,
+    "lifeStages": [
+      {
+        "name": "Hatchling",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.05,
+          "speed_modifier": 0.6,
+          "acquisition_modifier": 0.4,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 90,
+        "modifiers": {
+          "mass_multiplier": 0.5,
+          "speed_modifier": 0.9,
+          "acquisition_modifier": 0.8,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 1460,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 15,
+      "offspringCount": 8,
+      "gestation_Days": 21,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 8.0,
+    "proteinTurnoverRate": 0.16,
+    "metabolic_Rate_kJ_per_hr": 0.004,
+    "energy_Reserves_Max_kJ": 120,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+
+  "waterStorage": {
+    "membraneIntegrity": 0.85,
+    "osmoticPressure": 0.2,
+    "barrier": {
+      "barrierType": "skin",
+      "permeability_L_per_hr_per_m2": 0.01,
+      "surfaceArea_m2": 0.002,
+      "temperatureModifier": 3.0
+    },
+    "reclamation": {
+      "systemType": "nephridia",
+      "reclamationRate_L_per_hr": 0.0001,
+      "concentrationAbility": 2.0,
+      "energyCost_kJ_per_L": 0.5
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Nocturnal",
+    "dormancyMultiplier": 0.6,
+    "bRequiresSleep": false
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 6,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 2,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 20,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.1,
+    "taste_range_m": 0.3,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.1,
+    "heat_range_m": 0.5
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Detritivory",
+        "preference_weight": 10.0,
+        "rateDataClass": "FDetritivoryRates",
+        "rateData": {
+          "ingestion_rate_g_per_hour": 8.0,
+          "organic_matter_selectivity": 0.9,
+          "substratePreference": "freshLeafLitterPool",
+          "particle_size_preference_mm": [0.1, 2.0],
+          "burrowing_depth_cm": 30.0,
+          "surface_activity_preference": 0.2,
+          "gut_retention_time_hours": 8.0,
+          "assimilation_efficiency_pct": 0.7,
+          "digestion_carbon_efficiency": 0.55,
+          "digestion_nitrogen_efficiency": 0.65,
+          "digestion_phosphorus_efficiency": 0.75
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.5,
+      "nitrogen_Efficiency_pct": 0.6,
+      "phosphorus_Efficiency_pct": 0.7,
+      "potassium_Efficiency_pct": 0.8,
+      "otherMinerals_Efficiency_pct": 0.9
+    },
+    "mineralizationProfile": {
+      "carbon_Release_Efficiency_pct": 0.6,
+      "nitrogen_Release_Efficiency_pct": 0.4,
+      "phosphorus_Release_Efficiency_pct": 0.5,
+      "potassium_Release_Efficiency_pct": 0.7,
+      "otherMinerals_Release_Efficiency_pct": 0.8,
+      "Decomposition_SubstrateSpecialization_rating": 0.3,
+      "Decomposition_SubstrateAffinity_CNRatio": 20.0
+    }
+  },
+
+  "environmentalResponse": {
+    "temperatureMinimum_C": 0,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 75,
+    "moistureTolerance_pct": 20,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.5
+  },
+
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartFleeing",
+      "StartForaging",
+      "StartSeekingWater",
+      "StartResting",
+      "StartMating"
+    ],
+    "macroStateTriggers": {
+      "StartForaging": [
+        {"type": "energy", "operator": "<", "threshold": 50},
+        {"type": "condition_tag", "tag": "IsStarving", "required": true}
+      ],
+      "StartFleeing": [
+        {"type": "condition_tag", "tag": "IsThreatened", "required": true},
+        {"type": "fear_motivation", "operator": ">", "threshold": 0.8}
+      ],
+      "StartSeekingWater": [
+        {"type": "condition_tag", "tag": "IsThirsty", "required": true},
+        {"type": "hydration", "operator": "<", "threshold": 20}
+      ],
+      "StartResting": [
+        {"type": "condition_tag", "tag": "IsExhausted", "required": true},
+        {"type": "energy", "operator": "<", "threshold": 15}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 60},
+        {"type": "health", "operator": ">", "threshold": 75},
+        {"type": "age", "operator": ">", "threshold": 30}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 150,
+    "momentum": 0.9,
+    "changeThreshold": 0.2
+  }
+}

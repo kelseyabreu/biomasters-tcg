@@ -1,0 +1,71 @@
+{
+  "short_name": "Biomasters TCG",
+  "name": "Biomasters Trading Card Game",
+  "description": "A digital trading card game where you battle using cards based on real species and their biological characteristics.",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3880ff",
+  "background_color": "#ffffff",
+  "categories": ["games", "education", "entertainment"],
+  "lang": "en-US",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Quick Battle",
+      "short_name": "Battle",
+      "description": "Start a quick battle",
+      "url": "/battle",
+      "icons": [
+        {
+          "src": "favicon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Collection",
+      "short_name": "Cards",
+      "description": "View your species collection",
+      "url": "/collection",
+      "icons": [
+        {
+          "src": "favicon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Deck Builder",
+      "short_name": "Build",
+      "description": "Build and manage decks",
+      "url": "/deck-builder",
+      "icons": [
+        {
+          "src": "favicon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

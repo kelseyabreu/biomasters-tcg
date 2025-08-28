@@ -1,0 +1,481 @@
+.species-card {
+  position: relative;
+  width: 200px;
+  height: 280px;
+  margin: 8px;
+  perspective: 1000px;
+}
+
+.species-card.small {
+  width: 150px;
+  height: 210px;
+}
+
+.species-card.large {
+  width: 250px;
+  height: 350px;
+}
+
+.card-container {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: var(--tcg-border-radius);
+  border: 3px solid var(--tcg-card-border);
+  overflow: hidden;
+  position: relative;
+  background: var(--tcg-card-background);
+  box-shadow: var(--tcg-shadow-medium);
+  transition: all var(--tcg-transition-medium);
+}
+
+.species-card.playable .card-container {
+  border-color: var(--tcg-accent);
+  box-shadow: 0 0 15px var(--tcg-highlight);
+}
+
+/* Energy Cost */
+.energy-cost {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+}
+
+.energy-cost ion-badge {
+  font-size: 14px;
+  font-weight: bold;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+/* Health Indicator */
+.health-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.health-bar {
+  width: 40px;
+  height: 6px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.health-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.health-text {
+  font-size: var(--tcg-font-size-small);
+  font-weight: var(--tcg-font-weight-bold);
+  color: var(--tcg-text-primary);
+  background: var(--tcg-card-background);
+  padding: var(--tcg-spacing-xs) var(--tcg-spacing-xs);
+  border-radius: var(--tcg-border-radius-small);
+  border: 1px solid var(--tcg-card-border);
+}
+
+/* Card Art */
+.card-art {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #f1f3f4 0%, #e8eaed 100%);
+  border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+.species-illustration {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.species-image-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.species-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.card-organism {
+  width: 100%;
+  height: 100%;
+}
+
+.species-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.fallback-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Card Content */
+.card-content {
+  padding: 8px !important;
+  height: calc(100% - 120px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.species-names {
+  text-align: center;
+}
+
+.common-name {
+  font-size: var(--tcg-font-size-medium);
+  font-weight: var(--tcg-font-weight-bold);
+  margin: 0 0 var(--tcg-spacing-xs) 0;
+  color: var(--tcg-text-primary);
+  line-height: 1.2;
+}
+
+.scientific-name {
+  font-size: var(--tcg-font-size-small);
+  font-style: italic;
+  margin: 0;
+  color: var(--tcg-text-secondary);
+  line-height: 1.1;
+}
+
+/* Badges */
+.card-badges {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.card-badges ion-badge {
+  font-size: 8px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.card-badges ion-badge ion-icon {
+  font-size: 10px;
+}
+
+/* Stats */
+.card-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(0,0,0,0.05);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat ion-icon {
+  font-size: var(--tcg-font-size-medium);
+  color: var(--tcg-text-secondary);
+}
+
+.stat span {
+  font-size: var(--tcg-font-size-small);
+  font-weight: var(--tcg-font-weight-bold);
+  color: var(--tcg-text-primary);
+}
+
+.stat small {
+  font-size: var(--tcg-font-size-small);
+  color: var(--tcg-text-secondary);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* Real Biological Data Section */
+.real-data-section {
+  margin: 6px 0;
+  padding: 6px;
+  background: rgba(76, 175, 80, 0.1);
+  border-radius: 6px;
+  border-left: 2px solid var(--ion-color-success);
+}
+
+.real-data-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 4px;
+  font-weight: bold;
+  font-size: 9px;
+  color: var(--ion-color-success);
+  text-transform: uppercase;
+}
+
+.real-data-header ion-icon {
+  font-size: 10px;
+}
+
+.real-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.real-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  padding: 1px 0;
+}
+
+.real-stat .label {
+  color: var(--tcg-text-secondary);
+  font-weight: var(--tcg-font-weight-medium);
+}
+
+.real-stat .value {
+  color: var(--tcg-accent);
+  font-weight: var(--tcg-font-weight-bold);
+}
+
+/* Conservation Status Section */
+.conservation-status {
+  margin: 6px 0;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.conservation-status ion-badge {
+  margin-bottom: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 8px;
+}
+
+.rarity-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--tcg-font-size-small);
+  color: var(--tcg-text-secondary);
+  margin-top: var(--tcg-spacing-xs);
+}
+
+.rarity-percentage {
+  font-weight: 500;
+}
+
+.pack-rarity {
+  font-weight: bold;
+  color: var(--ion-color-primary);
+}
+
+/* Rarity-based card border effects */
+.species-card.extinct {
+  border: 2px solid #000000;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.species-card.extinct-in-wild {
+  border: 2px solid #4A0E4E;
+  box-shadow: 0 0 10px rgba(74, 14, 78, 0.6);
+}
+
+.species-card.critically-endangered {
+  border: 2px solid #8B0000;
+  box-shadow: 0 0 10px rgba(139, 0, 0, 0.6);
+}
+
+.species-card.endangered {
+  border: 2px solid #FF4500;
+  box-shadow: 0 0 8px rgba(255, 69, 0, 0.5);
+}
+
+.species-card.vulnerable {
+  border: 2px solid #FFD700;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+}
+
+.species-card.near-threatened {
+  border: 2px solid #32CD32;
+  box-shadow: 0 0 4px rgba(50, 205, 50, 0.3);
+}
+
+.species-card.least-concern {
+  border: 1px solid #228B22;
+}
+
+.species-card.data-deficient,
+.species-card.not-evaluated {
+  border: 1px solid #708090;
+}
+
+/* Abilities */
+.card-abilities {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.ability {
+  margin-bottom: 4px;
+  padding: 2px 4px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 4px;
+}
+
+.ability strong {
+  color: var(--tcg-text-primary);
+}
+
+.ability span {
+  color: var(--tcg-text-secondary);
+  margin-left: var(--tcg-spacing-xs);
+}
+
+/* Actions */
+.card-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.card-actions ion-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  font-size: 10px;
+  height: 24px;
+}
+
+/* Hover Effects */
+.species-card:hover .card-container {
+  transform: translateY(-2px);
+}
+
+.species-card.playable:hover .card-container {
+  box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+}
+
+/* Small size adjustments */
+.species-card.small .common-name {
+  font-size: 12px;
+}
+
+.species-card.small .scientific-name {
+  font-size: 9px;
+}
+
+.species-card.small .card-badges ion-badge {
+  font-size: 7px;
+}
+
+.species-card.small .stat ion-icon {
+  font-size: 12px;
+}
+
+.species-card.small .stat span {
+  font-size: 10px;
+}
+
+.species-card.small .ability {
+  font-size: 7px;
+}
+
+/* Large size adjustments */
+.species-card.large .card-art {
+  height: 150px;
+}
+
+.species-card.large .species-illustration {
+  width: 100px;
+  height: 100px;
+}
+
+.species-card.large .common-name {
+  font-size: 16px;
+}
+
+.species-card.large .scientific-name {
+  font-size: 12px;
+}
+
+.species-card.large .card-badges ion-badge {
+  font-size: 10px;
+}
+
+.species-card.large .stat ion-icon {
+  font-size: 16px;
+}
+
+.species-card.large .stat span {
+  font-size: 14px;
+}
+
+.species-card.large .ability {
+  font-size: 10px;
+}
+
+/* Animation states */
+.species-card.attacking {
+  animation: attackPulse 0.5s ease-in-out;
+}
+
+@keyframes attackPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.species-card.taking-damage {
+  animation: damagePulse 0.3s ease-in-out;
+}
+
+@keyframes damagePulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5) hue-rotate(0deg) saturate(2); }
+}
+
+/* Disabled state */
+.species-card.disabled .card-container {
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+.species-card.disabled:hover .card-container {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}

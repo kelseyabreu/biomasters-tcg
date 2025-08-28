@@ -1,0 +1,231 @@
+{
+  "archetypeName": "snail",
+  "identity": {
+    "speciesName": "snail",
+    "commonName": "Roman Snail",
+    "scientificName": "Helix pomatia",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Mollusca",
+      "class": "Gastropoda",
+      "order": "Stylommatophora",
+      "family": "Helicidae",
+      "genus": "Helix",
+      "species": "pomatia"
+    }
+  },
+  "rendering": {
+    "modelFile": "herbivore.glb",
+    "scale": 0.08
+  },
+  "body": {
+    "mass_kg": 0.025,
+    "waterRatio": 0.80,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.145
+  },
+  "lifecycle": { 
+    "lifespan_Max_Days": 3650,
+    "lifeStages": [
+      {
+        "name": "Juvenile",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.2,
+          "speed_modifier": 0.6,
+          "acquisition_modifier": 0.5,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 2920,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senior",
+        "endAge_days": 3650,
+        "modifiers": {
+          "mass_multiplier": 0.9,
+          "speed_modifier": 0.7,
+          "acquisition_modifier": 0.8,
+          "is_fertile": true,
+          "health_decline_rate": 0.1
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 8,
+      "offspringCount": 100,
+      "gestation_Days": 14,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 14.0,
+    "proteinTurnoverRate": 0.15,
+    "metabolic_Rate_kJ_per_hr": 0.8,
+    "energy_Reserves_Max_kJ": 25,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.88,
+    "osmoticPressure": 0.4,
+    "barrier": {
+      "barrierType": "mucus",
+      "permeability_L_per_hr_per_m2": 0.01,
+      "surfaceArea_m2": 0.008,
+      "temperatureModifier": 2.5
+    },
+    "reclamation": {
+      "systemType": "kidney",
+      "reclamationRate_L_per_hr": 0.002,
+      "concentrationAbility": 2.0,
+      "energyCost_kJ_per_L": 0.5
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Nocturnal",
+    "dormancyMultiplier": 0.1,
+    "bRequiresSleep": true,
+    "sleepHrsNeeded": 15.0,
+    "circadianStrength": 0.8,
+    "sleepUrgeThreshold": 70.0,
+    "wakefulnessThreshold": 30.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 50,
+    "run_Speed_m_per_hr": 100,
+    "swim_Speed_m_per_hr": 20,
+    "fastSwim_Speed_m_per_hr": 40,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 30,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 2.0,
+    "smell_range_m": 8.0,
+    "taste_range_m": 0.02,
+    "hearing_range_m": 1.0,
+    "touch_range_m": 0.05,
+    "heat_range_m": 0.5
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Grazing",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 2.0,
+          "foragingSpeed_m_per_hour": 5.0,
+          "intakeRate_g_per_hour": 2.0,
+          "biteSize_g": 0.01,
+          "selectivityIndex": 0.8,
+          "digestibilityCoefficient": 0.7,
+          "energyContent_kJ_per_kg": 16000,
+          "digestion_carbon_efficiency": 0.65,
+          "digestion_nitrogen_efficiency": 0.75,
+          "digestion_phosphorus_efficiency": 0.80
+        }
+      }
+    ]
+  },
+  "foragingProfile": {
+    "FruitSeedPreference": 0.2,
+    "LeafyPreference": 0.6,
+    "HerbaceousPreference": 0.15,
+    "RootPreference": 0.05
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.70,
+      "nitrogen_Efficiency_pct": 0.78,
+      "phosphorus_Efficiency_pct": 0.82,
+      "potassium_Efficiency_pct": 0.75,
+      "otherMinerals_Efficiency_pct": 0.68
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -5,
+    "temperatureMaximum_C": 30,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 85,
+    "moistureTolerance_pct": 20,
+    "moistureLethal_pct": 40,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.5,
+    "pHTolerance": 1.5
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartForaging",
+      "StartSeekingWater",
+      "StartResting",
+      "StartMating",
+      "StartFleeing",
+      "StartSocializing"
+    ],
+    "macroStateTriggers": {
+      "StartForaging": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "condition_tag", "tag": "IsStarving", "required": true}
+      ],
+      "StartFleeing": [
+        {"type": "condition_tag", "tag": "IsThreatened", "required": true},
+        {"type": "fear_motivation", "operator": ">", "threshold": 0.4}
+      ],
+      "StartSeekingWater": [
+        {"type": "condition_tag", "tag": "IsThirsty", "required": true},
+        {"type": "hydration", "operator": "<", "threshold": 50}
+      ],
+      "StartResting": [
+        {"type": "energy", "operator": "<", "threshold": 30},
+        {"type": "condition_tag", "tag": "IsExhausted", "required": true}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 75},
+        {"type": "health", "operator": ">", "threshold": 80}
+      ],
+      "StartSocializing": [
+        {"type": "energy", "operator": ">", "threshold": 80},
+        {"type": "health", "operator": ">", "threshold": 85},
+        {"type": "condition_tag", "tag": "IsStarving", "required": false},
+        {"type": "condition_tag", "tag": "IsThreatened", "required": false}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 120,
+    "momentum": 0.8,
+    "changeThreshold": 0.4
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 2.0,
+      "agreeableness": 5.0,
+      "conscientiousness": null,
+      "neuroticism": 6.0,
+      "openness": 3.0,
+      "dominance": 1.5,
+      "activity": 2.5
+    },
+    "reliability": 0.75
+  }
+}

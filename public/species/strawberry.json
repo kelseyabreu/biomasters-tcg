@@ -1,0 +1,203 @@
+{
+  "archetypeName": "strawberry",
+  "identity": {
+    "speciesName": "strawberry",
+    "commonName": "Garden Strawberry",
+    "scientificName": "Fragaria × ananassa",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Rosales",
+      "family": "Rosaceae",
+      "genus": "Fragaria",
+      "species": "ananassa"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 0.4
+  },
+  "body": {
+    "mass_kg": 0.15,
+    "waterRatio": 0.90,
+    "carbonRatio": 0.42,
+    "nitrogenRatio": 0.02,
+    "phosphorusRatio": 0.004,
+    "otherMineralsRatio": 0.036
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1095,
+    "lifeStages": [
+      {
+        "name": "Seedling",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.05,
+          "photosynthesis_modifier": 0.3,
+          "acquisition_modifier": 0.4,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Vegetative",
+        "endAge_days": 120,
+        "modifiers": {
+          "mass_multiplier": 0.6,
+          "photosynthesis_modifier": 0.9,
+          "acquisition_modifier": 0.95,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Flowering",
+        "endAge_days": 180,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "photosynthesis_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Fruiting",
+        "endAge_days": 240,
+        "modifiers": {
+          "mass_multiplier": 1.3,
+          "photosynthesis_modifier": 0.8,
+          "acquisition_modifier": 0.9,
+          "is_fertile": true,
+          "fruit_production_rate": 3.0
+        }
+      },
+      {
+        "name": "Perennial",
+        "endAge_days": 1095,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "photosynthesis_modifier": 0.7,
+          "acquisition_modifier": 0.8,
+          "is_fertile": true,
+          "fruit_production_rate": 1.5
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 800,
+      "offspringCount": 50,
+      "gestation_Days": 60,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 5.0,
+    "proteinTurnoverRate": 0.08,
+    "metabolic_Rate_kJ_per_hr": 3.5,
+    "energy_Reserves_Max_kJ": 2500,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.85,
+    "osmoticPressure": 0.9,
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.08,
+      "surfaceArea_m2": 0.8,
+      "temperatureModifier": 2.8
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.15,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.7,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 0.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.05,
+    "heat_range_m": 0.5
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "Max_Carbon_Fixation_Rate_umol_per_m2_per_s": 25.0,
+          "Water_Use_Efficiency_g_per_mm": 2.8,
+          "NitrogenFixation_mgN_per_hr": 0,
+          "lightSaturation": 1200,
+          "leafArea": 0.025,
+          "photosyntheticPathway": "C3",
+          "optimal_Light_PAR": 1200,
+          "optimal_Soil_Moisture_Pct": 50,
+          "optimal_CO2_ppm": 400
+        }
+      },
+      {
+        "method": "Root_Uptake",
+        "preference_weight": 8.0,
+        "rateDataClass": "FRootUptakeRates",
+        "rateData": {
+          "UptakeRate_N_mg_per_hr": 12,
+          "UptakeRate_P_mg_per_hr": 2,
+          "UptakeRate_K_mg_per_hr": 15,
+          "UptakeRate_Water_L_per_hr": 0.08,
+          "rootMass": 0.015,
+          "Wilting_Point_Water_Potential_MPa": -1.0,
+          "Optimal_Water_Potential_MPa": -0.2,
+          "energyCost_per_mg_N": 0.05,
+          "energyCost_per_mg_P": 0.03,
+          "energyCost_per_mg_K": 0.02
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 1.0,
+      "nitrogen_Efficiency_pct": 1.0,
+      "phosphorus_Efficiency_pct": 1.0,
+      "potassium_Efficiency_pct": 1.0,
+      "otherMinerals_Efficiency_pct": 1.0
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -5,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 75,
+    "moistureTolerance_pct": 25,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 1000,
+    "lightSaturation_PAR": 1200,
+    "lightCompensation_PAR": 15,
+    "pHOptimal": 6.0,
+    "pHTolerance": 1.0
+  }
+}

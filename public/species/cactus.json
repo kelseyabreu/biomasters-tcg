@@ -1,0 +1,208 @@
+{
+  "archetypeName": "cactus",
+  "identity": {
+    "speciesName": "cactus",
+    "commonName": "Prickly Pear Cactus",
+    "scientificName": "Opuntia ficus-indica",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Caryophyllales",
+      "family": "Cactaceae",
+      "genus": "Opuntia",
+      "species": "ficus-indica"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 1.5
+  },
+  "body": {
+    "mass_kg": 50.0,
+    "waterRatio": 0.85,
+    "carbonRatio": 0.12,
+    "nitrogenRatio": 0.008,
+    "phosphorusRatio": 0.001,
+    "otherMineralsRatio": 0.021
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 100.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 400.0,
+    "FruitSeedBiomass_gm2": 50.0,
+    "RootBiomass_gm2": 150.0,
+    "N_gm2": 5.6,
+    "P_gm2": 0.7,
+    "K_gm2": 3.5,
+    "C_gm2": 84.0,
+    "NonNPK_gm2": 14.7,
+    "LigninContent_pct": 15.0,
+    "CurrentGrowthRate": 0.2,
+    "CurrentYieldRate": 0.3
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 36500,
+    "lifeStages": [
+      {
+        "name": "Seedling",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.02,
+          "photosynthesis_modifier": 0.3,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Young",
+        "endAge_days": 1825,
+        "modifiers": {
+          "mass_multiplier": 0.2,
+          "photosynthesis_modifier": 0.7,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mature",
+        "endAge_days": 29200,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "photosynthesis_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Ancient",
+        "endAge_days": 36500,
+        "modifiers": {
+          "mass_multiplier": 1.1,
+          "photosynthesis_modifier": 0.8,
+          "is_fertile": true,
+          "health_decline_rate": 0.02
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 800,
+      "offspringCount": 50,
+      "gestation_Days": 90,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 180.0,
+    "proteinTurnoverRate": 0.03,
+    "metabolic_Rate_kJ_per_hr": 6,
+    "energy_Reserves_Max_kJ": 12000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.99,
+    "osmoticPressure": 0.15,
+    "specialized": {
+      "organType": "succulent_tissue",
+      "capacity_L": 40.0,
+      "efficiency": 0.98
+    },
+    "barrier": {
+      "barrierType": "waxy_cuticle",
+      "permeability_L_per_hr_per_m2": 0.00001,
+      "surfaceArea_m2": 8.0,
+      "temperatureModifier": 0.3
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Nocturnal",
+    "dormancyMultiplier": 0.95,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.9,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "Max_Carbon_Fixation_Rate_umol_per_m2_per_s": 20.0,
+          "Water_Use_Efficiency_g_per_mm": 15.0,
+          "NitrogenFixation_mgN_per_hr": 0,
+          "lightSaturation": 2000,
+          "leafArea": 0.4,
+          "photosyntheticPathway": "CAM",
+          "optimal_Light_PAR": 2000,
+          "optimal_Soil_Moisture_Pct": 15,
+          "optimal_CO2_ppm": 400
+        }
+      },
+      {
+        "method": "Root_Uptake",
+        "preference_weight": 10.0,
+        "rateDataClass": "FRootUptakeRates",
+        "rateData": {
+          "UptakeRate_N_mg_per_hr": 15,
+          "UptakeRate_P_mg_per_hr": 2,
+          "UptakeRate_K_mg_per_hr": 10,
+          "UptakeRate_Water_L_per_hr": 0.2,
+          "rootMass": 0.15,
+          "Wilting_Point_Water_Potential_MPa": -5.0,
+          "Optimal_Water_Potential_MPa": -1.5,
+          "energyCost_per_mg_N": 0.02,
+          "energyCost_per_mg_P": 0.015,
+          "energyCost_per_mg_K": 0.01
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.98,
+      "nitrogen_Efficiency_pct": 0.85,
+      "phosphorus_Efficiency_pct": 0.90,
+      "potassium_Efficiency_pct": 0.88,
+      "otherMinerals_Efficiency_pct": 0.80
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 50,
+    "temperatureOptimalMin_C": 25,
+    "temperatureOptimalMax_C": 40,
+    "moistureOptimal_pct": 20,
+    "moistureTolerance_pct": 15,
+    "moistureLethal_pct": 5,
+    "lightOptimal_PAR": 2000,
+    "lightSaturation_PAR": 2500,
+    "lightCompensation_PAR": 200,
+    "pHOptimal": 7.5,
+    "pHTolerance": 2.0
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "biomasters-tcg",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

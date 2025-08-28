@@ -1,0 +1,113 @@
+{
+  "archetypeName": "caterpillar_egg",
+  "identity": {
+    "speciesName": "caterpillar_egg",
+    "commonName": "Butterfly Egg",
+    "scientificName": "Danaus plexippus (ovum)",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Lepidoptera",
+      "family": "Nymphalidae",
+      "genus": "Danaus",
+      "species": "plexippus"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 0.1
+  },
+  "body": {
+    "mass_kg": 0.00001,
+    "waterRatio": 0.90,
+    "carbonRatio": 0.05,
+    "nitrogenRatio": 0.02,
+    "phosphorusRatio": 0.002,
+    "otherMineralsRatio": 0.028
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 7,
+    "lifeStages": [
+      {
+        "name": "Embryo",
+        "endAge_days": 5,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 0.0,
+          "acquisition_modifier": 0.0,
+          "is_fertile": false
+        },
+        "transformation": {
+          "trigger": "onStageEnd",
+          "targetArchetype": "caterpillar",
+          "preserveState": ["health_ratio"]
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 0,
+      "offspringCount": 0,
+      "gestation_Days": 0,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 5.0,
+    "proteinTurnoverRate": 0.25,
+    "metabolic_Rate_kJ_per_hr": 0.001,
+    "energy_Reserves_Max_kJ": 0.5,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "hydration": {
+    "maximum": 5,
+    "damageThreshold": 2
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 1.0,
+    "bRequiresSleep": false
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0,
+    "smell_range_m": 0,
+    "taste_range_m": 0,
+    "hearing_range_m": 0,
+    "touch_range_m": 0,
+    "heat_range_m": 0
+  },
+  "acquisition": {
+    "capabilities": []
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.0,
+      "nitrogen_Efficiency_pct": 0.0,
+      "phosphorus_Efficiency_pct": 0.0,
+      "potassium_Efficiency_pct": 0.0,
+      "otherMinerals_Efficiency_pct": 0.0
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 10,
+    "temperatureMaximum_C": 40,
+    "temperatureOptimalMin_C": 20,
+    "temperatureOptimalMax_C": 30,
+    "moistureOptimal_pct": 70,
+    "moistureTolerance_pct": 20,
+    "moistureLethal_pct": 30,
+    "pHOptimal": 6.5,
+    "pHTolerance": 1.0
+  }
+}

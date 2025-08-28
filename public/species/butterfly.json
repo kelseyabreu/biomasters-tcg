@@ -1,0 +1,186 @@
+{
+  "archetypeName": "butterfly",
+  "identity": {
+    "speciesName": "butterfly",
+    "commonName": "Monarch Butterfly",
+    "scientificName": "Danaus plexippus (adult)",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Lepidoptera",
+      "family": "Nymphalidae",
+      "genus": "Danaus",
+      "species": "plexippus"
+    }
+  },
+  "rendering": {
+    "modelFile": "omnivore.glb",
+    "scale": 0.7
+  },
+  "body": {
+    "mass_kg": 0.0015,
+    "waterRatio": 0.70,
+    "carbonRatio": 0.15,
+    "nitrogenRatio": 0.03,
+    "phosphorusRatio": 0.002,
+    "otherMineralsRatio": 0.118
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 14,
+    "lifeStages": [
+      {
+        "name": "Adult",
+        "endAge_days": 14,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 5,
+      "offspringCount": 50,
+      "gestation_Days": 3,
+      "parentalCare_Days": 0,
+      "offspringArchetype": "caterpillar_egg"
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 3.0,
+    "proteinTurnoverRate": 0.22,
+    "metabolic_Rate_kJ_per_hr": 0.02,
+    "energy_Reserves_Max_kJ": 15,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+
+  "waterStorage": {
+    "membraneIntegrity": 0.80,
+    "osmoticPressure": 0.6,
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.005,
+      "surfaceArea_m2": 0.0008,
+      "temperatureModifier": 4.0
+    },
+    "reclamation": {
+      "systemType": "malpighian",
+      "reclamationRate_L_per_hr": 0.00005,
+      "concentrationAbility": 10.0,
+      "energyCost_kJ_per_L": 0.2
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.7,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.6,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 1,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 2000,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 10.0,
+    "smell_range_m": 15.0,
+    "taste_range_m": 0.1,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.1,
+    "heat_range_m": 0.5
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Grazing",
+        "preference_weight": 10.0,
+        "rateData": {
+          "intakeRate_g_per_hour": 0.1,
+          "digestibilityCoefficient": 0.9
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.9,
+      "nitrogen_Efficiency_pct": 0.8,
+      "phosphorus_Efficiency_pct": 0.8,
+      "potassium_Efficiency_pct": 0.8,
+      "otherMinerals_Efficiency_pct": 0.7
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 10,
+    "temperatureMaximum_C": 42,
+    "temperatureOptimalMin_C": 22,
+    "temperatureOptimalMax_C": 36,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 25,
+    "moistureLethal_pct": 40,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 6.5,
+    "pHTolerance": 1.5
+  },
+
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartMating",
+      "StartForaging",
+      "StartSeekingWater",
+      "StartSocializing",
+      "StartFleeing",
+      "StartResting"
+    ],
+    "macroStateTriggers": {
+      "StartForaging": [
+        {"type": "energy", "operator": "<", "threshold": 70},
+        {"type": "condition_tag", "tag": "IsStarving", "required": true}
+      ],
+      "StartFleeing": [
+        {"type": "condition_tag", "tag": "IsThreatened", "required": true},
+        {"type": "fear_motivation", "operator": ">", "threshold": 0.4}
+      ],
+      "StartSeekingWater": [
+        {"type": "condition_tag", "tag": "IsThirsty", "required": true},
+        {"type": "hydration", "operator": "<", "threshold": 40}
+      ],
+      "StartResting": [
+        {"type": "condition_tag", "tag": "IsColdStressed", "required": true},
+        {"type": "energy", "operator": "<", "threshold": 25}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 80},
+        {"type": "health", "operator": ">", "threshold": 90}
+      ],
+      "StartSocializing": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "health", "operator": ">", "threshold": 80},
+        {"type": "condition_tag", "tag": "IsStarving", "required": false},
+        {"type": "condition_tag", "tag": "IsColdStressed", "required": false}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 60,
+    "momentum": 0.6,
+    "changeThreshold": 0.5
+  }
+}

@@ -1,0 +1,218 @@
+{
+  "archetypeName": "soil-bacteria",
+  "identity": {
+    "speciesName": "soil-bacteria",
+    "commonName": "Soil Bacteria",
+    "scientificName": "Bacillus subtilis",
+    "taxonomy": {
+      "kingdom": "Bacteria",
+      "phylum": "Firmicutes",
+      "class": "Bacilli",
+      "order": "Bacillales",
+      "family": "Bacillaceae",
+      "genus": "Bacillus",
+      "species": "subtilis"
+    }
+  },
+  "rendering": {
+    "modelFile": "decomposer.glb",
+    "scale": 0.1
+  },
+  "body": {
+    "mass_kg": 0.000001,
+    "waterRatio": 0.75,
+    "carbonRatio": 0.12,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.01,
+    "otherMineralsRatio": 0.18
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 7,
+    "lifeStages": [
+      {
+        "name": "Lag_Phase",
+        "endAge_days": 0.5,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "acquisition_modifier": 0.3,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Exponential_Growth",
+        "endAge_days": 2,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "acquisition_modifier": 1.5,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Stationary_Phase",
+        "endAge_days": 5,
+        "modifiers": {
+          "mass_multiplier": 1.2,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Death_Phase",
+        "endAge_days": 7,
+        "modifiers": {
+          "mass_multiplier": 0.5,
+          "acquisition_modifier": 0.2,
+          "is_fertile": false,
+          "health_decline_rate": 0.8
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 0.001,
+      "offspringCount": 2,
+      "gestation_Days": 0.02,
+      "parentalCare_Days": 0
+    }
+  },
+
+  "circadianRhythm": {
+    "activityPeriod": "Continuous",
+    "dormancyMultiplier": 1.0,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.0,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0.1,
+    "fastSwim_Speed_m_per_hr": 0.1,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.001,
+    "taste_range_m": 0.001,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.001,
+    "heat_range_m": 0.001
+  },
+
+  "metabolism": {
+    "DaysTillStarvation": 1.0,
+    "proteinTurnoverRate": 0.5,
+    "metabolic_Rate_kJ_per_hr": 0.00001,
+    "energy_Reserves_Max_kJ": 0.01,
+    "oxygen_Requirement": "Facultative",
+    "bIsEndotherm": false
+  },
+
+  "waterStorage": {
+    "membraneIntegrity": 0.95,
+    "osmoticPressure": 0.8,
+    "barrier": {
+      "barrierType": "cell_wall",
+      "permeability_L_per_hr_per_m2": 0.1,
+      "surfaceArea_m2": 0.000000001,
+      "temperatureModifier": 4.0
+    },
+    "reclamation": {
+      "systemType": "osmotic_regulation",
+      "reclamationRate_L_per_hr": 0.000000001,
+      "concentrationAbility": 10.0,
+      "energyCost_kJ_per_L": 0.1
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+
+  "health": {
+    "maxHealth": 100,
+    "regenerationRate": 2.0,
+    "immuneSystemStrength": 0.3,
+    "diseaseResistance": 0.9,
+    "toxinTolerance": 0.8
+  },
+
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Decomposition",
+        "preference_weight": 10.0,
+        "rateDataClass": "FDecompositionRates",
+        "rateData": {
+          "enzymeProduction_rate": 1.5,
+          "fragmentationRate_kg_per_tick": 0.001,
+          "humificationEfficiency_ratio": 0.2,
+          "substrateSpecialization_rating": 0.9,
+          "substrateAffinity_CNRatio": 25.0,
+          "temperatureOptimal_C": 25.0,
+          "temperatureTolerance_C": 20.0,
+          "moistureOptimal_pct": 80.0,
+          "moistureTolerance_pct": 30.0,
+          "carbon_Release_Efficiency_pct": 90.0,
+          "nitrogen_Release_Efficiency_pct": 95.0,
+          "phosphorus_Release_Efficiency_pct": 98.0,
+          "potassium_Release_Efficiency_pct": 95.0,
+          "otherMinerals_Release_Efficiency_pct": 85.0
+        }
+      }
+    ]
+  },
+
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.3,
+      "nitrogen_Efficiency_pct": 0.4,
+      "phosphorus_Efficiency_pct": 0.5,
+      "potassium_Efficiency_pct": 0.5,
+      "otherMinerals_Efficiency_pct": 0.4
+    },
+    "mineralizationProfile": {
+      "carbon_Release_Efficiency_pct": 0.9,
+      "nitrogen_Release_Efficiency_pct": 0.95,
+      "phosphorus_Release_Efficiency_pct": 0.98,
+      "potassium_Release_Efficiency_pct": 0.95,
+      "otherMinerals_Release_Efficiency_pct": 0.85,
+      "Decomposition_SubstrateSpecialization_rating": 0.9,
+      "Decomposition_SubstrateAffinity_CNRatio": 25.0
+    }
+  },
+
+  "environmentalResponse": {
+    "temperatureMinimum_C": 0,
+    "temperatureMaximum_C": 60,
+    "temperatureOptimalMin_C": 20,
+    "temperatureOptimalMax_C": 37,
+    "moistureOptimal_pct": 85,
+    "moistureTolerance_pct": 30,
+    "moistureLethal_pct": 10,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 3.0
+  },
+
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartForaging",
+      "StartResting",
+      "StartMating"
+    ],
+    "activityPattern": "Continuous",
+    "socialBehavior": "Colonial",
+    "territorialBehavior": "Non-territorial",
+    "aggressionLevel": 0.0,
+    "curiosityLevel": 0.1,
+    "fearResponse": 0.0
+  }
+}

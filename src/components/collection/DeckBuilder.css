@@ -1,0 +1,446 @@
+.deck-header {
+  padding: var(--tcg-spacing-sm);
+  background: var(--tcg-background-secondary);
+  color: var(--tcg-text-primary);
+}
+
+.deck-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tcg-spacing-md);
+}
+
+.control-buttons {
+  display: flex;
+  gap: var(--tcg-spacing-sm);
+}
+
+.control-buttons ion-button {
+  flex: 1;
+}
+
+.current-deck {
+  padding: 0 var(--tcg-spacing-sm) var(--tcg-spacing-sm);
+  background: var(--tcg-background-primary);
+}
+
+.deck-stats {
+  margin-bottom: var(--tcg-spacing-md);
+  color: var(--tcg-text-primary);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tcg-spacing-sm);
+  color: var(--tcg-text-primary);
+}
+
+.trophic-counts {
+  display: flex;
+  gap: var(--tcg-spacing-xs);
+}
+
+.trophic-counts ion-badge {
+  font-size: var(--tcg-font-size-small);
+  padding: var(--tcg-spacing-xs) var(--tcg-spacing-sm);
+}
+
+.validation-errors {
+  background: var(--tcg-background-secondary);
+  border: 1px solid var(--tcg-danger);
+  border-radius: var(--tcg-border-radius-small);
+  padding: var(--tcg-spacing-sm);
+  margin-bottom: var(--tcg-spacing-md);
+  color: var(--tcg-text-primary);
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ion-color-warning-shade);
+  margin-bottom: 4px;
+}
+
+.error-message:last-child {
+  margin-bottom: 0;
+}
+
+.error-message ion-icon {
+  font-size: 14px;
+}
+
+.deck-cards {
+  margin-top: 16px;
+}
+
+.empty-slot {
+  width: 150px;
+  height: 210px;
+  border: 2px dashed var(--ion-color-medium);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ion-color-light);
+  transition: all 0.3s ease;
+}
+
+.empty-slot:hover {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-primary-tint);
+}
+
+.empty-slot ion-button {
+  --color: var(--ion-color-medium);
+  --background: transparent;
+  --box-shadow: none;
+  width: 100%;
+  height: 100%;
+}
+
+.empty-slot:hover ion-button {
+  --color: var(--ion-color-primary);
+}
+
+.empty-slot ion-icon {
+  font-size: 48px;
+}
+
+.saved-decks {
+  padding: 0 8px 8px;
+}
+
+.deck-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.deck-actions ion-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+}
+
+.card-selector {
+  padding: 16px;
+}
+
+.card-selector ion-searchbar {
+  margin-bottom: 16px;
+}
+
+.card-selector ion-segment {
+  margin-bottom: 16px;
+}
+
+/* Deck validation status */
+.current-deck ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-deck ion-card-title ion-icon {
+  font-size: 20px;
+}
+
+/* Card hover effects in deck builder */
+.deck-cards .species-card {
+  position: relative;
+}
+
+.deck-cards .species-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(244, 67, 54, 0.1);
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.deck-cards .species-card:hover::after {
+  opacity: 1;
+}
+
+/* Card selector modal */
+.card-selector .species-card {
+  position: relative;
+}
+
+.card-selector .species-card.playable::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(40, 167, 69, 0.1);
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.card-selector .species-card.playable:hover::after {
+  opacity: 1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .control-buttons {
+    flex-direction: column;
+  }
+
+  .stat-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .trophic-counts {
+    align-self: stretch;
+    justify-content: space-around;
+  }
+
+  .deck-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .empty-slot {
+    width: 100%;
+    height: 150px;
+  }
+
+  .empty-slot ion-icon {
+    font-size: 32px;
+  }
+}
+
+/* Animation enhancements */
+.deck-cards ion-col {
+  display: flex;
+  justify-content: center;
+}
+
+.validation-errors {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Drag and drop visual feedback */
+.deck-cards .species-card.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.empty-slot.drag-over {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-primary-tint);
+  transform: scale(1.05);
+}
+
+/* Deck completion progress */
+.deck-progress {
+  margin: 16px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--ion-color-light-shade);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-secondary));
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  margin-top: 4px;
+}
+
+/* Trophic role requirements indicator */
+.requirements-indicator {
+  display: flex;
+  justify-content: space-around;
+  margin: 12px 0;
+  padding: 8px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+}
+
+.requirement-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.requirement-item .label {
+  font-size: 10px;
+  color: var(--ion-color-medium);
+}
+
+.requirement-item .count {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.requirement-item.satisfied .count {
+  color: var(--ion-color-success);
+}
+
+.requirement-item.unsatisfied .count {
+  color: var(--ion-color-danger);
+}
+
+/* Card type filters in selector */
+.type-filters {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.type-filter {
+  padding: 6px 12px;
+  border: 2px solid var(--ion-color-light-shade);
+  border-radius: 16px;
+  background: var(--ion-color-light);
+  color: var(--ion-color-dark);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.type-filter.active {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+}
+
+.type-filter:hover {
+  border-color: var(--ion-color-primary-tint);
+}
+
+/* New controls styling */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--tcg-spacing-md);
+  margin-bottom: var(--tcg-spacing-md);
+}
+
+.sort-direction {
+  display: flex;
+  gap: var(--tcg-spacing-xs);
+}
+
+.trophic-filters {
+  margin: var(--tcg-spacing-md) 0;
+}
+
+.trophic-filters h4 {
+  margin-bottom: var(--tcg-spacing-sm);
+  color: var(--tcg-text-primary);
+  font-size: var(--tcg-font-size-medium);
+}
+
+.filter-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tcg-spacing-xs);
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.filter-badges .clickable-badge {
+  cursor: pointer;
+  transition: all var(--tcg-transition-fast);
+  min-width: 80px;
+  text-align: center;
+}
+
+.filter-badges .clickable-badge:hover {
+  transform: scale(1.05);
+  opacity: 0.8;
+}
+
+.filter-badges .active-filter {
+  box-shadow: 0 0 0 2px var(--tcg-accent);
+  transform: scale(1.1);
+  font-weight: var(--tcg-font-weight-bold);
+}
+
+/* Modal Header Fix */
+.card-selector ion-header ion-toolbar {
+  --padding-end: 60px; /* Make room for close button */
+}
+
+.card-selector ion-header ion-toolbar ion-title {
+  padding-right: 60px; /* Prevent title from overlapping close button */
+}
+
+.card-selector ion-header ion-toolbar ion-button[slot="end"] {
+  margin-right: 8px; /* Add some margin to close button */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .deck-header {
+    padding: var(--tcg-spacing-xs);
+  }
+
+  .control-buttons {
+    flex-direction: column;
+  }
+
+  .trophic-counts {
+    flex-wrap: wrap;
+  }
+
+  .card-selector {
+    padding: var(--tcg-spacing-xs);
+  }
+
+  .filter-badges {
+    flex-wrap: wrap;
+  }
+
+  /* Mobile header fix */
+  .card-selector ion-header ion-toolbar {
+    --padding-end: 50px;
+  }
+
+  .card-selector ion-header ion-toolbar ion-title {
+    padding-right: 50px;
+    font-size: 1.1rem;
+  }
+}

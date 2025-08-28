@@ -1,0 +1,406 @@
+.game-header {
+  text-align: center;
+  margin-bottom: var(--tcg-spacing-xl);
+  padding: var(--tcg-spacing-lg) 0;
+  background: var(--tcg-background-primary);
+}
+
+.title-section h1 {
+  font-size: 2.5rem;
+  font-weight: var(--tcg-font-weight-bold);
+  margin: 0 0 var(--tcg-spacing-sm) 0;
+  color: var(--tcg-accent);
+  /* Remove gradient for consistency */
+}
+
+.title-section h2 {
+  font-size: 1.5rem;
+  font-weight: var(--tcg-font-weight-medium);
+  margin: 0 0 var(--tcg-spacing-sm) 0;
+  color: var(--tcg-text-primary);
+}
+
+.title-section p {
+  font-size: var(--tcg-font-size-large);
+  color: var(--tcg-text-secondary);
+  margin: 0;
+  font-style: italic;
+}
+
+.logo-section {
+  margin-top: var(--tcg-spacing-md);
+}
+
+.ecosystem-icons {
+  display: flex;
+  justify-content: center;
+  gap: var(--tcg-spacing-md);
+  margin: var(--tcg-spacing-md) 0;
+}
+
+.ecosystem-icons ion-icon {
+  font-size: 3rem;
+  color: var(--tcg-accent);
+  animation: float 3s ease-in-out infinite;
+}
+
+.ecosystem-icons ion-icon:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.ecosystem-icons ion-icon:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.ecosystem-icons ion-icon:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.ecosystem-icons ion-icon:nth-child(4) {
+  animation-delay: 1.5s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.quick-actions {
+  margin-bottom: 24px;
+}
+
+.quick-actions ion-button {
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.quick-actions ion-button ion-icon {
+  font-size: 1.2rem;
+}
+
+.game-stats {
+  margin-bottom: 24px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 8px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: var(--tcg-font-weight-bold);
+  color: var(--tcg-accent);
+  margin-bottom: var(--tcg-spacing-xs);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--tcg-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-item ion-badge {
+  font-size: 1.2rem;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  text-align: center;
+}
+
+.current-game {
+  margin-bottom: 24px;
+}
+
+.current-game ion-card {
+  border: 2px solid var(--ion-color-primary-tint);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.2);
+}
+
+.current-game p {
+  margin: 0 0 var(--tcg-spacing-sm) 0;
+  color: var(--tcg-text-primary);
+}
+
+.current-game ion-button {
+  margin-top: var(--tcg-spacing-sm);
+}
+
+.game-info h3 {
+  color: var(--tcg-accent);
+  margin-bottom: var(--tcg-spacing-md);
+}
+
+.game-info h4 {
+  color: var(--tcg-text-primary);
+  margin: var(--tcg-spacing-lg) 0 var(--tcg-spacing-sm) 0;
+  font-size: 1.1rem;
+}
+
+.game-info p {
+  line-height: 1.6;
+  margin-bottom: var(--tcg-spacing-md);
+  color: var(--tcg-text-primary);
+}
+
+.game-info ul,
+.game-info ol {
+  padding-left: 20px;
+  margin-bottom: 16px;
+}
+
+.game-info li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+  color: var(--ion-color-dark-tint);
+}
+
+.game-info strong {
+  color: var(--ion-color-dark);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .title-section h1 {
+    font-size: 2rem;
+  }
+
+  .title-section h2 {
+    font-size: 1.2rem;
+  }
+
+  .ecosystem-icons {
+    gap: 12px;
+  }
+
+  .ecosystem-icons ion-icon {
+    font-size: 2.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* Button hover effects */
+.quick-actions ion-button:not([disabled]):hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+.quick-actions ion-button[disabled] {
+  opacity: 0.5;
+}
+
+/* Card animations */
+.game-stats ion-card,
+.current-game ion-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-stats ion-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading states */
+.loading-stats {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loading-stats::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--ion-color-primary);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal content styling */
+.game-info {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Deck selector styling */
+.deck-selector ion-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+.deck-selector ion-item:hover {
+  --background: var(--ion-color-light-tint);
+}
+
+/* Status indicators */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.status-indicator.online {
+  color: var(--ion-color-success);
+}
+
+.status-indicator.offline {
+  color: var(--ion-color-medium);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Achievement badges */
+.achievement-section {
+  margin-top: 24px;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.achievement-item {
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--ion-color-light);
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+.achievement-item.unlocked {
+  background: var(--ion-color-success-tint);
+  border-color: var(--ion-color-success);
+}
+
+.achievement-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.3;
+}
+
+.achievement-item.unlocked .achievement-icon {
+  opacity: 1;
+  color: var(--ion-color-success);
+}
+
+.achievement-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.achievement-description {
+  font-size: 0.7rem;
+  color: var(--ion-color-medium);
+  margin-top: 4px;
+}
+
+/* Welcome message for new users */
+.welcome-message {
+  background: var(--ion-color-primary-tint);
+  border: 1px solid var(--ion-color-primary);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.welcome-message h3 {
+  color: var(--ion-color-primary-shade);
+  margin: 0 0 8px 0;
+}
+
+.welcome-message p {
+  color: var(--ion-color-primary-shade);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Quick start guide */
+.quick-start {
+  margin-top: 24px;
+}
+
+.quick-start-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-start-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+.step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  margin-bottom: 4px;
+}
+
+.step-description {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  line-height: 1.4;
+}

@@ -1,0 +1,200 @@
+{
+  "archetypeName": "sunflower",
+  "identity": {
+    "speciesName": "sunflower",
+    "commonName": "Common Sunflower",
+    "scientificName": "Helianthus annuus",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Asterales",
+      "family": "Asteraceae",
+      "genus": "Helianthus",
+      "species": "annuus"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 1.8
+  },
+  "body": {
+    "mass_kg": 2.5,
+    "waterRatio": 0.85,
+    "carbonRatio": 0.45,
+    "nitrogenRatio": 0.015,
+    "phosphorusRatio": 0.003,
+    "otherMineralsRatio": 0.032
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 60.0,
+    "LeafyBiomass_gm2": 120.0,
+    "HerbaceousBiomass_gm2": 80.0,
+    "FruitSeedBiomass_gm2": 45.0,
+    "RootBiomass_gm2": 90.0,
+    "N_gm2": 9.5,
+    "P_gm2": 1.2,
+    "K_gm2": 4.8,
+    "C_gm2": 89.1,
+    "NonNPK_gm2": 20.85,
+    "LigninContent_pct": 15.0,
+    "CurrentGrowthRate": 1.0,
+    "CurrentYieldRate": 0.4
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 150,
+    "reproductionStrategy": {
+      "energyCost_kJ": 40.0,
+      "offspringCount": 2000,
+      "gestation_Days": 30,
+      "parentalCare_Days": 0,
+      "maturityAge_Days": 60,
+      "reproductionType": "sexual",
+      "energyInvestmentPerOffspring_kJ": 0.02,
+      "reproductionCooldown_Days": 30,
+      "seasonalBreeding": true,
+      "breedingSeason": "summer"
+    },
+    "lifeStages": [
+      {
+        "name": "seedling",
+        "endAge_days": 14,
+        "isDefault": true,
+        "modifiers": {
+          "metabolic_Rate_Multiplier": 0.5,
+          "movement_Speed_Multiplier": 0.0,
+          "reproduction_Capability": false
+        }
+      },
+      {
+        "name": "juvenile",
+        "endAge_days": 60,
+        "modifiers": {
+          "metabolic_Rate_Multiplier": 0.8,
+          "movement_Speed_Multiplier": 0.0,
+          "reproduction_Capability": false
+        }
+      },
+      {
+        "name": "adult",
+        "endAge_days": 150,
+        "modifiers": {
+          "metabolic_Rate_Multiplier": 1.0,
+          "movement_Speed_Multiplier": 0.0,
+          "reproduction_Capability": true
+        }
+      }
+    ]
+  },
+  "metabolism": {
+    "DaysTillStarvation": 7.0,
+    "proteinTurnoverRate": 0.02,
+    "metabolic_Rate_kJ_per_hr": 15.0,
+    "energy_Reserves_Max_kJ": 2500.0,
+    "bIsEndotherm": false,
+    "thermoregulation_Cost_kJ_per_hr_per_C": 0.0,
+    "oxygen_Requirement": "None"
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.88,
+    "osmoticPressure": 0.5,
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.0008,
+      "surfaceArea_m2": 0.12,
+      "temperatureModifier": 1.3
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.7,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.9,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.1,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.05,
+    "heat_range_m": 1.5
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "Max_Carbon_Fixation_Rate_umol_per_m2_per_s": 45.0,
+          "Water_Use_Efficiency_g_per_mm": 3.5,
+          "NitrogenFixation_mgN_per_hr": 0,
+          "lightSaturation": 1800,
+          "leafArea": 0.15,
+          "photosyntheticPathway": "C3",
+          "optimal_Light_PAR": 1800,
+          "optimal_Soil_Moisture_Pct": 45,
+          "optimal_CO2_ppm": 400
+        }
+      },
+      {
+        "method": "Root_Uptake",
+        "preference_weight": 10.0,
+        "rateDataClass": "FRootUptakeRates",
+        "rateData": {
+          "UptakeRate_N_mg_per_hr": 120,
+          "UptakeRate_P_mg_per_hr": 18,
+          "UptakeRate_K_mg_per_hr": 95,
+          "UptakeRate_Water_L_per_hr": 0.8,
+          "rootMass": 0.25,
+          "Wilting_Point_Water_Potential_MPa": -1.8,
+          "Optimal_Water_Potential_MPa": -0.4,
+          "energyCost_per_mg_N": 0.05,
+          "energyCost_per_mg_P": 0.03,
+          "energyCost_per_mg_K": 0.02
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.95,
+      "nitrogen_Efficiency_pct": 0.85,
+      "phosphorus_Efficiency_pct": 0.90,
+      "potassium_Efficiency_pct": 0.85,
+      "otherMinerals_Efficiency_pct": 0.75
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 40,
+    "temperatureOptimalMin_C": 20,
+    "temperatureOptimalMax_C": 30,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 30,
+    "moistureLethal_pct": 15,
+    "lightOptimal_PAR": 1800,
+    "lightSaturation_PAR": 2200,
+    "lightCompensation_PAR": 80,
+    "pHOptimal": 6.8,
+    "pHTolerance": 1.2
+  }
+}

@@ -1,0 +1,212 @@
+/* Authentication Form Styles */
+
+.auth-card {
+  max-width: 400px;
+  margin: 20px auto;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: var(--ion-color-light, #ffffff);
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  margin-bottom: 8px;
+}
+
+.auth-card ion-card-header ion-text {
+  text-align: center;
+}
+
+.auth-input {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  --background: var(--ion-color-light-shade, #f5f5f5);
+  --border-color: var(--ion-color-medium-tint, #e0e0e0);
+}
+
+.auth-input ion-icon {
+  color: var(--ion-color-medium);
+  margin-right: 8px;
+}
+
+.auth-input ion-label {
+  font-weight: 500;
+  color: var(--ion-color-dark);
+}
+
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.remember-me {
+  --background: transparent;
+  --padding-start: 0;
+}
+
+.remember-me ion-label {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+}
+
+.forgot-password-btn {
+  --color: var(--ion-color-primary);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.forgot-password-btn:hover {
+  text-decoration: underline;
+}
+
+.auth-primary-btn {
+  margin: 20px 0 16px 0;
+  --border-radius: 8px;
+  font-weight: 600;
+  height: 48px;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 24px 0;
+  color: var(--ion-color-medium);
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--ion-color-medium-tint);
+}
+
+.auth-divider span {
+  background: var(--ion-color-light, #ffffff);
+  padding: 0 16px;
+  font-size: 0.9rem;
+  position: relative;
+  z-index: 1;
+}
+
+.google-signin-btn {
+  margin-bottom: 12px;
+  --border-radius: 8px;
+  --border-color: var(--ion-color-medium-tint);
+  height: 48px;
+  font-weight: 500;
+}
+
+.google-signin-btn ion-icon {
+  color: #4285f4;
+}
+
+.guest-continue-btn {
+  --color: var(--ion-color-medium);
+  font-weight: 500;
+  height: 44px;
+}
+
+.guest-continue-btn:hover {
+  --color: var(--ion-color-dark);
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-light-shade);
+}
+
+.auth-switch ion-text {
+  font-size: 0.9rem;
+}
+
+.switch-auth-btn {
+  --color: var(--ion-color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.switch-auth-btn:hover {
+  text-decoration: underline;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .auth-card {
+    background: var(--ion-color-dark);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .auth-input {
+    --background: var(--ion-color-dark-shade);
+    --border-color: var(--ion-color-medium-shade);
+  }
+
+  .auth-divider span {
+    background: var(--ion-color-dark);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .auth-card {
+    margin: 10px;
+    max-width: none;
+  }
+
+  .auth-title {
+    font-size: 1.3rem;
+  }
+
+  .auth-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .forgot-password-btn {
+    align-self: flex-end;
+  }
+}
+
+/* Loading state */
+.auth-primary-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-signin-btn[disabled],
+.guest-continue-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Focus states for accessibility */
+.auth-input ion-input:focus-within {
+  --border-color: var(--ion-color-primary);
+  --background: var(--ion-color-primary-tint);
+}
+
+/* Animation for smooth transitions */
+.auth-card {
+  transition: all 0.3s ease;
+}
+
+.auth-input {
+  transition: all 0.2s ease;
+}
+
+.auth-primary-btn,
+.google-signin-btn,
+.guest-continue-btn {
+  transition: all 0.2s ease;
+}

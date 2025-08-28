@@ -1,0 +1,392 @@
+/* Utility Classes for Consistent Styling */
+/* Species Combat TCG - Design System Utilities */
+
+/* Text Utilities */
+.text-primary {
+  color: var(--tcg-text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--tcg-text-secondary) !important;
+}
+
+.text-accent {
+  color: var(--tcg-accent) !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Font Weight Utilities */
+.font-normal {
+  font-weight: var(--tcg-font-weight-normal) !important;
+}
+
+.font-medium {
+  font-weight: var(--tcg-font-weight-medium) !important;
+}
+
+.font-bold {
+  font-weight: var(--tcg-font-weight-bold) !important;
+}
+
+/* Font Size Utilities */
+.text-xs {
+  font-size: var(--tcg-font-size-small) !important;
+}
+
+.text-sm {
+  font-size: var(--tcg-font-size-medium) !important;
+}
+
+.text-lg {
+  font-size: var(--tcg-font-size-large) !important;
+}
+
+.text-xl {
+  font-size: var(--tcg-font-size-xlarge) !important;
+}
+
+/* Background Utilities */
+.bg-primary {
+  background: var(--tcg-background-primary) !important;
+}
+
+.bg-secondary {
+  background: var(--tcg-background-secondary) !important;
+}
+
+.bg-card {
+  background: var(--tcg-card-background) !important;
+}
+
+.bg-accent {
+  background: var(--tcg-accent) !important;
+  color: var(--tcg-text-primary) !important;
+}
+
+/* Border Utilities */
+.border {
+  border: 1px solid var(--tcg-card-border) !important;
+}
+
+.border-accent {
+  border: 1px solid var(--tcg-accent) !important;
+}
+
+.border-none {
+  border: none !important;
+}
+
+.rounded {
+  border-radius: var(--tcg-border-radius) !important;
+}
+
+.rounded-sm {
+  border-radius: var(--tcg-border-radius-small) !important;
+}
+
+.rounded-lg {
+  border-radius: var(--tcg-border-radius-large) !important;
+}
+
+/* Spacing Utilities */
+.p-xs {
+  padding: var(--tcg-spacing-xs) !important;
+}
+
+.p-sm {
+  padding: var(--tcg-spacing-sm) !important;
+}
+
+.p-md {
+  padding: var(--tcg-spacing-md) !important;
+}
+
+.p-lg {
+  padding: var(--tcg-spacing-lg) !important;
+}
+
+.p-xl {
+  padding: var(--tcg-spacing-xl) !important;
+}
+
+.m-xs {
+  margin: var(--tcg-spacing-xs) !important;
+}
+
+.m-sm {
+  margin: var(--tcg-spacing-sm) !important;
+}
+
+.m-md {
+  margin: var(--tcg-spacing-md) !important;
+}
+
+.m-lg {
+  margin: var(--tcg-spacing-lg) !important;
+}
+
+.m-xl {
+  margin: var(--tcg-spacing-xl) !important;
+}
+
+.m-0 {
+  margin: 0 !important;
+}
+
+.mb-sm {
+  margin-bottom: var(--tcg-spacing-sm) !important;
+}
+
+.mb-md {
+  margin-bottom: var(--tcg-spacing-md) !important;
+}
+
+.mt-sm {
+  margin-top: var(--tcg-spacing-sm) !important;
+}
+
+.mt-md {
+  margin-top: var(--tcg-spacing-md) !important;
+}
+
+/* Shadow Utilities */
+.shadow-sm {
+  box-shadow: var(--tcg-shadow-small) !important;
+}
+
+.shadow-md {
+  box-shadow: var(--tcg-shadow-medium) !important;
+}
+
+.shadow-lg {
+  box-shadow: var(--tcg-shadow-large) !important;
+}
+
+.shadow-none {
+  box-shadow: none !important;
+}
+
+/* Flex Utilities */
+.flex {
+  display: flex !important;
+}
+
+.flex-col {
+  flex-direction: column !important;
+}
+
+.flex-row {
+  flex-direction: row !important;
+}
+
+.items-center {
+  align-items: center !important;
+}
+
+.items-start {
+  align-items: flex-start !important;
+}
+
+.items-end {
+  align-items: flex-end !important;
+}
+
+.justify-center {
+  justify-content: center !important;
+}
+
+.justify-between {
+  justify-content: space-between !important;
+}
+
+.justify-around {
+  justify-content: space-around !important;
+}
+
+.justify-start {
+  justify-content: flex-start !important;
+}
+
+.justify-end {
+  justify-content: flex-end !important;
+}
+
+.gap-xs {
+  gap: var(--tcg-spacing-xs) !important;
+}
+
+.gap-sm {
+  gap: var(--tcg-spacing-sm) !important;
+}
+
+.gap-md {
+  gap: var(--tcg-spacing-md) !important;
+}
+
+.gap-lg {
+  gap: var(--tcg-spacing-lg) !important;
+}
+
+/* Width and Height Utilities */
+.w-full {
+  width: 100% !important;
+}
+
+.h-full {
+  height: 100% !important;
+}
+
+.w-auto {
+  width: auto !important;
+}
+
+.h-auto {
+  height: auto !important;
+}
+
+/* Transition Utilities */
+.transition-fast {
+  transition: all var(--tcg-transition-fast) !important;
+}
+
+.transition-medium {
+  transition: all var(--tcg-transition-medium) !important;
+}
+
+.transition-slow {
+  transition: all var(--tcg-transition-slow) !important;
+}
+
+/* Hover Effects */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--tcg-shadow-large);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-accent:hover {
+  color: var(--tcg-accent);
+}
+
+/* Card Component Utilities */
+.card-standard {
+  background: var(--tcg-card-background);
+  border: 1px solid var(--tcg-card-border);
+  border-radius: var(--tcg-border-radius);
+  box-shadow: var(--tcg-shadow-medium);
+  padding: var(--tcg-spacing-md);
+  color: var(--tcg-text-primary);
+  transition: all var(--tcg-transition-medium);
+}
+
+.card-standard:hover {
+  box-shadow: var(--tcg-shadow-large);
+  transform: translateY(-2px);
+}
+
+/* Button Utilities */
+.btn-primary {
+  background: var(--tcg-accent);
+  color: var(--tcg-text-primary);
+  border: 1px solid var(--tcg-accent);
+  border-radius: var(--tcg-border-radius-small);
+  padding: var(--tcg-spacing-sm) var(--tcg-spacing-md);
+  font-weight: var(--tcg-font-weight-medium);
+  transition: all var(--tcg-transition-fast);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--tcg-accent);
+  border: 1px solid var(--tcg-accent);
+  border-radius: var(--tcg-border-radius-small);
+  padding: var(--tcg-spacing-sm) var(--tcg-spacing-md);
+  font-weight: var(--tcg-font-weight-medium);
+  transition: all var(--tcg-transition-fast);
+}
+
+.btn-secondary:hover {
+  background: var(--tcg-accent);
+  color: var(--tcg-text-primary);
+}
+
+/* List Utilities */
+.list-item {
+  background: var(--tcg-card-background);
+  border-bottom: 1px solid var(--tcg-card-border);
+  color: var(--tcg-text-primary);
+  padding: var(--tcg-spacing-md);
+  transition: all var(--tcg-transition-fast);
+}
+
+.list-item:hover {
+  background: var(--tcg-background-secondary);
+}
+
+/* Trophic Role Color Utilities */
+.trophic-producer {
+  color: var(--tcg-producer) !important;
+}
+
+.trophic-herbivore {
+  color: var(--tcg-herbivore) !important;
+}
+
+.trophic-carnivore {
+  color: var(--tcg-carnivore) !important;
+}
+
+.trophic-omnivore {
+  color: var(--tcg-omnivore) !important;
+}
+
+.trophic-detritivore {
+  color: var(--tcg-detritivore) !important;
+}
+
+.trophic-decomposer {
+  color: var(--tcg-decomposer) !important;
+}
+
+.trophic-scavenger {
+  color: var(--tcg-scavenger) !important;
+}
+
+/* Conservation Status Color Utilities */
+.conservation-extinct {
+  color: var(--tcg-extinct) !important;
+}
+
+.conservation-critically-endangered {
+  color: var(--tcg-critically-endangered) !important;
+}
+
+.conservation-endangered {
+  color: var(--tcg-endangered) !important;
+}
+
+.conservation-vulnerable {
+  color: var(--tcg-vulnerable) !important;
+}
+
+.conservation-near-threatened {
+  color: var(--tcg-near-threatened) !important;
+}
+
+.conservation-least-concern {
+  color: var(--tcg-least-concern) !important;
+}

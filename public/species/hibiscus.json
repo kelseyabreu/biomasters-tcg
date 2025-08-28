@@ -1,0 +1,208 @@
+{
+  "archetypeName": "hibiscus",
+  "identity": {
+    "speciesName": "hibiscus",
+    "commonName": "Hibiscus",
+    "scientificName": "Hibiscus rosa-sinensis",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Malvales",
+      "family": "Malvaceae",
+      "genus": "Hibiscus",
+      "species": "rosa-sinensis"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 1.2
+  },
+  "body": {
+    "mass_kg": 8.0,
+    "waterRatio": 0.82,
+    "carbonRatio": 0.42,
+    "nitrogenRatio": 0.028,
+    "phosphorusRatio": 0.003,
+    "otherMineralsRatio": 0.059
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 200.0,
+    "LeafyBiomass_gm2": 150.0,
+    "HerbaceousPreference": 50.0,
+    "FruitSeedBiomass_gm2": 20.0,
+    "RootBiomass_gm2": 80.0,
+    "N_gm2": 14.0,
+    "P_gm2": 1.5,
+    "K_gm2": 7.5,
+    "C_gm2": 210.0,
+    "NonNPK_gm2": 29.5,
+    "LigninContent_pct": 18.0,
+    "CurrentGrowthRate": 1.2,
+    "CurrentYieldRate": 1.8
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 3650,
+    "lifeStages": [
+      {
+        "name": "Seedling",
+        "endAge_days": 90,
+        "modifiers": {
+          "mass_multiplier": 0.05,
+          "photosynthesis_modifier": 0.4,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Young",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.3,
+          "photosynthesis_modifier": 0.8,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mature",
+        "endAge_days": 2920,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "photosynthesis_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Declining",
+        "endAge_days": 3650,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "photosynthesis_modifier": 0.6,
+          "is_fertile": true,
+          "health_decline_rate": 0.1
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 200,
+      "offspringCount": 500,
+      "gestation_Days": 90,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 45.0,
+    "proteinTurnoverRate": 0.08,
+    "metabolic_Rate_kJ_per_hr": 8,
+    "energy_Reserves_Max_kJ": 3000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.92,
+    "osmoticPressure": 0.35,
+    "specialized": {
+      "organType": "leaf_parenchyma",
+      "capacity_L": 3.0,
+      "efficiency": 0.82
+    },
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.003,
+      "surfaceArea_m2": 2.5,
+      "temperatureModifier": 1.5
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.8,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.8,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "Max_Carbon_Fixation_Rate_umol_per_m2_per_s": 48.0,
+          "Water_Use_Efficiency_g_per_mm": 3.2,
+          "NitrogenFixation_mgN_per_hr": 0,
+          "lightSaturation": 1600,
+          "leafArea": 0.25,
+          "photosyntheticPathway": "C3",
+          "optimal_Light_PAR": 1600,
+          "optimal_Soil_Moisture_Pct": 70,
+          "optimal_CO2_ppm": 400
+        }
+      },
+      {
+        "method": "Root_Uptake",
+        "preference_weight": 10.0,
+        "rateDataClass": "FRootUptakeRates",
+        "rateData": {
+          "UptakeRate_N_mg_per_hr": 25,
+          "UptakeRate_P_mg_per_hr": 3,
+          "UptakeRate_K_mg_per_hr": 15,
+          "UptakeRate_Water_L_per_hr": 0.4,
+          "rootMass": 0.08,
+          "Wilting_Point_Water_Potential_MPa": -1.8,
+          "Optimal_Water_Potential_MPa": -0.4,
+          "energyCost_per_mg_N": 0.08,
+          "energyCost_per_mg_P": 0.06,
+          "energyCost_per_mg_K": 0.04
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.88,
+      "nitrogen_Efficiency_pct": 0.82,
+      "phosphorus_Efficiency_pct": 0.87,
+      "potassium_Efficiency_pct": 0.85,
+      "otherMinerals_Efficiency_pct": 0.78
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 10,
+    "temperatureMaximum_C": 40,
+    "temperatureOptimalMin_C": 22,
+    "temperatureOptimalMax_C": 32,
+    "moistureOptimal_pct": 75,
+    "moistureTolerance_pct": 25,
+    "moistureLethal_pct": 25,
+    "lightOptimal_PAR": 1600,
+    "lightSaturation_PAR": 2000,
+    "lightCompensation_PAR": 120,
+    "pHOptimal": 6.8,
+    "pHTolerance": 1.2
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "archetypeName": "herb",
+  "identity": {
+    "speciesName": "herb",
+    "commonName": "Spearmint",
+    "scientificName": "Mentha spicata",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Lamiales",
+      "family": "Lamiaceae",
+      "genus": "Mentha",
+      "species": "spicata"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 0.6
+  },
+  "body": {
+    "mass_kg": 0.8,
+    "waterRatio": 0.80,
+    "carbonRatio": 0.40,
+    "nitrogenRatio": 0.030,
+    "phosphorusRatio": 0.003,
+    "otherMineralsRatio": 0.067
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 20.0,
+    "LeafyBiomass_gm2": 120.0,
+    "HerbaceousBiomass_gm2": 80.0,
+    "FruitSeedBiomass_gm2": 10.0,
+    "RootBiomass_gm2": 60.0,
+    "N_gm2": 8.7,
+    "P_gm2": 0.87,
+    "K_gm2": 4.35,
+    "C_gm2": 116.0,
+    "NonNPK_gm2": 19.43,
+    "LigninContent_pct": 12.0,
+    "CurrentGrowthRate": 1.8,
+    "CurrentYieldRate": 1.5
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1095,
+    "lifeStages": [
+      {
+        "name": "Seedling",
+        "endAge_days": 45,
+        "modifiers": {
+          "mass_multiplier": 0.05,
+          "photosynthesis_modifier": 0.4,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Vegetative",
+        "endAge_days": 120,
+        "modifiers": {
+          "mass_multiplier": 0.4,
+          "photosynthesis_modifier": 1.3,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mature",
+        "endAge_days": 730,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "photosynthesis_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Declining",
+        "endAge_days": 1095,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "photosynthesis_modifier": 0.7,
+          "is_fertile": true,
+          "health_decline_rate": 0.12
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 80,
+      "offspringCount": 1000,
+      "gestation_Days": 60,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 21.0,
+    "proteinTurnoverRate": 0.10,
+    "metabolic_Rate_kJ_per_hr": 3,
+    "energy_Reserves_Max_kJ": 800,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.92,
+    "osmoticPressure": 0.3,
+    "specialized": {
+      "organType": "leaf_parenchyma",
+      "capacity_L": 0.5,
+      "efficiency": 0.8
+    },
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.002,
+      "surfaceArea_m2": 1.2,
+      "temperatureModifier": 1.1
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.85,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0.0,
+    "circadianStrength": 0.75,
+    "sleepUrgeThreshold": 100.0,
+    "wakefulnessThreshold": 0.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "Max_Carbon_Fixation_Rate_umol_per_m2_per_s": 50.0,
+          "Water_Use_Efficiency_g_per_mm": 3.5,
+          "NitrogenFixation_mgN_per_hr": 0,
+          "lightSaturation": 1400,
+          "leafArea": 0.3,
+          "photosyntheticPathway": "C3",
+          "optimal_Light_PAR": 1400,
+          "optimal_Soil_Moisture_Pct": 65,
+          "optimal_CO2_ppm": 400
+        }
+      },
+      {
+        "method": "Root_Uptake",
+        "preference_weight": 10.0,
+        "rateDataClass": "FRootUptakeRates",
+        "rateData": {
+          "UptakeRate_N_mg_per_hr": 20,
+          "UptakeRate_P_mg_per_hr": 2,
+          "UptakeRate_K_mg_per_hr": 12,
+          "UptakeRate_Water_L_per_hr": 0.3,
+          "rootMass": 0.06,
+          "Wilting_Point_Water_Potential_MPa": -2.0,
+          "Optimal_Water_Potential_MPa": -0.5,
+          "energyCost_per_mg_N": 0.07,
+          "energyCost_per_mg_P": 0.05,
+          "energyCost_per_mg_K": 0.03
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.90,
+      "nitrogen_Efficiency_pct": 0.85,
+      "phosphorus_Efficiency_pct": 0.88,
+      "potassium_Efficiency_pct": 0.85,
+      "otherMinerals_Efficiency_pct": 0.78
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -10,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 18,
+    "temperatureOptimalMax_C": 28,
+    "moistureOptimal_pct": 70,
+    "moistureTolerance_pct": 25,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 1400,
+    "lightSaturation_PAR": 1800,
+    "lightCompensation_PAR": 120,
+    "pHOptimal": 6.8,
+    "pHTolerance": 1.2
+  }
+}

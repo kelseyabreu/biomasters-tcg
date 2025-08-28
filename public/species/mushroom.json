@@ -1,0 +1,187 @@
+{
+  "archetypeName": "mushroom",
+  "identity": {
+    "speciesName": "mushroom",
+    "commonName": "Common Decomposer",
+    "scientificName": "Agaricus bisporus",
+    "taxonomy": {
+      "kingdom": "Fungi",
+      "phylum": "Basidiomycota",
+      "class": "Agaricomycetes",
+      "order": "Agaricales",
+      "family": "Agaricaceae",
+      "genus": "Agaricus",
+      "species": "bisporus"
+    }
+  },
+  "rendering": {
+    "modelFile": "decomposer.glb",
+    "scale": 0.8
+  },
+  "body": {
+    "mass_kg": 0.2,
+    "waterRatio": 0.85,
+    "carbonRatio": 0.1,
+    "nitrogenRatio": 0.02,
+    "phosphorusRatio": 0.005,
+    "otherMineralsRatio": 0.025
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 90,
+    "lifeStages": [
+      {
+        "name": "Germination",
+        "endAge_days": 7,
+        "modifiers": {
+          "mass_multiplier": 0.01,
+          "acquisition_modifier": 0.2,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mycelium",
+        "endAge_days": 28,
+        "modifiers": {
+          "mass_multiplier": 0.3,
+          "acquisition_modifier": 0.8,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Fruiting",
+        "endAge_days": 56,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senescent",
+        "endAge_days": 90,
+        "modifiers": {
+          "mass_multiplier": 0.6,
+          "acquisition_modifier": 0.4,
+          "is_fertile": false,
+          "health_decline_rate": 0.3
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 50,
+      "offspringCount": 1000,
+      "gestation_Days": 7,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 5.0,
+    "proteinTurnoverRate": 0.12,
+    "metabolic_Rate_kJ_per_hr": 0.8,
+    "energy_Reserves_Max_kJ": 200,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.88,
+    "osmoticPressure": 0.15,
+    "barrier": {
+      "barrierType": "cell_wall",
+      "permeability_L_per_hr_per_m2": 0.002,
+      "surfaceArea_m2": 0.01,
+      "temperatureModifier": 2.5
+    },
+    "reclamation": {
+      "systemType": "none",
+      "reclamationRate_L_per_hr": 0.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.0
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Any",
+    "dormancyMultiplier": 0.9,
+    "bRequiresSleep": false
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.1,
+    "taste_range_m": 0.5,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.1,
+    "heat_range_m": 0.5
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Decomposition",
+        "preference_weight": 10.0,
+        "rateDataClass": "FDecompositionRates",
+        "rateData": {
+          "enzymeProduction_rate": 0.8,
+          "fragmentationRate_kg_per_tick": 0.005,
+          "humificationEfficiency_ratio": 0.3,
+          "substrateSpecialization_rating": 0.7,
+          "substrateAffinity_CNRatio": 30.0,
+          "temperatureOptimal_C": 20.0,
+          "temperatureTolerance_C": 15.0,
+          "moistureOptimal_pct": 70.0,
+          "moistureTolerance_pct": 25.0,
+          "carbon_Release_Efficiency_pct": 80.0,
+          "nitrogen_Release_Efficiency_pct": 90.0,
+          "phosphorus_Release_Efficiency_pct": 95.0,
+          "potassium_Release_Efficiency_pct": 90.0,
+          "otherMinerals_Release_Efficiency_pct": 80.0
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.4,
+      "nitrogen_Efficiency_pct": 0.5,
+      "phosphorus_Efficiency_pct": 0.6,
+      "potassium_Efficiency_pct": 0.6,
+      "otherMinerals_Efficiency_pct": 0.5
+    },
+    "mineralizationProfile": {
+      "carbon_Release_Efficiency_pct": 0.8,
+      "nitrogen_Release_Efficiency_pct": 0.9,
+      "phosphorus_Release_Efficiency_pct": 0.95,
+      "potassium_Release_Efficiency_pct": 0.9,
+      "otherMinerals_Release_Efficiency_pct": 0.8,
+      "Decomposition_SubstrateSpecialization_rating": 0.7,
+      "Decomposition_SubstrateAffinity_CNRatio": 30.0
+    }
+  },
+
+  "environmentalResponse": {
+    "temperatureMinimum_C": 2,
+    "temperatureMaximum_C": 40,
+    "temperatureOptimalMin_C": 18,
+    "temperatureOptimalMax_C": 28,
+    "moistureOptimal_pct": 80,
+    "moistureTolerance_pct": 20,
+    "moistureLethal_pct": 30,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 6.0,
+    "pHTolerance": 2.0
+  }
+}

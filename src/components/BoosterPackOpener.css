@@ -1,0 +1,393 @@
+.booster-pack-opener {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Pack Opener Card */
+.pack-opener-card {
+  background: var(--tcg-card-background);
+  color: var(--tcg-text-primary);
+  border: 1px solid var(--tcg-card-border);
+  margin-bottom: var(--tcg-spacing-lg);
+}
+
+.pack-opener-card ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--tcg-spacing-sm);
+  color: var(--tcg-text-primary);
+  font-weight: var(--tcg-font-weight-bold);
+}
+
+.pack-opener-card ion-card-title ion-icon {
+  font-size: 24px;
+}
+
+.pack-description {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.pack-description p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pack-info {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.pack-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.open-pack-button {
+  --background: var(--tcg-accent);
+  --color: var(--tcg-text-primary);
+  font-weight: var(--tcg-font-weight-bold);
+  font-size: var(--tcg-font-size-xlarge);
+  height: 60px;
+  border-radius: var(--tcg-border-radius);
+}
+
+.education-button {
+  --color: white;
+  --border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Pack Opening Animation */
+.pack-opening-animation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  color: white;
+}
+
+.pack-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.pack-visual ion-icon {
+  font-size: 80px;
+  color: #feca57;
+  animation: pulse 1s infinite;
+}
+
+.opening-text {
+  font-size: 24px;
+  font-weight: bold;
+  animation: fadeInOut 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Pack Results */
+.pack-results {
+  margin-top: 20px;
+}
+
+.pack-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 10px;
+}
+
+.pack-stats .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.pack-stats .stat ion-icon {
+  font-size: 24px;
+  color: var(--ion-color-primary);
+}
+
+.pack-stats .stat span {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Cards Grid */
+.cards-grid {
+  margin: 20px 0;
+  padding: 0;
+}
+
+.cards-grid ion-col {
+  padding: 2px;
+}
+
+.cards-grid .card {
+  margin: 0;
+  width: 100%;
+}
+
+.cards-grid .species-card {
+  margin: 0 !important;
+  width: 100%;
+}
+
+/* Rarity Breakdown */
+.rarity-breakdown {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.rarity-breakdown h4 {
+  margin: 0 0 15px 0;
+  color: var(--ion-color-primary);
+  font-weight: bold;
+}
+
+.rarity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rarity-percentage {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  font-style: italic;
+}
+
+/* Educational Statistics */
+.educational-stats {
+  margin-top: 20px;
+}
+
+.educational-stats ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.educational-stats ion-item {
+  --padding-start: 16px;
+}
+
+.educational-stats ion-badge {
+  min-width: 120px;
+  text-align: center;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.educational-note {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid var(--ion-color-success);
+  border-radius: 5px;
+}
+
+.educational-note p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ion-color-success-shade);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .booster-pack-opener {
+    padding: 8px;
+  }
+
+  .pack-opener-card {
+    margin-bottom: 16px;
+  }
+
+  .pack-description {
+    margin-bottom: 16px;
+  }
+
+  .pack-description p {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .pack-stats {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pack-stats .stat {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+  }
+
+  .pack-info {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pack-info ion-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .rarity-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+
+  .pack-opening-animation {
+    padding: 16px;
+    margin: 16px;
+    left: 8px;
+    right: 8px;
+    width: calc(100% - 16px);
+    transform: translateY(-50%);
+  }
+
+  .pack-visual ion-icon {
+    font-size: 50px;
+  }
+
+  .opening-text {
+    font-size: 16px;
+  }
+
+  .open-pack-button {
+    height: 50px;
+    font-size: 16px;
+  }
+
+  .cards-grid ion-col {
+    padding: 3px;
+  }
+
+  .educational-stats ion-badge {
+    min-width: 100px;
+    font-size: 9px;
+  }
+
+  .educational-note {
+    margin-top: 16px;
+    padding: 12px;
+  }
+
+  .educational-note p {
+    font-size: 13px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .booster-pack-opener {
+    padding: 4px;
+  }
+
+  .pack-opener-card ion-card-title {
+    font-size: 18px;
+  }
+
+  .pack-opener-card ion-card-title ion-icon {
+    font-size: 20px;
+  }
+
+  .pack-description p {
+    font-size: 13px;
+  }
+
+  .pack-stats .stat {
+    padding: 6px 10px;
+  }
+
+  .pack-stats .stat span {
+    font-size: 12px;
+  }
+
+  .pack-opening-animation {
+    padding: 12px;
+    margin: 8px;
+  }
+
+  .pack-visual ion-icon {
+    font-size: 40px;
+  }
+
+  .opening-text {
+    font-size: 14px;
+  }
+
+  .open-pack-button {
+    height: 45px;
+    font-size: 14px;
+  }
+
+  .cards-grid ion-col {
+    padding: 2px;
+  }
+
+  .rarity-breakdown {
+    padding: 10px;
+  }
+
+  .rarity-breakdown h4 {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+}
+
+/* Special rarity effects */
+.cards-grid .species-card.critically-endangered,
+.cards-grid .species-card.extinct,
+.cards-grid .species-card.extinct-in-wild {
+  animation: rareCardGlow 2s infinite;
+}
+
+@keyframes rareCardGlow {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(139, 0, 0, 0.6);
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(139, 0, 0, 0.8);
+  }
+}

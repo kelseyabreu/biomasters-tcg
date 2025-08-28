@@ -1,0 +1,59 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Deer SVG -->
+  <defs>
+    <radialGradient id="deerGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#DEB887;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B7355;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Body -->
+  <ellipse cx="50" cy="65" rx="22" ry="20" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- Head -->
+  <ellipse cx="50" cy="35" rx="12" ry="15" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- Antlers -->
+  <path d="M 42 20 L 38 10 M 42 20 L 45 12 M 42 20 L 40 15" stroke="#8B4513" stroke-width="2" fill="none"/>
+  <path d="M 58 20 L 62 10 M 58 20 L 55 12 M 58 20 L 60 15" stroke="#8B4513" stroke-width="2" fill="none"/>
+  
+  <!-- Ears -->
+  <ellipse cx="42" cy="25" rx="3" ry="6" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  <ellipse cx="58" cy="25" rx="3" ry="6" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- Eyes -->
+  <circle cx="46" cy="32" r="2" fill="#000"/>
+  <circle cx="54" cy="32" r="2" fill="#000"/>
+  <circle cx="47" cy="31" r="0.5" fill="#FFF"/>
+  <circle cx="55" cy="31" r="0.5" fill="#FFF"/>
+  
+  <!-- Nose -->
+  <ellipse cx="50" cy="40" rx="2" ry="1.5" fill="#000"/>
+  
+  <!-- Mouth -->
+  <path d="M 48 42 Q 50 44 52 42" stroke="#654321" stroke-width="1" fill="none"/>
+  
+  <!-- Neck -->
+  <ellipse cx="50" cy="50" rx="8" ry="10" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- Legs -->
+  <ellipse cx="38" cy="85" rx="3" ry="15" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  <ellipse cx="48" cy="85" rx="3" ry="15" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  <ellipse cx="52" cy="85" rx="3" ry="15" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  <ellipse cx="62" cy="85" rx="3" ry="15" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- Hooves -->
+  <ellipse cx="38" cy="95" rx="2" ry="1" fill="#2F4F4F"/>
+  <ellipse cx="48" cy="95" rx="2" ry="1" fill="#2F4F4F"/>
+  <ellipse cx="52" cy="95" rx="2" ry="1" fill="#2F4F4F"/>
+  <ellipse cx="62" cy="95" rx="2" ry="1" fill="#2F4F4F"/>
+  
+  <!-- Tail -->
+  <ellipse cx="72" cy="70" rx="3" ry="8" fill="url(#deerGradient)" stroke="#654321" stroke-width="1"/>
+  
+  <!-- Spots -->
+  <circle cx="45" cy="60" r="1.5" fill="#FFF" opacity="0.7"/>
+  <circle cx="55" cy="65" r="1.5" fill="#FFF" opacity="0.7"/>
+  <circle cx="52" cy="58" r="1" fill="#FFF" opacity="0.7"/>
+  <circle cx="48" cy="68" r="1" fill="#FFF" opacity="0.7"/>
+</svg>

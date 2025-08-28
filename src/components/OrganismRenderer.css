@@ -1,0 +1,82 @@
+.organism-renderer-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.organism-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--tcg-spacing-xs);
+  margin-bottom: var(--tcg-spacing-sm);
+  padding: var(--tcg-spacing-xs);
+  background: var(--tcg-background-secondary);
+  border-radius: var(--tcg-border-radius-small);
+  border: 1px solid var(--tcg-card-border);
+}
+
+.zoom-indicator {
+  font-size: var(--tcg-font-size-small);
+  color: var(--tcg-text-secondary);
+  margin-left: var(--tcg-spacing-xs);
+  min-width: 40px;
+  text-align: center;
+}
+
+.organism-renderer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--tcg-card-border);
+  border-radius: var(--tcg-border-radius);
+  position: relative;
+}
+
+.organism-renderer.interactive {
+  user-select: none;
+}
+
+.organism-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible; /* Allow zoom to show outside bounds */
+}
+
+.organism-content > * {
+  transform-origin: center center;
+}
+
+.organism-content .organism-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Ensure all organism elements inherit the transform */
+.organism-content * {
+  transform-origin: inherit;
+}
+
+/* Ensure organism elements are properly positioned */
+.organism-content * {
+  box-sizing: border-box;
+}
+
+/* Add some basic styling for the rendered organisms */
+.organism-content .organism-body > * {
+  position: absolute;
+}
+
+/* Make sure the organism fits within the container */
+.organism-content .organism-body {
+  transform-origin: center center;
+  max-width: 100%;
+  max-height: 100%;
+}

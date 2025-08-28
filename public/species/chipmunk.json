@@ -1,0 +1,242 @@
+{
+  "archetypeName": "chipmunk",
+  "identity": {
+    "speciesName": "chipmunk",
+    "commonName": "Eastern Chipmunk",
+    "scientificName": "Tamias striatus",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Sciuridae",
+      "genus": "Tamias",
+      "species": "striatus"
+    }
+  },
+  "rendering": {
+    "modelFile": "herbivore.glb",
+    "scale": 0.4
+  },
+  "body": {
+    "mass_kg": 0.1,
+    "waterRatio": 0.63,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.03,
+    "phosphorusRatio": 0.012,
+    "otherMineralsRatio": 0.038
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 2920,
+    "lifeStages": [
+      {
+        "name": "Pup",
+        "endAge_days": 60,
+        "modifiers": {
+          "mass_multiplier": 0.15,
+          "speed_modifier": 0.4,
+          "acquisition_modifier": 0.3,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.7,
+          "speed_modifier": 0.9,
+          "acquisition_modifier": 0.8,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 2555,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senescent",
+        "endAge_days": 2920,
+        "modifiers": {
+          "mass_multiplier": 0.85,
+          "speed_modifier": 0.7,
+          "acquisition_modifier": 0.7,
+          "is_fertile": true,
+          "health_decline_rate": 0.15
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 80,
+      "offspringCount": 4,
+      "gestation_Days": 31,
+      "parentalCare_Days": 60
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 3.0,
+    "proteinTurnoverRate": 0.20,
+    "metabolic_Rate_kJ_per_hr": 25.0,
+    "energy_Reserves_Max_kJ": 800,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": true
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.92,
+    "osmoticPressure": 0.32,
+    "barrier": {
+      "barrierType": "fur",
+      "permeability_L_per_hr_per_m2": 0.002,
+      "surfaceArea_m2": 0.025,
+      "temperatureModifier": 1.8
+    },
+    "reclamation": {
+      "systemType": "kidney",
+      "reclamationRate_L_per_hr": 0.008,
+      "concentrationAbility": 4.0,
+      "energyCost_kJ_per_L": 2.0
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.2,
+    "bRequiresSleep": true,
+    "sleepHrsNeeded": 12.0,
+    "circadianStrength": 0.85,
+    "sleepUrgeThreshold": 80.0,
+    "wakefulnessThreshold": 15.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 1800,
+    "run_Speed_m_per_hr": 4200,
+    "swim_Speed_m_per_hr": 600,
+    "fastSwim_Speed_m_per_hr": 900,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 400,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 25.0,
+    "smell_range_m": 80.0,
+    "taste_range_m": 0.15,
+    "hearing_range_m": 120.0,
+    "touch_range_m": 0.25,
+    "heat_range_m": 3.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Grazing",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 25.0,
+          "foragingSpeed_m_per_hour": 150.0,
+          "intakeRate_g_per_hour": 12.0,
+          "biteSize_g": 0.5,
+          "selectivityIndex": 0.9,
+          "digestibilityCoefficient": 0.75,
+          "energyContent_kJ_per_kg": 17000,
+          "digestion_carbon_efficiency": 0.70,
+          "digestion_nitrogen_efficiency": 0.75,
+          "digestion_phosphorus_efficiency": 0.80
+        }
+      }
+    ]
+  },
+  "foragingProfile": {
+    "FruitSeedPreference": 0.9,
+    "LeafyPreference": 0.05,
+    "HerbaceousPreference": 0.03,
+    "RootPreference": 0.02
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.70,
+      "nitrogen_Efficiency_pct": 0.75,
+      "phosphorus_Efficiency_pct": 0.80,
+      "potassium_Efficiency_pct": 0.75,
+      "otherMinerals_Efficiency_pct": 0.65
+    }
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -20,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 30,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.8
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartFleeing",
+      "StartForaging",
+      "StartSeekingWater",
+      "StartResting",
+      "StartMating",
+      "StartSocializing"
+    ],
+    "macroStateTriggers": {
+      "StartForaging": [
+        {"type": "energy", "operator": "<", "threshold": 65},
+        {"type": "condition_tag", "tag": "IsStarving", "required": true}
+      ],
+      "StartFleeing": [
+        {"type": "condition_tag", "tag": "IsThreatened", "required": true},
+        {"type": "fear_motivation", "operator": ">", "threshold": 0.5}
+      ],
+      "StartSeekingWater": [
+        {"type": "condition_tag", "tag": "IsThirsty", "required": true},
+        {"type": "hydration", "operator": "<", "threshold": 30}
+      ],
+      "StartResting": [
+        {"type": "energy", "operator": "<", "threshold": 25},
+        {"type": "condition_tag", "tag": "IsExhausted", "required": true}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 85},
+        {"type": "health", "operator": ">", "threshold": 90},
+        {"type": "age", "operator": ">", "threshold": 365}
+      ],
+      "StartSocializing": [
+        {"type": "energy", "operator": ">", "threshold": 80},
+        {"type": "health", "operator": ">", "threshold": 90},
+        {"type": "condition_tag", "tag": "IsStarving", "required": false},
+        {"type": "condition_tag", "tag": "IsThreatened", "required": false}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 90,
+    "momentum": 0.85,
+    "changeThreshold": 0.25
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 4.6,
+      "agreeableness": 3.9,
+      "conscientiousness": null,
+      "neuroticism": 5.8,
+      "openness": 6.2,
+      "dominance": 4.1,
+      "activity": 7.1
+    },
+    "reliability": 0.74
+  }
+}

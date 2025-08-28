@@ -1,0 +1,219 @@
+{
+  "archetypeName": "dung-beetle",
+  "identity": {
+    "speciesName": "dung-beetle",
+    "commonName": "Sacred Dung Beetle",
+    "scientificName": "Scarabaeus sacer",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Coleoptera",
+      "family": "Scarabaeidae",
+      "genus": "Scarabaeus",
+      "species": "sacer"
+    }
+  },
+  "rendering": {
+    "modelFile": "detritivore.glb",
+    "scale": 0.3
+  },
+  "body": {
+    "mass_kg": 0.002,
+    "waterRatio": 0.65,
+    "carbonRatio": 0.15,
+    "nitrogenRatio": 0.025,
+    "phosphorusRatio": 0.004,
+    "otherMineralsRatio": 0.171
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 365,
+    "lifeStages": [
+      {
+        "name": "Larva",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "speed_modifier": 0.3,
+          "acquisition_modifier": 0.6,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Pupa",
+        "endAge_days": 45,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "speed_modifier": 0.1,
+          "acquisition_modifier": 0.1,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 300,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senescent",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.7,
+          "speed_modifier": 0.5,
+          "acquisition_modifier": 0.3,
+          "is_fertile": false,
+          "health_decline_rate": 0.4
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 8,
+      "offspringCount": 50,
+      "gestation_Days": 14,
+      "parentalCare_Days": 21
+    }
+  },
+
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.3,
+    "bRequiresSleep": true,
+    "sleepHrsNeeded": 8.0,
+    "circadianStrength": 0.7,
+    "sleepUrgeThreshold": 85.0,
+    "wakefulnessThreshold": 25.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 180,
+    "run_Speed_m_per_hr": 300,
+    "swim_Speed_m_per_hr": 20,
+    "fastSwim_Speed_m_per_hr": 30,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 50,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 2.0,
+    "smell_range_m": 10.0,
+    "taste_range_m": 0.1,
+    "hearing_range_m": 5.0,
+    "touch_range_m": 0.2,
+    "heat_range_m": 1.0
+  },
+
+  "metabolism": {
+    "DaysTillStarvation": 12.0,
+    "proteinTurnoverRate": 0.18,
+    "metabolic_Rate_kJ_per_hr": 0.002,
+    "energy_Reserves_Max_kJ": 50,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+
+  "waterStorage": {
+    "membraneIntegrity": 0.90,
+    "osmoticPressure": 0.3,
+    "barrier": {
+      "barrierType": "exoskeleton",
+      "permeability_L_per_hr_per_m2": 0.005,
+      "surfaceArea_m2": 0.0008,
+      "temperatureModifier": 2.5
+    },
+    "reclamation": {
+      "systemType": "malpighian_tubules",
+      "reclamationRate_L_per_hr": 0.00005,
+      "concentrationAbility": 4.0,
+      "energyCost_kJ_per_L": 0.3
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+
+  "health": {
+    "maxHealth": 100,
+    "regenerationRate": 0.5,
+    "immuneSystemStrength": 0.8,
+    "diseaseResistance": 0.7,
+    "toxinTolerance": 0.9
+  },
+
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Detritivory",
+        "preference_weight": 10.0,
+        "rateDataClass": "FDetritivoryRates",
+        "rateData": {
+          "ingestion_rate_g_per_hour": 2.0,
+          "organic_matter_selectivity": 0.95,
+          "substratePreference": "freshLeafLitterPool",
+          "particle_size_preference_mm": [0.05, 1.0],
+          "burrowing_depth_cm": 15.0,
+          "surface_activity_preference": 0.8,
+          "gut_retention_time_hours": 12.0,
+          "assimilation_efficiency_pct": 0.8,
+          "digestion_carbon_efficiency": 0.6,
+          "digestion_nitrogen_efficiency": 0.7,
+          "digestion_phosphorus_efficiency": 0.8
+        }
+      }
+    ]
+  },
+
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.6,
+      "nitrogen_Efficiency_pct": 0.7,
+      "phosphorus_Efficiency_pct": 0.8,
+      "potassium_Efficiency_pct": 0.75,
+      "otherMinerals_Efficiency_pct": 0.65
+    },
+    "wasteProfile": {
+      "carbon_Retention_pct": 0.4,
+      "nitrogen_Retention_pct": 0.3,
+      "phosphorus_Retention_pct": 0.2,
+      "potassium_Retention_pct": 0.25,
+      "otherMinerals_Retention_pct": 0.35
+    }
+  },
+
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 45,
+    "temperatureOptimalMin_C": 20,
+    "temperatureOptimalMax_C": 35,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 25,
+    "moistureLethal_pct": 15,
+    "lightOptimal_PAR": 50,
+    "lightSaturation_PAR": 200,
+    "lightCompensation_PAR": 10,
+    "pHOptimal": 7.5,
+    "pHTolerance": 2.0
+  },
+
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartForaging",
+      "StartSeekingWater",
+      "StartResting",
+      "StartMating",
+      "StartFleeing"
+    ],
+    "activityPattern": "Diurnal",
+    "socialBehavior": "Solitary",
+    "territorialBehavior": "Non-territorial",
+    "aggressionLevel": 0.1,
+    "curiosityLevel": 0.4,
+    "fearResponse": 0.7
+  }
+}

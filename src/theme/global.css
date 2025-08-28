@@ -1,0 +1,534 @@
+/* Global Theme Variables and Base Styles */
+/* Species Combat TCG - Comprehensive Theme System */
+
+:root {
+  /* Default Theme Variables (Forest Theme) */
+  --tcg-card-background: #F5F5DC;
+  --tcg-card-border: #8FBC8F;
+  --tcg-text-primary: #2F4F2F;
+  --tcg-text-secondary: #696969;
+  --tcg-background-primary: #F0FFF0;
+  --tcg-background-secondary: #E6FFE6;
+  --tcg-accent: #2D5016;
+  --tcg-highlight: #ADFF2F;
+
+  /* Trophic Role Colors */
+  --tcg-producer: #228B22;
+  --tcg-herbivore: #DAA520;
+  --tcg-carnivore: #8B4513;
+  --tcg-omnivore: #CD853F;
+  --tcg-detritivore: #A0522D;
+  --tcg-decomposer: #2F4F2F;
+  --tcg-scavenger: #696969;
+
+  /* Conservation Status Colors */
+  --tcg-extinct: #000000;
+  --tcg-critically-endangered: #8B0000;
+  --tcg-endangered: #FF4500;
+  --tcg-vulnerable: #FFD700;
+  --tcg-near-threatened: #ADFF2F;
+  --tcg-least-concern: #32CD32;
+
+  /* UI Component Variables */
+  --tcg-border-radius: 12px;
+  --tcg-border-radius-small: 8px;
+  --tcg-border-radius-large: 16px;
+  --tcg-shadow-small: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --tcg-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --tcg-shadow-large: 0 8px 16px rgba(0, 0, 0, 0.2);
+  --tcg-transition-fast: 0.2s ease;
+  --tcg-transition-medium: 0.3s ease;
+  --tcg-transition-slow: 0.5s ease;
+
+  /* Typography */
+  --tcg-font-size-small: 12px;
+  --tcg-font-size-medium: 14px;
+  --tcg-font-size-large: 16px;
+  --tcg-font-size-xlarge: 18px;
+  --tcg-font-weight-normal: 400;
+  --tcg-font-weight-medium: 500;
+  --tcg-font-weight-bold: 600;
+
+  /* Spacing */
+  --tcg-spacing-xs: 4px;
+  --tcg-spacing-sm: 8px;
+  --tcg-spacing-md: 16px;
+  --tcg-spacing-lg: 24px;
+  --tcg-spacing-xl: 32px;
+}
+
+/* Dark Mode Variables */
+.dark {
+  --tcg-card-background: #1A1A1A;
+  --tcg-card-border: #404040;
+  --tcg-text-primary: #E0E0E0;
+  --tcg-text-secondary: #B0B0B0;
+  --tcg-background-primary: #0F0F0F;
+  --tcg-background-secondary: #1A1A1A;
+  --tcg-accent: #90EE90;
+  --tcg-highlight: #32CD32;
+
+  /* Adjust shadows for dark mode */
+  --tcg-shadow-small: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --tcg-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --tcg-shadow-large: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Base Body Styles */
+body {
+  background: var(--tcg-background-primary);
+  color: var(--tcg-text-primary);
+  transition: background-color var(--tcg-transition-medium), color var(--tcg-transition-medium);
+}
+
+/* Global Component Overrides */
+ion-content {
+  --background: var(--tcg-background-primary);
+  --color: var(--tcg-text-primary);
+}
+
+/* Ensure all text elements use theme colors */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--tcg-text-primary);
+  font-weight: var(--tcg-font-weight-bold);
+}
+
+p {
+  color: var(--tcg-text-primary);
+}
+
+span {
+  color: var(--tcg-text-primary);
+}
+
+/* Remove gradients only from specific components that had them */
+.pack-opener-card,
+.open-pack-button,
+.title-section h1 {
+  background-image: none !important;
+}
+
+ion-header ion-toolbar {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+  --border-color: var(--tcg-card-border);
+}
+
+ion-card {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+  border: 1px solid var(--tcg-card-border);
+  border-radius: var(--tcg-border-radius);
+  box-shadow: var(--tcg-shadow-medium);
+  transition: all var(--tcg-transition-medium);
+}
+
+ion-card:hover {
+  box-shadow: var(--tcg-shadow-large);
+  transform: translateY(-2px);
+}
+
+ion-card-header {
+  --color: var(--tcg-text-primary);
+}
+
+ion-card-title {
+  --color: var(--tcg-text-primary);
+  font-weight: var(--tcg-font-weight-bold);
+}
+
+ion-card-content {
+  --color: var(--tcg-text-primary);
+}
+
+ion-button {
+  --border-radius: var(--tcg-border-radius-small);
+  --transition: all var(--tcg-transition-fast);
+}
+
+ion-button[fill="solid"] {
+  --background: var(--tcg-accent);
+  --color: var(--tcg-text-primary);
+}
+
+ion-button[fill="outline"] {
+  --border-color: var(--tcg-accent);
+  --color: var(--tcg-accent);
+}
+
+ion-button[fill="clear"] {
+  --color: var(--tcg-accent);
+}
+
+/* Disabled button styling */
+ion-button[disabled] {
+  --opacity: 0.6;
+  --background: var(--tcg-background-secondary);
+  --color: var(--tcg-text-secondary);
+  --border-color: var(--tcg-card-border);
+  cursor: not-allowed;
+}
+
+ion-button[disabled]:hover {
+  --opacity: 0.6;
+}
+
+/* List Components */
+ion-list {
+  --background: var(--tcg-background-primary);
+}
+
+ion-item {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+  --border-color: var(--tcg-card-border);
+  --inner-border-width: 0 0 1px 0;
+}
+
+ion-item:hover {
+  --background: var(--tcg-background-secondary);
+}
+
+ion-label {
+  --color: var(--tcg-text-primary);
+}
+
+ion-label h1, ion-label h2, ion-label h3, ion-label h4, ion-label h5, ion-label h6 {
+  color: var(--tcg-text-primary);
+}
+
+ion-label p {
+  color: var(--tcg-text-secondary);
+}
+
+/* Form Controls */
+ion-searchbar {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+  --placeholder-color: var(--tcg-text-secondary);
+  --icon-color: var(--tcg-accent);
+  --clear-button-color: var(--tcg-accent);
+  --border-radius: var(--tcg-border-radius-small);
+}
+
+ion-segment {
+  --background: var(--tcg-background-secondary);
+  border: 1px solid var(--tcg-card-border);
+  border-radius: var(--tcg-border-radius-small);
+  opacity: 0.9;
+}
+
+ion-segment-button {
+  --color: var(--tcg-text-primary);
+  --color-checked: var(--tcg-background-primary);
+  --background: transparent;
+  --background-checked: var(--tcg-accent);
+  --indicator-color: var(--tcg-accent);
+  --border-radius: var(--tcg-border-radius-small);
+  font-weight: var(--tcg-font-weight-medium);
+  opacity: 0.95;
+}
+
+ion-segment-button:hover {
+  --background: var(--tcg-card-background);
+  opacity: 1;
+}
+
+ion-select {
+  --color: var(--tcg-text-primary);
+  --placeholder-color: var(--tcg-text-secondary);
+}
+
+ion-input {
+  --color: var(--tcg-text-primary);
+  --placeholder-color: var(--tcg-text-secondary);
+}
+
+ion-textarea {
+  --color: var(--tcg-text-primary);
+  --placeholder-color: var(--tcg-text-secondary);
+}
+
+/* Badges and Chips */
+ion-badge {
+  --background: var(--tcg-accent);
+  --color: var(--tcg-text-primary);
+  border-radius: var(--tcg-border-radius-small);
+}
+
+ion-chip {
+  --background: var(--tcg-background-secondary);
+  --color: var(--tcg-text-primary);
+  border: 1px solid var(--tcg-card-border);
+}
+
+/* Modal Components */
+ion-modal {
+  --background: var(--tcg-background-primary);
+}
+
+ion-modal ion-header ion-toolbar {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+}
+
+ion-modal ion-content {
+  --background: var(--tcg-background-primary);
+  --color: var(--tcg-text-primary);
+}
+
+/* Tab Bar */
+ion-tab-bar {
+  --background: var(--tcg-card-background);
+  --border: 1px solid var(--tcg-card-border);
+}
+
+ion-tab-button {
+  --color: var(--tcg-text-secondary);
+  --color-selected: var(--tcg-accent);
+}
+
+ion-tab-button.tab-selected {
+  --color: var(--tcg-accent);
+}
+
+/* Toast and Alert */
+ion-toast {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+  --border: 1px solid var(--tcg-card-border);
+}
+
+ion-alert {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+}
+
+/* Loading Spinner */
+ion-spinner {
+  --color: var(--tcg-accent);
+}
+
+/* Progress Bar */
+ion-progress-bar {
+  --background: var(--tcg-background-secondary);
+  --progress-background: var(--tcg-accent);
+}
+
+/* Trophic Role Styling */
+.trophic-producer {
+  --color: var(--tcg-producer);
+  --background: var(--tcg-producer);
+}
+
+.trophic-herbivore {
+  --color: var(--tcg-herbivore);
+  --background: var(--tcg-herbivore);
+}
+
+.trophic-carnivore {
+  --color: var(--tcg-carnivore);
+  --background: var(--tcg-carnivore);
+}
+
+.trophic-omnivore {
+  --color: var(--tcg-omnivore);
+  --background: var(--tcg-omnivore);
+}
+
+.trophic-detritivore {
+  --color: var(--tcg-detritivore);
+  --background: var(--tcg-detritivore);
+}
+
+.trophic-decomposer {
+  --color: var(--tcg-decomposer);
+  --background: var(--tcg-decomposer);
+}
+
+.trophic-scavenger {
+  --color: var(--tcg-scavenger);
+  --background: var(--tcg-scavenger);
+}
+
+/* Conservation Status Styling */
+.conservation-extinct {
+  --color: var(--tcg-extinct);
+  --background: var(--tcg-extinct);
+}
+
+.conservation-critically-endangered {
+  --color: var(--tcg-critically-endangered);
+  --background: var(--tcg-critically-endangered);
+}
+
+.conservation-endangered {
+  --color: var(--tcg-endangered);
+  --background: var(--tcg-endangered);
+}
+
+.conservation-vulnerable {
+  --color: var(--tcg-vulnerable);
+  --background: var(--tcg-vulnerable);
+}
+
+.conservation-near-threatened {
+  --color: var(--tcg-near-threatened);
+  --background: var(--tcg-near-threatened);
+}
+
+.conservation-least-concern {
+  --color: var(--tcg-least-concern);
+  --background: var(--tcg-least-concern);
+}
+
+/* Utility Classes */
+.tcg-text-primary {
+  color: var(--tcg-text-primary);
+}
+
+.tcg-text-secondary {
+  color: var(--tcg-text-secondary);
+}
+
+.tcg-background-primary {
+  background: var(--tcg-background-primary);
+}
+
+.tcg-background-secondary {
+  background: var(--tcg-background-secondary);
+}
+
+.tcg-accent {
+  color: var(--tcg-accent);
+}
+
+.tcg-highlight {
+  background: var(--tcg-highlight);
+}
+
+/* Animation Classes */
+.tcg-fade-in {
+  animation: tcgFadeIn var(--tcg-transition-medium) ease-out;
+}
+
+.tcg-slide-up {
+  animation: tcgSlideUp var(--tcg-transition-medium) ease-out;
+}
+
+.tcg-scale-in {
+  animation: tcgScaleIn var(--tcg-transition-fast) ease-out;
+}
+
+@keyframes tcgFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tcgSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tcgScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  :root {
+    --tcg-font-size-small: 11px;
+    --tcg-font-size-medium: 13px;
+    --tcg-font-size-large: 15px;
+    --tcg-font-size-xlarge: 17px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    --tcg-shadow-small: 0 2px 4px rgba(0, 0, 0, 0.5);
+    --tcg-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.6);
+    --tcg-shadow-large: 0 8px 16px rgba(0, 0, 0, 0.7);
+  }
+  
+  ion-card {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .tcg-fade-in,
+  .tcg-slide-up,
+  .tcg-scale-in {
+    animation: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  :root {
+    --tcg-background-primary: white;
+    --tcg-background-secondary: white;
+    --tcg-card-background: white;
+    --tcg-text-primary: black;
+    --tcg-text-secondary: #666;
+  }
+  
+  ion-card {
+    box-shadow: none;
+    border: 2px solid var(--tcg-card-border);
+  }
+}
+
+/* Accessibility Improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus Management for Modals */
+ion-modal[aria-hidden="true"] * {
+  pointer-events: none;
+}
+
+ion-modal[aria-hidden="false"] {
+  pointer-events: auto;
+}
+
+/* Ensure proper focus visibility */
+*:focus-visible {
+  outline: 2px solid var(--tcg-accent);
+  outline-offset: 2px;
+}

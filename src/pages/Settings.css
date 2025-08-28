@@ -1,0 +1,317 @@
+.settings-content {
+  --background: var(--tcg-background-primary, #f5f5f5);
+}
+
+/* Theme Preview Components */
+.theme-preview {
+  display: flex;
+  height: 30px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 10px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.theme-preview-primary {
+  flex: 2;
+}
+
+.theme-preview-secondary {
+  flex: 1;
+}
+
+.theme-preview-accent {
+  flex: 1;
+}
+
+/* Current Theme Preview */
+.current-theme-preview {
+  padding: 16px;
+  background: var(--tcg-background-secondary, #f0f0f0);
+  border-radius: 12px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.current-theme-preview h4 {
+  margin: 0 0 8px 0;
+  color: var(--tcg-text-primary, #333);
+  font-weight: bold;
+}
+
+.current-theme-preview p {
+  margin: 0 0 12px 0;
+  color: var(--tcg-text-secondary, #666);
+  font-size: 14px;
+}
+
+/* Theme Gallery */
+.theme-card {
+  background: var(--tcg-card-background, #fff);
+  border: 2px solid var(--tcg-card-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.theme-card:hover {
+  border-color: var(--tcg-accent, #007bff);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-card.active {
+  border-color: var(--tcg-accent, #007bff);
+  background: var(--tcg-highlight, rgba(0, 123, 255, 0.1));
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+}
+
+.theme-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.theme-card-header h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--tcg-text-primary, #333);
+}
+
+.theme-card-header ion-icon {
+  font-size: 16px;
+  color: var(--tcg-accent, #007bff);
+}
+
+.theme-card p {
+  margin: 8px 0 0 0;
+  font-size: 11px;
+  color: var(--tcg-text-secondary, #666);
+  line-height: 1.3;
+}
+
+/* Custom Theme Creator */
+.custom-theme-creator {
+  padding: 20px;
+}
+
+.color-customization {
+  margin: 20px 0;
+}
+
+.color-customization h4 {
+  margin: 0 0 16px 0;
+  color: var(--tcg-text-primary, #333);
+  font-weight: bold;
+}
+
+.color-picker {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
+/* Theme Preview Section */
+.theme-preview-section {
+  margin: 20px 0;
+}
+
+.theme-preview-section h4 {
+  margin: 0 0 12px 0;
+  color: var(--tcg-text-primary, #333);
+  font-weight: bold;
+}
+
+.custom-theme-preview {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 16px;
+  background: var(--tcg-background-secondary, #f0f0f0);
+  border-radius: 12px;
+}
+
+.color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+/* Card Headers */
+ion-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tcg-text-primary, #333);
+}
+
+ion-card-title ion-icon {
+  font-size: 20px;
+  color: var(--tcg-accent, #007bff);
+}
+
+/* List Items */
+ion-item {
+  --background: var(--tcg-card-background, #fff);
+  --color: var(--tcg-text-primary, #333);
+  --border-color: var(--tcg-card-border, #e0e0e0);
+}
+
+ion-item h3 {
+  color: var(--tcg-text-primary, #333);
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+ion-item p {
+  color: var(--tcg-text-secondary, #666);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Toggles and Controls */
+ion-toggle {
+  --background: var(--tcg-card-border, #e0e0e0);
+  --background-checked: var(--tcg-accent, #007bff);
+  --handle-background: #fff;
+  --handle-background-checked: #fff;
+}
+
+ion-range {
+  --bar-background: var(--tcg-card-border, #e0e0e0);
+  --bar-background-active: var(--tcg-accent, #007bff);
+  --knob-background: var(--tcg-accent, #007bff);
+  --pin-background: var(--tcg-accent, #007bff);
+  --pin-color: #fff;
+}
+
+ion-select {
+  --color: var(--tcg-text-primary, #333);
+  --placeholder-color: var(--tcg-text-secondary, #666);
+}
+
+ion-input {
+  --color: var(--tcg-text-primary, #333);
+  --placeholder-color: var(--tcg-text-secondary, #666);
+}
+
+/* Buttons */
+ion-button {
+  --color: var(--tcg-accent, #007bff);
+  --border-color: var(--tcg-accent, #007bff);
+}
+
+ion-button[fill="solid"] {
+  --background: var(--tcg-accent, #007bff);
+  --color: #fff;
+}
+
+/* Dark Mode Adjustments */
+.dark .settings-content {
+  --background: var(--tcg-background-primary, #1a1a1a);
+}
+
+.dark .theme-card {
+  background: var(--tcg-card-background, #2a2a2a);
+  border-color: var(--tcg-card-border, #404040);
+}
+
+.dark .current-theme-preview {
+  background: var(--tcg-background-secondary, #2a2a2a);
+}
+
+.dark .custom-theme-preview {
+  background: var(--tcg-background-secondary, #2a2a2a);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .theme-card {
+    margin: 4px;
+    padding: 8px;
+  }
+  
+  .theme-card-header h5 {
+    font-size: 12px;
+  }
+  
+  .theme-card p {
+    font-size: 10px;
+  }
+  
+  .custom-theme-creator {
+    padding: 16px;
+  }
+  
+  .color-picker {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .color-swatch {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+/* Animation Enhancements */
+.theme-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility Improvements */
+.theme-card:focus {
+  outline: 2px solid var(--tcg-accent, #007bff);
+  outline-offset: 2px;
+}
+
+.color-picker:focus {
+  outline: 2px solid var(--tcg-accent, #007bff);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .theme-card {
+    border-width: 3px;
+  }
+  
+  .theme-preview {
+    box-shadow: 0 0 0 2px var(--tcg-text-primary, #333);
+  }
+}

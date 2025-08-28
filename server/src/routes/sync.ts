@@ -1,0 +1,420 @@
+/**
+ * Sync Routes
+ * Handles synchronization between offline and online data
+ */
+
+import { Router, Request, Response } from 'express';
+import { db } from '../database/kysely';
+import { NewTransaction } from '../database/types';
+// import { NewUserCard } from '../database/types'; // Unused for now
+import { authenticateToken } from '../middleware/auth';
+import { body, validationResult } from 'express-validator';
+import CryptoJS from 'crypto-js';
+import crypto from 'crypto';
+
+const router = Router();
+
+/**
+ * Verify HMAC signature for offline action
+ */
+function verifyActionSignature(action: Omit<OfflineAction, 'signature'>, signature: string, signingKey: string): boolean {
+  const payload = JSON.stringify(action);
+  const expectedSignature = crypto.createHmac('sha256', signingKey).update(payload).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSignature, 'hex'));
+}
+
+interface OfflineAction {
+  id: string;
+  action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'starter_pack_opened';
+  species_name?: string;
+  quantity?: number;
+  pack_type?: string;
+  deck_id?: string;
+  deck_data?: any;
+  timestamp: number;
+  signature: string;
+  api_version: string;
+}
+
+interface SyncPayload {
+  device_id: string;
+  offline_actions: OfflineAction[];
+  collection_state: any;
+  client_version: string;
+  last_known_server_state?: string;
+}
+
+/**
+ * POST /api/sync
+ * Synchronize offline actions with server
+ */
+router.post('/',
+  authenticateToken,
+  [
+    body('device_id').isString().notEmpty(),
+    body('offline_actions').isArray(),
+    body('collection_state').isObject(),
+    body('client_version').isString().notEmpty()
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        res.status(404).json({
+          error: 'User not found',
+          message: 'Please complete registration first'
+        });
+        return;
+      }
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({
+          error: 'Validation failed',
+          details: errors.array()
+        });
+        return;
+      }
+
+      const syncPayload: SyncPayload = req.body;
+      const { device_id } = syncPayload;
+      const userId = req.user.id;
+      const conflicts: any[] = [];
+      const discardedActions: string[] = [];
+
+      // Get current server state
+      const currentCollection = await db
+        .selectFrom('user_cards')
+        .selectAll()
+        .where('user_id', '=', req.user.id)
+        .execute();
+
+      const currentCredits = req.user.eco_credits;
+      const currentXP = req.user.xp_points;
+
+      // Process actions chronologically
+      const sortedActions = syncPayload.offline_actions.sort((a, b) => a.timestamp - b.timestamp);
+      
+      let serverCredits = currentCredits;
+      let serverXP = currentXP;
+      const serverCollection = new Map(
+        currentCollection.map(card => [card.species_name, card])
+      );
+
+      // Get signing key for this device
+      const deviceState = await db
+        .selectFrom('device_sync_states')
+        .select(['signing_key', 'key_expires_at'])
+        .where('device_id', '=', device_id)
+        .where('user_id', '=', userId)
+        .executeTakeFirst();
+
+      if (!deviceState) {
+        res.status(400).json({
+          error: 'Device not registered for offline sync',
+          conflicts: [],
+          server_state: { credits: serverCredits }
+        });
+        return;
+      }
+
+      if (new Date() > new Date(deviceState.key_expires_at)) {
+        res.status(400).json({
+          error: 'Signing key expired. Please re-authenticate.',
+          conflicts: [],
+          server_state: { credits: serverCredits }
+        });
+        return;
+      }
+
+      for (const action of sortedActions) {
+        try {
+          // Validate action signature
+          if (!action.signature) {
+            conflicts.push({
+              action_id: action.id,
+              reason: 'missing_signature',
+              server_state: { credits: serverCredits }
+            });
+            discardedActions.push(action.id);
+            continue;
+          }
+
+          // Verify HMAC signature
+          const { signature, ...actionPayload } = action;
+          if (!verifyActionSignature(actionPayload, signature, deviceState.signing_key)) {
+            conflicts.push({
+              action_id: action.id,
+              reason: 'invalid_signature',
+              server_state: { credits: serverCredits }
+            });
+            continue;
+          }
+
+          // Check for duplicate actions
+          const existingAction = await db
+            .selectFrom('sync_actions_log')
+            .select('id')
+            .where('user_id', '=', userId)
+            .where('action_id', '=', action.id)
+            .executeTakeFirst();
+
+          if (existingAction) {
+            conflicts.push({
+              action_id: action.id,
+              reason: 'duplicate_action',
+              server_state: { credits: serverCredits }
+            });
+            continue;
+          }
+
+          // Validate action timestamp (not too old)
+          const actionAge = Date.now() - action.timestamp;
+          if (actionAge > 7 * 24 * 60 * 60 * 1000) { // 7 days
+            conflicts.push({
+              action_id: action.id,
+              reason: 'timestamp_too_old',
+              server_state: { credits: serverCredits }
+            });
+            discardedActions.push(action.id);
+            continue;
+          }
+
+          // Process different action types
+          switch (action.action) {
+            case 'starter_pack_opened':
+              // Validate user doesn't already have starter pack
+              const hasStarterCards = Array.from(serverCollection.values())
+                .some(card => card.acquired_via === 'starter');
+              
+              if (hasStarterCards) {
+                conflicts.push({
+                  action_id: action.id,
+                  reason: 'starter_pack_already_opened',
+                  server_state: { credits: serverCredits }
+                });
+                discardedActions.push(action.id);
+                continue;
+              }
+
+              // Add starter pack species
+              const starterSpecies = ['grass', 'rabbit', 'fox', 'oak-tree', 'butterfly'];
+              for (const species of starterSpecies) {
+                serverCollection.set(species, {
+                  id: `temp_${species}`,
+                  user_id: req.user.id,
+                  species_name: species,
+                  quantity: 1,
+                  acquired_via: 'starter',
+                  first_acquired_at: new Date(action.timestamp),
+                  last_acquired_at: new Date(action.timestamp)
+                });
+              }
+              break;
+
+            case 'pack_opened':
+              const packCosts = { basic: 50, premium: 100, legendary: 200 };
+              const cost = packCosts[action.pack_type as keyof typeof packCosts] || 50;
+
+              if (serverCredits < cost) {
+                conflicts.push({
+                  action_id: action.id,
+                  reason: 'insufficient_credits',
+                  server_state: { credits: serverCredits }
+                });
+                discardedActions.push(action.id);
+                continue;
+              }
+
+              serverCredits -= cost;
+              // Note: In real implementation, pack contents would be determined server-side
+              break;
+
+            case 'card_acquired':
+              if (action.species_name && action.quantity) {
+                const existing = serverCollection.get(action.species_name);
+                if (existing) {
+                  existing.quantity += action.quantity;
+                  existing.last_acquired_at = new Date(action.timestamp);
+                } else {
+                  serverCollection.set(action.species_name, {
+                    id: `temp_${action.species_name}`,
+                    user_id: req.user.id,
+                    species_name: action.species_name,
+                    quantity: action.quantity,
+                    acquired_via: 'pack',
+                    first_acquired_at: new Date(action.timestamp),
+                    last_acquired_at: new Date(action.timestamp)
+                  });
+                }
+              }
+              break;
+
+            default:
+              console.warn(`Unknown action type: ${action.action}`);
+          }
+
+        } catch (error) {
+          console.error(`Error processing action ${action.id}:`, error);
+          conflicts.push({
+            action_id: action.id,
+            reason: 'processing_error',
+            server_state: { credits: serverCredits }
+          });
+          discardedActions.push(action.id);
+        }
+      }
+
+      // Update database with final state
+      await db.transaction().execute(async (trx) => {
+        // Clear existing user cards
+        await trx
+          .deleteFrom('user_cards')
+          .where('user_id', '=', req.user!.id)
+          .execute();
+
+        // Insert updated collection
+        if (serverCollection.size > 0) {
+          const cardsToInsert = Array.from(serverCollection.values()).map(card => ({
+            user_id: req.user!.id,
+            species_name: card.species_name,
+            quantity: card.quantity,
+            acquired_via: card.acquired_via,
+            first_acquired_at: card.first_acquired_at,
+            last_acquired_at: card.last_acquired_at
+          }));
+
+          await trx
+            .insertInto('user_cards')
+            .values(cardsToInsert)
+            .execute();
+        }
+
+        // Update user credits and XP
+        await trx
+          .updateTable('users')
+          .set({
+            eco_credits: serverCredits,
+            xp_points: serverXP,
+            updated_at: new Date()
+          })
+          .where('id', '=', req.user!.id)
+          .execute();
+
+        // Record sync transaction
+        const syncTransaction: NewTransaction = {
+          user_id: req.user!.id,
+          type: 'reward',
+          description: `Sync completed - ${sortedActions.length - discardedActions.length} actions processed`,
+          eco_credits_change: 0
+        };
+
+        await trx
+          .insertInto('transactions')
+          .values(syncTransaction)
+          .execute();
+
+        // Log all processed actions
+        const actionLogs = sortedActions.map(action => ({
+          user_id: req.user!.id,
+          device_id: device_id,
+          action_id: action.id,
+          action_type: action.action,
+          status: discardedActions.includes(action.id) ? 'rejected' as const : 'success' as const,
+          conflict_reason: conflicts.find(c => c.action_id === action.id)?.reason || null
+        }));
+
+        if (actionLogs.length > 0) {
+          await trx
+            .insertInto('sync_actions_log')
+            .values(actionLogs)
+            .execute();
+        }
+      });
+
+      // Generate new signing key for security
+      const newSigningKey = {
+        key: CryptoJS.lib.WordArray.random(32).toString(),
+        version: Date.now(),
+        expires_at: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
+      };
+
+      // Prepare response
+      const response = {
+        success: true,
+        conflicts: conflicts.length > 0 ? conflicts : undefined,
+        discarded_actions: discardedActions.length > 0 ? discardedActions : undefined,
+        new_server_state: {
+          species_owned: Object.fromEntries(
+            Array.from(serverCollection.entries()).map(([species, card]) => [
+              species,
+              {
+                quantity: card.quantity,
+                acquired_via: card.acquired_via,
+                first_acquired: card.first_acquired_at.getTime(),
+                last_acquired: card.last_acquired_at.getTime()
+              }
+            ])
+          ),
+          eco_credits: serverCredits,
+          xp_points: serverXP
+        },
+        new_signing_key: newSigningKey
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('❌ Sync error:', error);
+      res.status(500).json({
+        error: 'Sync failed',
+        message: 'Unable to synchronize data'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/sync/status
+ * Get sync status and pending actions count
+ */
+router.get('/status', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(404).json({
+        error: 'User not found',
+        message: 'Please complete registration first'
+      });
+      return;
+    }
+
+    // Get user's current state
+    const collection = await db
+      .selectFrom('user_cards')
+      .select([
+        db.fn.count('species_name').as('species_count'),
+        db.fn.sum('quantity').as('total_cards')
+      ])
+      .where('user_id', '=', req.user.id)
+      .executeTakeFirst();
+
+    res.json({
+      success: true,
+      server_state: {
+        species_count: Number(collection?.species_count || 0),
+        total_cards: Number(collection?.total_cards || 0),
+        eco_credits: req.user.eco_credits,
+        xp_points: req.user.xp_points,
+        last_updated: req.user.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Sync status error:', error);
+    res.status(500).json({
+      error: 'Failed to get sync status',
+      message: 'Unable to retrieve sync status'
+    });
+  }
+});
+
+export default router;

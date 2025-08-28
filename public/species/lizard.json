@@ -1,0 +1,227 @@
+{
+  "archetypeName": "lizard",
+  "identity": {
+    "speciesName": "lizard",
+    "commonName": "Desert Lizard",
+    "scientificName": "Lacerta deserti",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Reptilia",
+      "order": "Squamata",
+      "family": "Lacertidae",
+      "genus": "Lacerta",
+      "species": "deserti"
+    }
+  },
+  "rendering": {
+    "modelFile": "carnivore.glb",
+    "scale": 0.6
+  },
+  "body": {
+    "mass_kg": 0.3,
+    "waterRatio": 0.65,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.012,
+    "otherMineralsRatio": 0.158
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1095,
+    "lifeStages": [
+      {
+        "name": "Hatchling",
+        "endAge_days": 60,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "speed_modifier": 0.5,
+          "acquisition_modifier": 0.4,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 240,
+        "modifiers": {
+          "mass_multiplier": 0.6,
+          "speed_modifier": 0.9,
+          "acquisition_modifier": 0.8,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 1095,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 80,
+      "offspringCount": 6,
+      "gestation_Days": 45,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 10.0,
+    "proteinTurnoverRate": 0.14,
+    "metabolic_Rate_kJ_per_hr": 0.4,
+    "energy_Reserves_Max_kJ": 300,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+
+  "waterStorage": {
+    "membraneIntegrity": 0.90,
+    "osmoticPressure": 0.5,
+    "barrier": {
+      "barrierType": "skin",
+      "permeability_L_per_hr_per_m2": 0.001,
+      "surfaceArea_m2": 0.05,
+      "temperatureModifier": 2.0
+    },
+    "reclamation": {
+      "systemType": "kidney",
+      "reclamationRate_L_per_hr": 0.002,
+      "concentrationAbility": 8.0,
+      "energyCost_kJ_per_L": 1.5
+    },
+    "metabolicWater": {
+      "fatMetabolismRate_L_per_kg": 1.07,
+      "proteinMetabolismRate_L_per_kg": 0.41,
+      "carbohydrateMetabolismRate_L_per_kg": 0.6
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.5,
+    "bRequiresSleep": true,
+    "sleepHrsNeeded": 12.0,
+    "circadianStrength": 0.4,
+    "sleepUrgeThreshold": 90.0,
+    "wakefulnessThreshold": 30.0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 1500,
+    "run_Speed_m_per_hr": 3000,
+    "swim_Speed_m_per_hr": 200,
+    "fastSwim_Speed_m_per_hr": 300,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 400,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 15.0,
+    "smell_range_m": 8.0,
+    "taste_range_m": 0.2,
+    "hearing_range_m": 12.0,
+    "touch_range_m": 0.1,
+    "heat_range_m": 3.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Predation",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 50.0,
+          "attackSuccessRate_pct": 0.4,
+          "handlingTime_minutes": 5.0,
+          "maxPreySize_kg": 0.02,
+          "energyContent_kJ_per_kg": 21000,
+          "digestion_carbon_efficiency": 0.88,
+          "digestion_nitrogen_efficiency": 0.92,
+          "digestion_phosphorus_efficiency": 0.95
+        }
+      }
+    ]
+  },
+  "digestion": {
+    "digestionProfile": {
+      "carbon_Efficiency_pct": 0.75,
+      "nitrogen_Efficiency_pct": 0.8,
+      "phosphorus_Efficiency_pct": 0.85,
+      "potassium_Efficiency_pct": 0.7,
+      "otherMinerals_Efficiency_pct": 0.6
+    }
+  },
+
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 50,
+    "temperatureOptimalMin_C": 25,
+    "temperatureOptimalMax_C": 35,
+    "moistureOptimal_pct": 25,
+    "moistureTolerance_pct": 40,
+    "moistureLethal_pct": 5,
+    "lightOptimal_PAR": 600,
+    "lightSaturation_PAR": 1000,
+    "lightCompensation_PAR": 100,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.5
+  },
+
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartFleeing",
+      "StartHunting",
+      "StartSeekingWater",
+      "StartForaging",
+      "StartResting",
+      "StartMating",
+      "StartSocializing"
+    ],
+    "macroStateTriggers": {
+      "StartHunting": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "condition_tag", "tag": "IsStarving", "required": true}
+      ],
+      "StartFleeing": [
+        {"type": "condition_tag", "tag": "IsThreatened", "required": true},
+        {"type": "fear_motivation", "operator": ">", "threshold": 0.5}
+      ],
+      "StartSeekingWater": [
+        {"type": "condition_tag", "tag": "IsThirsty", "required": true},
+        {"type": "hydration", "operator": "<", "threshold": 30}
+      ],
+      "StartResting": [
+        {"type": "condition_tag", "tag": "IsHeatStressed", "required": true},
+        {"type": "energy", "operator": "<", "threshold": 30}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 75},
+        {"type": "health", "operator": ">", "threshold": 85}
+      ],
+      "StartSocializing": [
+        {"type": "energy", "operator": ">", "threshold": 85},
+        {"type": "health", "operator": ">", "threshold": 95},
+        {"type": "condition_tag", "tag": "IsStarving", "required": false},
+        {"type": "condition_tag", "tag": "IsThreatened", "required": false},
+        {"type": "condition_tag", "tag": "IsHeatStressed", "required": false}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 90,
+    "momentum": 0.7,
+    "changeThreshold": 0.4
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 2.1,
+      "agreeableness": 1.8,
+      "conscientiousness": null,
+      "neuroticism": 5.9,
+      "openness": 3.7,
+      "dominance": 4.8,
+      "activity": 5.4
+    },
+    "reliability": 0.62
+  }
+}

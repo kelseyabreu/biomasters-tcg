@@ -21,8 +21,12 @@ import {
   IonBadge,
   IonToast
 } from '@ionic/react';
-import { add, remove, save, trash } from 'ionicons/icons';
+import { add, remove, save, trash, options } from 'ionicons/icons';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import CollectionCard, { DeckControlsConfig, CardPropertyFilter } from './CollectionCard';
+import PropertyFilterModal from './PropertyFilterModal';
+import OrganismRenderer from '../OrganismRenderer';
+import './DeckBuilder.css';
 
 interface DeckCard {
   speciesName: string;
@@ -48,6 +52,17 @@ const DeckBuilder: React.FC = () => {
   
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Property filter state
+  const [propertyFilter, setPropertyFilter] = useState<CardPropertyFilter>({
+    habitat: true,
+    role: true,
+    conservationStatus: true,
+    acquisitionType: true
+  });
+  const [showPropertyModal, setShowPropertyModal] = useState(false);
+
+
 
   // Get owned species from collection
   const ownedSpecies = offlineCollection ? Object.keys(offlineCollection.species_owned) : [];
@@ -97,12 +112,23 @@ const DeckBuilder: React.FC = () => {
 
   // Calculate deck stats
   const totalCards = currentDeck.cards.reduce((sum, card) => sum + card.quantity, 0);
-  const isValidDeck = totalCards >= 8 && totalCards <= 12 && currentDeck.name.trim() !== '';
+  const hasValidCardCount = totalCards >= 8 && totalCards <= 12;
+  const hasValidName = currentDeck.name.trim() !== '';
+  const isValidDeck = hasValidCardCount && hasValidName;
 
   // Save deck (simplified - would integrate with hybrid store)
   const saveDeck = () => {
     if (!isValidDeck) {
-      setToastMessage('Deck must have 8-12 cards and a name');
+      let message = 'Deck needs: ';
+      const missing = [];
+      if (!hasValidCardCount) {
+        missing.push(`8-12 cards (currently ${totalCards})`);
+      }
+      if (!hasValidName) {
+        missing.push('a name');
+      }
+      message += missing.join(' and ');
+      setToastMessage(message);
       setShowToast(true);
       return;
     }
@@ -142,18 +168,27 @@ const DeckBuilder: React.FC = () => {
             />
             
             <div style={{ marginTop: '10px' }}>
-              <IonBadge color={isValidDeck ? 'success' : 'warning'}>
-                {totalCards} cards
+              <IonBadge color={hasValidCardCount ? 'success' : 'warning'}>
+                {totalCards < 8 ? `${totalCards}/8` : `${totalCards}/${totalCards}`} (Max 12)
               </IonBadge>
-              <span style={{ marginLeft: '10px' }}>
-                {isValidDeck ? '✅ Valid' : '❌ Need 8-12 cards'}
-              </span>
+              {!hasValidName && (
+                <IonBadge color="warning" style={{ marginLeft: '8px' }}>
+                  Name required
+                </IonBadge>
+              )}
+              {isValidDeck && (
+                <IonBadge color="success" style={{ marginLeft: '8px' }}>
+                  Ready to save!
+                </IonBadge>
+              )}
             </div>
 
             <IonButton
               expand="block"
               onClick={saveDeck}
               disabled={!isValidDeck}
+              color="primary"
+              fill="solid"
               style={{ marginTop: '10px' }}
             >
               <IonIcon icon={save} slot="start" />
@@ -170,12 +205,24 @@ const DeckBuilder: React.FC = () => {
             </IonCardHeader>
             <IonCardContent>
               <IonList>
-                {currentDeck.cards.map((card) => (
-                  <IonItem key={card.speciesName}>
-                    <IonLabel>
-                      <h3>{card.speciesName}</h3>
-                      <p>Quantity: {card.quantity}</p>
-                    </IonLabel>
+                {currentDeck.cards.map((card) => {
+                  const species = allSpeciesCards.find(s => s.speciesName === card.speciesName);
+                  return (
+                    <IonItem key={card.speciesName}>
+                      <div slot="start" style={{ width: '32px', height: '32px', marginRight: '8px' }}>
+                        {species && (
+                          <OrganismRenderer
+                            card={species}
+                            size={32}
+                            showControls={false}
+                            className="deck-card-organism"
+                          />
+                        )}
+                      </div>
+                      <IonLabel>
+                        <h3>{card.speciesName}</h3>
+                        <p>Quantity: {card.quantity}</p>
+                      </IonLabel>
                     <IonButton
                       fill="clear"
                       onClick={() => addCardToDeck(card.speciesName)}
@@ -190,7 +237,8 @@ const DeckBuilder: React.FC = () => {
                       <IonIcon icon={remove} />
                     </IonButton>
                   </IonItem>
-                ))}
+                  );
+                })}
               </IonList>
             </IonCardContent>
           </IonCard>
@@ -199,9 +247,19 @@ const DeckBuilder: React.FC = () => {
         {/* Available Species */}
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Your Collection</IonCardTitle>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <IonCardTitle>Your Collection</IonCardTitle>
+              <IonButton
+                fill="outline"
+                size="small"
+                onClick={() => setShowPropertyModal(true)}
+              >
+                <IonIcon icon={options} slot="start" />
+                Properties
+              </IonButton>
+            </div>
           </IonCardHeader>
-          <IonCardContent>
+          <IonCardContent className="plr-0">
             {ownedSpecies.length === 0 ? (
               <p>No species in collection. Open some packs first!</p>
             ) : (
@@ -209,25 +267,35 @@ const DeckBuilder: React.FC = () => {
                 <IonRow>
                   {ownedSpecies.map((speciesName) => {
                     const inDeck = currentDeck.cards.find(card => card.speciesName === speciesName);
-                    const quantity = offlineCollection?.species_owned[speciesName]?.quantity || 0;
-                    
+                    const collectionData = offlineCollection?.species_owned[speciesName];
+                    const quantity = collectionData?.quantity || 0;
+                    const acquiredVia = collectionData?.acquired_via || 'pack';
+                    const species = allSpeciesCards.find(card => card.speciesName === speciesName);
+
+                    if (!species) return null;
+
                     return (
                       <IonCol size="6" sizeMd="4" key={speciesName}>
-                        <IonCard>
-                          <IonCardContent>
-                            <h4>{speciesName}</h4>
-                            <p>Owned: {quantity}</p>
-                            <p>In Deck: {inDeck?.quantity || 0}</p>
-                            <IonButton
-                              size="small"
-                              expand="block"
-                              onClick={() => addCardToDeck(speciesName)}
-                              disabled={!inDeck && totalCards >= 12}
-                            >
-                              Add to Deck
-                            </IonButton>
-                          </IonCardContent>
-                        </IonCard>
+                        <div className="deck-builder-card">
+                          <CollectionCard
+                            species={species}
+                            isOwned={true}
+                            quantity={quantity}
+                            acquiredVia={acquiredVia}
+                            onClick={() => {}} // No click action needed for deck builder
+                            showBasicInfo={true}
+                            propertyFilter={propertyFilter}
+                            deckControls={{
+                              enabled: true,
+                              currentQuantity: inDeck?.quantity || 0,
+                              maxQuantity: 3,
+                              maxTotalCards: 12,
+                              currentTotalCards: totalCards,
+                              onAdd: addCardToDeck,
+                              onRemove: removeCardFromDeck
+                            }}
+                          />
+                        </div>
                       </IonCol>
                     );
                   })}
@@ -243,6 +311,14 @@ const DeckBuilder: React.FC = () => {
           message={toastMessage}
           duration={3000}
           position="bottom"
+        />
+
+        {/* Property Filter Modal */}
+        <PropertyFilterModal
+          isOpen={showPropertyModal}
+          onClose={() => setShowPropertyModal(false)}
+          propertyFilter={propertyFilter}
+          onPropertyFilterChange={setPropertyFilter}
         />
       </IonContent>
     </IonPage>

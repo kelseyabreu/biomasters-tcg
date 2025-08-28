@@ -6,8 +6,8 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authRateLimiter } from '../middleware/rateLimiter';
-import { requireGuestAuth } from '../middleware/guestAuth';
-import { authenticateToken } from '../middleware/auth'; // For Firebase auth in conversion
+import { requireAuth } from '../middleware/auth';
+import { verifyIdToken } from '../config/firebase';
 import { db } from '../database/kysely';
 import { 
   generateGuestCredentials, 
@@ -241,14 +241,38 @@ router.post('/login', authRateLimiter, asyncHandler(async (req, res) => {
  * POST /api/guest/convert
  * Convert guest account to registered Firebase account
  */
-router.post('/convert', requireGuestAuth, authenticateToken, asyncHandler(async (req, res) => {
+router.post('/convert', requireAuth, asyncHandler(async (req, res) => {
   const guestUser = req.user!;
-  const firebaseUser = req.firebaseUser!;
+  const { firebaseToken } = req.body;
 
-  if (!guestUser.is_guest) {
+  // Verify this is a guest account
+  if (!guestUser.is_guest || !req.isGuestAuth) {
     return res.status(400).json({
       error: 'NOT_GUEST',
       message: 'Account is not a guest account'
+    });
+  }
+
+  // Verify Firebase token from request body
+  if (!firebaseToken) {
+    return res.status(400).json({
+      error: 'FIREBASE_TOKEN_REQUIRED',
+      message: 'Firebase token is required for account conversion'
+    });
+  }
+
+  let firebaseUser;
+  try {
+    const decodedToken = await verifyIdToken(firebaseToken);
+    firebaseUser = {
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+      email_verified: decodedToken.email_verified
+    };
+  } catch (error) {
+    return res.status(400).json({
+      error: 'INVALID_FIREBASE_TOKEN',
+      message: 'Invalid Firebase token'
     });
   }
 
@@ -300,7 +324,7 @@ router.post('/convert', requireGuestAuth, authenticateToken, asyncHandler(async 
  * GET /api/guest/status
  * Get guest account status
  */
-router.get('/status', requireGuestAuth, asyncHandler(async (req, res) => {
+router.get('/status', requireAuth, asyncHandler(async (req, res) => {
   const user = req.user!;
   const guestUser = req.guestUser!;
 

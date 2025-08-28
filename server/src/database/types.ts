@@ -51,6 +51,23 @@ export interface UsersTable {
   updated_at: Generated<Date>;
 }
 
+// User decks table
+export interface UserDecksTable {
+  id: Generated<string>;
+  user_id: string;
+  name: string;
+  description: string | null;
+  cards: string; // JSON string
+  is_valid: boolean;
+  is_favorite: boolean;
+  format: string;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  total_cards: number;
+  win_rate: number;
+  games_played: number;
+}
+
 // Offline action queue for guest sync
 export interface OfflineActionQueueTable {
   id: Generated<string>;
@@ -141,6 +158,7 @@ export interface SyncActionsLogTable {
 export interface Database {
   users: UsersTable;
   user_cards: UserCardsTable;
+  user_decks: UserDecksTable;
   decks: DecksTable;
   deck_cards: DeckCardsTable;
   redemption_codes: RedemptionCodesTable;
@@ -161,6 +179,10 @@ export type UserUpdate = Updateable<UsersTable>;
 export type UserCard = Selectable<UserCardsTable>;
 export type NewUserCard = Insertable<UserCardsTable>;
 export type UserCardUpdate = Updateable<UserCardsTable>;
+
+export type UserDeck = Selectable<UserDecksTable>;
+export type NewUserDeck = Insertable<UserDecksTable>;
+export type UserDeckUpdate = Updateable<UserDecksTable>;
 
 export type OfflineAction = Selectable<OfflineActionQueueTable>;
 export type NewOfflineAction = Insertable<OfflineActionQueueTable>;

@@ -681,22 +681,35 @@ function createFallbackCards(): Card[] {
     type: species.type,
     rarity: 'Common',
     cost: Math.floor(Math.random() * 5) + 1,
+    energyCost: Math.floor(Math.random() * 5) + 1,
     attack: Math.floor(Math.random() * 10) + 1,
     health: Math.floor(Math.random() * 10) + 5,
-    abilities: ['Basic'],
+    power: Math.floor(Math.random() * 10) + 1,
+    maxHealth: Math.floor(Math.random() * 10) + 5,
+    speed: Math.floor(Math.random() * 5) + 1,
+    senses: Math.floor(Math.random() * 5) + 1,
+    abilities: [{
+      id: 'basic-ability',
+      name: 'Basic',
+      description: 'A basic ability for demonstration.',
+      trigger: 'onPlay' as any,
+      effect: { type: 'none' } as any
+    }],
     description: `A ${species.type.toLowerCase()} species for demonstration.`,
     flavorText: `${species.common} - essential for ecosystem balance.`,
-    habitat: 'Various',
+    habitat: 'Forest' as Habitat,
     diet: species.type.includes('Producer') ? 'Photosynthesis' : 'Omnivore',
     imageUrl: `/images/species/${species.name}.jpg`,
+    artwork: `/images/species/${species.name}.jpg`,
     realData: {
       mass_kg: Math.random() * 100,
       lifespan_days: Math.floor(Math.random() * 3650),
       metabolic_rate: Math.random() * 1000
     },
-    trophicRole: species.type,
+    trophicRole: species.type as TrophicRole,
     ecosystemRole: 'Balanced',
-    conservationStatus: 'Stable'
+    conservationStatus: ConservationStatus.LEAST_CONCERN,
+    currentHealth: Math.floor(Math.random() * 10) + 5
   }));
 }
 

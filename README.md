@@ -15,6 +15,49 @@ Biomasters TCG combines the strategic depth of traditional trading card games wi
 - **Offline Play**: Full PWA capabilities with service worker for offline gameplay
 - **Mobile Ready**: Native iOS and Android deployment via Capacitor
 
+## 🔐 Authentication & Data Management
+
+### Guest Mode
+- **Instant Play**: Start playing immediately without account creation
+- **Local Storage**: Progress saved securely on device using cryptographic signatures
+- **Full Features**: Access to all game mechanics including pack opening, collection, and battles
+
+
+### Account Mode
+- **Cloud Sync**: Progress synchronized across all devices
+- **Backup Protection**: Collection and progress backed up to cloud
+- **Cross-Platform**: Seamless experience between web and mobile
+- **Social Features**: Access to leaderboards and community features
+
+### Data Architecture
+- **Offline-First**: All game logic works without internet connection
+- **Hybrid Sync**: Authenticated users get automatic cloud synchronization
+- **Conflict Resolution**: Smart handling of offline changes when reconnecting
+- **Security**: All offline data cryptographically signed to prevent tampering
+
+## 🌍 IUCN Red List Integration
+
+### Educational Accuracy
+- **Real Conservation Data**: Card rarity based on actual IUCN Red List percentages
+- **Scientific Accuracy**: Species information sourced from official conservation databases
+- **Updated Statistics**: Conservation percentages reflect current (October 2024) IUCN data
+- **Excluded Categories**: "Not Evaluated" species excluded as they typically receive evaluation
+
+### Conservation Status Distribution
+- **Extinct (0.54%)**: Ultra-rare cards representing species with no known individuals
+- **Extinct in Wild (0.054%)**: Legendary cards for species surviving only in captivity
+- **Critically Endangered (5.95%)**: Epic cards for species at extreme risk
+- **Endangered (10.92%)**: Rare cards for species at very high risk
+- **Vulnerable (13.19%)**: Uncommon cards for species at high risk
+- **Near Threatened (5.73%)**: Uncommon cards for species close to threatened status
+- **Least Concern (50.51%)**: Common cards for widespread and abundant species
+- **Data Deficient (12.97%)**: Uncommon cards for species with inadequate information
+
+### Educational Impact
+- **Conservation Awareness**: Players learn real conservation statistics through gameplay
+- **Rarity Connection**: Game mechanics reinforce real-world conservation priorities
+- **Species Education**: Detailed information about habitats, threats, and conservation efforts
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -229,6 +272,34 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Ionic team for the excellent mobile framework
 - Framer Motion for smooth animations
 - All contributors to the open-source ecosystem
+
+## 🏗️ System Architecture
+
+### **Frontend + Backend Integration**
+- **Frontend**: React + Ionic PWA with offline capabilities
+- **Backend**: Express.js API server with Firebase authentication
+- **Database**: PostgreSQL with type-safe Kysely query builder
+- **Caching**: Redis for session management and performance
+- **Authentication**: Firebase Auth with guest user support
+
+### **Key Technical Concepts**
+
+#### **Authentication Flow**
+- **Guest Users**: Can play offline, limited online features
+- **Registered Users**: Full account features, cross-device sync
+- **Admin Users**: Management panel access via Firebase custom claims
+
+#### **Data Management**
+- **Offline-First**: Game works without internet connection
+- **Sync Strategy**: Automatic sync when connection available
+- **Type Safety**: Full TypeScript coverage with Kysely database types
+- **Caching**: Smart caching for performance optimization
+
+#### **Game Architecture**
+- **Species Data**: JSON-based lazy loading for card information
+- **Game Logic**: Modular combat system with biological accuracy
+- **State Management**: Zustand for predictable state updates
+- **Real-time**: WebSocket support for multiplayer features
 
 ## 🐛 Known Issues
 

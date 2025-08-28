@@ -174,7 +174,8 @@ export enum ConservationStatus {
   CRITICALLY_ENDANGERED = 'Critically Endangered',
   EXTINCT_IN_WILD = 'Extinct in Wild',
   EXTINCT = 'Extinct',
-  DATA_DEFICIENT = 'Data Deficient'
+  DATA_DEFICIENT = 'Data Deficient',
+  NOT_EVALUATED = 'Not Evaluated'
 }
 
 // IUCN Red List rarity system for booster packs
@@ -187,7 +188,7 @@ export interface ConservationRarity {
   glowEffect: string;
 }
 
-export const CONSERVATION_RARITY_DATA: Record<ConservationStatus, ConservationRarity> = {
+export const CONSERVATION_RARITY_DATA: Record<Exclude<ConservationStatus, ConservationStatus.NOT_EVALUATED>, ConservationRarity> = {
   [ConservationStatus.EXTINCT]: {
     status: ConservationStatus.EXTINCT,
     percentage: 0.54,

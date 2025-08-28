@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { requireAuth, requireRegisteredUser } from '../middleware/auth';
 import { packOpeningRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
@@ -10,7 +10,7 @@ const router = Router();
  * GET /api/cards/collection
  * Get user's card collection
  */
-router.get('/collection', authenticateToken, asyncHandler(async (req, res) => {
+router.get('/collection', requireAuth, asyncHandler(async (req, res) => {
   if (!req.user) {
     return res.status(404).json({
       error: 'User not found',
@@ -74,7 +74,7 @@ router.get('/collection', authenticateToken, asyncHandler(async (req, res) => {
  * POST /api/cards/open-pack
  * Open a booster pack
  */
-router.post('/open-pack', authenticateToken, packOpeningRateLimiter, asyncHandler(async (req, res) => {
+router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(async (req, res) => {
   if (!req.user) {
     return res.status(404).json({
       error: 'User not found',
@@ -188,7 +188,7 @@ router.post('/open-pack', authenticateToken, packOpeningRateLimiter, asyncHandle
  * POST /api/cards/redeem-physical
  * Redeem a physical card
  */
-router.post('/redeem-physical', authenticateToken, asyncHandler(async (req, res) => {
+router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, res) => {
   if (!req.user) {
     return res.status(404).json({
       error: 'User not found',
@@ -296,7 +296,7 @@ router.post('/redeem-physical', authenticateToken, asyncHandler(async (req, res)
  * GET /api/cards/daily-pack
  * Get daily free pack (simplified version)
  */
-router.get('/daily-pack', authenticateToken, asyncHandler(async (req, res) => {
+router.get('/daily-pack', requireAuth, asyncHandler(async (req, res) => {
   if (!req.user) {
     return res.status(404).json({
       error: 'User not found',

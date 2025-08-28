@@ -10,6 +10,7 @@
   --tcg-background-primary: #F0FFF0;
   --tcg-background-secondary: #E6FFE6;
   --tcg-accent: #2D5016;
+  --tcg-accent-dark: #1A3009;
   --tcg-highlight: #ADFF2F;
 
   /* Trophic Role Colors */
@@ -28,6 +29,11 @@
   --tcg-vulnerable: #FFD700;
   --tcg-near-threatened: #ADFF2F;
   --tcg-least-concern: #32CD32;
+
+  /* Status Colors */
+  --tcg-error: #DC143C;
+  --tcg-success: #228B22;
+  --tcg-warning: #DAA520;
 
   /* UI Component Variables */
   --tcg-border-radius: 12px;
@@ -66,7 +72,13 @@
   --tcg-background-primary: #0F0F0F;
   --tcg-background-secondary: #1A1A1A;
   --tcg-accent: #90EE90;
+  --tcg-accent-dark: #5FBF5F;
   --tcg-highlight: #32CD32;
+
+  /* Dark mode status colors */
+  --tcg-error: #FF6B6B;
+  --tcg-success: #51CF66;
+  --tcg-warning: #FFD43B;
 
   /* Adjust shadows for dark mode */
   --tcg-shadow-small: 0 2px 4px rgba(0, 0, 0, 0.3);

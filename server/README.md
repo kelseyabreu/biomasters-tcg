@@ -144,11 +144,37 @@ Required environment variables (see `.env.example`):
 - `JWT_SECRET` - JWT signing secret
 - `CORS_ORIGIN` - Allowed CORS origins
 
+## 🏗️ System Architecture Deep Dive
+
+### **Authentication & Authorization**
+- **Three-Tier Access**: Guest users, registered users, and admin users
+- **Firebase Integration**: ID token verification with custom claims for admin access
+- **Cache Strategy**: User data cached by `firebase_uid`, safe guest user handling
+- **Middleware Stack**: `requireAuth` → `requireRegisteredUser` → `requireAdmin` progression
+
+### **Database Design Philosophy**
+- **Type-Safe Queries**: All database operations use Kysely with generated TypeScript types
+- **Transaction Safety**: Complex operations wrapped in database transactions
+- **Performance First**: Query optimization through Kysely's query builder
+- **Schema Evolution**: Migrations handle database schema changes safely
+
+### **API Design Patterns**
+- **RESTful Endpoints**: Standard HTTP methods with consistent response formats
+- **Error Handling**: Structured error responses with proper HTTP status codes
+- **Rate Limiting**: Tiered rate limits based on endpoint sensitivity
+- **Input Validation**: Request validation and sanitization at middleware level
+
+### **Caching & Performance**
+- **Redis Integration**: Session caching and rate limiting when available
+- **Fallback Strategy**: Memory-based alternatives when Redis unavailable
+- **Connection Pooling**: Efficient database connection management
+- **Query Optimization**: Kysely provides automatic query optimization
+
 ## 🛡️ Security Features
 
 - **Rate Limiting**: Different limits for different endpoints
-- **Authentication**: Firebase ID token verification
-- **Authorization**: Role-based access control
+- **Authentication**: Firebase ID token verification with guest support
+- **Authorization**: Role-based access control with Firebase custom claims
 - **Input Validation**: Request validation and sanitization
 - **CORS**: Configurable cross-origin resource sharing
 - **Helmet**: Security headers
@@ -202,6 +228,38 @@ CMD ["npm", "start"]
 3. **Database**: PostgreSQL stores all persistent game data
 4. **Real-time**: WebSocket connections for live game features
 
+## 📚 Technical Implementation Guide
+
+### **Understanding the Database Layer**
+- **Kysely Query Builder**: Type-safe SQL query construction with TypeScript integration
+- **Schema Management**: Database migrations handle schema evolution
+- **Type Generation**: Database types auto-generated from schema for compile-time safety
+- **Transaction Patterns**: Complex operations wrapped in database transactions for consistency
+
+### **Authentication Architecture**
+- **Firebase Integration**: Leverages Firebase Auth for user management and token verification
+- **Guest User Support**: Anonymous users can access game features without registration
+- **Role-Based Access**: Three-tier system (guest → user → admin) with Firebase custom claims
+- **Session Management**: Redis-based caching with Firebase UID as cache keys
+
+### **API Design Philosophy**
+- **Resource-Based URLs**: RESTful endpoint design following standard conventions
+- **Middleware Pipeline**: Request → Auth → Validation → Rate Limiting → Handler → Response
+- **Error Consistency**: Structured error responses with proper HTTP status codes
+- **Input Sanitization**: All user input validated and sanitized at middleware level
+
+### **Performance & Scalability**
+- **Caching Strategy**: Multi-layer caching (Redis for sessions, application-level for static data)
+- **Database Optimization**: Kysely query optimization with proper indexing strategies
+- **Rate Limiting**: Tiered limits based on endpoint sensitivity and user type
+- **Connection Management**: Efficient database connection pooling and lifecycle management
+
+### **Development Best Practices**
+- **Type Safety First**: All database operations use generated TypeScript types
+- **Error Handling**: Comprehensive error catching with graceful degradation
+- **Environment Flexibility**: Graceful fallbacks when optional services (Redis) unavailable
+- **Security by Design**: Input validation, rate limiting, and proper authentication at every layer
+
 ## 🧪 Testing
 
 ```bash
@@ -212,14 +270,64 @@ npm test
 npm test -- --grep "auth"
 npm test -- --grep "cards"
 npm test -- --grep "game"
+
+# Test build compilation
+npm run build
 ```
 
 ## 📈 Performance
 
 - **Caching Strategy**: Redis for user sessions and frequently accessed data
-- **Database Optimization**: Proper indexing and query optimization
+- **Database Optimization**: Kysely query optimization with proper indexing
 - **Rate Limiting**: Prevents abuse and ensures fair usage
-- **Connection Pooling**: Efficient database connection management
+- **Connection Pooling**: Efficient database connection management via Kysely
+
+## 🔧 Troubleshooting
+
+### **Common Issues**
+
+#### **Port Already in Use (EADDRINUSE)**
+```bash
+# Kill process using port 3001
+npx kill-port 3001
+# Or find and kill manually
+lsof -ti:3001 | xargs kill -9
+```
+
+#### **TypeScript Compilation Errors**
+```bash
+# Clean build and reinstall
+rm -rf node_modules dist
+npm install
+npm run build
+```
+
+#### **Database Connection Issues**
+```bash
+# Check PostgreSQL connection
+npm run db:test-connection
+# Reset database if needed
+npm run db:reset
+```
+
+#### **Firebase Authentication Errors**
+- Verify `FIREBASE_PROJECT_ID` matches your Firebase project
+- Ensure service account JSON has proper permissions
+- Check Firebase custom claims are set for admin users
+
+#### **Redis Connection Issues**
+- Server will fall back to memory-based rate limiting
+- Check `REDIS_URL` environment variable
+- Verify Redis server is running: `redis-cli ping`
+
+### **Debug Mode**
+```bash
+# Enable debug logging
+DEBUG=biomasters:* npm run dev
+
+# Check health endpoint
+curl http://localhost:3001/health
+```
 
 ## 🤝 Contributing
 

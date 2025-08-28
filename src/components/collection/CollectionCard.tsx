@@ -4,12 +4,29 @@
  */
 
 import React from 'react';
-import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonIcon, IonText } from '@ionic/react';
-import { lockClosed, checkmarkCircle, star } from 'ionicons/icons';
+import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonIcon, IonText, IonButton } from '@ionic/react';
+import { lockClosed, checkmarkCircle, star, add, remove } from 'ionicons/icons';
 import { Card } from '../../types';
 import { starterPackService } from '../../services/starterPackService';
 import OrganismRenderer from '../OrganismRenderer';
 import './CollectionCard.css';
+
+export interface CardPropertyFilter {
+  habitat: boolean;
+  role: boolean;
+  conservationStatus: boolean;
+  acquisitionType: boolean;
+}
+
+export interface DeckControlsConfig {
+  enabled: boolean;
+  currentQuantity: number;
+  maxQuantity?: number;
+  maxTotalCards?: number;
+  currentTotalCards?: number;
+  onAdd: (speciesName: string) => void;
+  onRemove: (speciesName: string) => void;
+}
 
 interface CollectionCardProps {
   species: Card;
@@ -18,6 +35,8 @@ interface CollectionCardProps {
   acquiredVia?: string;
   onClick: () => void;
   showBasicInfo?: boolean; // Show basic info even if not owned
+  propertyFilter?: CardPropertyFilter; // Which properties to show
+  deckControls?: DeckControlsConfig; // Deck building controls
 }
 
 export const CollectionCard: React.FC<CollectionCardProps> = ({
@@ -26,7 +45,9 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   quantity = 0,
   acquiredVia,
   onClick,
-  showBasicInfo = false
+  showBasicInfo = false,
+  propertyFilter = { habitat: true, role: true, conservationStatus: true, acquisitionType: true },
+  deckControls
 }) => {
   const isStarter = starterPackService.isStarterSpecies(species.speciesName);
   const educationalInfo = starterPackService.getEducationalInfo(species.speciesName);
@@ -87,7 +108,7 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
         {/* Remove Starter Badge - no need to label starter cards */}
       </div>
 
-      <IonCardHeader>
+      <IonCardHeader className="pb-0">
         <IonCardTitle className={!isOwned ? 'greyed-text' : ''}>
           {species.commonName}
         </IonCardTitle>
@@ -103,33 +124,46 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
       </IonCardHeader>
 
       <IonCardContent>
-        {/* Owned Card Details */}
-        {isOwned && (
+        {/* Unified Card Properties - shown for both owned and unowned cards */}
+        {(isOwned || showBasicInfo) && (
           <div className="card-details">
-            {/* Conservation Status */}
-            <IonBadge 
-              color={getRarityColor(species.conservationStatus)} 
-              className="conservation-badge"
-            >
-              {species.conservationStatus}
-            </IonBadge>
-
-            {/* Acquisition Method */}
-            {acquiredVia && (
-              <IonBadge 
-                color={getAcquisitionBadgeColor(acquiredVia)}
-                className="acquisition-badge"
-              >
-                {acquiredVia}
-              </IonBadge>
+            {/* Habitat */}
+            {propertyFilter.habitat && (
+              <div className="property-item">
+                <IonText color="medium" className={!isOwned ? 'greyed-text' : ''}>
+                  Habitat: {species.habitat}
+                </IonText>
+              </div>
             )}
 
             {/* Trophic Role */}
-            <div className="trophic-role">
-              <IonText color="medium">
-                {species.trophicRole}
-              </IonText>
-            </div>
+            {propertyFilter.role && (
+              <div className="property-item">
+                <IonText color="medium" className={!isOwned ? 'greyed-text' : ''}>
+                  Role: {species.trophicRole}
+                </IonText>
+              </div>
+            )}
+
+            {/* Conservation Status */}
+            {propertyFilter.conservationStatus && (
+              <IonBadge
+                color={getRarityColor(species.conservationStatus)}
+                className="conservation-badge"
+              >
+                {species.conservationStatus}
+              </IonBadge>
+            )}
+
+            {/* Acquisition Method - show for both owned and unowned cards */}
+            {propertyFilter.acquisitionType && (
+              <IonBadge
+                color={isOwned && acquiredVia ? getAcquisitionBadgeColor(acquiredVia) : 'medium'}
+                className="acquisition-badge"
+              >
+                {isOwned && acquiredVia ? acquiredVia : 'Locked'}
+              </IonBadge>
+            )}
 
             {/* Educational Info for Starter Cards */}
             {isStarter && educationalInfo && (
@@ -142,31 +176,48 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
           </div>
         )}
 
-        {/* Unowned Card Basic Info */}
-        {!isOwned && showBasicInfo && (
-          <div className="basic-info">
-            <div className="habitat-info">
-              <IonText color="medium" className="greyed-text">
-                Habitat: {species.habitat}
-              </IonText>
-            </div>
-            
-            <div className="trophic-info">
-              <IonText color="medium" className="greyed-text">
-                Role: {species.trophicRole}
-              </IonText>
-            </div>
-
-
-          </div>
-        )}
-
         {/* Completely Hidden for Unowned (if showBasicInfo is false) */}
         {!isOwned && !showBasicInfo && (
           <div className="hidden-info">
             <IonText color="medium" className="greyed-text">
               <small>Collect to reveal details</small>
             </IonText>
+          </div>
+        )}
+
+        {/* Deck Building Controls */}
+        {deckControls?.enabled && isOwned && (
+          <div className="deck-controls-compact">
+            <IonButton
+              size="small"
+              fill="clear"
+              onClick={() => deckControls.onRemove(species.speciesName)}
+              disabled={deckControls.currentQuantity === 0}
+              className="deck-control-btn remove-btn"
+            >
+              <IonIcon icon={remove} />
+            </IonButton>
+
+            <span className="deck-count">
+              {deckControls.currentQuantity}
+            </span>
+
+            <IonButton
+              size="small"
+              fill="clear"
+              onClick={() => deckControls.onAdd(species.speciesName)}
+              disabled={
+                (deckControls.currentQuantity === 0 &&
+                 deckControls.currentTotalCards !== undefined &&
+                 deckControls.maxTotalCards !== undefined &&
+                 deckControls.currentTotalCards >= deckControls.maxTotalCards) ||
+                (deckControls.maxQuantity !== undefined &&
+                 deckControls.currentQuantity >= deckControls.maxQuantity)
+              }
+              className="deck-control-btn add-btn"
+            >
+              <IonIcon icon={add} />
+            </IonButton>
           </div>
         )}
       </IonCardContent>

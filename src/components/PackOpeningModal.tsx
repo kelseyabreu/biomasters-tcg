@@ -69,14 +69,17 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const [showCards, setShowCards] = useState(false);
   const [showEducationalInfo, setShowEducationalInfo] = useState(false);
 
-  // Helper function to get rarity colors
+  // Helper function to get rarity colors (matches collection view)
   const getRarityColor = (status: ConservationStatus) => {
-    const rarity = CONSERVATION_RARITY_DATA[status];
-    if (rarity.percentage <= 0.5) return 'dark'; // Extinct
-    if (rarity.percentage <= 5.5) return 'danger'; // CR
-    if (rarity.percentage <= 10.1) return 'warning'; // EN
-    if (rarity.percentage <= 12.2) return 'tertiary'; // VU
-    return 'success'; // Common
+    const statusString = status.replace(/_/g, ' ');
+    switch (statusString) {
+      case 'Least Concern': return 'success';
+      case 'Near Threatened': return 'warning';
+      case 'Vulnerable': return 'warning';
+      case 'Endangered': return 'danger';
+      case 'Critically Endangered': return 'danger';
+      default: return 'medium';
+    }
   };
 
   // Reset state when modal opens
@@ -330,11 +333,8 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         .map(([status, count]) => (
                           <div key={status} className="rarity-item">
                             <IonBadge color={getRarityColor(status as ConservationStatus)}>
-                              {status.replace(/_/g, ' ')}: {count}
+                              {`${status.replace(/_/g, ' ')}: ${count}`}
                             </IonBadge>
-                            <span className="rarity-percentage">
-                              ({CONSERVATION_RARITY_DATA[status as ConservationStatus]?.percentage}% of species)
-                            </span>
                           </div>
                         ))}
                     </div>

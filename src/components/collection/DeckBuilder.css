@@ -224,6 +224,36 @@
   .empty-slot ion-icon {
     font-size: 32px;
   }
+
+  /* Mobile deck builder adjustments */
+  .deck-builder-card {
+    height: auto; /* Auto height on mobile too */
+  }
+}
+
+/* Deck Builder Card Styling */
+.deck-builder-card {
+  position: relative;
+  width: 100%;
+  height: auto; /* Auto height to fit content naturally */
+}
+
+.deck-builder-card .collection-card {
+  height: 100%;
+  margin: 0;
+}
+
+
+
+.plr-0 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Deck card organism icons */
+.deck-card-organism {
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 /* Animation enhancements */

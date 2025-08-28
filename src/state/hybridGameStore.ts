@@ -63,9 +63,11 @@ export interface HybridGameState {
   signOutUser: () => Promise<void>;
   handleNewUser: () => Promise<void>;
   initializeOfflineKey: () => Promise<void>;
+  loginExistingGuest: () => Promise<void>;
+  registerGuestWithServer: () => Promise<void>;
   
   // Starter Pack Actions
-  openStarterPack: () => Promise<void>;
+  openStarterPack: () => Promise<string[]>;
   
   // Card Actions
   addCardToCollection: (speciesName: string, quantity: number, acquiredVia: string) => Promise<void>;
@@ -390,8 +392,12 @@ export const useHybridGameStore = create<HybridGameState>()(
             body: JSON.stringify({
               guestId: state.guestId,
               actionQueue: actionQueue.map(action => ({
-                action: action.action_type,
-                payload: action.payload,
+                action: action.action,
+                species_name: action.species_name,
+                quantity: action.quantity,
+                pack_type: action.pack_type,
+                deck_id: action.deck_id,
+                deck_data: action.deck_data,
                 signature: action.signature,
                 timestamp: action.timestamp
               })),
@@ -486,25 +492,9 @@ export const useHybridGameStore = create<HybridGameState>()(
                   throw new Error('Failed to get authentication token');
                 }
 
-                // Request signing key from server
-                const response = await fetch('/api/auth/offline-key', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`
-                  },
-                  body: JSON.stringify({ device_id: deviceId })
-                });
-
-                if (!response.ok) {
-                  throw new Error(`Failed to get offline key: ${response.statusText}`);
-                }
-
-                const { signing_key } = await response.json();
-
-                // Initialize offline security service with server key
-                await offlineSecurityService.initializeSigningKey(state.userId, signing_key);
-                console.log('🔑 Offline signing key initialized from server');
+                // Server offline key endpoint not implemented in backend
+                // Skip server-based key and use local fallback
+                throw new Error('Server offline key endpoint not implemented');
 
               } catch (serverError) {
                 console.warn('⚠️ Server unavailable, using local fallback key:', serverError);

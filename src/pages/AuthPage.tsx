@@ -87,7 +87,7 @@ const AuthPage: React.FC = () => {
           </IonCardHeader>
           
           <IonCardContent>
-            <AuthForm onAuthSuccess={handleAuthSuccess} />
+            <AuthForm onSuccess={handleAuthSuccess} />
           </IonCardContent>
         </IonCard>
 

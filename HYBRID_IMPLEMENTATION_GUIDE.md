@@ -7,6 +7,8 @@ A **complete offline-first TCG system** with secure online sync, combining the b
 - **Secure offline gameplay** with cryptographic integrity
 - **Seamless online sync** with conflict resolution
 - **Cross-platform architecture** (web + mobile ready)
+- **Dual authentication modes** (guest and account-based)
+- **IUCN Red List integration** for educational accuracy
 
 ## 🔐 **Task 1: Offline Security & Sync System ✅**
 
@@ -186,6 +188,103 @@ user_cards: {
 3. **Implement deck building** with the hybrid system
 4. **Add multiplayer features** using the online infrastructure
 5. **Create tutorial system** using the starter pack progression
+
+## 🔐 **Authentication Architecture**
+
+### **Dual Authentication System**
+
+The game supports two authentication modes that can coexist:
+
+#### **Guest Mode (Local Authentication)**
+```typescript
+// Guest user flow
+signInAsGuest() → Local guest ID generated → Collection created locally
+→ Cryptographic signing with local key → Full offline functionality
+→ No server sync (isolated from network errors)
+```
+
+**Key Characteristics:**
+- **Instant Access**: No account creation required
+- **Privacy First**: No personal data collected
+- **Local Security**: Cryptographically signed local data
+- **Full Features**: Complete game functionality offline
+- **Device Bound**: Progress tied to specific device/browser
+
+#### **Account Mode (Firebase Authentication)**
+```typescript
+// Authenticated user flow
+Firebase Auth → Server signing key → Collection sync enabled
+→ Cross-device progress → Cloud backup → Social features
+```
+
+**Key Characteristics:**
+- **Cloud Sync**: Progress synchronized across devices
+- **Backup Protection**: Data backed up to server
+- **Social Features**: Leaderboards and community access
+- **Cross-Platform**: Seamless web/mobile experience
+
+### **State Management Patterns**
+
+#### **Authentication State Isolation**
+```typescript
+// Critical: Preserve guest authentication during Firebase state changes
+if (currentState.isGuestMode && !firebaseUser) {
+  // Don't override guest authentication
+  return;
+}
+```
+
+#### **Sync Isolation**
+```typescript
+// Guest users excluded from automatic sync
+if (isAuthenticated && offlineCollection && !isGuestMode) {
+  syncCollection();
+}
+```
+
+#### **Hybrid State Structure**
+```typescript
+interface AuthState {
+  isAuthenticated: boolean;    // True for both guest and Firebase users
+  isGuestMode: boolean;       // True only for guest users
+  firebaseUser: User | null;  // Null for guest users
+  userId: string;             // Local ID for guests, Firebase UID for accounts
+}
+```
+
+### **Collection Initialization Flow**
+
+#### **New User Setup**
+```typescript
+handleNewUser() → Check existing collection → Open starter pack if needed
+→ Grant initial credits → Initialize cryptographic keys
+```
+
+#### **Starter Pack Logic**
+```typescript
+// Reliable detection based on actual collection content
+const hasAnySpecies = Object.keys(collection.species_owned).length > 0;
+if (!hasAnySpecies) {
+  openStarterPack();
+}
+```
+
+### **IUCN Red List Integration**
+
+#### **Conservation-Based Rarity System**
+- **Educational Accuracy**: Card rarity reflects real IUCN conservation status
+- **Redistributed Percentages**: "Not Evaluated" excluded, percentages recalculated
+- **Pack Opening Education**: Users learn conservation statistics through gameplay
+
+#### **Rarity Distribution**
+```typescript
+CONSERVATION_RARITY_DATA = {
+  EXTINCT: { percentage: 0.54, packRarity: 5 },
+  CRITICALLY_ENDANGERED: { percentage: 5.95, packRarity: 59 },
+  LEAST_CONCERN: { percentage: 50.51, packRarity: 505 },
+  // ... other statuses
+}
+```
 
 ## 🔒 **Security Notes**
 

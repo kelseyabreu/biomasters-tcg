@@ -98,16 +98,14 @@ class ApiService {
     return response.json();
   }
 
-  // Authentication
+  // Authentication - Updated to match backend endpoints
   async register(username: string): Promise<UserProfile> {
-    return this.request<UserProfile>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ username }),
-    });
+    // This should use guest registration flow instead
+    throw new Error('Use guest registration flow instead');
   }
 
   async getProfile(): Promise<UserProfile> {
-    return this.request<UserProfile>('/auth/profile');
+    return this.request<UserProfile>('/users/me');
   }
 
   // Collection Management

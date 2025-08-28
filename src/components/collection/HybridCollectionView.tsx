@@ -5,13 +5,14 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonSearchbar, IonGrid, IonRow, IonCol, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonButton, IonIcon, IonProgressBar, IonText, IonSelect, IonSelectOption } from '@ionic/react';
-import { search, filter, statsChart, sync } from 'ionicons/icons';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonSearchbar, IonGrid, IonRow, IonCol, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonButton, IonIcon, IonProgressBar, IonText, IonSelect, IonSelectOption, IonModal, IonButtons, IonCheckbox, IonItem, IonList, IonLabel } from '@ionic/react';
+import { search, filter, statsChart, sync, options, close } from 'ionicons/icons';
 import { Card } from '../../types';
 import { useHybridGameStore } from '../../state/hybridGameStore';
-import { CollectionCard } from './CollectionCard';
+import { CollectionCard, CardPropertyFilter } from './CollectionCard';
 import { CollectionStats } from './CollectionStats';
 import { SyncStatus } from './SyncStatus';
+import PropertyFilterModal from './PropertyFilterModal';
 import CardDetailsModal from '../CardDetailsModal';
 import './HybridCollectionView.css';
 
@@ -34,6 +35,15 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   const [trophicRoleFilter, setTrophicRoleFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'rarity' | 'attack' | 'health' | 'cost'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Card property filter state
+  const [propertyFilter, setPropertyFilter] = useState<CardPropertyFilter>({
+    habitat: true,
+    role: true,
+    conservationStatus: true,
+    acquisitionType: true
+  });
+  const [showPropertyModal, setShowPropertyModal] = useState(false);
 
   // Card details modal state
   const [showCardDetails, setShowCardDetails] = useState(false);
@@ -297,6 +307,16 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
             >
               Unowned ({collectionStats.totalSpecies - collectionStats.ownedSpecies})
             </IonButton>
+
+            {/* Property Filter Button */}
+            <IonButton
+              fill="outline"
+              size="small"
+              onClick={() => setShowPropertyModal(true)}
+            >
+              <IonIcon icon={options} slot="start" />
+              Properties
+            </IonButton>
           </div>
 
           {/* Advanced Filters */}
@@ -359,7 +379,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
         </div>
 
         {/* Species Grid */}
-        <IonGrid className="collection-grid">
+        <IonGrid className="collection-grid collection-view">
           <IonRow>
             {filteredSpecies.map((species) => {
               const ownershipData = offlineCollection?.species_owned[species.speciesName];
@@ -373,7 +393,8 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
                     quantity={ownershipData?.quantity || 0}
                     acquiredVia={ownershipData?.acquired_via}
                     onClick={() => handleCardClick(species)}
-                    showBasicInfo={!isOwned} // Show basic info for unowned cards
+                    showBasicInfo={true} // Always show basic info for unified display
+                    propertyFilter={propertyFilter}
                   />
                 </IonCol>
               );
@@ -392,6 +413,14 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
           </div>
         )}
       </IonContent>
+
+      {/* Property Filter Modal */}
+      <PropertyFilterModal
+        isOpen={showPropertyModal}
+        onClose={() => setShowPropertyModal(false)}
+        propertyFilter={propertyFilter}
+        onPropertyFilterChange={setPropertyFilter}
+      />
 
       {/* Card Details Modal */}
       <CardDetailsModal

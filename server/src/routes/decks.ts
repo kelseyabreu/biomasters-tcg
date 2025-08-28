@@ -7,7 +7,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../database/kysely';
 import { NewDeck, NewDeckCard } from '../database/types';
 // import { DeckUpdate } from '../database/types'; // Unused for now
-import { authenticateToken } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 
 const router = Router();
@@ -16,7 +16,7 @@ const router = Router();
  * GET /api/decks
  * Get user's decks
  */
-router.get('/', authenticateToken, async (req: Request, res: Response) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       res.status(404).json({
@@ -59,7 +59,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
  * GET /api/decks/:id
  * Get specific deck with cards
  */
-router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
+router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       res.status(404).json({
@@ -125,7 +125,7 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response) => {
  * Create a new deck
  */
 router.post('/',
-  authenticateToken,
+  requireAuth,
   [
     body('name')
       .isLength({ min: 1, max: 100 })
@@ -232,7 +232,7 @@ router.post('/',
  * Update deck name
  */
 router.put('/:id',
-  authenticateToken,
+  requireAuth,
   [
     body('name')
       .isLength({ min: 1, max: 100 })
@@ -312,7 +312,7 @@ router.put('/:id',
  * DELETE /api/decks/:id
  * Delete a deck
  */
-router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       res.status(404).json({

@@ -80,6 +80,18 @@
   color: white;
 }
 
+.pb-0{
+  padding-bottom:0 !important;
+}
+
+/* Collection view specific styling - remove padding */
+.collection-view .collection-card {
+  margin: 0;
+}
+
+
+
+
 .quantity-badge {
   position: absolute;
   top: 8px;
@@ -116,10 +128,38 @@
   opacity: 0.6;
 }
 
+/* Text truncation for consistent card heights */
+.collection-card ion-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  max-height: 2.4em; /* 2 lines * 1.2 line-height */
+  min-height: 2.4em; /* Ensure consistent height even for short names */
+}
+
+.card-subtitle ion-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: .95;
+  max-height: 2.2em; /* 2 lines * 1.1 line-height */
+  min-height: 2.2em; /* Ensure consistent height */
+}
+
 .card-details {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.property-item {
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .conservation-badge,
@@ -127,6 +167,66 @@
   align-self: flex-start;
   font-size: 0.7rem;
   padding: 0.25rem 0.5rem;
+}
+
+/* Locked badge styling for unowned cards */
+.acquisition-badge[color="medium"] {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Deck Controls inside CollectionCard */
+.deck-controls-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: var(--ion-color-light);
+  border: 1px solid var(--ion-color-medium-tint);
+  border-radius: 8px;
+}
+
+.deck-control-btn {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  --background-hover: transparent;
+  --background-focused: transparent;
+  --background-activated: var(--ion-color-primary-tint);
+  --color-hover: var(--ion-color-primary);
+  --color-focused: var(--ion-color-primary);
+  width: 28px;
+  height: 28px;
+  margin: 0;
+}
+
+.deck-control-btn ion-icon {
+  font-size: 16px;
+}
+
+.deck-count {
+  font-weight: bold;
+  font-size: 1rem;
+  min-width: 20px;
+  text-align: center;
+  color: var(--ion-color-primary);
+}
+
+.add-btn {
+  --color: var(--ion-color-success);
+  --color-hover: var(--ion-color-success);
+  --color-focused: var(--ion-color-success);
+  --background-activated: var(--ion-color-success-tint);
+}
+
+.remove-btn {
+  --color: var(--ion-color-danger);
+  --color-hover: var(--ion-color-danger);
+  --color-focused: var(--ion-color-danger);
+  --background-activated: var(--ion-color-danger-tint);
 }
 
 .trophic-role {
@@ -159,11 +259,19 @@
   .card-image-container {
     height: 100px;
   }
-  
+
   .collection-card ion-card-title {
     font-size: 0.9rem;
+    max-height: 2.16em; /* Adjust for smaller font size: 2 lines * 1.2 * 0.9 */
+    min-height: 2.16em;
   }
-  
+
+  .card-subtitle ion-text {
+    font-size: 0.85rem;
+    max-height: 1.87em; /* Adjust for smaller font size: 2 lines * 1.1 * 0.85 */
+    min-height: 1.87em;
+  }
+
   .collection-card ion-card-content {
     padding: 0.75rem;
   }

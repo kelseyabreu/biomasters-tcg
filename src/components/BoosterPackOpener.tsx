@@ -64,12 +64,15 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
   };
 
   const getRarityColor = (status: ConservationStatus) => {
-    const rarity = CONSERVATION_RARITY_DATA[status];
-    if (rarity.percentage <= 0.5) return 'dark'; // Extinct
-    if (rarity.percentage <= 5.5) return 'danger'; // CR
-    if (rarity.percentage <= 10.1) return 'warning'; // EN
-    if (rarity.percentage <= 12.2) return 'tertiary'; // VU
-    return 'success'; // Common
+    const statusString = status.replace(/_/g, ' ');
+    switch (statusString) {
+      case 'Least Concern': return 'success';
+      case 'Near Threatened': return 'warning';
+      case 'Vulnerable': return 'warning';
+      case 'Endangered': return 'danger';
+      case 'Critically Endangered': return 'danger';
+      default: return 'medium';
+    }
   };
 
   return (
@@ -201,9 +204,6 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
                       <IonBadge color={getRarityColor(status as ConservationStatus)}>
                         {status.replace(/_/g, ' ')}: {count}
                       </IonBadge>
-                      <span className="rarity-percentage">
-                        ({CONSERVATION_RARITY_DATA[status as ConservationStatus]?.percentage}% of species)
-                      </span>
                     </div>
                   ))}
               </div>

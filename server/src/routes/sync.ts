@@ -7,7 +7,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../database/kysely';
 import { NewTransaction } from '../database/types';
 // import { NewUserCard } from '../database/types'; // Unused for now
-import { authenticateToken } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import CryptoJS from 'crypto-js';
 import crypto from 'crypto';
@@ -49,7 +49,7 @@ interface SyncPayload {
  * Synchronize offline actions with server
  */
 router.post('/',
-  authenticateToken,
+  requireAuth,
   [
     body('device_id').isString().notEmpty(),
     body('offline_actions').isArray(),
@@ -377,7 +377,7 @@ router.post('/',
  * GET /api/sync/status
  * Get sync status and pending actions count
  */
-router.get('/status', authenticateToken, async (req: Request, res: Response) => {
+router.get('/status', requireAuth, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       res.status(404).json({

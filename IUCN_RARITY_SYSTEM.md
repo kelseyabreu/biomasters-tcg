@@ -21,6 +21,33 @@
 
 **Note:** "Not Evaluated" species are excluded from the game as they typically receive evaluation. Percentages are redistributed proportionally among evaluated species to maintain 100% total.
 
+## 📐 **Methodology & Data Accuracy**
+
+### **Percentage Redistribution Process**
+1. **Original IUCN Data**: Included "Not Evaluated" category (7.5% of species)
+2. **Educational Decision**: Exclude "Not Evaluated" as these species typically receive evaluation
+3. **Mathematical Redistribution**: Remaining 92.5% proportionally scaled to 100%
+4. **Redistribution Factor**: 100% ÷ 92.5% = 1.081081...
+5. **Applied to All Categories**: Each percentage multiplied by redistribution factor
+
+### **Pack Rarity Calculation**
+- **Total Cards per 1000 Packs**: 1000 cards distributed proportionally
+- **Rarity Formula**: `pack_rarity = Math.round(percentage × 10)`
+- **Maintains Proportions**: Relative rarity relationships preserved
+- **Educational Accuracy**: Players experience realistic conservation distribution
+
+### **Data Source Validation**
+- **IUCN Red List**: Official source for all conservation percentages
+- **October 2024 Update**: Most recent available data at implementation
+- **Scientific Accuracy**: All descriptions sourced from IUCN documentation
+- **Regular Updates**: System designed to accommodate updated IUCN data
+
+### **Educational Integration**
+- **Pack Opening Education**: Conservation statistics displayed during pack opening
+- **Interactive Learning**: Players can explore detailed IUCN information
+- **Real-World Connection**: Game rarity directly reflects conservation urgency
+- **Awareness Building**: Rare cards represent species needing protection
+
 ## 🎴 **Booster Pack System**
 
 ### **Pack Composition:**

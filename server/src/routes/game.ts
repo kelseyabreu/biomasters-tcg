@@ -1,10 +1,8 @@
 import { Router } from 'express';
-import { requireVerifiedUser } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 // import { apiRateLimiter } from '../middleware/rateLimiter'; // Unused for now
 import { asyncHandler } from '../middleware/errorHandler';
-import { query } from '../config/database';
-// import { transaction } from '../config/database'; // Unused for now
-import db from '../database/kysely';
+import { db } from '../database/kysely';
 // import { NewDeck } from '../database/types'; // Unused for now
 
 const router = Router();
@@ -13,17 +11,16 @@ const router = Router();
  * GET /api/game/decks
  * Get user's saved decks
  */
-router.get('/decks', requireVerifiedUser, asyncHandler(async (req, res) => {
+router.get('/decks', requireAuth, asyncHandler(async (req, res) => {
   const user = req.user!;
 
-  const decks = await query(`
-    SELECT 
-      id, name, description, cards, is_valid, is_favorite,
-      format, total_cards, win_rate, games_played, created_at, updated_at
-    FROM user_decks 
-    WHERE user_id = $1 
-    ORDER BY is_favorite DESC, updated_at DESC
-  `, [user.id]);
+  const decks = await db
+    .selectFrom('user_decks')
+    .selectAll()
+    .where('user_id', '=', user.id)
+    .orderBy('is_favorite', 'desc')
+    .orderBy('updated_at', 'desc')
+    .execute();
 
   res.json({
     decks: decks.map(deck => ({
@@ -47,7 +44,7 @@ router.get('/decks', requireVerifiedUser, asyncHandler(async (req, res) => {
  * POST /api/game/decks
  * Create a new deck
  */
-router.post('/decks', requireVerifiedUser, asyncHandler(async (req, res) => {
+router.post('/decks', requireAuth, asyncHandler(async (req, res) => {
   const { name, description, cards, format = 'standard' } = req.body;
   const user = req.user!;
 
@@ -67,12 +64,14 @@ router.post('/decks', requireVerifiedUser, asyncHandler(async (req, res) => {
   }
 
   // Check if deck name already exists for user
-  const existingDeck = await query(
-    'SELECT id FROM user_decks WHERE user_id = $1 AND name = $2',
-    [user.id, name]
-  );
+  const existingDeck = await db
+    .selectFrom('user_decks')
+    .select('id')
+    .where('user_id', '=', user.id)
+    .where('name', '=', name)
+    .executeTakeFirst();
 
-  if (existingDeck.length > 0) {
+  if (existingDeck) {
     return res.status(409).json({
       error: 'DECK_EXISTS',
       message: 'A deck with this name already exists'
@@ -86,22 +85,33 @@ router.post('/decks', requireVerifiedUser, asyncHandler(async (req, res) => {
   const isValid = totalCards >= 30 && totalCards <= 40;
 
   // Create deck
-  const newDeck = await query(`
-    INSERT INTO user_decks (user_id, name, description, cards, format, total_cards, is_valid)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *
-  `, [user.id, name, description, JSON.stringify(cards), format, totalCards, isValid]);
+  const newDeck = await db
+    .insertInto('user_decks')
+    .values({
+      user_id: user.id,
+      name,
+      description,
+      cards: JSON.stringify(cards),
+      format,
+      total_cards: totalCards,
+      is_valid: isValid,
+      is_favorite: false,
+      games_played: 0,
+      win_rate: 0
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 
   res.status(201).json({
     message: 'Deck created successfully',
     deck: {
-      id: newDeck[0].id,
-      name: newDeck[0].name,
-      description: newDeck[0].description,
-      cards: newDeck[0].cards,
-      format: newDeck[0].format,
-      totalCards: newDeck[0].total_cards,
-      isValid: newDeck[0].is_valid
+      id: newDeck.id,
+      name: newDeck.name,
+      description: newDeck.description,
+      cards: newDeck.cards,
+      format: newDeck.format,
+      totalCards: newDeck.total_cards,
+      isValid: newDeck.is_valid
     }
   });
   return;
@@ -111,7 +121,7 @@ router.post('/decks', requireVerifiedUser, asyncHandler(async (req, res) => {
  * PUT /api/game/decks/:deckId
  * Update a deck
  */
-router.put('/decks/:deckId', requireVerifiedUser, asyncHandler(async (req, res) => {
+router.put('/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params;
   const { name, description, cards } = req.body;
   // const isFavorite = req.body.isFavorite; // Unused for now
@@ -189,7 +199,7 @@ router.put('/decks/:deckId', requireVerifiedUser, asyncHandler(async (req, res) 
  * DELETE /api/game/decks/:deckId
  * Delete a deck
  */
-router.delete('/decks/:deckId', requireVerifiedUser, asyncHandler(async (req, res) => {
+router.delete('/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params;
   const user = req.user!;
 
@@ -226,17 +236,12 @@ router.delete('/decks/:deckId', requireVerifiedUser, asyncHandler(async (req, re
  * GET /api/game/achievements
  * Get user's achievements
  */
-router.get('/achievements', requireVerifiedUser, asyncHandler(async (req, res) => {
-  const user = req.user!;
+router.get('/achievements', requireAuth, asyncHandler(async (_req, res) => {
+  // const user = req.user!; // TODO: Use when implementing achievements system
 
-  const achievements = await query(`
-    SELECT 
-      achievement_id, progress, max_progress, is_completed,
-      rewards, is_claimed, unlocked_at, claimed_at
-    FROM user_achievements 
-    WHERE user_id = $1 
-    ORDER BY unlocked_at DESC, achievement_id
-  `, [user.id]);
+  // TODO: Implement achievements system with proper database table
+  // For now, return empty achievements array
+  const achievements: any[] = [];
 
   res.json({
     achievements: achievements.map(achievement => ({
@@ -256,7 +261,7 @@ router.get('/achievements', requireVerifiedUser, asyncHandler(async (req, res) =
  * POST /api/game/achievements/:achievementId/claim
  * Claim achievement rewards
  */
-router.post('/achievements/:achievementId/claim', requireVerifiedUser, asyncHandler(async (req, res) => {
+router.post('/achievements/:achievementId/claim', requireAuth, asyncHandler(async (req, res) => {
   const { achievementId } = req.params;
   // const user = req.user!; // Unused for now
 

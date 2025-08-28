@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyIdToken, getFirebaseUser } from '../config/firebase';
+import { verifyGuestJWT, isGuestToken, GuestJWTPayload } from '../utils/guestAuth';
 import { db } from '../database/kysely';
 import { User } from '../database/types';
 import { CacheManager } from '../config/redis';
@@ -8,105 +9,180 @@ import { CacheManager } from '../config/redis';
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
-      firebaseUser?: {
-        uid: string;
-        email?: string;
-        email_verified?: boolean;
-      };
+      user?: User; // The user from your PostgreSQL database
+      firebaseUser?: { uid: string; email?: string; email_verified?: boolean; };
+      guestUser?: GuestJWTPayload;
+      isGuestAuth?: boolean;
     }
   }
 }
 
 /**
- * Authentication middleware that verifies Firebase ID tokens
+ * The SINGLE unified authentication middleware.
+ * It intelligently handles both Firebase and custom Guest JWTs.
  */
-export async function authenticateToken(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    // Extract token from Authorization header
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
 
-    if (!token) {
+  if (!token) {
+    // No token, continue without authentication for public routes
+    return next();
+  }
+
+  try {
+    if (isGuestToken(token)) {
+      // --- Handle Guest JWT ---
+      const guestPayload = verifyGuestJWT(token);
+      req.guestUser = guestPayload;
+      req.isGuestAuth = true;
+
+      // Fetch guest user from DB using the ID from the trusted JWT
+      const guestDbUser = await db
+        .selectFrom('users')
+        .selectAll()
+        .where('id', '=', guestPayload.userId)
+        .executeTakeFirst();
+
+      if (guestDbUser) {
+        req.user = guestDbUser;
+      }
+
+    } else {
+      // --- Handle Firebase JWT ---
+      const decodedToken = await verifyIdToken(token);
+      req.firebaseUser = {
+        uid: decodedToken.uid,
+        ...(decodedToken.email && { email: decodedToken.email }),
+        ...(decodedToken.email_verified !== undefined && { email_verified: decodedToken.email_verified })
+      };
+      req.isGuestAuth = false;
+
+      // Check cache first
+      const cacheKey = `user:${decodedToken.uid}`;
+      let dbUser = await CacheManager.get<User>(cacheKey);
+
+      if (!dbUser) {
+        const fetchedUser = await db
+          .selectFrom('users')
+          .selectAll()
+          .where('firebase_uid', '=', decodedToken.uid)
+          .executeTakeFirst();
+
+        if (fetchedUser) {
+          dbUser = fetchedUser;
+          await CacheManager.set(cacheKey, dbUser, 300); // Cache for 5 mins
+        }
+      }
+
+      if (dbUser) {
+        req.user = dbUser;
+      }
+    }
+  } catch (error) {
+    // If token is invalid/expired, we just clear any auth info and continue.
+    // Routes that require auth will handle the rejection.
+    delete req.user;
+    delete req.firebaseUser;
+    delete req.guestUser;
+    req.isGuestAuth = false;
+  }
+
+  return next();
+}
+
+// --- EXPORTABLE MIDDLEWARE CHAIN ---
+
+/**
+ * Use this for any route that requires a user to be logged in (either guest or registered).
+ */
+export const requireAuth = [
+  authenticate,
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
       res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Access token is required'
+        error: 'AUTHENTICATION_REQUIRED',
+        message: 'You must be logged in to access this resource.'
+      });
+      return;
+    }
+    next();
+  }
+];
+
+/**
+ * Use this for routes that require a FULLY REGISTERED (Firebase) user.
+ */
+export const requireRegisteredUser = [
+  authenticate,
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || req.isGuestAuth) {
+      res.status(403).json({
+        error: 'REGISTRATION_REQUIRED',
+        message: 'This action requires a registered account.'
+      });
+      return;
+    }
+    if (!req.user.email_verified) {
+      res.status(403).json({
+        error: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email address.'
+      });
+      return;
+    }
+    next();
+  }
+];
+
+/**
+ * Use this for routes that require admin privileges.
+ */
+export const requireAdmin = [
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user || req.isGuestAuth) {
+      res.status(403).json({
+        error: 'ADMIN_ACCESS_REQUIRED',
+        message: 'Admin access required.'
       });
       return;
     }
 
-    // Verify the Firebase ID token
-    const decodedToken = await verifyIdToken(token);
-    
-    // Note: Firebase user data is already available in decodedToken
-    // const firebaseUser = await getFirebaseUser(decodedToken.uid);
+    if (!req.user.email_verified) {
+      res.status(403).json({
+        error: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email address.'
+      });
+      return;
+    }
 
-    // Attach Firebase user to request
-    req.firebaseUser = {
-      uid: decodedToken.uid,
-      ...(decodedToken.email && { email: decodedToken.email }),
-      ...(decodedToken.email_verified !== undefined && { email_verified: decodedToken.email_verified })
-    };
+    // Check Firebase custom claims for admin role
+    if (req.firebaseUser?.uid) {
+      try {
+        const firebaseUser = await getFirebaseUser(req.firebaseUser.uid);
+        const customClaims = firebaseUser.customClaims || {};
 
-    // Check cache for user data first
-    const cacheKey = `user:${decodedToken.uid}`;
-    let dbUser = await CacheManager.get(cacheKey);
-
-    // If not in cache, fetch from database using Kysely
-    if (!dbUser) {
-      dbUser = await db
-        .selectFrom('users')
-        .selectAll()
-        .where('firebase_uid', '=', decodedToken.uid)
-        .executeTakeFirst();
-
-      // Cache user data for 5 minutes
-      if (dbUser) {
-        await CacheManager.set(cacheKey, dbUser, 300);
+        if (customClaims['admin'] === true || customClaims['role'] === 'admin') {
+          next();
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking admin claims:', error);
       }
     }
 
-    // Attach database user to request if found
-    if (dbUser) {
-      req.user = {
-        ...dbUser,
-        uid: decodedToken.uid,
-        // Set default values for properties that might not be in the database yet
-        email_verified: dbUser.email_verified ?? (decodedToken.email_verified || false),
-        is_active: dbUser.is_active ?? true,
-        is_banned: dbUser.is_banned ?? false,
-        ban_reason: dbUser.ban_reason ?? null,
-        account_type: dbUser.account_type ?? 'user',
-        dbUser: {
-          ...dbUser,
-          email_verified: dbUser.email_verified ?? (decodedToken.email_verified || false),
-          is_active: dbUser.is_active ?? true,
-          is_banned: dbUser.is_banned ?? false,
-          ban_reason: dbUser.ban_reason ?? null,
-          account_type: dbUser.account_type ?? 'user'
-        },
-        firebaseUser: {
-          uid: decodedToken.uid,
-          email: decodedToken.email || undefined,
-          email_verified: decodedToken.email_verified || undefined,
-          customClaims: {}
-        }
-      };
-    }
-
-    next();
-  } catch (error) {
-    console.error('❌ Authentication error:', error);
-    res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Invalid or expired token'
+    res.status(403).json({
+      error: 'INSUFFICIENT_PRIVILEGES',
+      message: 'Admin privileges required.'
     });
   }
-}
+];
+
+/**
+ * Legacy export for backward compatibility - use requireAuth instead
+ * @deprecated Use requireAuth instead
+ */
+export const authenticateToken = requireAuth;
 
 /**
  * Optional authentication middleware - doesn't fail if no token provided
@@ -122,7 +198,7 @@ export async function optionalAuth(
 
     if (token) {
       // If token is provided, verify it
-      await authenticateToken(req, res, next);
+      await authenticate(req, res, next);
     } else {
       // If no token, continue without user data
       next();
@@ -252,37 +328,7 @@ export function requireAccountType(allowedTypes: string[]) {
   };
 }
 
-/**
- * Middleware to check if user is admin
- */
-export async function requireAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  if (!req.user?.firebase_uid) {
-    res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Authentication required'
-    });
-    return;
-  }
-
-  // Check Firebase custom claims for admin role
-  // Get Firebase user to check custom claims
-  const firebaseUser = await getFirebaseUser(req.user.firebase_uid);
-  const customClaims = firebaseUser?.customClaims || {};
-  
-  if (!customClaims['admin']) {
-    res.status(403).json({
-      error: 'Forbidden',
-      message: 'Admin privileges required'
-    });
-    return;
-  }
-
-  next();
-}
+// Duplicate requireAdmin function removed - using the middleware array version above
 
 /**
  * Middleware to validate user owns resource
@@ -345,9 +391,11 @@ export async function logUserActivity(
         .where('id', '=', req.user.id)
         .execute();
 
-      // Invalidate user cache to force refresh
-      const cacheKey = `user:${req.user.firebase_uid}`;
-      await CacheManager.delete(cacheKey);
+      // Invalidate user cache to force refresh (only for Firebase users)
+      if (req.user.firebase_uid) {
+        const cacheKey = `user:${req.user.firebase_uid}`;
+        await CacheManager.delete(cacheKey);
+      }
     } catch (error) {
       console.error('❌ Failed to log user activity:', error);
       // Don't fail the request if logging fails
@@ -364,10 +412,4 @@ export function createAuthChain(...middlewares: Array<(req: Request, res: Respon
   return [authenticateToken, ...middlewares];
 }
 
-/**
- * Common authentication chains
- */
-export const requireAuth = [authenticateToken];
-export const requireVerifiedUser = [authenticateToken, requireEmailVerification, requireDatabaseUser, requireActiveAccount];
-export const requirePremiumUser = [authenticateToken, requireDatabaseUser, requireActiveAccount, requireAccountType(['premium'])];
-export const requireAdminUser = [authenticateToken, requireAdmin];
+// Legacy exports removed - using new unified authentication system above

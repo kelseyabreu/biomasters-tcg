@@ -1,0 +1,319 @@
+/**
+ * Guest Registration CTA Component Styles
+ */
+
+/* Banner Variant */
+.guest-cta-banner {
+  position: relative;
+  background: linear-gradient(135deg, #ffc409, #ffeb3b);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  box-shadow: 0 4px 12px rgba(255, 196, 9, 0.3);
+  border: 2px solid #ffc409;
+}
+
+.guest-cta-banner.urgency-high {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  border-color: #ff6b6b;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+  animation: urgent-pulse 2s infinite;
+}
+
+.guest-cta-banner.urgency-medium {
+  background: linear-gradient(135deg, #ffc409, #ffeb3b);
+  animation: gentle-pulse 3s infinite;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.banner-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.8);
+  font-size: 24px;
+}
+
+.banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.banner-title {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.banner-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.7);
+  font-weight: 500;
+}
+
+.banner-button {
+  flex-shrink: 0;
+  --background: rgba(255, 255, 255, 0.9);
+  --color: #333;
+  font-weight: 600;
+}
+
+/* Card Variant */
+.guest-cta-card {
+  position: relative;
+  margin: 16px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 2px solid #ffc409;
+}
+
+.guest-cta-card.urgency-high {
+  background: linear-gradient(135deg, #ffe0e0, #ffcccb);
+  border-color: #ff6b6b;
+}
+
+.cta-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cta-icon {
+  font-size: 32px;
+  color: #ffc409;
+  flex-shrink: 0;
+}
+
+.guest-cta-card.urgency-high .cta-icon {
+  color: #ff6b6b;
+}
+
+.cta-text {
+  flex: 1;
+}
+
+.cta-title {
+  margin: 0 0 4px 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+
+.cta-subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.progress-stats {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.stat-highlight {
+  text-align: center;
+  padding: 8px;
+}
+
+.stat-highlight ion-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  margin-bottom: 2px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.protection-button {
+  --border-radius: 12px;
+  font-weight: 700;
+  margin: 16px 0;
+  height: 48px;
+}
+
+.benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--ion-color-dark);
+}
+
+.benefit-item ion-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Compact Variant */
+.guest-cta-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 196, 9, 0.1);
+  border: 1px solid #ffc409;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.cta-content-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cta-content-compact ion-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.cta-text-compact {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cta-title-compact {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cta-subtitle-compact {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dismiss Button */
+.dismiss-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  --color: rgba(0, 0, 0, 0.5);
+  width: 32px;
+  height: 32px;
+}
+
+/* Animations */
+@keyframes urgent-pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    transform: scale(1);
+  }
+}
+
+@keyframes gentle-pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(255, 196, 9, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 16px rgba(255, 196, 9, 0.4);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(255, 196, 9, 0.3);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .banner-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .banner-button {
+    width: 100%;
+  }
+
+  .cta-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .benefits-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .benefit-item {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .guest-cta-banner {
+    background: linear-gradient(135deg, #b8860b, #daa520);
+  }
+
+  .guest-cta-card {
+    background: linear-gradient(135deg, #2c2c2c, #3c3c3c);
+    border-color: #b8860b;
+  }
+
+  .progress-stats {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .guest-cta-compact {
+    background: rgba(184, 134, 11, 0.2);
+    border-color: #b8860b;
+  }
+}

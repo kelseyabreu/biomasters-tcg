@@ -123,6 +123,12 @@ const PackOpening: React.FC = () => {
   ];
 
   const handleOpenPack = async (packType: string) => {
+    // Prevent opening if already opening a pack
+    if (isOpening) {
+      console.log('🚫 Pack opening already in progress, ignoring duplicate call');
+      return;
+    }
+
     if (!isAuthenticated) {
       setToastMessage('Please sign in first!');
       setShowToast(true);
@@ -143,6 +149,8 @@ const PackOpening: React.FC = () => {
       setShowToast(true);
       return;
     }
+
+    console.log(`🎁 Initiating ${packType} pack opening...`);
 
     // Show the pack opening modal with visual effects
     setSelectedPackType(packType);

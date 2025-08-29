@@ -29,14 +29,16 @@ import {
 } from 'ionicons/icons';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, AuthError } from '../../utils/auth';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import { handleGuestConversion, canConvertGuest } from '../../utils/guestConversion';
 import './AuthForm.css';
 
 interface AuthFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  isGuestConversion?: boolean;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuestConversion = false }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -50,7 +52,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel }) => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
 
-  const { signInAsGuest } = useHybridGameStore();
+  const { signInAsGuest, guestToken, isGuestMode } = useHybridGameStore();
 
   const showError = (message: string) => {
     setToastMessage(message);
@@ -80,14 +82,38 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel }) => {
     setLoading(true);
 
     try {
+      let firebaseCredential;
+
       if (isSignUp) {
-        await signUpWithEmail({ email, password, displayName });
+        firebaseCredential = await signUpWithEmail({ email, password, displayName });
         showSuccess('Account created! Please check your email for verification.');
       } else {
-        await signInWithEmail({ email, password });
+        firebaseCredential = await signInWithEmail({ email, password });
         showSuccess('Signed in successfully!');
       }
-      
+
+      // Handle guest conversion if this is a guest user
+      if (isGuestConversion && canConvertGuest(isGuestMode, guestToken)) {
+        showSuccess('Converting your guest account...');
+
+        const conversionResult = await handleGuestConversion(
+          guestToken!,
+          firebaseCredential,
+          (result) => {
+            showSuccess(`✅ Success! Your account is now secure. Welcome, ${result.user?.username}!`);
+          },
+          (error) => {
+            showError(`Conversion failed: ${error}`);
+          }
+        );
+
+        if (!conversionResult.success) {
+          // If conversion fails, we should still allow the user to continue
+          // but inform them about the issue
+          showError('Account created but failed to merge guest data. Please contact support.');
+        }
+      }
+
       if (onSuccess) {
         setTimeout(onSuccess, 1500);
       }
@@ -102,8 +128,29 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel }) => {
   const handleGoogleAuth = async () => {
     setLoading(true);
     try {
-      await signInWithGoogle();
+      const firebaseCredential = await signInWithGoogle();
       showSuccess('Signed in with Google successfully!');
+
+      // Handle guest conversion if this is a guest user
+      if (isGuestConversion && canConvertGuest(isGuestMode, guestToken)) {
+        showSuccess('Converting your guest account...');
+
+        const conversionResult = await handleGuestConversion(
+          guestToken!,
+          firebaseCredential,
+          (result) => {
+            showSuccess(`✅ Success! Your account is now secure. Welcome, ${result.user?.username}!`);
+          },
+          (error) => {
+            showError(`Conversion failed: ${error}`);
+          }
+        );
+
+        if (!conversionResult.success) {
+          showError('Account created but failed to merge guest data. Please contact support.');
+        }
+      }
+
       if (onSuccess) {
         setTimeout(onSuccess, 1500);
       }

@@ -70,6 +70,81 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 /**
+ * PUT /api/users/me
+ * Update current user's profile
+ */
+router.put('/me', requireRegisteredUser, apiRateLimiter, asyncHandler(async (req, res) => {
+  const user = req.user!;
+  const { displayName, bio, location, favoriteSpecies, isPublicProfile, emailNotifications, pushNotifications } = req.body;
+
+  // Validate input
+  if (displayName && (typeof displayName !== 'string' || displayName.length > 50)) {
+    return res.status(400).json({
+      error: 'INVALID_DISPLAY_NAME',
+      message: 'Display name must be a string with max 50 characters'
+    });
+  }
+
+  if (bio && (typeof bio !== 'string' || bio.length > 200)) {
+    return res.status(400).json({
+      error: 'INVALID_BIO',
+      message: 'Bio must be a string with max 200 characters'
+    });
+  }
+
+  if (location && (typeof location !== 'string' || location.length > 100)) {
+    return res.status(400).json({
+      error: 'INVALID_LOCATION',
+      message: 'Location must be a string with max 100 characters'
+    });
+  }
+
+  if (favoriteSpecies && (typeof favoriteSpecies !== 'string' || favoriteSpecies.length > 100)) {
+    return res.status(400).json({
+      error: 'INVALID_FAVORITE_SPECIES',
+      message: 'Favorite species must be a string with max 100 characters'
+    });
+  }
+
+  try {
+    // Update user profile
+    const updatedUser = await db
+      .updateTable('users')
+      .set({
+        display_name: displayName?.trim() || user.display_name,
+        bio: bio?.trim() || null,
+        location: location?.trim() || null,
+        favorite_species: favoriteSpecies?.trim() || null,
+        is_public_profile: isPublicProfile !== undefined ? isPublicProfile : user.is_public_profile,
+        email_notifications: emailNotifications !== undefined ? emailNotifications : user.email_notifications,
+        push_notifications: pushNotifications !== undefined ? pushNotifications : user.push_notifications,
+        updated_at: new Date()
+      })
+      .where('id', '=', user.id)
+      .returning([
+        'id', 'username', 'display_name', 'email', 'bio', 'location',
+        'favorite_species', 'is_public_profile', 'email_notifications',
+        'push_notifications', 'updated_at'
+      ])
+      .executeTakeFirstOrThrow();
+
+    // Clear user cache
+    await CacheManager.delete(`user:${user.id}`);
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Profile update failed:', error);
+    res.status(500).json({
+      error: 'PROFILE_UPDATE_FAILED',
+      message: 'Failed to update profile'
+    });
+  }
+}));
+
+/**
  * GET /api/users/:userId/profile
  * Get public profile of another user
  */

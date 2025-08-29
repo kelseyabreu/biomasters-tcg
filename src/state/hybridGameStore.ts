@@ -38,6 +38,15 @@ export interface HybridGameState {
   guestSecret: string | null;
   guestToken: string | null;
   needsRegistration: boolean;
+
+  // User Profile Information
+  userProfile: {
+    username: string | null;
+    displayName: string | null;
+    email: string | null;
+    avatarUrl: string | null;
+    accountType: 'guest' | 'registered' | 'none';
+  } | null;
   
   // Sync State
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
@@ -53,6 +62,14 @@ export interface HybridGameState {
   initializeOfflineCollection: () => void;
   loadOfflineCollection: () => void;
   saveOfflineCollection: (collection: OfflineCollection) => void;
+
+  // User Profile Actions
+  updateUserProfile: (profile: Partial<HybridGameState['userProfile']>) => void;
+  generateGuestUsername: () => string;
+  clearUserProfile: () => void;
+
+  // Collection Management
+  refreshCollectionState: () => void;
 
   // Species Data Actions
   loadSpeciesData: () => Promise<void>;
@@ -114,6 +131,9 @@ export const useHybridGameStore = create<HybridGameState>()(
         guestSecret: null,
         guestToken: null,
         needsRegistration: false,
+
+        // User Profile State
+        userProfile: null,
         syncStatus: 'idle',
         lastSyncTime: 0,
         syncError: null,
@@ -148,12 +168,20 @@ export const useHybridGameStore = create<HybridGameState>()(
         loadOfflineCollection: () => {
           const stored = offlineSecurityService.loadOfflineCollection();
           if (stored) {
-            set({ 
+            const hasSpecies = Object.keys(stored.species_owned).length > 0;
+            set({
               offlineCollection: stored,
-              hasStarterPack: Object.keys(stored.species_owned).length > 0,
+              hasStarterPack: hasSpecies,
               pendingActions: stored.action_queue.length
             });
+            console.log('📦 Collection loaded from storage:', {
+              species_count: Object.keys(stored.species_owned).length,
+              credits: stored.eco_credits,
+              pending_actions: stored.action_queue.length,
+              has_starter_pack: hasSpecies
+            });
           } else {
+            console.log('📦 No stored collection found, initializing...');
             get().initializeOfflineCollection();
           }
         },
@@ -215,7 +243,14 @@ export const useHybridGameStore = create<HybridGameState>()(
             set({
               firebaseUser: user,
               isAuthenticated: !!user,
-              userId: user?.uid || null
+              userId: user?.uid || null,
+              userProfile: user ? {
+                username: user.displayName || user.email?.split('@')[0] || 'User',
+                displayName: user.displayName,
+                email: user.email,
+                avatarUrl: user.photoURL,
+                accountType: 'registered'
+              } : null
             });
 
             // Handle user sign-out - clear state
@@ -230,7 +265,8 @@ export const useHybridGameStore = create<HybridGameState>()(
                 syncError: null,
                 pendingActions: 0,
                 showSyncConflicts: false,
-                syncConflicts: []
+                syncConflicts: [],
+                userProfile: null
               });
             }
 
@@ -308,6 +344,8 @@ export const useHybridGameStore = create<HybridGameState>()(
           console.log('👤 Generated new guest ID:', guestId);
 
           // Set initial guest state (works offline immediately)
+          const guestUsername = `Guest-${guestId.slice(-6).toUpperCase()}`;
+
           set({
             isAuthenticated: true,
             isGuestMode: true,
@@ -316,7 +354,14 @@ export const useHybridGameStore = create<HybridGameState>()(
             guestToken: null,
             needsRegistration: true,
             userId: guestId, // Use guestId as userId initially
-            firebaseUser: null
+            firebaseUser: null,
+            userProfile: {
+              username: guestUsername,
+              displayName: guestUsername,
+              email: null,
+              avatarUrl: null,
+              accountType: 'guest'
+            }
           });
 
           // Initialize offline collection immediately
@@ -759,6 +804,20 @@ export const useHybridGameStore = create<HybridGameState>()(
           };
           const config = packConfigs[packType as keyof typeof packConfigs] || packConfigs.basic;
 
+          console.log(`🎁 Opening ${packType} pack - Cost: ${config.cost}, Current credits: ${state.offlineCollection.eco_credits}, Pending actions: ${state.offlineCollection.action_queue.length}`);
+
+          // Check for recent duplicate pack opening actions (within 1.5 seconds)
+          const recentPackActions = state.offlineCollection.action_queue.filter(
+            action => action.action === 'pack_opened' &&
+                     action.pack_type === packType &&
+                     (Date.now() - action.timestamp) < 1500
+          );
+
+          if (recentPackActions.length > 0) {
+            console.log('🚫 Duplicate pack opening detected, preventing duplicate action');
+            throw new Error('Pack opening already in progress. Please wait.');
+          }
+
           if (state.offlineCollection.eco_credits < config.cost) {
             throw new Error(`Insufficient credits. Need ${config.cost}, have ${state.offlineCollection.eco_credits}`);
           }
@@ -773,6 +832,12 @@ export const useHybridGameStore = create<HybridGameState>()(
             // Create pack opening action
             const action = offlineSecurityService.createAction('pack_opened', {
               pack_type: packType
+            });
+
+            console.log(`📝 Created pack opening action:`, {
+              action_id: action.id,
+              pack_type: packType,
+              timestamp: action.timestamp
             });
 
             // Open pack using proper rarity system
@@ -885,13 +950,27 @@ export const useHybridGameStore = create<HybridGameState>()(
             const result = await syncService.syncWithServer(state.offlineCollection, authToken);
 
             if (result.success) {
-              get().saveOfflineCollection(result.updated_collection);
+              // Update the collection and ensure pending actions are cleared
+              const updatedCollection = {
+                ...result.updated_collection,
+                action_queue: [] // Clear the action queue after successful sync
+              };
+
+              get().saveOfflineCollection(updatedCollection);
               set({
                 syncStatus: 'success',
                 lastSyncTime: Date.now(),
                 syncConflicts: result.conflicts,
-                showSyncConflicts: result.conflicts.length > 0
+                showSyncConflicts: result.conflicts.length > 0,
+                pendingActions: 0 // Explicitly set pending actions to 0
               });
+
+              // Force refresh the collection state to ensure UI updates
+              setTimeout(() => {
+                get().refreshCollectionState();
+              }, 100);
+
+              console.log('✅ Sync completed successfully, pending actions cleared');
             } else {
               set({
                 syncStatus: 'error',
@@ -947,6 +1026,46 @@ export const useHybridGameStore = create<HybridGameState>()(
         // Dismiss sync conflicts
         dismissSyncConflicts: () => {
           set({ showSyncConflicts: false, syncConflicts: [] });
+        },
+
+        // User Profile Management
+        updateUserProfile: (profileUpdate) => {
+          const currentProfile = get().userProfile;
+          set({
+            userProfile: {
+              ...currentProfile,
+              ...profileUpdate
+            }
+          });
+        },
+
+        generateGuestUsername: () => {
+          const guestId = get().guestId;
+          if (!guestId) return 'Guest User';
+          const shortId = guestId.slice(-6).toUpperCase();
+          return `Guest-${shortId}`;
+        },
+
+        clearUserProfile: () => {
+          set({ userProfile: null });
+        },
+
+        // Force refresh collection state from storage
+        refreshCollectionState: () => {
+          const stored = offlineSecurityService.loadOfflineCollection();
+          if (stored) {
+            const hasSpecies = Object.keys(stored.species_owned).length > 0;
+            set({
+              offlineCollection: stored,
+              hasStarterPack: hasSpecies,
+              pendingActions: stored.action_queue.length
+            });
+            console.log('🔄 Collection state refreshed:', {
+              species_count: Object.keys(stored.species_owned).length,
+              credits: stored.eco_credits,
+              pending_actions: stored.action_queue.length
+            });
+          }
         }
       }),
       {
@@ -963,7 +1082,9 @@ export const useHybridGameStore = create<HybridGameState>()(
           guestId: state.guestId,
           guestSecret: state.guestSecret,
           guestToken: state.guestToken,
-          needsRegistration: state.needsRegistration
+          needsRegistration: state.needsRegistration,
+          // Persist user profile information
+          userProfile: state.userProfile
         })
       }
     )

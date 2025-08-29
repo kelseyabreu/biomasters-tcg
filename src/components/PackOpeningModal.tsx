@@ -94,17 +94,25 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   }, [isOpen]);
 
   const handleOpenPack = async () => {
+    // Prevent double-clicking
+    if (isOpening) {
+      console.log('🚫 Pack opening already in progress, ignoring duplicate call');
+      return;
+    }
+
     setIsOpening(true);
-    
+
     try {
       // Simulate pack opening animation delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       let newCardNames: string[] = [];
 
       if (packType === 'starter') {
+        console.log('🎁 Opening starter pack...');
         newCardNames = await openStarterPack();
       } else {
+        console.log(`🎁 Opening ${packType} pack...`);
         newCardNames = await openPack(packType);
       }
       

@@ -196,6 +196,91 @@
   --background: var(--ion-color-primary-tint);
 }
 
+/* Guest Conversion Modal Styles */
+.conversion-info-card {
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 2px solid #ffc409;
+  border-radius: 12px;
+}
+
+.conversion-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.conversion-text h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.conversion-text p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.progress-preview {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0;
+}
+
+.stat-preview {
+  text-align: center;
+  padding: 4px;
+}
+
+.stat-preview ion-icon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.stat-preview .stat-value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  margin-bottom: 2px;
+}
+
+.stat-preview .stat-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.conversion-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.conversion-benefits ion-badge {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.guest-conversion-note {
+  background: rgba(255, 196, 9, 0.1);
+  border: 1px solid #ffc409;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.guest-conversion-note ion-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 /* Animation for smooth transitions */
 .auth-card {
   transition: all 0.3s ease;

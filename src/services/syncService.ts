@@ -206,11 +206,18 @@ class SyncService {
       mergedSpecies :
       localCollection.species_owned;
 
+    console.log('💰 Credit sync details:', {
+      local_credits: localCollection.eco_credits,
+      server_credits: response.new_server_state.eco_credits,
+      credit_change: response.new_server_state.eco_credits - localCollection.eco_credits,
+      actions_processed: localCollection.action_queue.length - discardedActions.length
+    });
+
     const updatedCollection: OfflineCollection = {
       ...localCollection,
       species_owned: finalSpecies,
-      eco_credits: Math.max(response.new_server_state.eco_credits, localCollection.eco_credits),
-      xp_points: Math.max(response.new_server_state.xp_points, localCollection.xp_points),
+      eco_credits: response.new_server_state.eco_credits, // Use server credits as authoritative
+      xp_points: response.new_server_state.xp_points, // Use server XP as authoritative
       action_queue: localCollection.action_queue.filter(
         action => !discardedActions.includes(action.id)
       ),

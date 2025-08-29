@@ -44,6 +44,13 @@ export interface UsersTable {
   games_won: number;
   cards_collected: number;
   packs_opened: number;
+  // Profile fields
+  bio: string | null;
+  location: string | null;
+  favorite_species: string | null;
+  is_public_profile: boolean;
+  email_notifications: boolean;
+  push_notifications: boolean;
   // User preferences and metadata
   preferences: string | null; // JSON string
   last_login_at: Date | null;

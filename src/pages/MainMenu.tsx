@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import {
   IonPage,
@@ -29,6 +29,8 @@ import {
   statsChart
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
+import { UserProfile } from '../components/UserProfile';
+import { GuestRegistrationCTA } from '../components/GuestRegistrationCTA';
 
 const MainMenu: React.FC = () => {
   const history = useHistory();
@@ -40,7 +42,8 @@ const MainMenu: React.FC = () => {
     allSpeciesCards,
     speciesLoaded,
     signOutUser,
-    initializeOfflineCollection
+    initializeOfflineCollection,
+    refreshCollectionState
   } = useHybridGameStore();
 
   // Debug logging
@@ -50,6 +53,13 @@ const MainMenu: React.FC = () => {
     hasFirebaseUser: !!firebaseUser,
     hasOfflineCollection: !!offlineCollection
   });
+
+  // Refresh collection state on mount to ensure UI is up to date
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshCollectionState();
+    }
+  }, [isAuthenticated, refreshCollectionState]);
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -68,6 +78,12 @@ const MainMenu: React.FC = () => {
       setToastMessage('Initializing collection...');
       setShowToast(true);
       await initializeOfflineCollection();
+
+      // Force refresh the collection state to ensure UI updates
+      setTimeout(() => {
+        refreshCollectionState();
+      }, 500);
+
       setToastMessage('✅ Collection initialized! You received starter credits and cards!');
       setShowToast(true);
     } catch (error) {
@@ -102,60 +118,14 @@ const MainMenu: React.FC = () => {
       </IonHeader>
       
       <IonContent className="ion-padding">
-        {/* Welcome Card */}
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>Welcome to Biomasters TCG</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <p>A hybrid offline/online trading card game with real biological data.</p>
-            
-            {isAuthenticated ? (
-              <div style={{ marginTop: '15px' }}>
-                <IonBadge color={isGuestMode ? "secondary" : "success"}>
-                  <IonIcon icon={person} style={{ marginRight: '5px' }} />
-                  {isGuestMode ? "Guest Mode" : "Signed In"}
-                </IonBadge>
-                {isGuestMode && (
-                  <div style={{ marginTop: '10px' }}>
-                    <IonText color="medium">
-                      <small>Playing offline - progress won't sync</small>
-                    </IonText>
-                  </div>
-                )}
-                <div style={{ marginTop: '15px' }}>
-                  <IonButton
-                    expand="block"
-                    fill="outline"
-                    onClick={handleSignOut}
-                    color="medium"
-                    size="small"
-                  >
-                    {isGuestMode ? "Exit Guest Mode" : "Sign Out"}
-                  </IonButton>
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginTop: '15px' }}>
-                <IonBadge color="warning">Not Signed In</IonBadge>
-                <div style={{ marginTop: '15px' }}>
-                  <IonButton
-                    expand="block"
-                    onClick={() => history.push('/auth')}
-                    color="primary"
-                    size="large"
-                  >
-                    <IonIcon icon={person} slot="start" />
-                    Sign In / Continue as Guest
-                  </IonButton>
-                </div>
-              </div>
-            )}
-          </IonCardContent>
-        </IonCard>
+        {/* Enhanced User Profile Section */}
+        <UserProfile showStats={false} />
+
+        {/* Guest Registration CTA - only shows for guest users */}
+        <GuestRegistrationCTA variant="card" dismissible={true} />
 
         {/* Collection Initialization for authenticated users without collection */}
-        {isAuthenticated && !offlineCollection && (
+        {isAuthenticated && (!offlineCollection || (offlineCollection && Object.keys(offlineCollection.species_owned).length === 0)) && (
           <IonCard>
             <IonCardHeader>
               <IonCardTitle>Initialize Your Collection</IonCardTitle>
@@ -278,16 +248,29 @@ const MainMenu: React.FC = () => {
               </IonRow>
               
               <IonRow>
-                <IonCol size="12">
-                  <IonButton 
-                    expand="block" 
-                    routerLink="/settings" 
+                <IonCol size={isAuthenticated && !isGuestMode ? "6" : "12"}>
+                  <IonButton
+                    expand="block"
+                    routerLink="/settings"
                     fill="clear"
                   >
                     <IonIcon icon={settings} slot="start" />
                     Settings & Sync
                   </IonButton>
                 </IonCol>
+                {isAuthenticated && !isGuestMode && (
+                  <IonCol size="6">
+                    <IonButton
+                      expand="block"
+                      routerLink="/profile"
+                      fill="clear"
+                      color="primary"
+                    >
+                      <IonIcon icon={person} slot="start" />
+                      My Profile
+                    </IonButton>
+                  </IonCol>
+                )}
               </IonRow>
             </IonGrid>
           </IonCardContent>

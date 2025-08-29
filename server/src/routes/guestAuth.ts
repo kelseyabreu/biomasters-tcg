@@ -4,6 +4,7 @@
  */
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authRateLimiter } from '../middleware/rateLimiter';
 import { requireAuth } from '../middleware/auth';
@@ -130,6 +131,35 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
         console.error('Error processing action:', error);
         errors.push(`Action ${action.action}: ${error}`);
       }
+    }
+
+    // 3. Create or update device sync state for offline sync
+    if (deviceId) {
+      const signingKey = crypto.randomBytes(32).toString('hex');
+      const keyExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+      await trx
+        .insertInto('device_sync_states')
+        .values({
+          device_id: deviceId,
+          user_id: user.id,
+          signing_key: signingKey,
+          key_expires_at: keyExpiresAt,
+          last_sync_timestamp: 0
+        })
+        .onConflict((oc) => oc
+          .column('device_id')
+          .doUpdateSet({
+            user_id: user.id,
+            signing_key: signingKey,
+            key_expires_at: keyExpiresAt,
+            last_sync_timestamp: 0,
+            updated_at: new Date()
+          })
+        )
+        .execute();
+
+      console.log('✅ Device sync state created/updated for device:', deviceId);
     }
 
     return { user, processedActions, errors };

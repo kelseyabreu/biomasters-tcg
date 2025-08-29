@@ -53,6 +53,15 @@ class SyncService {
         last_known_server_state: collection.last_sync.toString()
       };
 
+      console.log('🔄 Sending sync payload:', {
+        device_id: syncPayload.device_id,
+        actions_count: syncPayload.offline_actions.length,
+        client_version: syncPayload.client_version,
+        has_collection_state: !!syncPayload.collection_state,
+        collection_keys: Object.keys(syncPayload.collection_state),
+        authToken: authToken ? 'Present' : 'Missing'
+      });
+
       // Send to server for validation and processing
       const response = await this.sendSyncRequest(syncPayload, authToken);
 
@@ -79,7 +88,16 @@ class SyncService {
   private async sendSyncRequest(payload: SyncPayload, authToken?: string): Promise<SyncResponse> {
     try {
       const token = authToken || apiService.getAuthToken();
-      const response = await fetch('/api/sync', {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+      console.log('🌐 Making sync HTTP request:', {
+        url: `${API_BASE_URL}/api/sync`,
+        hasToken: !!token,
+        tokenPrefix: token ? token.substring(0, 10) + '...' : 'None',
+        payloadSize: JSON.stringify(payload).length
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,8 +107,21 @@ class SyncService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Sync failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.log('❌ Sync request failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          responseText: errorText
+        });
+
+        let errorData = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          console.log('❌ Failed to parse error response as JSON');
+        }
+
+        throw new Error((errorData as any).message || `Sync failed with status ${response.status}`);
       }
 
       return await response.json();
@@ -150,12 +181,36 @@ class SyncService {
       );
     }
 
-    // Create updated collection with server state
+    // Merge local and server state intelligently
+    const mergedSpecies = { ...localCollection.species_owned };
+
+    // For each species in server state, use the higher quantity (server is authoritative after sync)
+    for (const [species, serverCard] of Object.entries(response.new_server_state.species_owned)) {
+      mergedSpecies[species] = serverCard;
+    }
+
+    // For first-time sync, if server is empty but local has data, preserve local data
+    const hasServerData = Object.keys(response.new_server_state.species_owned).length > 0;
+    const hasLocalData = Object.keys(localCollection.species_owned).length > 0;
+
+    console.log('🔄 Sync merge logic:', {
+      hasServerData,
+      hasLocalData,
+      serverSpeciesCount: Object.keys(response.new_server_state.species_owned).length,
+      localSpeciesCount: Object.keys(localCollection.species_owned).length,
+      serverCredits: response.new_server_state.eco_credits,
+      localCredits: localCollection.eco_credits
+    });
+
+    const finalSpecies = hasServerData || !hasLocalData ?
+      mergedSpecies :
+      localCollection.species_owned;
+
     const updatedCollection: OfflineCollection = {
       ...localCollection,
-      species_owned: response.new_server_state.species_owned,
-      eco_credits: response.new_server_state.eco_credits,
-      xp_points: response.new_server_state.xp_points,
+      species_owned: finalSpecies,
+      eco_credits: Math.max(response.new_server_state.eco_credits, localCollection.eco_credits),
+      xp_points: Math.max(response.new_server_state.xp_points, localCollection.xp_points),
       action_queue: localCollection.action_queue.filter(
         action => !discardedActions.includes(action.id)
       ),

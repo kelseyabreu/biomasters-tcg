@@ -7,6 +7,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { db } from './kysely';
 import { sql } from 'kysely';
+import { Pool } from 'pg';
+import { getDbConfig } from '../config/database';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -66,8 +68,8 @@ export class KyselyMigrator {
     // Execute migration in a transaction
     await db.transaction().execute(async (trx) => {
       // Execute the migration SQL
-      await sql`${migrationSql}`.execute(trx);
-      
+      await sql.raw(migrationSql).execute(trx);
+
       // Mark as executed
       await trx
         .insertInto('migrations')
@@ -91,12 +93,18 @@ export class KyselyMigrator {
 
       await this.executeMigration('001_mvp_schema', schemaSql);
 
+      // Read and execute guest support migration (includes device_sync_states table)
+      const guestSupportPath = join(__dirname, 'migrations/002_guest_support.sql');
+      const guestSupportSql = readFileSync(guestSupportPath, 'utf8');
+
+      await this.executeMigration('002_guest_support', guestSupportSql);
+
       // Read and execute JSON foreign keys migration
-      const jsonKeysPath = join(__dirname, 'migrations/002_json_foreign_keys.sql');
+      const jsonKeysPath = join(__dirname, 'migrations/003_json_foreign_keys.sql');
       const jsonKeysSql = readFileSync(jsonKeysPath, 'utf8');
 
-      await this.executeMigration('002_json_foreign_keys', jsonKeysSql);
-      
+      await this.executeMigration('003_json_foreign_keys', jsonKeysSql);
+
       console.log('✅ All Kysely migrations completed successfully');
       
     } catch (error) {

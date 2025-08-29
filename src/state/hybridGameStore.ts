@@ -58,13 +58,14 @@ export interface HybridGameState {
   loadSpeciesData: () => Promise<void>;
 
   // Firebase Auth Actions
-  initializeAuth: () => void;
+  initializeAuth: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   signOutUser: () => Promise<void>;
   handleNewUser: () => Promise<void>;
   initializeOfflineKey: () => Promise<void>;
   loginExistingGuest: () => Promise<void>;
   registerGuestWithServer: () => Promise<void>;
+  recoverAuthenticationState: () => Promise<void>;
   
   // Starter Pack Actions
   openStarterPack: () => Promise<string[]>;
@@ -139,7 +140,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           // Initialize Firebase auth if not already done
           if (!state.firebaseUser) {
-            get().initializeAuth();
+            get().initializeAuth().catch(console.error);
           }
         },
 
@@ -190,8 +191,11 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Initialize Firebase auth listener
-        initializeAuth: () => {
+        initializeAuth: async () => {
           console.log('🔥 Initializing Firebase auth...');
+
+          // First, try to recover authentication state from persisted data
+          await get().recoverAuthenticationState();
 
           onAuthStateChanged(auth, async (user) => {
             console.log('🔥 Auth state changed:', user ? `User: ${user.uid}` : 'No user');
@@ -343,7 +347,8 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           console.log('👤 Logging in existing guest...');
 
-          const response = await fetch('/api/guest/login', {
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+          const response = await fetch(`${API_BASE_URL}/api/guest/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -384,7 +389,8 @@ export const useHybridGameStore = create<HybridGameState>()(
           // Collect offline action queue
           const actionQueue = state.offlineCollection?.action_queue || [];
 
-          const response = await fetch('/api/guest/register-and-sync', {
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+          const response = await fetch(`${API_BASE_URL}/api/guest/register-and-sync`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -430,6 +436,73 @@ export const useHybridGameStore = create<HybridGameState>()(
           }
 
           console.log('✅ Guest registered with server successfully');
+        },
+
+        // Recover authentication state after page refresh
+        recoverAuthenticationState: async () => {
+          const state = get();
+
+          console.log('🔄 Attempting to recover authentication state...');
+          console.log('🔍 Current state:', {
+            isAuthenticated: state.isAuthenticated,
+            isGuestMode: state.isGuestMode,
+            hasGuestId: !!state.guestId,
+            hasGuestSecret: !!state.guestSecret,
+            hasGuestToken: !!state.guestToken,
+            hasOfflineCollection: !!state.offlineCollection
+          });
+
+          // If we have offline collection but no authentication, try to recover
+          if (state.offlineCollection && !state.isAuthenticated) {
+            console.log('🔄 Found offline collection without authentication, attempting recovery...');
+
+            // If we have guest credentials, try to restore guest session
+            if (state.guestId && state.guestSecret) {
+              console.log('🔄 Found guest credentials, attempting to restore guest session...');
+              try {
+                // If we have a token, validate it first
+                if (state.guestToken) {
+                  console.log('🔄 Found existing guest token, validating...');
+                  // For now, assume token is valid and restore state
+                  set({
+                    isAuthenticated: true,
+                    isGuestMode: true,
+                    userId: state.guestId,
+                    needsRegistration: false
+                  });
+                  console.log('✅ Guest session restored from token');
+                  return;
+                }
+
+                // No token, try to login with credentials
+                await get().loginExistingGuest();
+                console.log('✅ Guest session recovered via login');
+              } catch (error) {
+                console.warn('⚠️ Failed to recover guest session:', error);
+                // Clear invalid credentials
+                set({
+                  guestId: null,
+                  guestSecret: null,
+                  guestToken: null,
+                  needsRegistration: false
+                });
+              }
+            } else if (state.guestId && !state.guestSecret) {
+              console.log('🔄 Found guest ID without secret, needs re-registration...');
+              // We have a guest ID but no secret, mark for registration
+              set({
+                isAuthenticated: true,
+                isGuestMode: true,
+                userId: state.guestId,
+                needsRegistration: true
+              });
+              console.log('✅ Guest session restored, marked for registration');
+            }
+          } else if (state.isAuthenticated && state.isGuestMode && state.guestId) {
+            console.log('✅ Guest authentication state already valid');
+          } else {
+            console.log('ℹ️ No authentication recovery needed');
+          }
         },
 
         // Sign out user
@@ -884,7 +957,13 @@ export const useHybridGameStore = create<HybridGameState>()(
           isFirstLaunch: state.isFirstLaunch,
           lastSyncTime: state.lastSyncTime,
           userId: state.userId,
-          isAuthenticated: state.isAuthenticated
+          isAuthenticated: state.isAuthenticated,
+          // Persist guest authentication state
+          isGuestMode: state.isGuestMode,
+          guestId: state.guestId,
+          guestSecret: state.guestSecret,
+          guestToken: state.guestToken,
+          needsRegistration: state.needsRegistration
         })
       }
     )

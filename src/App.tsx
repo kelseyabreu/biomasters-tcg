@@ -81,7 +81,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     const initialize = async () => {
       try {
-        initializeAuth();
+        await initializeAuth();
         // Give Firebase a moment to initialize
         setTimeout(() => setIsInitialized(true), 2000);
       } catch (error) {

@@ -58,7 +58,17 @@ router.post('/',
   ],
   async (req: Request, res: Response) => {
     try {
+      console.log('🔄 Sync request received:', {
+        user: req.user ? { id: req.user.id, isGuest: req.user.is_guest } : 'No user',
+        bodyKeys: Object.keys(req.body),
+        deviceId: req.body.device_id,
+        actionsCount: Array.isArray(req.body.offline_actions) ? req.body.offline_actions.length : 'Not array',
+        clientVersion: req.body.client_version,
+        hasCollectionState: !!req.body.collection_state
+      });
+
       if (!req.user) {
+        console.log('❌ Sync failed: No user found');
         res.status(404).json({
           error: 'User not found',
           message: 'Please complete registration first'
@@ -68,6 +78,10 @@ router.post('/',
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log('❌ Sync validation failed:', {
+          errors: errors.array(),
+          body: req.body
+        });
         res.status(400).json({
           error: 'Validation failed',
           details: errors.array()
@@ -266,26 +280,26 @@ router.post('/',
 
       // Update database with final state
       await db.transaction().execute(async (trx) => {
-        // Clear existing user cards
-        await trx
-          .deleteFrom('user_cards')
-          .where('user_id', '=', req.user!.id)
-          .execute();
-
-        // Insert updated collection
-        if (serverCollection.size > 0) {
-          const cardsToInsert = Array.from(serverCollection.values()).map(card => ({
-            user_id: req.user!.id,
-            species_name: card.species_name,
-            quantity: card.quantity,
-            acquired_via: card.acquired_via,
-            first_acquired_at: card.first_acquired_at,
-            last_acquired_at: card.last_acquired_at
-          }));
-
+        // Upsert each card individually (preserves first_acquired_at, updates quantity and last_acquired_at)
+        for (const [speciesName, card] of serverCollection) {
           await trx
             .insertInto('user_cards')
-            .values(cardsToInsert)
+            .values({
+              user_id: req.user!.id,
+              species_name: speciesName,
+              quantity: card.quantity,
+              acquired_via: card.acquired_via,
+              first_acquired_at: card.first_acquired_at,
+              last_acquired_at: card.last_acquired_at
+            })
+            .onConflict((oc) => oc
+              .columns(['user_id', 'species_name'])
+              .doUpdateSet({
+                quantity: card.quantity,
+                last_acquired_at: card.last_acquired_at
+                // Note: first_acquired_at and acquired_via are preserved from original
+              })
+            )
             .execute();
         }
 
@@ -313,8 +327,14 @@ router.post('/',
           .values(syncTransaction)
           .execute();
 
-        // Log all processed actions
-        const actionLogs = sortedActions.map(action => ({
+        // Log only actions that weren't already processed (avoid duplicates)
+        const conflictActionIds = conflicts.map(c => c.action_id);
+        const actionsToLog = sortedActions.filter(action =>
+          !conflictActionIds.includes(action.id) ||
+          conflicts.find(c => c.action_id === action.id)?.reason !== 'duplicate_action'
+        );
+
+        const actionLogs = actionsToLog.map(action => ({
           user_id: req.user!.id,
           device_id: device_id,
           action_id: action.id,
@@ -324,10 +344,21 @@ router.post('/',
         }));
 
         if (actionLogs.length > 0) {
-          await trx
-            .insertInto('sync_actions_log')
-            .values(actionLogs)
-            .execute();
+          // Use ON CONFLICT to handle duplicate action IDs gracefully
+          for (const actionLog of actionLogs) {
+            await trx
+              .insertInto('sync_actions_log')
+              .values(actionLog)
+              .onConflict((oc) => oc
+                .columns(['user_id', 'action_id'])
+                .doUpdateSet({
+                  status: actionLog.status,
+                  conflict_reason: actionLog.conflict_reason,
+                  processed_at: new Date()
+                })
+              )
+              .execute();
+          }
         }
       });
 

@@ -271,5 +271,22 @@
       "activity": 8.5
     },
     "reliability": 0.90
+  },
+  "phyloAttributes": {
+    "terrains": ["Forest", "Grassland", "Urban"],
+    "climates": ["Cool", "Warm"],
+    "foodchainLevel": 3,
+    "scale": 5,
+    "dietType": "Omnivore",
+    "movementCapability": {
+      "moveValue": 2,
+      "canFly": false,
+      "canSwim": true,
+      "canBurrow": false
+    },
+    "specialKeywords": [],
+    "pointValue": 3,
+    "conservationStatus": "Least Concern",
+    "compatibilityNotes": "Domestic companion, adaptable to human environments"
   }
 }

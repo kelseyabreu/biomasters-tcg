@@ -235,5 +235,22 @@
       "activity": 7.0
     },
     "reliability": 0.75
+  },
+  "phyloAttributes": {
+    "terrains": ["Forest", "Grassland", "Urban"],
+    "climates": ["Cool", "Warm"],
+    "foodchainLevel": 3,
+    "scale": 3,
+    "dietType": "Carnivore",
+    "movementCapability": {
+      "moveValue": 2,
+      "canFly": false,
+      "canSwim": false,
+      "canBurrow": false
+    },
+    "specialKeywords": [],
+    "pointValue": 6,
+    "conservationStatus": "Least Concern",
+    "compatibilityNotes": "Skilled predator, adaptable to various environments"
   }
 }

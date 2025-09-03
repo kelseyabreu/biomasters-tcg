@@ -1,0 +1,486 @@
+/* Ecosystem Board Styles - Cross-Platform Compatible */
+
+.ecosystem-board-container {
+  --grid-size: 120px;
+  --primary-color: #3b82f6;
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --forest-color: #16a34a;
+  --ocean-color: #0ea5e9;
+  --grassland-color: #84cc16;
+  --mountain-color: #6b7280;
+  --desert-color: #f97316;
+  --urban-color: #64748b;
+
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  overflow: hidden;
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+}
+
+.ecosystem-board-container.mobile {
+  touch-action: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ecosystem-board-container.desktop {
+  cursor: grab;
+}
+
+.ecosystem-board-container.desktop:active {
+  cursor: grabbing;
+}
+
+.ecosystem-board {
+  position: relative;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.1) 0%, transparent 50%);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.ecosystem-board.mobile {
+  border-radius: 0;
+  border: none;
+  backdrop-filter: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Grid Cell Styles */
+.grid-cell {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
+}
+
+.grid-cell.empty:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateZ(5px);
+}
+
+.grid-cell.highlighted {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 
+    0 0 30px rgba(34, 197, 94, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: pulse-highlight 2s infinite;
+}
+
+.grid-cell.occupied {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Ecosystem Card Styles */
+.ecosystem-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ecosystem-card:active {
+  cursor: grabbing;
+}
+
+/* Terrain-based card styling */
+.ecosystem-card.terrain-forest {
+  border-color: var(--forest-color);
+  box-shadow: 
+    0 8px 32px rgba(22, 163, 74, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ecosystem-card.terrain-ocean {
+  border-color: var(--ocean-color);
+  box-shadow: 
+    0 8px 32px rgba(14, 165, 233, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ecosystem-card.terrain-grassland {
+  border-color: var(--grassland-color);
+  box-shadow: 
+    0 8px 32px rgba(132, 204, 22, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ecosystem-card.terrain-mountain {
+  border-color: var(--mountain-color);
+  box-shadow: 
+    0 8px 32px rgba(107, 114, 128, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ecosystem-card.terrain-desert {
+  border-color: var(--desert-color);
+  box-shadow: 
+    0 8px 32px rgba(249, 115, 22, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ecosystem-card.terrain-urban {
+  border-color: var(--urban-color);
+  box-shadow: 
+    0 8px 32px rgba(100, 116, 139, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Climate-based effects */
+.ecosystem-card.climate-cold::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(147, 197, 253, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ecosystem-card.climate-hot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(251, 146, 60, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Card Content */
+.card-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.card-image {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.ecosystem-card:hover .card-image img {
+  transform: scale(1.1);
+}
+
+.card-info {
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 0 0 8px 8px;
+}
+
+.card-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+
+.card-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.card-stats span {
+  padding: 2px 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Connection Lines */
+.connection-lines {
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Placement Preview */
+.placement-preview {
+  width: 80%;
+  height: 80%;
+  border: 2px dashed rgba(59, 130, 246, 0.6);
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.placement-preview::before {
+  content: '+';
+  font-size: 24px;
+  color: rgba(59, 130, 246, 0.8);
+  font-weight: bold;
+}
+
+/* Health Indicator */
+.health-indicator {
+  position: relative;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Animations */
+@keyframes pulse-highlight {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px rgba(34, 197, 94, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 50px rgba(34, 197, 94, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ecosystem-board-container {
+    --grid-size: 80px;
+  }
+  
+  .card-info h4 {
+    font-size: 10px;
+  }
+  
+  .card-stats {
+    font-size: 8px;
+  }
+  
+  .health-indicator {
+    width: 40px;
+    height: 40px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ecosystem-board-container {
+    --grid-size: 60px;
+  }
+  
+  .card-info {
+    padding: 4px;
+  }
+  
+  .card-info h4 {
+    font-size: 8px;
+  }
+  
+  .card-stats {
+    font-size: 7px;
+  }
+}
+
+/* Touch-friendly interactions for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .grid-cell:active {
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(0.95);
+  }
+  
+  .ecosystem-card:active {
+    transform: scale(1.05);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ecosystem-board {
+    border: 2px solid white;
+  }
+  
+  .grid-cell {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .ecosystem-card {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ecosystem-card,
+  .grid-cell,
+  .placement-preview {
+    transition: none;
+  }
+  
+  .health-indicator {
+    animation: none;
+  }
+  
+  @keyframes pulse-highlight {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+}
+
+/* Mobile Zoom Controls */
+.mobile-zoom-controls {
+  position: fixed;
+  top: 180px; /* Move below action bar */
+  right: 10px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 4px 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+}
+
+.mobile-zoom-controls ion-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  margin: 0 2px;
+}
+
+.zoom-level {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Board Selected Card Styles */
+.ecosystem-card.board-selected {
+  border: 3px solid #ff9500 !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 149, 0, 0.3),
+    0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  z-index: 15 !important;
+}
+
+/* Mobile Hand Styles */
+.mobile-hand-card {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 !important;
+  border-radius: 16px 16px 0 0 !important;
+  max-height: 40vh;
+  z-index: 999;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.mobile-hand-card ion-card-content {
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+/* Hide scrollbars in hand */
+.mobile-hand-card ion-card-content::-webkit-scrollbar,
+ion-card-content div::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-hand-card ion-card-content,
+ion-card-content div {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Responsive Grid Adjustments */
+@media (max-width: 768px) {
+  .ecosystem-board-container {
+    --grid-size: 80px;
+  }
+
+  .mobile-zoom-controls {
+    top: 200px; /* Account for mobile action bar */
+  }
+
+  /* Ensure mobile hand doesn't overlap with action bar */
+  .mobile-hand-card {
+    margin-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ecosystem-board-container {
+    --grid-size: 60px;
+  }
+
+  .mobile-hand-card {
+    max-height: 35vh;
+  }
+}
+
+/* Performance optimizations */
+.ecosystem-board * {
+  will-change: transform;
+  backface-visibility: hidden;
+}

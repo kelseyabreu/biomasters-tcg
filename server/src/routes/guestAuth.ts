@@ -145,15 +145,16 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
           user_id: user.id,
           signing_key: signingKey,
           key_expires_at: keyExpiresAt,
-          last_sync_timestamp: 0
+          last_sync_timestamp: 0,
+          last_used_at: new Date()
         })
         .onConflict((oc) => oc
-          .column('device_id')
+          .columns(['device_id', 'user_id'])
           .doUpdateSet({
-            user_id: user.id,
             signing_key: signingKey,
             key_expires_at: keyExpiresAt,
             last_sync_timestamp: 0,
+            last_used_at: new Date(),
             updated_at: new Date()
           })
         )
@@ -280,6 +281,14 @@ router.post('/convert', requireAuth, asyncHandler(async (req, res) => {
     return res.status(400).json({
       error: 'NOT_GUEST',
       message: 'Account is not a guest account'
+    });
+  }
+
+  // Security check: Ensure guest account hasn't already been converted
+  if (guestUser.firebase_uid) {
+    return res.status(409).json({
+      error: 'ALREADY_CONVERTED',
+      message: 'This guest account has already been converted.'
     });
   }
 

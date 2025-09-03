@@ -24,11 +24,11 @@ function initializeRateLimiters() {
       blockDuration: 900, // Block for 15 minutes if limit exceeded
     });
 
-    // Authentication rate limiter (stricter)
+    // Authentication rate limiter
     authLimiter = new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_auth',
-      points: 5, // Number of requests
+      points: 1000, // Number of requests
       duration: 900, // Per 15 minutes
       blockDuration: 1800, // Block for 30 minutes if limit exceeded
     });
@@ -64,7 +64,7 @@ function initializeRateLimiters() {
 
     authLimiter = new RateLimiterMemory({
       keyPrefix: 'rl_auth',
-      points: 5,
+      points: 1000,
       duration: 900,
       blockDuration: 1800,
     });
@@ -98,7 +98,7 @@ function createRateLimitMiddleware(
     try {
       // Generate key for rate limiting
       const key = keyGenerator ? keyGenerator(req) : req.ip;
-      
+
       // Check rate limit
       const result = await limiter.consume(key || 'anonymous');
       

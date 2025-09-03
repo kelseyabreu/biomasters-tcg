@@ -371,11 +371,16 @@ router.post('/offline-key', authenticateToken, asyncHandler(async (req, res) => 
     return;
   }
 
+  console.log('🔑 Generating offline key for device registration:', {
+    device_id,
+    user_id: req.user!.id
+  });
+
   // Generate cryptographically secure signing key
   const signingKey = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-  // Store in database
+  // Store in database with user scoping and last_used_at timestamp
   await db
     .insertInto('device_sync_states')
     .values({
@@ -383,17 +388,25 @@ router.post('/offline-key', authenticateToken, asyncHandler(async (req, res) => 
       user_id: req.user!.id,
       signing_key: signingKey,
       key_expires_at: expiresAt,
-      last_sync_timestamp: 0
+      last_sync_timestamp: 0,
+      last_used_at: new Date()
     })
     .onConflict((oc) => oc
-      .column('device_id')
+      .columns(['device_id', 'user_id'])
       .doUpdateSet({
         signing_key: signingKey,
         key_expires_at: expiresAt,
+        last_used_at: new Date(),
         updated_at: new Date()
       })
     )
     .execute();
+
+  console.log('✅ Device registered for offline sync:', {
+    device_id,
+    user_id: req.user!.id,
+    key_expires_at: expiresAt
+  });
 
   res.json({
     signing_key: signingKey,

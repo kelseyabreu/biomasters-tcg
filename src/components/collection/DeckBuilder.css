@@ -474,3 +474,305 @@
     font-size: 1.1rem;
   }
 }
+
+/* Saved Deck Cards Styling */
+.deck-card {
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.deck-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.deck-card-active {
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg,
+    rgba(var(--ion-color-success-rgb), 0.1) 0%,
+    rgba(var(--ion-color-success-rgb), 0.05) 100%);
+}
+
+.deck-card-active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(var(--ion-color-success-rgb), 0.3);
+}
+
+/* Deck action buttons styling */
+.deck-card ion-button,
+.deck-card-active ion-button {
+  --border-radius: 8px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.5px;
+}
+
+.deck-card ion-button[color="primary"],
+.deck-card-active ion-button[color="primary"] {
+  --background: var(--ion-color-primary);
+  --background-hover: var(--ion-color-primary-shade);
+  --color: var(--ion-color-primary-contrast);
+}
+
+.deck-card ion-button[color="success"],
+.deck-card-active ion-button[color="success"] {
+  --background: var(--ion-color-success);
+  --background-hover: var(--ion-color-success-shade);
+  --color: var(--ion-color-success-contrast);
+}
+
+.deck-card ion-button[color="danger"],
+.deck-card-active ion-button[color="danger"] {
+  --background: transparent;
+  --background-hover: rgba(var(--ion-color-danger-rgb), 0.1);
+  --color: var(--ion-color-danger);
+  --border-color: var(--ion-color-danger);
+  --border-style: solid;
+  --border-width: 1px;
+}
+
+/* Fixed height container for deck cards to prevent scroll jumping */
+.deck-cards-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--ion-color-light-shade);
+  border-radius: 8px;
+  background: var(--ion-color-light-tint);
+  scrollbar-width: thin;
+  scrollbar-color: var(--ion-color-medium) var(--ion-color-light);
+}
+
+.deck-cards-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.deck-cards-container::-webkit-scrollbar-track {
+  background: var(--ion-color-light);
+  border-radius: 4px;
+}
+
+.deck-cards-container::-webkit-scrollbar-thumb {
+  background: var(--ion-color-medium);
+  border-radius: 4px;
+}
+
+.deck-cards-container::-webkit-scrollbar-thumb:hover {
+  background: var(--ion-color-medium-shade);
+}
+
+/* Responsive deck buttons */
+@media (max-width: 768px) {
+  .deck-card ion-button,
+  .deck-card-active ion-button {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    font-size: 0.8rem;
+    min-width: 50px;
+  }
+
+  .deck-card .deck-actions,
+  .deck-card-active .deck-actions {
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+  }
+}
+
+/* New Deck Builder Editor Styles */
+.deck-editor-header {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--ion-color-light-tint);
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+/* Compact mode for deck editor */
+.deck-editor-header.compact {
+  margin: 0px;
+  padding: 2px;
+}
+
+.deck-cards-area.compact {
+  margin-bottom: 8px;
+}
+
+.deck-cards-area.compact .ion-card-header {
+  padding: 8px 16px 4px 16px;
+}
+
+.deck-cards-area.compact .ion-card-content {
+  padding-top: 4px;
+}
+
+.deck-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.deck-name-input {
+  flex: 1;
+  --background: white;
+  --border-radius: 8px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+.deck-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+.zoom-level {
+  font-weight: bold;
+  color: var(--ion-color-dark);
+  min-width: 24px;
+  text-align: center;
+}
+
+.deck-cards-area {
+  margin-bottom: 16px;
+}
+
+.deck-cards-grid {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ion-color-medium) var(--ion-color-light);
+  /* Grid will be set dynamically based on zoom level */
+}
+
+.deck-cards-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.deck-cards-grid::-webkit-scrollbar-track {
+  background: var(--ion-color-light);
+  border-radius: 4px;
+}
+
+.deck-cards-grid::-webkit-scrollbar-thumb {
+  background: var(--ion-color-medium);
+  border-radius: 4px;
+}
+
+.deck-cards-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--ion-color-medium-shade);
+}
+
+.deck-card-slot {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.deck-card-slot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.deck-card-slot.selected {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.collection-area {
+  margin-bottom: 80px; /* Space for FAB buttons */
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+.collection-card-wrapper {
+  transition: all 0.3s ease;
+}
+
+.collection-card-wrapper.highlighted {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.zoom-1x .deck-cards-grid {
+  grid-template-rows: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  max-height: 150px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(120px, 1fr);
+}
+
+.zoom-2x .deck-cards-grid {
+  grid-template-rows: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  max-height: 300px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(120px, 1fr);
+}
+
+.zoom-3x .deck-cards-grid {
+  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  max-height: 450px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(120px, 1fr);
+}
+
+/* FAB button positioning */
+ion-fab[vertical="bottom"][horizontal="end"] {
+  bottom: 16px;
+  right: 16px;
+}
+
+ion-fab[vertical="bottom"][horizontal="start"] {
+  bottom: 16px;
+  left: 16px;
+}
+
+/* Mobile adjustments for new editor */
+@media (max-width: 768px) {
+  .deck-editor-header {
+    padding: 12px;
+  }
+
+  .deck-name-row {
+    /* Keep as flex row on mobile */
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .deck-controls-row {
+    /* Keep as flex row on mobile */
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+
+
+  .deck-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}

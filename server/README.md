@@ -154,6 +154,8 @@ Required environment variables (see `.env.example`):
 
 ### **Database Design Philosophy**
 - **Type-Safe Queries**: All database operations use Kysely with generated TypeScript types
+- **Multi-User Device Support**: Composite primary keys enable multiple users per device
+- **User Activity Tracking**: Last used timestamps for device usage analytics
 - **Transaction Safety**: Complex operations wrapped in database transactions
 - **Performance First**: Query optimization through Kysely's query builder
 - **Schema Evolution**: Migrations handle database schema changes safely
@@ -232,6 +234,8 @@ CMD ["npm", "start"]
 
 ### **Understanding the Database Layer**
 - **Kysely Query Builder**: Type-safe SQL query construction with TypeScript integration
+- **Multi-User Device Schema**: Composite primary keys `(device_id, user_id)` for shared device support
+- **User Activity Tracking**: `last_used_at` timestamps for device usage monitoring
 - **Schema Management**: Database migrations handle schema evolution
 - **Type Generation**: Database types auto-generated from schema for compile-time safety
 - **Transaction Patterns**: Complex operations wrapped in database transactions for consistency

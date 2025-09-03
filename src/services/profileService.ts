@@ -3,6 +3,8 @@
  * Handles user profile operations
  */
 
+import { authApi } from './apiClient';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export interface ProfileUpdateData {
@@ -65,22 +67,10 @@ export const updateUserProfile = async (
 /**
  * Get current user profile
  */
-export const getCurrentUserProfile = async (token: string) => {
+export const getCurrentUserProfile = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get profile');
-    }
-
-    return data;
+    const response = await authApi.getProfile();
+    return response.data;
   } catch (error: any) {
     console.error('Get profile failed:', error);
     throw new Error(error.message || 'Failed to get profile');

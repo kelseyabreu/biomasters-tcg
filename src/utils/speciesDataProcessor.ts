@@ -443,6 +443,7 @@ export function convertSpeciesToCard(speciesData: any): Card {
   const perception = speciesData.perception;
   const movement = speciesData.movement;
   const environment = speciesData.environment;
+  const phyloAttributes = speciesData.phyloAttributes;
 
   const trophicRole = determineTrophicRole(speciesData);
   const habitat = determineHabitat(speciesData);
@@ -495,7 +496,25 @@ export function convertSpeciesToCard(speciesData: any): Card {
       // Lifespan data
       lifespan_Max_Days: body?.lifespan_Max_Days,
       habitat: environment?.habitat
-    }
+    },
+    // Phylo domino-style game attributes
+    phyloAttributes: phyloAttributes ? {
+      terrains: phyloAttributes.terrains || [],
+      climates: phyloAttributes.climates || [],
+      foodchainLevel: phyloAttributes.foodchainLevel || 1,
+      scale: phyloAttributes.scale || 5,
+      dietType: phyloAttributes.dietType || 'Producer',
+      movementCapability: phyloAttributes.movementCapability || {
+        moveValue: 0,
+        canFly: false,
+        canSwim: false,
+        canBurrow: false
+      },
+      specialKeywords: phyloAttributes.specialKeywords || [],
+      pointValue: phyloAttributes.pointValue || 2,
+      conservationStatus: phyloAttributes.conservationStatus || 'Not Evaluated',
+      compatibilityNotes: phyloAttributes.compatibilityNotes || ''
+    } : undefined
   };
 }
 

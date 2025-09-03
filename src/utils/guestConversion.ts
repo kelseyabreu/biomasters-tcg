@@ -4,6 +4,7 @@
  */
 
 import { UserCredential } from 'firebase/auth';
+import { guestApi } from '../services/apiClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -29,32 +30,15 @@ export const convertGuestToRegistered = async (
   try {
     // Step 1: Get the Firebase ID token from the new credential
     const firebaseToken = await firebaseCredential.user.getIdToken();
-    
-    // Step 2: Call the server conversion endpoint
-    // This endpoint expects:
-    // - Authorization header with the guest JWT (proves ownership of guest account)
-    // - Request body with the Firebase token (proves ownership of new Firebase account)
-    const response = await fetch(`${API_BASE_URL}/api/guest/convert`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${guestToken}` // Guest JWT in header
-      },
-      body: JSON.stringify({
-        firebaseToken // Firebase JWT in body
-      })
-    });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Conversion failed');
-    }
+    // Step 2: Call the server conversion endpoint using apiClient
+    // Note: The guest JWT will be automatically attached by the apiClient interceptor
+    const response = await guestApi.convert(firebaseToken);
 
     return {
       success: true,
-      message: data.message || 'Account converted successfully',
-      user: data.user
+      message: response.data.message || 'Account converted successfully',
+      user: response.data.user || response.data.data?.user
     };
 
   } catch (error: any) {

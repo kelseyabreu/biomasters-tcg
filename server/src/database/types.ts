@@ -141,11 +141,12 @@ export interface MigrationsTable {
 }
 
 export interface DeviceSyncStatesTable {
-  device_id: string; // Primary key
-  user_id: string;
+  device_id: string; // Part of composite primary key
+  user_id: string; // Part of composite primary key
   signing_key: string;
   key_expires_at: Date;
   last_sync_timestamp: number;
+  last_used_at: Generated<Date>;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }

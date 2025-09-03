@@ -5,6 +5,7 @@
 
 import { apiService } from './apiService';
 import { offlineSecurityService, OfflineCollection, OfflineAction, SyncPayload, SyncResponse } from './offlineSecurityService';
+import { gameApi } from './apiClient';
 
 export interface SyncConflict {
   action_id: string;
@@ -63,10 +64,16 @@ class SyncService {
       });
 
       // Send to server for validation and processing
-      const response = await this.sendSyncRequest(syncPayload, authToken);
+      console.log('🌐 Making sync HTTP request:', {
+        payloadSize: JSON.stringify(syncPayload).length,
+        hasAuthToken: !!authToken
+      });
+
+      const response = await gameApi.syncCollection(syncPayload);
+      const syncResponse = response.data.data || response.data;
 
       // Process sync response
-      return await this.processSyncResponse(collection, response);
+      return await this.processSyncResponse(collection, syncResponse);
 
     } catch (error) {
       console.error('Sync failed:', error);
@@ -82,56 +89,7 @@ class SyncService {
     }
   }
 
-  /**
-   * Send sync request to server
-   */
-  private async sendSyncRequest(payload: SyncPayload, authToken?: string): Promise<SyncResponse> {
-    try {
-      const token = authToken || apiService.getAuthToken();
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-      console.log('🌐 Making sync HTTP request:', {
-        url: `${API_BASE_URL}/api/sync`,
-        hasToken: !!token,
-        tokenPrefix: token ? token.substring(0, 10) + '...' : 'None',
-        payloadSize: JSON.stringify(payload).length
-      });
-
-      const response = await fetch(`${API_BASE_URL}/api/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('❌ Sync request failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          responseText: errorText
-        });
-
-        let errorData = {};
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          console.log('❌ Failed to parse error response as JSON');
-        }
-
-        throw new Error((errorData as any).message || `Sync failed with status ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error. Please check your internet connection.');
-      }
-      throw error;
-    }
-  }
 
   /**
    * Process sync response and handle conflicts

@@ -1,0 +1,451 @@
+/* Event Effects Styles - Cross-Platform Compatible */
+
+.event-effects-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+}
+
+/* Background Effects */
+.event-background-effects {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.climate-effect {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(20px);
+}
+
+.disaster-effect {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(251, 146, 60, 0.2) 50%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  filter: blur(30px);
+}
+
+/* Main Event Card */
+.event-card-container {
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.event-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin: 0;
+}
+
+.event-header {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+  position: relative;
+  overflow: hidden;
+}
+
+.event-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.event-icon {
+  font-size: 32px;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.event-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  flex: 1;
+}
+
+/* Event Type Specific Styling */
+.event-climate .event-header {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.event-natural_disaster .event-header {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.event-environmental .event-header {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.event-human .event-header {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.event-conservation .event-header {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+/* Event Content */
+.event-description {
+  margin-bottom: 20px;
+}
+
+.event-description p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 15px;
+}
+
+.event-flavor {
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+.event-flavor em {
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* Event Results */
+.event-results {
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.event-results h3 {
+  margin: 0 0 15px 0;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.impact-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.impact-section.removed {
+  border-left: 4px solid #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.impact-section.moved {
+  border-left: 4px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.impact-section.positive {
+  border-left: 4px solid #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.impact-section.negative {
+  border-left: 4px solid #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.impact-section ion-icon {
+  font-size: 20px;
+  color: white;
+}
+
+.impact-section span {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+/* Reaction Timer */
+.reaction-timer {
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  text-align: center;
+}
+
+.timer-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.timer-value {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+/* Reaction Options */
+.reaction-options {
+  margin: 20px 0;
+}
+
+.reaction-options h3 {
+  margin: 0 0 15px 0;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.reaction-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reaction-button {
+  --border-radius: 12px;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  height: 48px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reaction-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Continue Section */
+.continue-section {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.continue-button {
+  --border-radius: 15px;
+  --padding-start: 30px;
+  --padding-end: 30px;
+  height: 50px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Cascade Effects */
+.cascade-effect {
+  pointer-events: none;
+  z-index: 5;
+}
+
+.cascade-text {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+/* Particle Effects */
+.particle-effects {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle-climate {
+  background: radial-gradient(circle, #3b82f6, #1d4ed8);
+  box-shadow: 0 0 10px #3b82f6;
+}
+
+.particle-natural_disaster {
+  background: radial-gradient(circle, #ef4444, #dc2626);
+  box-shadow: 0 0 10px #ef4444;
+}
+
+.particle-environmental {
+  background: radial-gradient(circle, #22c55e, #16a34a);
+  box-shadow: 0 0 10px #22c55e;
+}
+
+.particle-human {
+  background: radial-gradient(circle, #f59e0b, #d97706);
+  box-shadow: 0 0 10px #f59e0b;
+}
+
+.particle-conservation {
+  background: radial-gradient(circle, #8b5cf6, #7c3aed);
+  box-shadow: 0 0 10px #8b5cf6;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .event-effects-overlay {
+    padding: 10px;
+  }
+  
+  .event-card-container {
+    max-height: 90vh;
+  }
+  
+  .event-header {
+    padding: 15px;
+  }
+  
+  .event-header h2 {
+    font-size: 20px;
+  }
+  
+  .event-icon {
+    font-size: 24px;
+  }
+  
+  .reaction-buttons {
+    gap: 8px;
+  }
+  
+  .reaction-button {
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .event-header {
+    padding: 12px;
+  }
+  
+  .event-header h2 {
+    font-size: 18px;
+  }
+  
+  .event-icon {
+    font-size: 20px;
+  }
+  
+  .event-description p {
+    font-size: 14px;
+  }
+  
+  .reaction-button {
+    height: 40px;
+    font-size: 14px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .event-card {
+    border: 2px solid white;
+  }
+  
+  .impact-section {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .event-header::before {
+    animation: none;
+  }
+  
+  .particle {
+    animation: none;
+  }
+  
+  .cascade-effect {
+    animation: none;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .event-effects-overlay {
+    background: rgba(0, 0, 0, 0.9);
+  }
+  
+  .event-card {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+  }
+}

@@ -238,5 +238,22 @@
       "activity": 5.1
     },
     "reliability": 0.73
+  },
+  "phyloAttributes": {
+    "terrains": ["Forest", "Grassland"],
+    "climates": ["Cool", "Warm"],
+    "foodchainLevel": 2,
+    "scale": 7,
+    "dietType": "Herbivore",
+    "movementCapability": {
+      "moveValue": 3,
+      "canFly": false,
+      "canSwim": true,
+      "canBurrow": false
+    },
+    "specialKeywords": [],
+    "pointValue": 4,
+    "conservationStatus": "Least Concern",
+    "compatibilityNotes": "Fast herbivore, important prey species for large carnivores"
   }
 }

@@ -76,18 +76,30 @@ router.post('/',
         return;
       }
 
+      // Check validation errors first
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         console.log('❌ Sync validation failed:', {
           errors: errors.array(),
-          body: req.body
+          receivedBody: {
+            device_id: req.body.device_id,
+            offline_actions: Array.isArray(req.body.offline_actions) ? `Array[${req.body.offline_actions.length}]` : typeof req.body.offline_actions,
+            collection_state: typeof req.body.collection_state,
+            client_version: req.body.client_version,
+            last_known_server_state: req.body.last_known_server_state
+          }
         });
         res.status(400).json({
           error: 'Validation failed',
-          details: errors.array()
+          details: errors.array(),
+          message: 'Request body validation failed'
         });
         return;
       }
+
+
+
+      console.log('✅ Sync validation passed, processing request...');
 
       const syncPayload: SyncPayload = req.body;
       const { device_id } = syncPayload;
@@ -95,26 +107,58 @@ router.post('/',
       const conflicts: any[] = [];
       const discardedActions: string[] = [];
 
+      console.log('🔍 Sync payload details:', {
+        device_id,
+        userId,
+        actionsToProcess: syncPayload.offline_actions.length,
+        collectionStateKeys: Object.keys(syncPayload.collection_state)
+      });
+
       // Get current server state
+      console.log('🔍 Fetching current collection from database...');
       const currentCollection = await db
         .selectFrom('user_cards')
         .selectAll()
         .where('user_id', '=', req.user.id)
         .execute();
 
+      console.log('✅ Current collection fetched:', {
+        collectionSize: currentCollection.length,
+        species: currentCollection.map(c => c.species_name)
+      });
+
       const currentCredits = req.user.eco_credits;
       const currentXP = req.user.xp_points;
 
+      console.log('🔍 Current user state:', {
+        credits: currentCredits,
+        xp: currentXP,
+        userId: req.user.id
+      });
+
       // Process actions chronologically
+      console.log('🔍 Sorting actions by timestamp...');
       const sortedActions = syncPayload.offline_actions.sort((a, b) => a.timestamp - b.timestamp);
-      
+      console.log('✅ Actions sorted:', {
+        totalActions: sortedActions.length,
+        actionTypes: sortedActions.map(a => a.action),
+        timestamps: sortedActions.map(a => a.timestamp)
+      });
+
+      console.log('🔍 Initializing server state...');
       let serverCredits = currentCredits;
       let serverXP = currentXP;
       const serverCollection = new Map(
         currentCollection.map(card => [card.species_name, card])
       );
+      console.log('✅ Server state initialized:', {
+        serverCredits,
+        serverXP,
+        collectionSize: serverCollection.size
+      });
 
       // Get signing key for this device
+      console.log('🔍 Fetching device state for:', { device_id, userId });
       const deviceState = await db
         .selectFrom('device_sync_states')
         .select(['signing_key', 'key_expires_at'])
@@ -122,7 +166,14 @@ router.post('/',
         .where('user_id', '=', userId)
         .executeTakeFirst();
 
+      console.log('✅ Device state fetched:', {
+        hasDeviceState: !!deviceState,
+        keyExpiry: deviceState?.key_expires_at,
+        hasSigningKey: !!deviceState?.signing_key
+      });
+
       if (!deviceState) {
+        console.log('❌ Device state not found - device not registered for offline sync');
         res.status(400).json({
           error: 'Device not registered for offline sync',
           conflicts: [],
@@ -130,8 +181,11 @@ router.post('/',
         });
         return;
       }
+      console.log('✅ Device state validation passed');
 
+      console.log('🔍 Checking signing key expiry...');
       if (new Date() > new Date(deviceState.key_expires_at)) {
+        console.log('❌ Signing key expired');
         res.status(400).json({
           error: 'Signing key expired. Please re-authenticate.',
           conflicts: [],
@@ -139,9 +193,21 @@ router.post('/',
         });
         return;
       }
+      console.log('✅ Signing key is valid');
+
+      console.log('🔄 Processing actions:', {
+        totalActions: sortedActions.length,
+        actionTypes: sortedActions.map(a => a.action)
+      });
 
       for (const action of sortedActions) {
         try {
+          console.log('🔍 Processing action:', {
+            id: action.id,
+            type: action.action,
+            timestamp: action.timestamp,
+            hasSignature: !!action.signature
+          });
           // Validate action signature
           if (!action.signature) {
             conflicts.push({
@@ -392,13 +458,33 @@ router.post('/',
         new_signing_key: newSigningKey
       };
 
+      // Update last_used_at timestamp for this device/user combination
+      await db
+        .updateTable('device_sync_states')
+        .set({
+          last_used_at: new Date(),
+          updated_at: new Date()
+        })
+        .where('device_id', '=', device_id)
+        .where('user_id', '=', userId)
+        .execute();
+
+      console.log('✅ Updated last_used_at timestamp for device:', { device_id, userId });
+
       res.json(response);
 
     } catch (error) {
-      console.error('❌ Sync error:', error);
+      console.error('❌ Sync error details:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        user: req.user ? { id: req.user.id, isGuest: req.user.is_guest } : 'No user',
+        deviceId: req.body?.device_id,
+        actionsCount: Array.isArray(req.body?.offline_actions) ? req.body.offline_actions.length : 'Not array'
+      });
       res.status(500).json({
         error: 'Sync failed',
-        message: 'Unable to synchronize data'
+        message: 'Unable to synchronize data',
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }

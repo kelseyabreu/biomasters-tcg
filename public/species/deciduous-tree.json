@@ -204,5 +204,22 @@
     "lightCompensation_PAR": 60,
     "pHOptimal": 6.0,
     "pHTolerance": 2.0
+  },
+  "phyloAttributes": {
+    "terrains": ["Forest"],
+    "climates": ["Cool", "Warm"],
+    "foodchainLevel": 1,
+    "scale": 9,
+    "dietType": "Producer",
+    "movementCapability": {
+      "moveValue": 0,
+      "canFly": false,
+      "canSwim": false,
+      "canBurrow": false
+    },
+    "specialKeywords": [],
+    "pointValue": 2,
+    "conservationStatus": "Least Concern",
+    "compatibilityNotes": "Large forest tree, provides habitat and food for many species"
   }
 }

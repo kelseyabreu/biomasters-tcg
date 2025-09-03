@@ -7,7 +7,7 @@ import CryptoJS from 'crypto-js';
 
 export interface OfflineAction {
   id: string;
-  action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'starter_pack_opened';
+  action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened';
   species_name?: string;
   quantity?: number;
   pack_type?: string;
@@ -16,6 +16,19 @@ export interface OfflineAction {
   timestamp: number;
   signature: string;
   api_version: string;
+}
+
+export interface DeckCard {
+  speciesName: string;
+  quantity: number;
+}
+
+export interface SavedDeck {
+  id: string;
+  name: string;
+  cards: DeckCard[];
+  created: number;
+  lastModified: number;
 }
 
 export interface OfflineCollection {
@@ -35,6 +48,8 @@ export interface OfflineCollection {
   collection_hash: string;
   last_sync: number;
   signing_key_version: number;
+  activeDeck?: SavedDeck; // Currently selected deck for battles
+  savedDecks?: SavedDeck[]; // All saved decks
 }
 
 export interface SyncPayload {
@@ -67,12 +82,13 @@ export interface SyncResponse {
 
 class OfflineSecurityService {
   private static readonly API_VERSION = '1.0.0';
-  private static readonly STORAGE_KEY = 'biomasters_offline_collection';
-  private static readonly SIGNING_KEY_STORAGE = 'biomasters_signing_key';
-  
+  private static readonly STORAGE_KEY_PREFIX = 'biomasters_offline_collection';
+  private static readonly SIGNING_KEY_PREFIX = 'biomasters_signing_key';
+
   private signingKey: string | null = null;
   private signingKeyVersion: number = 0;
   private deviceId: string;
+  private currentUserId: string | null = null;
 
   constructor() {
     this.deviceId = this.getOrCreateDeviceId();
@@ -101,10 +117,41 @@ class OfflineSecurityService {
   }
 
   /**
-   * Load signing key from storage
+   * Get user-scoped storage key for collections
+   */
+  private getUserScopedCollectionKey(userId: string | null): string {
+    if (!userId) {
+      console.warn('⚠️ No userId provided for storage key, using global key');
+      return OfflineSecurityService.STORAGE_KEY_PREFIX;
+    }
+    return `user_${userId}_${OfflineSecurityService.STORAGE_KEY_PREFIX}`;
+  }
+
+  /**
+   * Get user-scoped storage key for signing keys
+   */
+  private getUserScopedSigningKey(userId: string | null): string {
+    if (!userId) {
+      console.warn('⚠️ No userId provided for signing key, using global key');
+      return OfflineSecurityService.SIGNING_KEY_PREFIX;
+    }
+    return `user_${userId}_${OfflineSecurityService.SIGNING_KEY_PREFIX}`;
+  }
+
+  /**
+   * Set current user ID for scoped storage operations
+   */
+  setCurrentUserId(userId: string | null): void {
+    this.currentUserId = userId;
+    console.log(`🔑 Set current user ID for offline storage: ${userId || 'null'}`);
+  }
+
+  /**
+   * Load signing key from storage (user-scoped)
    */
   private loadSigningKey(): void {
-    const stored = localStorage.getItem(OfflineSecurityService.SIGNING_KEY_STORAGE);
+    const keyStorageKey = this.getUserScopedSigningKey(this.currentUserId);
+    const stored = localStorage.getItem(keyStorageKey);
     if (stored) {
       try {
         const keyData = JSON.parse(stored);
@@ -113,7 +160,7 @@ class OfflineSecurityService {
           this.signingKeyVersion = keyData.version;
         } else {
           // Key expired, remove it
-          localStorage.removeItem(OfflineSecurityService.SIGNING_KEY_STORAGE);
+          localStorage.removeItem(keyStorageKey);
         }
       } catch (error) {
         console.warn('Failed to load signing key:', error);
@@ -152,14 +199,17 @@ class OfflineSecurityService {
       throw new Error('User ID required for key initialization');
     }
 
+    // Set current user ID for scoped storage
+    this.setCurrentUserId(userId);
+
     if (sessionKey) {
       // Use session-based key from server
       this.signingKey = sessionKey;
-      console.log('🔑 Session-based signing key initialized');
+      console.log(`🔑 Session-based signing key initialized for user: ${userId}`);
     } else {
       // Fallback to derived key (for offline-only mode)
       this.signingKey = await this.deriveKeyFromUserId(userId);
-      console.log('🔑 Derived signing key initialized');
+      console.log(`🔑 Derived signing key initialized for user: ${userId}`);
     }
   }
 
@@ -191,7 +241,7 @@ class OfflineSecurityService {
    * Create signed offline action
    */
   createAction(
-    action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'starter_pack_opened',
+    action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened',
     data: Partial<OfflineAction>
   ): OfflineAction {
     const actionData: Omit<OfflineAction, 'signature'> = {
@@ -226,21 +276,33 @@ class OfflineSecurityService {
   }
 
   /**
-   * Load offline collection from storage
+   * Load offline collection from storage (user-scoped)
    */
-  loadOfflineCollection(): OfflineCollection | null {
+  loadOfflineCollection(userId?: string | null): OfflineCollection | null {
     try {
-      const stored = localStorage.getItem(OfflineSecurityService.STORAGE_KEY);
-      if (!stored) return null;
+      const userIdToUse = userId !== undefined ? userId : this.currentUserId;
+      const storageKey = this.getUserScopedCollectionKey(userIdToUse);
+      const stored = localStorage.getItem(storageKey);
+
+      if (!stored) {
+        console.log(`📦 No stored collection found for user: ${userIdToUse || 'global'}`);
+        return null;
+      }
 
       const collection: OfflineCollection = JSON.parse(stored);
-      
+
       // Verify collection integrity
       const expectedHash = this.calculateCollectionHash(collection);
       if (collection.collection_hash !== expectedHash) {
-        console.warn('Collection integrity check failed. Data may have been tampered with.');
+        console.warn(`⚠️ Collection integrity check failed for user: ${userIdToUse}. Data may have been tampered with.`);
         return null;
       }
+
+      console.log(`📦 Loaded collection for user: ${userIdToUse}`, {
+        species_count: Object.keys(collection.species_owned).length,
+        credits: collection.eco_credits,
+        pending_actions: collection.action_queue.length
+      });
 
       return collection;
     } catch (error) {
@@ -250,18 +312,25 @@ class OfflineSecurityService {
   }
 
   /**
-   * Save offline collection to storage
+   * Save offline collection to storage (user-scoped)
    */
-  saveOfflineCollection(collection: Omit<OfflineCollection, 'collection_hash'>): void {
+  saveOfflineCollection(collection: Omit<OfflineCollection, 'collection_hash'>, userId?: string | null): void {
+    const userIdToUse = userId !== undefined ? userId : this.currentUserId;
+    const storageKey = this.getUserScopedCollectionKey(userIdToUse);
+
     const collectionWithHash: OfflineCollection = {
       ...collection,
       collection_hash: this.calculateCollectionHash(collection)
     };
 
-    localStorage.setItem(
-      OfflineSecurityService.STORAGE_KEY, 
-      JSON.stringify(collectionWithHash)
-    );
+    localStorage.setItem(storageKey, JSON.stringify(collectionWithHash));
+
+    console.log(`💾 Saved collection for user: ${userIdToUse}`, {
+      species_count: Object.keys(collection.species_owned).length,
+      credits: collection.eco_credits,
+      pending_actions: collection.action_queue.length,
+      storageKey
+    });
   }
 
   /**

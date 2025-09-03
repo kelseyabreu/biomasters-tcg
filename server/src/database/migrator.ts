@@ -7,8 +7,6 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { db } from './kysely';
 import { sql } from 'kysely';
-import { Pool } from 'pg';
-import { getDbConfig } from '../config/database';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -99,11 +97,29 @@ export class KyselyMigrator {
 
       await this.executeMigration('002_guest_support', guestSupportSql);
 
+      // Read and execute device sync constraints fix
+      const deviceSyncFixPath = join(__dirname, 'migrations/003_fix_device_sync_constraints.sql');
+      const deviceSyncFixSql = readFileSync(deviceSyncFixPath, 'utf8');
+
+      await this.executeMigration('003_fix_device_sync_constraints', deviceSyncFixSql);
+
       // Read and execute JSON foreign keys migration
       const jsonKeysPath = join(__dirname, 'migrations/003_json_foreign_keys.sql');
       const jsonKeysSql = readFileSync(jsonKeysPath, 'utf8');
 
       await this.executeMigration('003_json_foreign_keys', jsonKeysSql);
+
+      // Read and execute profile fields migration
+      const profileFieldsPath = join(__dirname, 'migrations/004_add_profile_fields.sql');
+      const profileFieldsSql = readFileSync(profileFieldsPath, 'utf8');
+
+      await this.executeMigration('004_add_profile_fields', profileFieldsSql);
+
+      // Read and execute last_used_at column migration
+      const lastUsedAtPath = join(__dirname, 'migrations/005_add_last_used_at_column.sql');
+      const lastUsedAtSql = readFileSync(lastUsedAtPath, 'utf8');
+
+      await this.executeMigration('005_add_last_used_at_column', lastUsedAtSql);
 
       console.log('✅ All Kysely migrations completed successfully');
       

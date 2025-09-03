@@ -145,7 +145,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             <IonBadge 
               color={userInfo.accountType === 'registered' ? 'success' : 
                      userInfo.accountType === 'guest' ? 'warning' : 'medium'}
-              size="small"
+
             >
               {userInfo.accountType === 'registered' ? 'Registered' :
                userInfo.accountType === 'guest' ? 'Guest' : 'Not Signed In'}

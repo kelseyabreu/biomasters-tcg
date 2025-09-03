@@ -23,8 +23,26 @@
 .auth-input {
   margin-bottom: 16px;
   border-radius: 8px;
-  --background: var(--ion-color-light-shade, #f5f5f5);
+  --background: var(--ion-color-light-tint, #f8f8f8);
   --border-color: var(--ion-color-medium-tint, #e0e0e0);
+  --border-width: 1px;
+  --border-style: solid;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --min-height: 56px;
+}
+
+.auth-input ion-input {
+  --background: transparent;
+  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-medium);
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+/* Make the actual input area blend better */
+.auth-input .native-input {
+  background: transparent !important;
 }
 
 .auth-input ion-icon {
@@ -41,21 +59,39 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 16px 0;
+  margin: 20px 0;
+  padding: 0;
 }
 
 .remember-me {
   --background: transparent;
   --padding-start: 0;
+  --padding-end: 0;
+  --inner-padding-end: 0;
+  --min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.remember-me ion-checkbox {
+  --size: 18px;
+  --checkbox-background: var(--ion-color-light);
+  --checkbox-background-checked: var(--ion-color-primary);
+  --border-color: var(--ion-color-medium-tint);
+  --border-color-checked: var(--ion-color-primary);
+  --checkmark-color: var(--ion-color-primary-contrast);
+  --border-radius: 3px;
+  --border-width: 1.5px;
 }
 
 .remember-me ion-label {
   font-size: 0.9rem;
-  color: var(--ion-color-medium);
+  color: var(--ion-color-dark);
+  font-weight: 500;
+  margin-left: 8px;
 }
 
 .forgot-password-btn {
-  --color: var(--ion-color-primary);
   font-size: 0.9rem;
   text-decoration: none;
 }
@@ -99,7 +135,6 @@
 .google-signin-btn {
   margin-bottom: 12px;
   --border-radius: 8px;
-  --border-color: var(--ion-color-medium-tint);
   height: 48px;
   font-weight: 500;
 }
@@ -109,13 +144,8 @@
 }
 
 .guest-continue-btn {
-  --color: var(--ion-color-medium);
   font-weight: 500;
   height: 44px;
-}
-
-.guest-continue-btn:hover {
-  --color: var(--ion-color-dark);
 }
 
 .auth-switch {
@@ -130,7 +160,6 @@
 }
 
 .switch-auth-btn {
-  --color: var(--ion-color-primary);
   font-weight: 600;
   text-decoration: none;
 }
@@ -170,11 +199,17 @@
   .auth-options {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .remember-me {
+    width: 100%;
   }
 
   .forgot-password-btn {
     align-self: flex-end;
+    margin-top: 4px;
   }
 }
 
@@ -191,9 +226,15 @@
 }
 
 /* Focus states for accessibility */
-.auth-input ion-input:focus-within {
+.auth-input.item-has-focus {
   --border-color: var(--ion-color-primary);
-  --background: var(--ion-color-primary-tint);
+  --border-width: 2px;
+  --background: var(--ion-color-light, #ffffff);
+}
+
+.auth-input:hover {
+  --border-color: var(--ion-color-primary-tint);
+  --background: var(--ion-color-light, #ffffff);
 }
 
 /* Guest Conversion Modal Styles */

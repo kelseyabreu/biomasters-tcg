@@ -244,14 +244,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
               <div className="auth-options">
                 <IonItem lines="none" className="remember-me">
                   <IonCheckbox
+                    slot="start"
                     checked={rememberMe}
                     onIonChange={(e) => setRememberMe(e.detail.checked)}
                   />
-                  <IonLabel className="ion-margin-start">Remember me</IonLabel>
+                  <IonLabel>Remember me</IonLabel>
                 </IonItem>
                 <IonButton
                   fill="clear"
                   size="small"
+                  color="primary"
                   className="forgot-password-btn"
                 >
                   Forgot Password?
@@ -263,6 +265,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             <IonButton
               expand="block"
               type="submit"
+              color="primary"
               className="auth-primary-btn"
               disabled={loading}
             >
@@ -283,6 +286,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
           <IonButton
             expand="block"
             fill="outline"
+            color="medium"
             onClick={handleGoogleAuth}
             disabled={loading}
             className="google-signin-btn"
@@ -295,6 +299,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
           <IonButton
             expand="block"
             fill="clear"
+            color="medium"
             onClick={handleGuestAuth}
             disabled={loading}
             className="guest-continue-btn"
@@ -309,6 +314,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
               <IonButton
                 fill="clear"
                 size="small"
+                color="primary"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="switch-auth-btn"
               >

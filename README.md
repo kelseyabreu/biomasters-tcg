@@ -31,6 +31,8 @@ Biomasters TCG combines the strategic depth of traditional trading card games wi
 
 ### Data Architecture
 - **Offline-First**: All game logic works without internet connection
+- **User-Scoped Storage**: Each user gets isolated storage to prevent data bleeding
+- **Multi-User Device Support**: Multiple users can safely share the same device
 - **Hybrid Sync**: Authenticated users get automatic cloud synchronization
 - **Conflict Resolution**: Smart handling of offline changes when reconnecting
 - **Security**: All offline data cryptographically signed to prevent tampering
@@ -127,9 +129,10 @@ src/
 │   └── aiOpponent.ts
 ├── hooks/           # Custom React hooks
 ├── pages/           # Top-level screens
-├── state/           # Zustand state management
+├── state/           # Zustand state management with user-scoped storage
 ├── types/           # TypeScript interfaces
-├── utils/           # Helper functions
+├── utils/           # Helper functions and user-scoped storage utilities
+├── tests/           # Multi-user device testing
 └── styles/          # Global CSS and themes
 
 public/
@@ -291,6 +294,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 #### **Data Management**
 - **Offline-First**: Game works without internet connection
+- **User-Scoped Storage**: Isolated storage prevents data bleeding between users
+- **Multi-User Support**: Multiple users can safely share the same device
 - **Sync Strategy**: Automatic sync when connection available
 - **Type Safety**: Full TypeScript coverage with Kysely database types
 - **Caching**: Smart caching for performance optimization

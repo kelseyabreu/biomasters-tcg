@@ -3,9 +3,52 @@ import { requireAuth } from '../middleware/auth';
 // import { apiRateLimiter } from '../middleware/rateLimiter'; // Unused for now
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
+import { z } from 'zod';
+import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
 
 const router = Router();
+
+// Game session schemas
+const createGameSessionSchema = z.object({
+  gameMode: z.enum(['campaign', 'online', 'scenarios', 'tutorial']),
+  isPrivate: z.boolean().default(false),
+  maxPlayers: z.number().min(2).max(4).default(2),
+  settings: z.object({
+    eventFrequency: z.number().min(0).max(1).default(0.1),
+    allowChallenges: z.boolean().default(true),
+    startingHandSize: z.number().min(3).max(10).default(5),
+    deckSize: z.number().min(5).max(20).default(10),
+    turnTimeLimit: z.number().optional(),
+    gameTimeLimit: z.number().optional()
+  }).optional()
+});
+
+const joinGameSessionSchema = z.object({
+  sessionId: z.string().uuid()
+});
+
+const gameActionSchema = z.object({
+  sessionId: z.string().uuid(),
+  action: z.object({
+    type: z.enum(['place_card', 'move_card', 'challenge', 'pass_turn']),
+    cardId: z.string().optional(),
+    position: z.object({
+      x: z.number(),
+      y: z.number()
+    }).optional(),
+    targetPosition: z.object({
+      x: z.number(),
+      y: z.number()
+    }).optional(),
+    challengeData: z.object({
+      targetCardId: z.string(),
+      targetPlayerId: z.string(),
+      claimType: z.string(),
+      evidence: z.string()
+    }).optional()
+  })
+});
 
 /**
  * GET /api/game/decks
@@ -272,6 +315,251 @@ router.post('/achievements/:achievementId/claim', requireAuth, asyncHandler(asyn
     status: 'placeholder'
   });
   return;
+}));
+
+/**
+ * POST /api/game/sessions
+ * Create a new game session
+ */
+router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
+  const validatedData = createGameSessionSchema.parse(req.body);
+  const user = req.user!;
+
+  // Create game session
+  const sessionId = crypto.randomUUID();
+  const gameSettings = validatedData.settings || {
+    eventFrequency: 0.1,
+    allowChallenges: true,
+    startingHandSize: 5,
+    deckSize: 10
+  };
+
+  const session = await db
+    .insertInto('game_sessions')
+    .values({
+      id: sessionId,
+      host_user_id: user.id,
+      game_mode: validatedData.gameMode,
+      is_private: validatedData.isPrivate,
+      max_players: validatedData.maxPlayers,
+      current_players: 1,
+      status: 'waiting',
+      game_state: JSON.stringify({
+        phase: 'lobby',
+        players: [{
+          id: user.id,
+          name: user.display_name || user.email,
+          isReady: false
+        }],
+        settings: gameSettings
+      }),
+      settings: JSON.stringify(gameSettings),
+      created_at: new Date(),
+      updated_at: new Date()
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  res.status(201).json({
+    session: {
+      id: session.id,
+      hostUserId: session.host_user_id,
+      gameMode: session.game_mode,
+      isPrivate: session.is_private,
+      maxPlayers: session.max_players,
+      currentPlayers: session.current_players,
+      status: session.status,
+      gameState: JSON.parse(session.game_state),
+      settings: JSON.parse(session.settings),
+      createdAt: session.created_at,
+      updatedAt: session.updated_at
+    }
+  });
+}));
+
+/**
+ * GET /api/game/sessions
+ * Get available game sessions
+ */
+router.get('/sessions', requireAuth, asyncHandler(async (req, res) => {
+  const { gameMode, status = 'waiting' } = req.query;
+
+  let query = db
+    .selectFrom('game_sessions')
+    .selectAll()
+    .where('status', '=', status as string)
+    .where('is_private', '=', false)
+    .where('current_players', '<', db.ref('max_players'))
+    .orderBy('created_at', 'desc')
+    .limit(20);
+
+  if (gameMode) {
+    query = query.where('game_mode', '=', gameMode as string);
+  }
+
+  const sessions = await query.execute();
+
+  res.json({
+    sessions: sessions.map(session => ({
+      id: session.id,
+      hostUserId: session.host_user_id,
+      gameMode: session.game_mode,
+      isPrivate: session.is_private,
+      maxPlayers: session.max_players,
+      currentPlayers: session.current_players,
+      status: session.status,
+      gameState: JSON.parse(session.game_state),
+      settings: JSON.parse(session.settings),
+      createdAt: session.created_at,
+      updatedAt: session.updated_at
+    }))
+  });
+}));
+
+/**
+ * POST /api/game/sessions/:sessionId/join
+ * Join a game session
+ */
+router.post('/sessions/:sessionId/join', requireAuth, asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const user = req.user!;
+
+  // Get current session
+  const session = await db
+    .selectFrom('game_sessions')
+    .selectAll()
+    .where('id', '=', sessionId)
+    .executeTakeFirst();
+
+  if (!session) {
+    res.status(404).json({ error: 'Game session not found' });
+    return;
+  }
+
+  if (session.status !== 'waiting') {
+    res.status(400).json({ error: 'Game session is not accepting new players' });
+    return;
+  }
+
+  if (session.current_players >= session.max_players) {
+    res.status(400).json({ error: 'Game session is full' });
+    return;
+  }
+
+  // Parse current game state
+  const gameState = JSON.parse(session.game_state);
+
+  // Check if user is already in the game
+  const existingPlayer = gameState.players.find((p: any) => p.id === user.id);
+  if (existingPlayer) {
+    res.status(400).json({ error: 'You are already in this game' });
+    return;
+  }
+
+  // Add player to game state
+  gameState.players.push({
+    id: user.id,
+    name: user.display_name || user.email,
+    isReady: false
+  });
+
+  // Update session
+  const updatedSession = await db
+    .updateTable('game_sessions')
+    .set({
+      current_players: session.current_players + 1,
+      game_state: JSON.stringify(gameState),
+      updated_at: new Date()
+    })
+    .where('id', '=', sessionId)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  res.json({
+    session: {
+      id: updatedSession.id,
+      hostUserId: updatedSession.host_user_id,
+      gameMode: updatedSession.game_mode,
+      isPrivate: updatedSession.is_private,
+      maxPlayers: updatedSession.max_players,
+      currentPlayers: updatedSession.current_players,
+      status: updatedSession.status,
+      gameState: JSON.parse(updatedSession.game_state),
+      settings: JSON.parse(updatedSession.settings),
+      createdAt: updatedSession.created_at,
+      updatedAt: updatedSession.updated_at
+    }
+  });
+}));
+
+/**
+ * POST /api/game/sessions/:sessionId/ready
+ * Mark player as ready
+ */
+router.post('/sessions/:sessionId/ready', requireAuth, asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const { ready = true } = req.body;
+  const user = req.user!;
+
+  // Get current session
+  const session = await db
+    .selectFrom('game_sessions')
+    .selectAll()
+    .where('id', '=', sessionId)
+    .executeTakeFirst();
+
+  if (!session) {
+    res.status(404).json({ error: 'Game session not found' });
+    return;
+  }
+
+  // Parse current game state
+  const gameState = JSON.parse(session.game_state);
+
+  // Find and update player
+  const playerIndex = gameState.players.findIndex((p: any) => p.id === user.id);
+  if (playerIndex === -1) {
+    res.status(400).json({ error: 'You are not in this game' });
+    return;
+  }
+
+  gameState.players[playerIndex].isReady = ready;
+
+  // Check if all players are ready
+  const allReady = gameState.players.every((p: any) => p.isReady);
+  const newStatus = allReady && gameState.players.length >= 2 ? 'playing' : 'waiting';
+
+  if (allReady && gameState.players.length >= 2) {
+    gameState.phase = 'playing';
+  }
+
+  // Update session
+  const updatedSession = await db
+    .updateTable('game_sessions')
+    .set({
+      status: newStatus,
+      game_state: JSON.stringify(gameState),
+      updated_at: new Date()
+    })
+    .where('id', '=', sessionId)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  res.json({
+    session: {
+      id: updatedSession.id,
+      hostUserId: updatedSession.host_user_id,
+      gameMode: updatedSession.game_mode,
+      isPrivate: updatedSession.is_private,
+      maxPlayers: updatedSession.max_players,
+      currentPlayers: updatedSession.current_players,
+      status: updatedSession.status,
+      gameState: JSON.parse(updatedSession.game_state),
+      settings: JSON.parse(updatedSession.settings),
+      createdAt: updatedSession.created_at,
+      updatedAt: updatedSession.updated_at
+    }
+  });
 }));
 
 export default router;

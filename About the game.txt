@@ -1,0 +1,497 @@
+Lets learn the rules:
+
+Ecosystem Game – Basic Rules (Version 3.0)
+Posted on May 30, 2012 by Admiral Ackbar
+Game designed by Fenrislorsrai, with feedback from picks-at-flies, ColinD , Naturalismus, Wootfish, Forbidding, TheCharles, glunsforddavis, Havoc Jack, Cubist, David Ng. Editorial oversight and figures by db.
+
+Beaty Starter Deck* 17.0Mb | deck home
+
+* For two players, each with holding 24 cards (including 1 home card). This version requires the use of dice for one of the cards.
+
+– – –
+
+GENERAL IDEA
+
+Ecosystems rock! They really do, and to be honest, we sometimes think the word “ecosystem” is kind of bland and just doesn’t do justice to the concept. That’s why we hope in this game, the inherent awesomeness of this ecological term will soon become pretty clear. Here, two players will have the opportunity to play with cards (from a potential card set of over 1.9 million!), and build an ecosystem that is complete with many different species interconnected by terrain and climate. However, players also get to compete against each other by tallying up and seeing who has the most points at the end of the game. These points basically reveal who did the better job at creating the strongest, richest, and most diverse elements of the ecosystem. Why do you want strong, rich and diverse? Because the environment can be nasty sometimes – and biodiversity, especially lots of it, is really really good at safe-guarding against such things.
+
+– – –
+
+FIRST, A WORD ABOUT COMPATIBILITY…
+
+Let’s start by saying that the word “compatibility” comes up an awful lot in this game.  But what it’s referring to is pretty straightforward.  On all of the cards, there are details that tell you what kind of conditions it needs – for example, this might be the kind of terrain or climate involved, the food it likes, or maybe the card you’re holding is very very picky and needs something very very specific.  In any event, we hope you’ll pick things up pretty quick.  It’s amazing how a statement like “herbivores eat plants” translates to a mouthful when describing it in card keywords and numbers, but mark our words, we’ve tried our best to make everything pretty straightforward.
+
+– – –
+
+THERE ARE A FEW CATEGORIES OF CARDS…
+
+SPECIES CARDS:
+A player’s species cards are always played adjacent to at least one compatible card.
+
+These are the cards that represent the various organisms on our planet Earth. In essence, all values and attributes on the card aim to describe the  creature as in real life (i.e. the cards are more or less like fact holders). Information on the cards include #SCALE (how big is it), #FOODCHAIN, DIET (these two provide information on what the species needs for sustenance), as well as habitat information (various combinations of TERRAIN and CLIMATE).
+
+
+
+These cards will also have other pieces of info, such as words that describe their evolutionary position, as well as text that may explain some special ability or interesting trivia.  Note that each species is also worth a certain number of points, which have been calculated based on the ease to include them in the ecosystem.  i.e. creatures with wide habitat options, lower food chain expectations, and/or have properties that make them easier to play will score lower.
+
+EVENT CARDS:
+Event cards can be played on any compatible species card. Once played, they are removed before the next player’s turn, unless otherwise instructed on the card
+
+These cards often define some sort of environmental situation, and tend to be played on top of species cards. This will often result in a change of some sort that may have a domino effect on neighbouring cards.  A strategic element of this game will largely depend on building ecosystems that can adapt to such events or are minimally affected. Note that sometimes, these Event cards can give you certain bonuses, or even tasks that can change how the game is played. Just make sure you read the instructions closely.
+
+
+
+STARTER CARDS:
+Starter cards are played only at the beginning of the game.
+
+Starter cards are typically HOME cards. The game starts with each player having a HOME card played on the table played next to the other.  You can play any FOODRANK 1 SPECIES next to a starter card regardless of TERRAIN and CLIMATE requirements.
+
+– – –
+
+O.K. WHAT TO DO AT THE BEGINNING…
+
+Two players will sit facing each other, each with a deck of 20+ cards.
+
+Decks can be thematic (i.e. only locale specific cards), or hand chosen by the player from the Phylo website. If you’ve downloaded the Beaty Deck, these are species primarily from our home base in British Columbia, Canada.
+
+Each player will also have a STARTER/HOME card on the table facing them.
+
+Each player will then randomly draw 5 cards from their deck. You may also choose to preselect these cards from your deck if you prefer.
+
+To decide who goes first, flip a coin.
+
+– – –
+
+HOW TO BUILD ECOSYSTEMS (DID WE MENTION HOW AWESOME THEY ARE?)  PLUS, WE ATTEMPT TO DEFINE “COMPATIBILITY.”
+
+This is the essence of the game and is primarily done by creating networks of SPECIES cards.  Here, cards are placed against each other such that at least one compatible link is present.  Compatibility is based on several things, which all must be met by at least one single card.
+
+These are:
+1. That there is space on the table to place the card.  There are some exceptions to this rule, where cards can be played on top or below existing cards – these often involve SPECIES with special keywords, such as being INVASIVE (see 4 for more information).
+
+2. That at least one TERRAIN and one CLIMATE match.  Note that many species can exist in more that one TERRAIN and/or CLIMATE.  These cards, therefore, tend to be easier to build networks around.
+
+3. That at least one acceptable food chain link is available.  This is hopefully fairly intuitive, as the game uses basic food chain principles.  However, from a card perspective, this would involve the following rules.
+
+– Species with a #FOODCHAIN value of “1” can be played adjacent to any other card as long as there is TERRAIN and CLIMATE compatibility.  This simply means that things like plants and microbes do not rely on other SPECIES for food.  i.e. they get sustenance from the sun or the chemistry around them.
+
+– Generally, for #FOODCHAIN of 2 or higher, the card is placed next to one with a #FOODCHAIN value that is one below.  However, exceptions to this include omnivores, which (regardless of #FOODCHAIN rank) can always have the option being played next to a photosynthetic species (who have a #FOODCHAIN value of 1).
+
+– Whenever the play implies a carnivorous linkage (including an omnivore feeding on meat), the played card must have a higher #SCALE value unless text on the card provides an exemption.  This simply means that, generally speaking, animals will tend to feed off of smaller animals.  This, of course, does not apply to herbivorous interactions (i.e. an animal can still feed from a plant even though the plant may be bigger).
+
+4. Some species have special keywords that allow them to be played directly on/with another SPECIES card.  Here, requirements are always described on the card itself, as well as needing to meet the usual ecosystem building rules. Note that there can never be more than 2 SPECIES cards in the same card space (no card towers of 3 or higher), unless special text on the card exempts this.  Below are some of the current keywords:
+
+– INVASIVE: If the criteria match (as defined by text on the card) and it also fulfills compatibility requirements (i.e. it can still be part of at least one working ecosystem chain) an INVASIVE species can be played on top of another SPECIES card (and thereby discard it).  This means that the INVASIVE card now provides TERRAIN and CLIMATE information for that space (which may or may not effect other compatibility networks).
+
+– PARASITIC: These cards are placed below the compatible “host” SPECIES card. Here, they do not play a role in determining ecosystem details (i.e. TERRAIN, CLIMATE, etc) for that card space, but they can be used for scoring at the end of the game. Note that although many PARASITIC species cards require a host, there are also many that can be played like a normal SPECIES card.
+
+– POLLINATOR: Species that are POLLINATORS contain this keyword in their text area.  There are the occasional Plant species that require a POLLINATOR.  Therefore, in order to play such plant species cards, there must be at least one POLLINATOR on the table.
+
+– Note, there are other keywords peppered throughout the different cards.  Here, instructions on use are shown on the card text.
+
+– – –
+
+CHANGING THE ECOSYSTEM (A.K.A. ENVIRONMENTAL EVENTS!)
+
+Much like the natural world, ecosystems are susceptible to all sorts of change. Sometimes, this might be small (it’s windy), whereas other times, it may be quite profound (climate change). In this game, there are a number of ways to modify the networks that you and your opponent have created. These offer ways for you to stress, adapt, or strengthen existing card links, be it your own or your opponents. Remember that because the ecosystem is built on compatible linkage, sometimes a single card change or loss can result in a domino effect with far reaching consequences!
+
+Ways to change the ecosystem include:
+
+1. A species card is affected by placement of another species card on top or below. Examples include the aforementioned INVASIVE keyword.
+
+2. You “move” a card. Most species are mobile. This mobility can change compatibility links, as well as provide a way to escape harmful effects. This can be represented by keywords such as:
+
+– MOVE (the number of spots a species card can move – straight line, up, down, sideways movement only);
+
+– FLIGHT (the number of spots a species can fly – same as MOVE but can also include diagonal movement); and
+
+3. You play an EVENT card on top of a compatible SPECIES card. When these cards are played, the described effect will occur. This often involves things that will change the TERRAIN, CLIMATE, or describe some horrendous environmental event, all of which can possibly result in the loss of the species card, etc.
+
+In all cases, the other player will always have an opportunity to react to the change (one turn), before examining whether species cards need to be discarded because of loss of compatible linkage.
+
+– – –
+
+BASIC PLAY
+
+Whenever cards are played on the table, they are played facing the active player.  Therefore, you know which cards are yours, because they will be the cards that appear upright to you. Consequently, you can play the game with a common set of about 40+ cards, shuffled and distributed randomly between two players, or have each player come with their own premade decks of 20+ each.
+
+1. At the start of your turn, draw one card from your deck. Make sure you’re playing on a table with space to lay out about 40 or so cards.  You will also need “pick up pile” and “discard pile” spots (one of each if you’re sharing a deck, or two of each if each player comes with their own cards).
+
+2. Take three actions from the following choices (it’s o.k. to do two or three actions that are the same, with the exception of playing Event cards):
+
+– Discard 1 card into discard pile to draw 3 cards.
+
+– Play a SPECIES card (next to any compatible card).
+
+– MOVE a species card to new compatible spot.  FLIGHT are analogous actions (see Changing the Ecosystem section)
+
+– Play an EVENT card.
+
+– Pass and do nothing.
+
+3. After your actions, you may find that you have cards under your control that no longer have compatible connections. These you can leave on your table until the other player has had a turn to react to your changes (in other words, it’s good to move these cards before you play your event).
+
+4. If you had played an event card or had moved one of your cards and thereby created a breakage in the food web, your opponent has one turn (three actions) to react. This will likely involve playing a card to substitute for loss connections, trying to move cards to compatible spots, or possibly involve playing an event card that happens to counter the effect. At the end of that turn, players will remove any cards that no longer have a compatible connection. These will go into the discard pile.
+
+4. Continue alternating turns for the remainder of the game. When a player has taken their last card from their pick up pile, the game ends at the conclusion of the other player’s turn.
+
+5. The Version 3.0 of the rules also contains an optional “call your bluff” rule. Essentially, there may be instances where two cards are placed adjacent to each other that work according to the rule mechanics, but actually reflect a completely unrealistic (not scientifically literate) situation. For instance, this could be where two species, which do not live in the same country, are placed together because they happen to share compatible terrain and climate needs. Another example, is where scientific data has shown that the diet of a species is actually quite specific and more nuanced than just eating something “smaller.”
+
+
+In these situations, your opponent is able to “call your bluff” and then use Wikipedia and/or the Encyclopaedia of Life to track down evidence to prove your error. Whoever wins, has the ability to remove any card on the table with immediate consequences (i.e. no waiting a turn to react). In many cases, it’s actually going to be pretty difficult to weed out a definitive answer that proves the bluff one way or another. In those cases, the situation is left as is. For future locale specific decks, there may be production of specific food chain keys, so that these things can be checked more quickly. Note that some decks have provided a food web diagram (i.e. Beaty) to help make these types of calls quicker.
+
+6. Tally up all the points that are in your possession and still face up and still on the table (even those underneath cards). Winner is the player with the most number of points.
+
+– – –
+
+EXAMPLE OF PLAY (WITH DIAGRAMS) – BASIC RULES V2.0
+
+0. At the beginning, Each player will have a deck of at least 24 cards plus one “start” card (note that numbers of cards is primarily limited by size of table!)  From their deck, each player would then randomly draw 5 cards – these they can look at.  For this demonstration, let’s say we begin with the cards show in the adjacent figure.
+
+
+
+1. Next, the two “start” cards (one for each player) will be placed adjacent on the table.  Note that henceforth the areas highlighted in red represent action(s) described.
+
+
+
+2. Player 1 goes first. At the beginning of the turn, the player gets to pick up 1 new cards from his/her deck (for the sake of simplicity, we’ll focus only on those initial 5 cards). Player 1 now gets three actions (as outlined in the basic rules).  Because the HOME cards represent all TERRAINS and all CLIMATES, it’s fairly easy to build from. However, you would still need to begin by placing a #FOODCHAIN 1 card to begin linkage.  Player 1 will start by placing a VALLEY OAK card.  Note the different placement options options.
+
+
+
+3. Let’s say he/she places the VALLEY OAK card to the immediate left of Player 1’s HOME. Now, we have two more actions to use up.  For one of the actions, player 1 decides to add an INDIAN PLUM card.  As you can see, this card can also be placed at a number of different spots, pimarily because of its FOODCHAIN# 1 rank.
+
+Player 1 decides to play the card above the VALLEY OAK.
+
+
+
+4. Next, Player 1 wants to play a HORSE card.  The figure here shows that from the three examples, only option 1 works, as all the compatibility requirements are met.  The other two options (#2 and #3) have some incompatibility and therefore cannot be played.
+
+
+
+Basically, option #1 produces the following network: HORSE to INDIAN PLUM to VALLEY OAK to HOME. Note however that the HORSE is fine even if the VALLEY OAK is removed, since the INDIAN PLUM can act as the primary food source anchor.
+
+5. Player 2 decides to mull over his/her moves.  One option is to play a SUNFLOWER card.  With a FOODRANK of 1, this figure shows possible places for Player 2 to use this card. Note the card is upside down!
+
+
+
+Alternatively, Player 2 is thinking of playing the EASTERN KINGBIRD.  This card has a FOODRANK of 2, and therefore has fewer placement options.
+
+
+
+6. In the end, Player 2 decides to place the SUNFLOWER card as the first action (see top figure), and then place the EASTERN KINGBIRD card as the second action (see bottom figure).  This creates an EASTERN KINGBIRD to SUNFLOWER to HOME linkage.
+
+
+
+
+Player 2 still has one more action to play.
+
+7. For the third action, Player 2 decides to use an EVENT card.  The WILDIFRE card basically discards any Plantae card it is played on. Usually EVENT cards are immediately removed once the effect has occurred, but in this example, the WILDFIRE card text states that it has to be left on the table for an extra turn.
+
+As you can see, when the WILDFIRE card is played on the INDIAN PLUM, the HORSE is now missing a necessary compatible link (i.e. something to eat). Therefore, it is now in danger of being discarded.
+
+
+
+8. Fortunately, the rules allow a player to react to these changes. In other words, the other player (Player 1) gets a whole turn of play before cards are discarded.
+
+In this respect, this figure highlights two possible things that Player 1 can do to avoid discarding the HORSE.
+
+
+
+Player 1 decides to MOVE his/her HORSE card.  This counts as the first action.
+
+
+
+9. For the second action, Player 1 decides to play his/her ROBIN card.  The ROBIN has a FOODRANK# of 3 and is omnivorous (BROWN DIET COLOUR).
+
+Because of the ability of the ROBIN to feed on plants (in compatible TERRAINS and CLIMATES), the ROBIN can be placed next to photosynthetic cards (3 possibilities as shown).
+
+
+
+Note that the ROBIN can also eat meat.  However, carnivorous interactions are only compatible next to cards of smaller SCALE.  In this sense, the ROBIN cannot be played next to (say) the HORSE, even though all other compatibility criteria are met.  i.e. the HORSE is just too big!
+
+In the end, Player 1 decides to play the ROBIN next to the VALLEY OAK.  As well, for his/her last action, Player 1 plays the EURASIAN LYNX next to the ROBIN (here the SCALE compatibility works). This creates a EURASIAN LYNX to ROBIN to VALLEY OAK to HOME chain.
+
+
+
+It is now Player 2’s turn again…
+
+In this way, the game played back and forth. The key is to create good links so that even if something is discarded, there are other connections that can compensate, or to create links that allow for adaptation by movements or other keywords.
+
+In any event, when a player has taken his/her last card from their deck, the game ends at the conclusion of the other player’s turn. At that point, both players tally up all the points in species card that are in their possession and still on the table. Winner is the player with the most number of points.
+
+
+
+
+David, How did you ever wind-up leading an on-line, crowd-sourced game development project to teach science?
+
+I head a science literacy lab at the University of British Columbia where one of my principle interests is looking at science from interdisciplinary as well as creative perspectives. The Phylo project has a lot of that so it definitely makes sense for my lab to engage in this sort of stuff. Plus, it’s just kind of an awesome idea.  As for specifics? Well… it all started because of a bit of serendipity really.
+
+I was aware of Andrew Balmford’s paper which compared children’s knowledge of Pokemon to their knowledge of wildlife, and even used this research every now and then as an interesting (and disturbing) factoid in class. At the same time, my lab was also hosting an online science publication called the Science Creative Quarterly, and as a result was enjoying a fair bit of online clout. With that web reach, I started wondering if the act of creating a biodiversity trading card culture would be best achieved by relying on online crowdsourcing, especially given the multidisciplinary nature of the task at hand. Anyway, this led to checking up with Andrew for permissions to “have a go” and the rest, as they say, is history.
+
+cardexamples
+1. Here was the initial design for what the cards could look like (January 2010)
+
+Are you a gamer?
+
+At the beginning, I didn’t necessarily consider myself a “gamer”, but the project has been interesting for so many different reasons that now I do. It turns out that many elements of gaming fit really nicely with my lab’s interests. One of these days, I’d like to look formally at being more involved in research around games.
+
+So how is the game played?
+
+????????Let’s see… Basically, it’s a trading card game (TCG) that also happens to be freely available. Just go to phylogame.org, and you can download a starter deck to print out and you and a friend can start playing. You can also build your own decks, because the website has been designed to allow you to choose other cards (about 500 are available to date). In many respects, this is similar to other TCG systems, except the collectability element is different (you print your own, as oppose to buying packs).
+
+In terms of “how” it is played, maybe the best way to describe it, is to say that it is played a little like dominos. In other words, the game is played by placing species cards on the table and adjacent to each other based on whether a “match” occurs.  Unlike dominos, Phylo cards can be connected in four directions (the four sides of the cards) instead of the two ends of a domino piece; and the “match” is achieved by a card having at least one connection to another card with the right habitat (terrain and climate) as well as right energy source (i.e. what it needs to eat or get its energy from). By relying on this, you essentially create a sprawling network of cards that represent various food chains – kind of like an ecosystem.
+
+This is how you get points – the larger your networks, a.k.a the more cards you can place on the table, the more points you get. The other element, however, is that there are cards that can modify your opponents’ food chains. The most common example is an “event card”. For example, a “wildfire” card might remove one of your opponents plant card; there’s obviously a loss of points due to the removal of the card, but depending on how strategic this is played, the opponent may now also have an herbivore card with nothing to eat, which in turn could be a problem for the carnivore that relied on that herbivore, and so on.  In effect, there could be downstream consequences to this one action which: (1) demonstrates the importance of keystone species, or the strength in redundancies; and (2) illustrates some of the strategic elements of the game itself.
+
+phylocards
+2. This is, more or less, how the cards appear in their free online format (April 2010)
+
+Since Phylo was launched, what are some of the activities around it that have interested you the most?
+
+This is where things have been really cool, and also totally unexpected. I have to admit that I find this project a bit surreal at times! I would say that our initial goal has been more or less accomplished. In other words, we have figured out a way for sustainable production of freely accessible new cards that appear on the website, and that these cards can be used in enjoyable and educational ways. This seems to be working, although the rate of new cards is a bit sporadic, they’re still appearing so that there’s usually something new to see every week or so.
+
+But now one of the most promising aspects of the project concerns the production of high quality cards or high quality decks.  In this case, we had a general sense that the “print your own” cards were pretty cool, and even potentially useful (from an educational point of view), but members of the community kept saying that whilst the cards are great, at the end of the day they’re only as good as the printer you use to print them. As a result of this kind of commentary, we had ideas sprout around the possibility of “hosts” sponsoring decks, which in turn could be sold, and therefore could push the production values of the project to a higher level.
+
+The exciting thing here is that if this works, then we have a mechanism that further adds new phylo cards, and allows the purchase of high quality cards (where hosts can also control things like rarity).  Not only that, this system sets up a way for artists to be paid fairly, as well as provides a mechanism for fund raising for the host involved. Basically, it seemed like a win win situation!
+
+The only issue, of course, is that there is an initial investment in making the deck (usually by way of the art commissions). This is why my lab has been active in providing these small grants – i.e. we’ll take that initial risk, at least until we have some data on how the cards perform (so as to make it more likely for groups to front that funding themselves). The ultimate goal here (and this would be so AWESOME) is to consider the question: what if every natural history museum decides to host a deck? What if environmental NGOs want to host a deck?  What if wildlife artists want to host a deck?  What if scientific groups or organizations want to host a deck? As you can see, it sets up an opportunity where the immensity of biodiversity can truly be reflected by thousands (if not more) cards!
+
+phylo-770
+3. How they can look when a host undertakes the production of a “high quality” deck. This one is from Vancouver’s Beaty Museum (July 2013)
+
+And the diversity of the games to be played increases as well.
+
+Right! This “hosted” deck idea has now resulted in the design of additional elements that can make the game part more interesting, or at least explore a different facet of biodiversity (not just the main ecosystem building idea). For example, we’re working on a Darwin themed deck right now, and the question there is: how do we incorporate historical elements? We’re also working on a deck that showcases chemicals derived from botanical species, and so that team is asking: how do we introduce that notion, and still make it work with the general game? A dinosaur deck could tackle the question of extinct creatures, or organisms that have a very specific temporal factor involved.
+
+Then, there are deck ideas that are less about environmental literacy, but more about using biodiversity as a general source of inspiration, and these decks are different because of some logistic involved. For instance, how would a fancy deck look if the art was produced by children? What about a deck that tries to link species with a famous animal protagonist in works of literature? What if a deck was hosted by a publishing house known for having animals on its covers? How about a deck supported by a biotech firm whose products are predominantly derived from certain organisms? It’s kind of crazy, but my point here is that the fluid nature of the project is resulting in all sorts of different ideas surfacing. Not the least of which is an idea being pursued by the Amercian Museum of Natural History – i.e. what if a host decides to host a children’s workshop that is charged with designing a deck, so that the final deck is actually only a small bookend to a rich educational experience?
+
+What does it cost for an institution to have to consider making their own Trading Card Game?
+
+Essentially, the grants I’ve been offering are usually around the $5000 mark. This entails art commissions for 25 pieces at $200 each. It’s hard to say how long a deck will take to make, because it depends a lot on existing factors.
+
+– Does the institution already have deep knowledge on what that deck makeup will be, or will it take a long time to research what that list of 25 cards will be?
+
+– Will the deck be a conventional ecosystem game (we have some basic pointers on what the cards should be to make it work relatively well), or will it highlight something a bit novel (in which case, a new mechanic may need to be looked at)?
+
+– Does the institution already have an existing collection of art, or an in house art department where the procurement of graphics is relatively straight forward?
+
+– How does the institution plan on distributing the deck?
+
+– Does this include a mechanism to generate revenue, in which case legality tends to be more complex and involve other departments in the museum?
+
+And so on.
+
+Regardless of the specifics, my lab is there to help in any way possible – usually this includes volunteering to playtest the species list to see how it works (we do this with undergrads, but also with kids coming through my lab for various events/activities). So far, we have two (almost three) fancy decks ready – one took over a year, whilst the other took about 3 months. The third took about 6 months, but involved an art competition element as well.  Also note, that another option is to work on “booster sets” instead of full starter deck – i.e. let’s make a small set of cards that can be added to the system for extra gaming flavour, primarily to tackle specific outreach or learning objectives.
+
+It is hard enough to design a game that is fun, but you also want a game that can teach science. How do you know if the game is having an effect as an educational tool?
+
+This is a key question. For a while, I’ve been aware (anecdotally) that folks (young and old) think that the project is pretty “cool.” However, I really have no idea how “useful” it is – are people actually learning stuff when they play, and maybe more importantly, are they learning it better than other means? This would be very interesting information to have.
+
+Consequently, my lab is also keen to embed the project more fully into the educational spheres. This was actually why the DIY card section was added about a year ago – it opened up a possibility of decks being prepared by anyone with access (say a teacher or students in a class), which in turns provided the option of “classroom decks.” We’ve piloted a few of these, with much success, but I should add that this again is anecdotal success. I’m hoping in the next year or two to court a collaboration where we can have some proper research done on this matter. I even have a small pocket of funding to help this facet along if any readers are interested (say education graduate students looking for an interesting project).
+
+DIYcards
+A sampling of some of amazing DIY cards produced by children.
+
+You are not a game designer, and most museums don’t have one on staff. So how are the games getting “balanced” so they are both engaging to play and educational?
+
+I think the project is doing a pretty good job on making sure the game is fun to play. This is attributed to the passion of the gaming community who really picked apart the game mechanics, especially in the early stages of the project. As an example of how immersed they were with the project, a week after the first rules were posted someone then went on to post a ten page critique, saying how those rules were flawed. He did this by outlining an unbeatable deck!
+
+From there, the rules have been playtested extensively at gaming conference, scifi conferences, etc., until we arrived at the version of rules that we currently ship with the fancy decks. I guess this is the beauty of crowdsourcing, especially when there is also the luxury of having a project that is not so business minded, but more idea driven – we didn’t need a perfect game right from the start, but we have managed to create a pretty awesome set of rules over the course of the project. In terms of balancing the educational piece, it would appear to have some educational value as teachers tend to like it, and the kids in class as well, but as mentioned above, the scientist in me is deferring this question by saying that technically we don’t have any strong evidence for this yet (although I would love to find out).
+
+Are decks interchangeable?
+
+Ideally, yes. This should work. The common factor is the existence of species cards, and they’re marked with some pretty basic information (size, habitat, what it eats, some phylogeny info, etc). This is what makes the project very flexible – it’s like you have this potential for all sorts of “expansion packs” or “booster decks” (if I can stick with trading card vernacular!)
+
+When the real world is simulated within a game, decisions have to be made. How does Phylo balance game play versus the reality behind the scientific content?
+
+This is another good question, and there are two issues that have come up with Phylo. First is at a very philosophical level: How important is it to be scientifically literate all the time? This question can take the form of “Can the art be cartoony?” “What about a game where someone has figured out how to combine Phylo cards with Pokemon cards?” For this angle, we’ve decided to be accepting of pretty much anything as long as it doesn’t overtly try to pass pseudoscience off as real science. I think we can do this, because as mentioned before, this isn’t a business proposition where we’re tied to focusing our efforts on one strategic possibility. Still this acceptance of breadth is challenging for different reasons: For instance, because the project is from crowdsourced activity, we need to have enough people to participate so that all levels of scientific literacy can be entertained. In other words, if we have a big enough community involved, then maybe we can have groups focused on a cartoony deck, but also have another group working on the photo (ultra realistic) deck too.
+
+Then, there is scientific literacy issues simply due to trying to translate the whole of biodiversity into a game mechanic. In short, this isn’t easy because a game mechanic thrives on simple intuitive rules. Unfortunately, biodiversity is anything but simple, and often it’s actually very complex. As a result, the rules focus on very simple attributes of the organism (it’s name, what habitat it likes, where it gets its energy from, and whether it can move). Still, even with these simple parameters in place, there are occasions where things can happen “in the game” that would never happen “in real life.” For example, according to the rules of the game, a polar bear card might feed on a penguin card. Biologically, this is actually doable, but in the real world they are found in different parts of the planet.
+
+Because of things like this, there exist small “hacks” in the rules: for instance, the “call your bluff” rule. Here, if the rules say it is okay (to play a card), but the reality would suggest that such a thing would never happen (like the Polar Bear example), then you can do a Scrabble-like “calling it” mechanic where the validity of the card placement can be tested. In our deck with the Beaty Museum, a handy dandy food chain connection chart is available for this very purpose.
+
+phylowebV3
+
+What does that mean that you crowdsourced Phylo? What does that look like, and why did you take that route?
+
+I’ve thought a lot about crowdsourcing over the last two years (I’ve even given the odd talk on the subject: Things I Learnt from my (Unscientific) Experiences with Crowdsourcing). Crowdsourcing, technically, is a term that describes a kind of outsourcing of tasks, where informal, undefined groups of people participate, and usually with incentives that are outside of traditional means (for instance, payment, accreditation). In other words, it’s a way to galvanize a community (or many communities) towards a project that they simply believe in, and in doing so, you hope the community is large enough that many small acts of contribution can lead to a greater whole.
+
+For this project, crowdsourcing was utilized primarily for pragmatic reasons. To create an amazing biodiversity trading card culture under conventional conditions would simply be an intensive, all consuming, cost-prohibitive, and frankly unrealistic endeavour for a small lab. It would require expertise from many different areas, including biodiversity science, visual art, gaming, website design, computer programming, and education. As well, hindsight has told me that help also came from unexpected and unforeseen areas: folks knowledgeable in publishing, intellectual property, and museum culture have really stepped up and contributed significantly.
+
+So crowdsourcing was a low stakes way of “having a go.”
+
+That sounds great but there must be problems with crowdsourcing, no?
+
+Yes, lots. A big one is uptake. By definition you need “groups” of people to participate. The larger the group the greater your reach and potential contact with the skill sets you need. But getting this reach isn’t a sure thing. We had help, in that we had the relatively good traffic of the Science Creative Quarterly on our side. Just as important, the SCQ afforded us strong connections with the rest of the science blogging community at large. In particular, we had a strong support from Cory Doctorow at Boing Boing, and he promoted the project during its early stages. It’s hard to second guess, but I think having this initial digital influence on our side was very important, at least for getting the ball rolling.
+
+Another example is the exploration of cards in high quality form – in other words, the whole angle where art can be commissioned (as opposed to relying on donations) towards the production of a purchasable physical deck. The ideation for this was strategized by the community, but actually getting it to go required a champion (a host, say a museum or other group, that would be interested in creating their own special deck) to invest in the art commissions. In the end, my lab decided to step in, and see if we can offer grants to pilot this possibility. The intent here is to see how this might work with less risk to the participant given that my lab will front the funding. This works for the project, because this type of funding is realistic for my small lab, and also worth it because we hope to gain data on the relative merits or dangers of such an investment. The end effect is to assess whether future hosts might feel confident that their own investment is worth it afterall. If it is, then this is where the project might explode with many new independent decks appearing.
+
+One final example I can offer about the disadvantages of crowdsourcing is that because your incentives are less formal, you don’t really have a lot of control over outcomes. For instance, there might be something that just needs to be done, and it isn’t necessarily onerous from a time or resource perspective, but for whatever reason it doesn’t strike a chord with anyone in the community. Editing the write up for the rules comes to mind with this issue – it’s been made clear that this is not easy to do well (the writing of the rules always sound way more complicated than when you play the game itself), and I still think the written rules continue to need more work done.
+
+Finally, in terms of crowdsourcing nuances, I should point out that there was a lot of activity at the beginning, when things were being sorted out and developed. There’s definitely less action these days from a crowdsourcing perspective, if monitoring the forums are any indication. A lot of the newer directions tend to be host deck specific, but I think that makes a lot of sense – the main nuts and bolts of the project seem to have been worked out. Nowadays, efforts are primarily revolved around one high quality deck at a time.
+
+If you’ve ever wanted to know how we decide the points value of each card, you’re in luck. Here’s the formula:
+
+Base score dependent on diet:
+Carnivore: 7
+Herbivore: 4
+Omnivore: 3
+Autotroph: 2
+
+Terrain modifier:
+3 different terrains -1
+2 different terrains 0
+1 terrain +1
+
+Climate modifier:
+3+ different climates -1
+2 different climates 0
+1 climate +1
+
+Other:
+Move/Flight/Spread of 3 or higher -1
+“Invasive” -1
+
+maybe incorporate rarityinto the points()
+…Pretty nifty, right?
+
+
+
+Ecosystem/Biodiversity Game
+
+
+
+STEP ONE: You need to print a deck.
+
+For beginners, we recommend using our BEATY starter deck (pdf), since it should have a good assortment of different kinds of cards necessary for play. Just download and print the above file – although it isn’t necessary, this is best done on card stock and in colour.
+
+Once, you get the hang of the game, you can easily expand your deck by printing new cards. This, you can do by going to the card section, selecting cards you want (tick the “select” boxes), grouping your selected cards (by clicking the “selected cards” link), and then hitting the “print” button (the website will reformat and print cards that are currently on the screen – scroll through your selected cards by clicking the “next” button and keep printing each page until you are finished).  Note, that this is also how you might also make your own completely customized deck.
+
+Also,  new pre-sorted decks will be continually added to the Deck List.  Often, these might be locale specific, and/or special decks made by educational institutions.
+
+– – –
+
+STEP TWO: Getting familiar with information presented on the cards.
+
+This is something that will inevitably take a little bit of time to get use to.  Luckily, there’s nothing too complicated on the cards.  To speed things up a little, here is a picture showing you the basics of the most common sort of card (the “SPECIES” card).  You can also learn more by checking out the glossary section.
+
+
+
+– – –
+
+STEP THREE: Learn the rules of the game.
+
+Because, Phylo is a crowd sourcing initiative, there exists the possibility of many different rules that can be used with the cards.  However, if you’re new to this game, we recommend focusing on our first two sets of rules.  One is designed for younger kids whilst the other for older (say about 8 and above).  See the following links for your needs:
+
+BIODIVERSITY TRUMPS (<8 yrs) | PHYLOMON ECOSYSTEM (>8 yrs) | MODIFY/DESIGN NEW RULES
+
+– – –
+
+BIODIVERSITY TRUMPS
+
+Age: Best for children younger than 9 years old.
+
+Number of Players: 2 to 4
+
+Minimal Deck Required: At least one Starter Deck per 2 players is best. Also, all event and home cards should be removed.
+
+Instructions: Cards are shuffled and distributed face down to all players.  Youngest player goes first by looking at his/her top card (the card that is visible).  He or she will place his/her card down on the table and call out one of the following stats:
+
+Scale number
+Food Chain Rank
+Move or Flight number (if not on card then equal to zero)
+Number of Terrains
+Number of Climates
+
+Essentially, the player with the highest number wins the other player’s card and gets to put them in the back of his/her deck. In the event of a tie, then the players with equal numbers will place three cards face down, and then the fourth card face up. Players will look at the same stat again, with the highest number winning all cards on the table (if it is another tie, you keep continuing this two cards down, one card up, until a winner is found).
+
+ 
+
+When a player loses all of their cards, they are out of the game. Winner is the last player left.
+
+– – –
+
+PHYLOMON ECOSYSTEM GAME
+
+Age: 8 years old and up.
+
+Number of players: 2 (possible with 3 and 4, although tricky with the rectangular card shape)
+
+Minimal Deck Required: Each player needs a deck of at least 20 cards (1 home card + at least 19 others). More cards can be used but the 20 to 25 per person total is a reasonable size that won’t crowd a small tabletop size (cards are played on a table top and take up space!). A general tip for constructing your own deck is to make sure you have at least 10 #FOODRANK=1 cards, as well as making sure that there aren’t any terrains or climates that are super rare. As well, the more event cards you have, the more interesting (and strategic) the game can get!
+
+Easy Instructions:
+(Note that full rules with diagrams can be found here). Short rules presented here, provided by Alice Ho, Tanis Gieselman and David Ng.
+Printable pdf of Easy Instructions here
+
+There are 2 players sitting at a table across from each other. Before starting, the table will have two home cards placed next to each other, one for each player and also “facing” that player. Players will also each have their own deck of 20+ cards and their own discard pile. These player decks can be custom built, or shuffled randomly from a starter deck.
+
+Place two HOME CARDS in the center. ONE FACING EACH PLAYER.
+
+Each Player picks up 5 cards and put the rest of the cards in a pile called the PICK-UP DECK. Cards that are removed from the game go into a DISCARD PILE.
+
+The two players will take turns. In each TURN, they can pick up a new card and make 3 ACTIONS.
+
+ACTIONS YOU CAN MAKE:
+– PLAY a card in your hand onto the table (make sure you play them facing you).
+– DROP a card in a DISCARD PILE and PICK UP three cards.
+– MOVE a card (# of moves is on the card itself). MOVE# tells you how many spots the card can move. Up
+down left right movement only (no diagonal unless it says FLIGHT), and it must end up in a free space.
+– You may PASS.
+
+Once all the cards are finished in the PICK UP PILE, and no more moves can be made, pick up all the cards FACING YOU and add up all the points. Person with the most points WIN!
+
+PLAYING A CARD
+
+FOODCHAIN#1 cards can be played anywhere as long as it is placed adjacent to a card with at least 1 temperature and 1 terrain MATCH (this makes it compatible). Any FOODCHAIN#1 card can be played adjacent a HOME card.
+
+FOODCHAIN#2 cards must be placed next to at least 1 compatible FOODCHAIN#1 cards.
+
+FOODCHAIN#3 cards must be placed next to at least 1 compatible FOODCHAIN#2 cards. Usually, FOODCHAIN#3 cards are carnivores (meat-eating): unless specified on card, this also means that it can only be played next to prey of equal or smaller SCALE.
+
+Note that there are exceptions to these general placement rules. For example, omnivores (brown circle) are FOODCHAIN#3 but can technically be played next to plants of FOODCHAIN#1. Other exceptions may be highlighted in the card text.
+
+In general, whether a card can be played (or needs to be discarded) depends on whether it is next to something that can sustain it. Also NOTE that it’s o.k. to place your card next to opponent’s cards.
+
+Yellow = Photosynthesis
+Green = Herbivore (eats plants)
+Brown = Omnivore (eats plants and animals)
+Red = Carnivore (eats animals)
+Black = “special” usually described on the card
+
+When an EVENT card is played, unless specified differently, the effect is immediate and then the EVENT card is removed from the table (into discard pile). Sometimes, the effect will result in broken food chains. Here, the opposing player has their next TURN (i.e. 3 ACTIONS) to react to the EVENT card, before disconnected cards are removed (i.e. they can play a substitute card to replenish the food chains, or they can move cards to areas on the table that provide compatible linkage).
+
+Optional Rule: Sometimes, two cards will be played next to each other where it works according to the game’s rules, but would never actually happen in real life. This might be because the two species don’t actually live in the same country, despite sharing compatible terrains and climates. Or it might happen because according to scientific study, a species diet might be quite special and limited to certain types of things, so that whilst a card might “fit” as food (according to the rules), it wouldn’t actually be eaten in real life.
+
+Because of this, you can play the game where you agree not to worry about such things, or you can play the game where you include a “call your bluff” rule. Here, in a way similar to the game Scrabble, a player can challenge these strange connections by using Wikipedia or the Encyclopaedia of Life to check for something that may be inaccurate. Whoever wins this “call your bluff” gets to remove any card from the table with immediate consequences (i.e. no giving a player a turn to react). Note that sometimes, this will be hard to check. To help, some future decks may provide a food web key to help
+
+– – –
+
+MODIFY ME
+
+1. CURRENT GAMEPLAY RULES (RULES WORKING WELL):
+(v3.0) “PHYLOMON AS AN ECOSYSTEM BUILDING GAME (BASIC RULES)” by Fenrislorsrai with input from ColinD/Naturalismus/Wootfish/Forbidding/TheCharles/glunsforddavis/Havoc Jack/Cubist/Picks-at-flies
+(GAME HISTORY” initial forum thread | v1.0 | v1.1 | v1.2 | 1.31 | 1.4a2 | 2.03, 3.04)
+
+Footnotes:
+1. Better starter deck combination, and removal “half card” placements;
+2. Getting rid of habitat cards;
+3. Changing “spread” rule, and addition of “bluff” option;
+4. Getting rid of “spread” rule, change in Pollination mechanics.
+
+Please click here for full VERSION 3.0 INSTRUCTIONS.
+
+NOTE: pdfs of working starter decks would be great!  Send suggestions to the forum!
+
+– – –
+
+DESIGN ME!
+
+We welcome other game ideas, especially if they can make use of the root information displayed on the SPECIES cards. Other interesting ideas might include:
+
+– Ecosystem building games where a particular ecological mechanic is emphasized (mimicry, co-adaptation, etc).
+– Ecosystem building games in the context of a thematic environmental challenge.
+– Ecosystem building games in the context of a specific locale.
+– Games that illustrate evolution and/or how organisms are classified.
+– Trump-like, my organism vs your organism games.
+– Games that incorporate actual outdoor wildlife spotting activities.
+
+Really, because the number of cards we can aim to make is truly immense, the possibilities of how these cards might be used is also endless.

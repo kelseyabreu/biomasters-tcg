@@ -27,6 +27,9 @@ import syncRoutes from './routes/sync';
 import gameRoutes from './routes/game';
 import adminRoutes from './routes/admin';
 
+// Import WebSocket setup
+import { setupGameSocket } from './websocket/gameSocket';
+
 const app = express();
 const PORT = process.env['PORT'] || 3001;
 
@@ -131,6 +134,9 @@ app.use(errorHandler);
 
 // Create HTTP server
 const server = createServer(app);
+
+// Setup WebSocket for real-time game communication
+const io = setupGameSocket(server);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

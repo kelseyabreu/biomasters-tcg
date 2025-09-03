@@ -42,6 +42,8 @@ const guestUserId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 
 ```
 
 #### **Security Features**
+- **User-Scoped Storage**: Each user gets isolated storage namespace to prevent data bleeding
+- **Multi-User Device Support**: Multiple users can safely share the same device
 - **Cryptographic Signing**: All actions signed with device-specific keys
 - **Data Integrity**: Collection hash verification prevents tampering
 - **Local Encryption**: Sensitive data encrypted before storage
@@ -195,12 +197,14 @@ handleNewUser() → {
 ## 📱 **Cross-Platform Considerations**
 
 ### **Web Platform**
-- **Local Storage**: Browser localStorage for guest data
+- **User-Scoped Storage**: Browser localStorage and IndexedDB with user isolation
+- **Multi-User Support**: Safe data separation for shared devices (family tablets)
 - **Service Worker**: Offline functionality and caching
 - **PWA Features**: App-like experience without installation
 
 ### **Mobile Platform (Capacitor)**
-- **Native Storage**: Secure device storage for guest data
+- **User-Scoped Native Storage**: Secure device storage with user isolation
+- **Family Device Support**: Multiple family members can safely use the same device
 - **Biometric Auth**: Optional biometric authentication for accounts
 - **Push Notifications**: Engagement features for authenticated users
 
@@ -217,5 +221,51 @@ handleNewUser() → {
 - **Encrypted Transmission**: All sync data encrypted in transit
 - **Server Validation**: All actions validated server-side
 - **Audit Trail**: Complete action history for security monitoring
+
+## 👥 **Multi-User Device Support**
+
+### **Family-Friendly Architecture**
+The game now supports multiple users on the same device (e.g., family iPad) without data bleeding or "account ghosting" issues.
+
+#### **User-Scoped Storage Implementation**
+```typescript
+// Each user gets isolated storage namespace
+const storageKey = `user_${userId}_${originalKey}`;
+
+// Examples:
+// user_guest-123_biomasters-collection
+// user_firebase-abc_biomasters-collection
+// user_registered-xyz_biomasters-collection
+```
+
+#### **Database Multi-User Support**
+```sql
+-- Composite primary key enables multiple users per device
+ALTER TABLE device_sync_states
+ADD CONSTRAINT device_sync_states_pkey
+PRIMARY KEY (device_id, user_id);
+
+-- Track device usage per user
+ALTER TABLE device_sync_states
+ADD COLUMN last_used_at TIMESTAMP DEFAULT NOW();
+```
+
+#### **Data Isolation Guarantees**
+- **Complete Separation**: Each user's data is stored with unique prefixes
+- **No Cross-Contamination**: User A cannot access User B's data
+- **Safe Sign-Out**: User data is completely cleared when signing out
+- **Family Safe**: Children and parents can safely share devices
+
+#### **Testing & Validation**
+```typescript
+// Comprehensive multi-user tests validate:
+// 1. Data isolation between users
+// 2. Proper sign-out data clearing
+// 3. Guest-to-registered conversion
+// 4. No data bleeding scenarios
+
+// Run tests with:
+devHelpers.runUserScopedStorageTests()
+```
 
 This dual authentication system provides the perfect balance of accessibility and functionality, ensuring that conservation education reaches the widest possible audience while offering enhanced features for engaged users.

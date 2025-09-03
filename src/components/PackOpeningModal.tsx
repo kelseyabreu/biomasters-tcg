@@ -3,7 +3,7 @@
  * Shows pack opening animation and card reveals
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -67,6 +67,10 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const [isOpening, setIsOpening] = useState(false);
   const [packResult, setPackResult] = useState<PackResult | null>(null);
   const [showCards, setShowCards] = useState(false);
+
+  // Ref to track pack opening state to prevent race conditions
+  const isOpeningRef = useRef(false);
+  const hasOpenedRef = useRef(false);
   const [showEducationalInfo, setShowEducationalInfo] = useState(false);
 
   // Helper function to get rarity colors (matches collection view)
@@ -82,24 +86,16 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     }
   };
 
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setIsOpening(false);
-      setPackResult(null);
-      setShowCards(false);
-      // Start pack opening automatically
-      handleOpenPack();
-    }
-  }, [isOpen]);
-
-  const handleOpenPack = async () => {
-    // Prevent double-clicking
-    if (isOpening) {
-      console.log('🚫 Pack opening already in progress, ignoring duplicate call');
+  const handleOpenPack = useCallback(async () => {
+    // Prevent double-clicking with both state and ref
+    if (isOpening || isOpeningRef.current || hasOpenedRef.current) {
+      console.log('🚫 Pack opening already in progress or completed, ignoring duplicate call');
       return;
     }
 
+    console.log('🎁 Starting pack opening process...');
+    isOpeningRef.current = true;
+    hasOpenedRef.current = true;
     setIsOpening(true);
 
     try {
@@ -157,21 +153,52 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       
       setPackResult(result);
       setIsOpening(false);
-      
+      isOpeningRef.current = false;
+
       // Show cards after a brief delay
       setTimeout(() => setShowCards(true), 500);
-      
+
     } catch (error) {
       console.error('Failed to open pack:', error);
       setIsOpening(false);
+      isOpeningRef.current = false;
+      // Don't reset hasOpenedRef here to prevent retry attempts
       onClose();
     }
-  };
+  }, [packType, openPack, openStarterPack, onClose]);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔄 Resetting pack opening modal state...');
+      setIsOpening(false);
+      setPackResult(null);
+      setShowCards(false);
+      isOpeningRef.current = false;
+      hasOpenedRef.current = false;
+    }
+  }, [isOpen]);
+
+  // Separate effect for auto-opening pack to prevent multiple calls
+  useEffect(() => {
+    if (isOpen && !isOpening && !packResult && !isOpeningRef.current && !hasOpenedRef.current) {
+      console.log('🎯 Triggering pack opening...');
+      // Add a small delay to ensure state is properly reset
+      const timer = setTimeout(() => {
+        handleOpenPack();
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isOpening, packResult, handleOpenPack]);
 
   const handleClose = () => {
+    console.log('🚪 Closing pack opening modal...');
     setIsOpening(false);
     setPackResult(null);
     setShowCards(false);
+    isOpeningRef.current = false;
+    hasOpenedRef.current = false;
     onClose();
   };
 

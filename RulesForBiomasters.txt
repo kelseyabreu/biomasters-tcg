@@ -1,0 +1,182 @@
+***
+
+## Page 1: BioMasters TCG - The Definitive Rulebook
+
+**(Full-page art of a vibrant, interconnected ecosystem. A mangrove forest bridges the gap between a terrestrial jungle and a thriving coral reef. A Jaguar stalks a Sea Turtle on the beach.)**
+
+### Welcome, BioMaster!
+
+The world is your canvas. In your hands, you hold the power to cultivate a thriving ecosystem, from the smallest microbe to the mightiest apex predator.
+
+**BioMasters TCG** is a living card game of strategy and synergy for **2 or 4 players**. You will compete on a shared, ever-growing map, building intricate food chains and mastering the infinite cycle of life. Your goal is not to conquer, but to create the most resilient, efficient, and scientifically fascinating web of life.
+
+You will command two fundamental forces:
+*   **The Production Loop:** The explosive growth of life, where energy flows from producers outwards into a complex network of consumers.
+*   **The Decomposition Loop:** The engine of renewal, where death is not an end, but the raw material for new beginnings.
+
+Balance these forces, outsmart your rivals by leveraging real ecological strategies, and prove you have what it takes to become a true BioMaster.
+
+***
+
+## Page 2: Core Concepts & How to Win
+
+**(A large, clean diagram of the two core loops originating from a central point and home.)**
+
+```
+          +-------------------------------------------------------------------------+
+          |                             ENERGY PRODUCTION (Production Loop)         |
+          |       ,------------------------------------------------------------.    |
+          |      /                                                                \   |
+          |     |    [+1] --------> [+2] --------> [+3] --------> [+4]             |   |
+          |     |  (Producers)    (Herbivores)   (Carnivores)   (Apex Predators)   |   |
+          |      \      ^                                                         /   |
+          |       `-----|---------------------HOME------------------------------'    |
+          |             |                                                             |
+          |       .-----|-------------------------------------------------------.    |
+          |      /  [Level 0]                                                         \   |
+          |     |   DETRITUS  <------ [-1S] <-------- [-2D]                         |   |
+          |     | TILE (On Grid)    (Saprotrophs)   (Detritivores)                  |   |
+          |      \                                                                /   |
+          |       `------------------------------------------------------------'    |
+          |                              MATTER CYCLING (Decomposition Loop)          |
+          +-------------------------------------------------------------------------+
+```### Objective of the Game
+The game ends when a player cannot draw a card from their deck at the start of their turn. After the other player(s) have taken one final turn, the game concludes. **The player or team with the most Victory Points (VP) in their Score Pile is the winner.**
+
+***
+
+## Page 3: The Anatomy of a Card
+
+**(Large, clear diagrams of several example cards, with arrows pointing to each part.)**
+
+1.  **Card Name & IUCN Status:** The species' common name. A colored gem or icon indicates its real-world conservation status, which determines its rarity (Common, Uncommon, Rare, Epic).
+2.  **Trophic Number (Top-Right):** The card's core role in the food web. Green (`+`), Brown (`-`), or Purple (`P`/`M`).
+3.  **Cost (Top-Left):** The icons of the cards you must **Exhaust** to play this card.
+4.  **Connection Arrow (On the Edge):** A visual guide showing the Trophic Number this card *must* be placed next to.
+5.  **Keywords (Text Box):** Defines crucial traits, categorized into **Domain**, **Terrain**, **Climate**, and **Feeding/Energy Strategy**.
+6.  **Ability Text (Text Box):** The unique actions the card can perform.
+
+***
+
+## Page 4: Setup & The Living Grid
+
+**(Diagram showing the 2-player and 4-player HOME card starting setups.)**
+
+### Game Setup (Deck Size: 25-30 cards per player)
+
+1.  **Place HOMEs:** Players place their HOME cards in the center of the play area.
+    *   **2 Players (1v1):** `[H1][H2]`
+    *   **4 Players (2v2 or Free-for-All):** `[H1][H2]` / `[H3][H4]`. In 2v2, teammates sit across from each other.
+2.  **Prepare Decks & Hand:** Each player shuffles their deck and draws an opening hand of 5 cards.
+3.  **Designate Space:** Leave space for each player's personal Score Pile.
+
+### The Living Grid
+
+There is no pre-set board! The grid is built organically by the players' actions.
+*   **Orthogonal Placement:** All cards must be placed sharing a flat edge with an already-played card (no diagonals).
+*   **Shared World:** You can connect your cards to any valid card on the grid, even those controlled by opponents.
+
+***
+
+## Page 5: Your Turn - The Three Phases
+
+**(Simple flowchart diagram showing the three phases.)**
+`[Start of Turn] -> [1. READY PHASE] -> [2. DRAW PHASE] -> [3. ACTION PHASE] -> [End of Turn]`
+
+### 1. Ready Phase
+Turn all of your **Exhausted** (50 degree / tilted) cards back to their **Ready** (upright) position.
+
+### 2. Draw Phase
+Draw one card from your deck. If you cannot, the end of the game is triggered.
+
+### 3. Action Phase
+You may perform a **maximum of three Actions**. You can do the same action multiple times. The available actions are:
+*   **Play a Card:** Pay the card's cost and place it onto the grid.
+*   **Activate an Ability:** **Exhaust** a ready card you control to use its printed ability.
+*   **Pass:** Choose to do nothing.
+
+***
+
+## Page 6: The Rules of Connection - Domains & Trophic Levels
+
+Making a valid connection is a two-step process. You must satisfy both the **Domain Rule** and the **Trophic Rule**.
+
+### Step 1: The Domain Rule (Is it Legal?)
+A card's Domain is its fundamental environment. This is a mandatory requirement.
+*   **Terrestrial (Default):** Can only connect to a **Terrestrial** or `[AMPHIBIOUS]` card.
+*   **`[AQUATIC]`:** Can only connect to an `[AQUATIC]` or `[AMPHIBIOUS]` card.
+*   **`[AMPHIBIOUS]`:** The universal bridge. Can connect to **any** Domain type.
+
+### Step 2: The Trophic Rule (Where does it fit?)
+Once the Domain is legal, you must connect to the correct Trophic Number.
+*   **Production Loop (`+`):** A `+X` card must be played adjacent to a `+X-1` card. (e.g., `+3` connects to `+2`).
+*   **Decomposition Loop (`-`):** A `-X` card must be played adjacent to a `-X+1` card (e.g., `-2D` connects to `-1S`).
+
+***
+
+## Page 7: The Production Loop in Detail (`+` Cards)
+
+*   **Producers (`+1`):**
+    *   **Photoautotrophs (`+1A`):** Have no cost and connect to a HOME card.
+    *   **Chemoautotrophs (`+1C`):** Do **not** connect to HOME. They must connect to a `-1S` or `-2D` card you control, closing the infinity loop.
+*   **Consumers (`+2` and up):** Played by paying their cost by Exhausting cards you control.
+*   **"Preferred Diet" Bonus:** A key strategic mechanic. Connecting a consumer to a specific food source keyword (e.g., a Frugivore to a `[FRUIT]` tree) grants a powerful tempo bonus, like entering play *Ready*.
+
+***
+
+## Page 8: The Decomposition Loop in Detail (`-` Cards)
+
+*   **Detritus Tiles (Level 0):** When a creature is removed from play, it is flipped face-down in its space. This is now a **Detritus Tile**, a resource waiting to be claimed.
+*   **Saprotrophs (`-1S`):** The true decomposers. To play one, you **remove a Detritus Tile from the grid and play the `-1S` card in that empty space.** The creature card that was the tile goes to your Score Pile (worth 1 VP).
+*   **Detritivores (`-2D`):** The master recyclers. They connect to `-1S` cards and have powerful abilities to process your recycled cards for more VP and card advantage.
+
+***
+
+## Page 9: Advanced Life Strategies
+
+*   **Mixotrophs:** These organisms (e.g., Venus Flytrap) are typically `+1A` Producers with a special activated ability that allows them to act as a consumer, giving them unique flexibility.
+*   **Life Stages & `[METAMORPHOSIS]`:** Organisms that change roles are separate cards. The `[METAMORPHOSIS]` keyword on a juvenile card allows you to "upgrade" it into its adult form, often providing a significant tempo advantage.
+*   **Attachments (`P` & `M`):** Parasites and Mutualists are played by tucking them under a host creature to provide a persistent negative (Parasite) or positive (Mutualist) effect.
+
+***
+
+## Page 10: A Guide to Keywords
+
+Keywords are the language of your ecosystem.
+
+### Domain Keywords (Mandatory for Connection)
+
+*   **`[Terrestrial]: Lives on land.
+*   **`[FRESHWATER]: Lives in freshwater.
+*   ** [MARINE]: Lives in saltwater.
+*   **`[AMPHIBIOUS]: The bridge between Terrestrial and one of the water types. A card will specify which (e.g., [AMPHIBIOUS - FRESHWATER] for a frog, [AMPHIBIOUS - MARINE] for a sea lion).
+*   **`[EURYHALINE]: The bridge between [FRESHWATER] and [MARINE]. These are organisms that can tolerate a wide range of salinity.
+
+### Informational & Synergy Keywords
+*   **Terrain:** `[FOREST]`, `[GRASSLAND]`, `[DESERT]`, `[MOUNTAIN]`, `[CORAL REEF]`, etc.
+*   **Climate:** `[ARCTIC]`, `[TEMPERATE]`, `[TROPICAL]`, `[ARID]`.
+*   **Feeding/Energy Strategy:** `[SCAVENGE]`, `[FILTER FEEDER]`, `[FRUGIVORE]`, `[INSECTIVORE]`, `[KLEPTOPARASITISM]`, `[PACK HUNTER]`, `[VENOMOUS]`, etc.
+
+***
+
+## Page 11: The Path to Mastery - Core Strategies
+
+*   **Tempo is Life:** A creature that enters play *Ready* is a massive advantage. Prioritize "Preferred Diet" and `[METAMORPHOSIS]` bonuses.
+*   **The Symbiosis Gambit:** Don't be afraid to connect to your opponents' cards. Using their `+3` to play your `+4` two turns early is a game-winning move.
+*   **Weaponize Decay:** The Detritus Tiles are a shared resource. Use `[SCAVENGE]` abilities to deny key cards to your opponents and fuel your own hand.
+*   **The Investment Portfolio:** Know when to pivot. If the board is stalled, investing in the Decomposition Loop can provide an unstoppable late-game advantage.
+*   **The Unseen Threat:** A board full of ready cards is more threatening than a board with one big, exhausted creature.
+
+***
+
+## Page 12: Glossary & Quick Reference
+
+*   **Action:** One of up to three things you can do on your turn (Play, Activate, Pass).
+*   **Control:** You control the cards that are facing you on the grid.
+*   **Detritus Tile:** A face-down card on the grid, representing Level 0 dead matter.
+*   **Exhaust:** To turn a card angled/titled at 50 degress, showing it has been used for the turn.
+*   **Keyword:** A trait that defines a card's synergies and rules (e.g., `[AQUATIC]`, `[SCAVENGE]`).
+*   **Ready:** A card that is upright and available to be used.
+*   **Score Pile:** Your personal pile for recycled/scored cards, tallying your VP.
+*   **Tempo:** The speed and efficiency of your plays. Gaining tempo means getting ahead of your opponents.
+*   **VP:** Victory Points, the measure of your success at the end of the game.

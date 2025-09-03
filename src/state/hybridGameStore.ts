@@ -5,7 +5,7 @@
  */
 
 import { create } from 'zustand';
-import { persist, subscribeWithSelector } from 'zustand/middleware';
+import { persist, subscribeWithSelector, createJSONStorage } from 'zustand/middleware';
 import { offlineSecurityService, OfflineCollection, OfflineAction } from '../services/offlineSecurityService';
 import { starterPackService } from '../services/starterPackService';
 import { syncService, SyncResult } from '../services/syncService';
@@ -14,6 +14,19 @@ import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem
 import { Card } from '../types';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, User, signInAnonymously, signOut } from 'firebase/auth';
+import { tokenManager } from '../services/tokenStorage';
+import { createUserScopedIndexedDBStorage, clearUserData, migrateToUserScopedStorage } from '../utils/userScopedStorage';
+import { guestApi } from '../services/apiClient';
+
+// Global reference to store for user ID access
+let storeRef: any = null;
+
+// Helper function to get current user ID for storage scoping
+const getCurrentUserId = (): string | null => {
+  if (!storeRef) return null;
+  const state = storeRef.getState();
+  return state.userId || state.guestId || null;
+};
 
 export interface HybridGameState {
   // Offline State
@@ -92,9 +105,11 @@ export interface HybridGameState {
   openPack: (packType: string) => Promise<string[]>;
   
   // Deck Actions
-  createDeck: (name: string, cards: string[]) => Promise<string>;
-  updateDeck: (deckId: string, name: string, cards: string[]) => Promise<void>;
+  createDeck: (name: string, cards: { speciesName: string; quantity: number }[]) => Promise<string>;
+  updateDeck: (deckId: string, name: string, cards: { speciesName: string; quantity: number }[]) => Promise<void>;
   deleteDeck: (deckId: string) => Promise<void>;
+  setActiveDeck: (deckId: string) => void;
+  loadDeck: (deckId: string) => any;
   
   // Sync Actions
   syncCollection: () => Promise<SyncResult>;
@@ -104,6 +119,28 @@ export interface HybridGameState {
   // Conflict Resolution
   resolveSyncConflicts: (conflicts: any[]) => void;
   dismissSyncConflicts: () => void;
+
+  // Active battle tracking
+  activeBattle: {
+    sessionId: string | null;
+    gameMode: 'campaign' | 'online' | 'scenarios' | 'tutorial' | null;
+    levelId: string | null;
+    isActive: boolean;
+  };
+  setActiveBattle: (battle: {
+    sessionId: string | null;
+    gameMode: 'campaign' | 'online' | 'scenarios' | 'tutorial' | null;
+    levelId: string | null;
+    isActive: boolean;
+  }) => void;
+  clearActiveBattle: () => void;
+
+  // Test helper method
+  setAuthenticatedUser: (userData: {
+    userId: string;
+    firebaseUser: any;
+    userProfile: any;
+  }) => void;
 }
 
 export const useHybridGameStore = create<HybridGameState>()(
@@ -114,6 +151,14 @@ export const useHybridGameStore = create<HybridGameState>()(
         offlineCollection: null,
         hasStarterPack: false,
         isFirstLaunch: true,
+
+        // Active battle state
+        activeBattle: {
+          sessionId: null,
+          gameMode: null,
+          levelId: null,
+          isActive: false
+        },
 
         // Species Data
         allSpeciesCards: [],
@@ -225,71 +270,123 @@ export const useHybridGameStore = create<HybridGameState>()(
           // First, try to recover authentication state from persisted data
           await get().recoverAuthenticationState();
 
+          // Firebase onAuthStateChanged now fires immediately if user was persisted
+          // Thanks to browserLocalPersistence, this handles Scenarios 1 & 2 automatically
           onAuthStateChanged(auth, async (user) => {
             console.log('🔥 Auth state changed:', user ? `User: ${user.uid}` : 'No user');
 
             const previousUser = get().firebaseUser;
             const currentState = get();
 
-            // Don't override guest mode authentication
-            if (currentState.isGuestMode && !user) {
-              console.log('🔥 Preserving guest mode authentication');
-              set({
-                firebaseUser: user
-              });
-              return;
-            }
+            if (user) {
+              // Firebase user is signed in (new or restored from persistence)
+              console.log('✅ Firebase user authenticated:', user.uid);
 
-            set({
-              firebaseUser: user,
-              isAuthenticated: !!user,
-              userId: user?.uid || null,
-              userProfile: user ? {
-                username: user.displayName || user.email?.split('@')[0] || 'User',
-                displayName: user.displayName,
-                email: user.email,
-                avatarUrl: user.photoURL,
-                accountType: 'registered'
-              } : null
-            });
-
-            // Handle user sign-out - clear state
-            if (!user && previousUser) {
-              console.log('👤 User signed out - clearing state...');
-              set({
-                offlineCollection: null,
-                hasStarterPack: false,
-                isGuestMode: false,
-                syncStatus: 'idle',
-                lastSyncTime: 0,
-                syncError: null,
-                pendingActions: 0,
-                showSyncConflicts: false,
-                syncConflicts: [],
-                userProfile: null
-              });
-            }
-
-            // Handle user authentication (new or returning)
-            if (user && !previousUser) {
-              console.log('👤 User authenticated - setting up...');
-              try {
-                // Always initialize signing key for any authenticated user
-                await get().initializeOfflineKey();
-
-                // Setup new user if needed
-                await get().handleNewUser();
-              } catch (error) {
-                console.error('❌ Failed to setup authenticated user:', error);
+              // Don't override guest mode if we're in the middle of guest conversion
+              if (currentState.isGuestMode && !previousUser) {
+                console.log('🔄 Guest conversion in progress, updating Firebase user');
               }
-            }
 
-            // If user signs in and we have offline data, prepare for sync
-            if (user && get().offlineCollection && !get().isGuestMode) {
-              console.log('👤 User authenticated with offline data - ready for sync');
-              // Auto-sync when coming online
-              if (navigator.onLine) {
-                setTimeout(() => get().syncCollection(), 1000);
+              set({
+                firebaseUser: user,
+                isAuthenticated: true,
+                isGuestMode: false, // Firebase user overrides guest mode
+                userId: user.uid,
+                userProfile: {
+                  username: user.displayName || user.email?.split('@')[0] || 'User',
+                  displayName: user.displayName,
+                  email: user.email,
+                  avatarUrl: user.photoURL,
+                  accountType: 'registered'
+                }
+              });
+
+              // Clear any guest credentials since we have a Firebase user
+              await tokenManager.clearGuestCredentials();
+
+              // Handle user authentication (new or returning)
+              if (!previousUser) {
+                console.log('👤 Firebase user authenticated - setting up...');
+                try {
+                  // Always initialize signing key for any authenticated user
+                  await get().initializeOfflineKey();
+
+                  // Setup new user if needed
+                  await get().handleNewUser();
+                } catch (error) {
+                  console.error('❌ Failed to setup authenticated user:', error);
+                }
+              }
+
+              // If user signs in and we have offline data, prepare for sync
+              if (get().offlineCollection) {
+                console.log('👤 Firebase user authenticated with offline data - ready for sync');
+                // Auto-sync when coming online
+                if (navigator.onLine) {
+                  setTimeout(() => get().syncCollection(), 1000);
+                }
+              }
+
+            } else {
+              // No Firebase user - check for guest authentication
+              console.log('🔍 No Firebase user, checking for guest authentication...');
+
+              if (!currentState.isGuestMode) {
+                // Try to recover guest authentication from secure storage
+                const guestCredentials = await tokenManager.getGuestCredentials();
+
+                if (guestCredentials) {
+                  console.log('🔄 Found guest credentials, attempting to restore guest session...');
+                  try {
+                    // Restore guest state
+                    set({
+                      isAuthenticated: true,
+                      isGuestMode: true,
+                      guestId: guestCredentials.guestId,
+                      guestSecret: guestCredentials.guestSecret,
+                      guestToken: guestCredentials.guestToken || null,
+                      userId: guestCredentials.guestId,
+                      firebaseUser: null,
+                      userProfile: {
+                        username: `Guest-${guestCredentials.guestId.slice(-6).toUpperCase()}`,
+                        displayName: `Guest-${guestCredentials.guestId.slice(-6).toUpperCase()}`,
+                        email: null,
+                        avatarUrl: null,
+                        accountType: 'guest'
+                      }
+                    });
+                    console.log('✅ Guest session restored from secure storage');
+                  } catch (error) {
+                    console.warn('⚠️ Failed to restore guest session:', error);
+                    await tokenManager.clearGuestCredentials();
+                  }
+                } else {
+                  // No authentication at all - clear state
+                  console.log('ℹ️ No authentication found');
+                  if (previousUser) {
+                    console.log('👤 User signed out - clearing state...');
+                    set({
+                      firebaseUser: null,
+                      isAuthenticated: false,
+                      isGuestMode: false,
+                      userId: null,
+                      userProfile: null,
+                      offlineCollection: null,
+                      hasStarterPack: false,
+                      syncStatus: 'idle',
+                      lastSyncTime: 0,
+                      syncError: null,
+                      pendingActions: 0,
+                      showSyncConflicts: false,
+                      syncConflicts: []
+                    });
+                    await tokenManager.clearAllAuthData();
+                  }
+                }
+              } else {
+                // Already in guest mode, preserve state
+                console.log('🔥 Preserving existing guest mode authentication');
+                set({ firebaseUser: null });
               }
             }
           });
@@ -327,9 +424,29 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           const state = get();
 
-          // Check if we already have guest credentials stored
-          if (state.guestId && state.guestSecret) {
-            console.log('👤 Found existing guest credentials, attempting login...');
+          // First check secure storage for existing guest credentials
+          const storedCredentials = await tokenManager.getGuestCredentials();
+
+          if (storedCredentials) {
+            console.log('👤 Found existing guest credentials in secure storage, attempting login...');
+            try {
+              // Update state with stored credentials
+              set({
+                guestId: storedCredentials.guestId,
+                guestSecret: storedCredentials.guestSecret,
+                guestToken: storedCredentials.guestToken || null
+              });
+
+              await get().loginExistingGuest();
+              return;
+            } catch (error) {
+              console.warn('⚠️ Existing guest login failed, creating new guest:', error);
+              // Clear invalid credentials and fall through to create new guest
+              await tokenManager.clearGuestCredentials();
+            }
+          } else if (state.guestId && state.guestSecret) {
+            // Fallback: check Zustand persisted state
+            console.log('👤 Found guest credentials in store, attempting login...');
             try {
               await get().loginExistingGuest();
               return;
@@ -364,6 +481,13 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
           });
 
+          // Store guest ID immediately (secret will be stored after server registration)
+          await tokenManager.storeGuestCredentials({
+            guestId,
+            guestSecret: '', // Placeholder until server registration
+            guestToken: undefined
+          });
+
           // Initialize offline collection immediately
           await get().initializeOfflineCollection();
 
@@ -392,32 +516,30 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           console.log('👤 Logging in existing guest...');
 
-          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-          const response = await fetch(`${API_BASE_URL}/api/guest/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          try {
+            const response = await guestApi.login({
               guestId: state.guestId,
               guestSecret: state.guestSecret
-            })
-          });
+            });
 
-          if (!response.ok) {
-            const error = await response.json();
+            const data = response.data;
+
+            set({
+              isAuthenticated: true,
+              isGuestMode: true,
+              guestToken: data.auth?.token || '',
+              userId: data.user?.id || '',
+              needsRegistration: false
+            });
+
+            // Update secure storage with fresh token
+            if (data.auth?.token) {
+              await tokenManager.updateGuestToken(data.auth.token);
+            }
+          } catch (error: any) {
+            console.error('❌ Guest login failed:', error);
             throw new Error(error.message || 'Guest login failed');
           }
-
-          const data = await response.json();
-
-          set({
-            isAuthenticated: true,
-            isGuestMode: true,
-            guestToken: data.auth.token,
-            userId: data.user.id,
-            needsRegistration: false
-          });
 
           console.log('✅ Guest login successful');
         },
@@ -434,13 +556,8 @@ export const useHybridGameStore = create<HybridGameState>()(
           // Collect offline action queue
           const actionQueue = state.offlineCollection?.action_queue || [];
 
-          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-          const response = await fetch(`${API_BASE_URL}/api/guest/register-and-sync`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          try {
+            const response = await guestApi.registerAndSync({
               guestId: state.guestId,
               actionQueue: actionQueue.map(action => ({
                 action: action.action,
@@ -453,34 +570,41 @@ export const useHybridGameStore = create<HybridGameState>()(
                 timestamp: action.timestamp
               })),
               deviceId: offlineSecurityService.getDeviceId()
-            })
-          });
+            });
 
-          if (!response.ok) {
-            const error = await response.json();
+            const data = response.data;
+
+            // Update state with server credentials
+            set({
+              guestSecret: data.auth?.guestSecret || '',
+              guestToken: data.auth?.token || '',
+              userId: data.user?.id || '',
+              needsRegistration: false
+            });
+
+            // Store credentials securely
+            if (data.auth?.guestSecret && data.auth?.token) {
+              await tokenManager.storeGuestCredentials({
+                guestId: state.guestId!,
+                guestSecret: data.auth.guestSecret,
+                guestToken: data.auth.token
+              });
+            }
+
+            // Clear processed actions from local queue
+            if (state.offlineCollection) {
+              const updatedCollection = {
+                ...state.offlineCollection,
+                action_queue: [] // Clear processed actions
+              };
+              get().saveOfflineCollection(updatedCollection);
+            }
+
+            console.log('✅ Guest registered with server successfully');
+          } catch (error: any) {
+            console.error('❌ Guest registration failed:', error);
             throw new Error(error.message || 'Guest registration failed');
           }
-
-          const data = await response.json();
-
-          // Update state with server credentials
-          set({
-            guestSecret: data.auth.guestSecret,
-            guestToken: data.auth.token,
-            userId: data.user.id,
-            needsRegistration: false
-          });
-
-          // Clear processed actions from local queue
-          if (state.offlineCollection) {
-            const updatedCollection = {
-              ...state.offlineCollection,
-              action_queue: [] // Clear processed actions
-            };
-            get().saveOfflineCollection(updatedCollection);
-          }
-
-          console.log('✅ Guest registered with server successfully');
         },
 
         // Recover authentication state after page refresh
@@ -556,9 +680,21 @@ export const useHybridGameStore = create<HybridGameState>()(
             console.log('👤 Signing out...');
 
             const state = get();
+            const currentUserId = state.userId || state.guestId;
+
             if (state.isGuestMode) {
-              // For guest mode, just clear local state
+              // For guest mode, clear local state and secure storage
               console.log('👤 Signing out guest user...');
+
+              // Clear secure storage first
+              await tokenManager.clearGuestCredentials();
+
+              // Clear user-scoped data for this guest
+              if (currentUserId) {
+                await clearUserData(currentUserId);
+                console.log(`🧹 Cleared user-scoped data for guest: ${currentUserId}`);
+              }
+
               set({
                 isAuthenticated: false,
                 userId: null,
@@ -575,11 +711,21 @@ export const useHybridGameStore = create<HybridGameState>()(
                 syncError: null,
                 pendingActions: 0,
                 showSyncConflicts: false,
-                syncConflicts: []
+                syncConflicts: [],
+                userProfile: null
               });
             } else {
-              // For Firebase users, sign out through Firebase
+              // For Firebase users, clear user-scoped data before signing out
+              if (currentUserId) {
+                await clearUserData(currentUserId);
+                console.log(`🧹 Cleared user-scoped data for user: ${currentUserId}`);
+              }
+
+              // Sign out through Firebase
               await signOut(auth);
+              // Firebase auth state change will handle clearing state
+              // Also clear any backup token storage
+              await tokenManager.clearFirebaseToken();
             }
 
             console.log('✅ Sign-out successful');
@@ -610,9 +756,25 @@ export const useHybridGameStore = create<HybridGameState>()(
                   throw new Error('Failed to get authentication token');
                 }
 
-                // Server offline key endpoint not implemented in backend
-                // Skip server-based key and use local fallback
-                throw new Error('Server offline key endpoint not implemented');
+                // Call the server to register device and get signing key
+                console.log('🔑 Requesting offline signing key from server...');
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/offline-key`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                  },
+                  body: JSON.stringify({ device_id: deviceId })
+                });
+
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  throw new Error(`Failed to get offline key: ${errorData.message || response.statusText}`);
+                }
+
+                const { signing_key } = await response.json();
+                await offlineSecurityService.initializeSigningKey(state.userId!, signing_key);
+                console.log('🔑 Offline signing key initialized from server');
 
               } catch (serverError) {
                 console.warn('⚠️ Server unavailable, using local fallback key:', serverError);
@@ -877,25 +1039,54 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Create deck
-        createDeck: async (name: string, cards: string[]): Promise<string> => {
-          const deckId = `deck_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
+        createDeck: async (name: string, cards: { speciesName: string; quantity: number }[]): Promise<string> => {
+          const state = get();
+          if (!state.offlineCollection) {
+            throw new Error('No collection available');
+          }
+
+          // Check deck limit (maximum 5 decks)
+          const currentDecks = state.offlineCollection.savedDecks || [];
+          if (currentDecks.length >= 5) {
+            throw new Error('Maximum of 5 decks allowed. Please delete a deck first.');
+          }
+
+          // Check for duplicate names
+          if (currentDecks.some(deck => deck.name.toLowerCase() === name.toLowerCase())) {
+            throw new Error('A deck with this name already exists.');
+          }
+
+          const deckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
           const action = offlineSecurityService.createAction('deck_created', {
             deck_id: deckId,
             deck_data: { name, cards }
           });
 
-          const state = get();
-          if (state.offlineCollection) {
-            const updatedCollection = offlineSecurityService.addActionToQueue(state.offlineCollection, action);
-            get().saveOfflineCollection(updatedCollection);
-          }
+          // Create the deck object
+          const newDeck = {
+            id: deckId,
+            name,
+            cards,
+            created: Date.now(),
+            lastModified: Date.now()
+          };
+
+          // Update collection with new deck as active deck
+          const updatedCollection = {
+            ...offlineSecurityService.addActionToQueue(state.offlineCollection, action),
+            activeDeck: newDeck,
+            savedDecks: [...currentDecks, newDeck]
+          };
+
+          get().saveOfflineCollection(updatedCollection);
+          console.log('✅ Deck created and set as active:', newDeck);
 
           return deckId;
         },
 
         // Update deck
-        updateDeck: async (deckId: string, name: string, cards: string[]): Promise<void> => {
+        updateDeck: async (deckId: string, name: string, cards: { speciesName: string; quantity: number }[]): Promise<void> => {
           const action = offlineSecurityService.createAction('deck_updated', {
             deck_id: deckId,
             deck_data: { name, cards }
@@ -903,15 +1094,87 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           const state = get();
           if (state.offlineCollection) {
-            const updatedCollection = offlineSecurityService.addActionToQueue(state.offlineCollection, action);
+            // Update the deck in saved decks and active deck if it matches
+            const updatedDeck = {
+              id: deckId,
+              name,
+              cards,
+              created: state.offlineCollection.activeDeck?.created || Date.now(),
+              lastModified: Date.now()
+            };
+
+            const updatedSavedDecks = (state.offlineCollection.savedDecks || []).map(deck =>
+              deck.id === deckId ? updatedDeck : deck
+            );
+
+            const updatedCollection = {
+              ...offlineSecurityService.addActionToQueue(state.offlineCollection, action),
+              activeDeck: state.offlineCollection.activeDeck?.id === deckId ? updatedDeck : state.offlineCollection.activeDeck,
+              savedDecks: updatedSavedDecks
+            };
+
             get().saveOfflineCollection(updatedCollection);
           }
         },
 
         // Delete deck
         deleteDeck: async (deckId: string): Promise<void> => {
-          // Implementation would add delete action to queue
-          console.log('Delete deck:', deckId);
+          const state = get();
+          if (!state.offlineCollection) {
+            throw new Error('No collection available');
+          }
+
+          const action = offlineSecurityService.createAction('deck_deleted', {
+            deck_id: deckId,
+            deck_data: null
+          });
+
+          const currentDecks = state.offlineCollection.savedDecks || [];
+          const updatedDecks = currentDecks.filter(deck => deck.id !== deckId);
+
+          // If the deleted deck was active, clear active deck or set to first remaining deck
+          let newActiveDeck = state.offlineCollection.activeDeck;
+          if (newActiveDeck?.id === deckId) {
+            newActiveDeck = updatedDecks.length > 0 ? updatedDecks[0] : undefined;
+          }
+
+          const updatedCollection = {
+            ...offlineSecurityService.addActionToQueue(state.offlineCollection, action),
+            activeDeck: newActiveDeck,
+            savedDecks: updatedDecks
+          };
+
+          get().saveOfflineCollection(updatedCollection);
+          console.log('✅ Deck deleted:', deckId);
+        },
+
+        // Set active deck
+        setActiveDeck: (deckId: string) => {
+          const state = get();
+          if (state.offlineCollection) {
+            const deck = state.offlineCollection.savedDecks?.find(d => d.id === deckId);
+            if (deck) {
+              const updatedCollection = {
+                ...state.offlineCollection,
+                activeDeck: deck
+              };
+              get().saveOfflineCollection(updatedCollection);
+              console.log('✅ Active deck set:', deck);
+            }
+          }
+        },
+
+        // Load deck into deck builder (for editing)
+        loadDeck: (deckId: string) => {
+          const state = get();
+          if (state.offlineCollection) {
+            const deck = state.offlineCollection.savedDecks?.find(d => d.id === deckId);
+            if (deck) {
+              console.log('✅ Deck loaded for editing:', deck);
+              return deck;
+            }
+          }
+          return null;
         },
 
         // Sync with server
@@ -1031,6 +1294,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         // User Profile Management
         updateUserProfile: (profileUpdate) => {
           const currentProfile = get().userProfile;
+          if (!currentProfile) return;
           set({
             userProfile: {
               ...currentProfile,
@@ -1066,10 +1330,53 @@ export const useHybridGameStore = create<HybridGameState>()(
               pending_actions: stored.action_queue.length
             });
           }
+        },
+
+        // Active battle management
+        setActiveBattle: (battle) => {
+          console.log('🎮 Setting active battle:', battle);
+          set({ activeBattle: battle });
+        },
+
+        clearActiveBattle: () => {
+          console.log('🚪 Clearing active battle');
+          set({
+            activeBattle: {
+              sessionId: null,
+              gameMode: null,
+              levelId: null,
+              isActive: false
+            }
+          });
+        },
+
+        // Test helper method for setting authenticated user state
+        setAuthenticatedUser: (userData: {
+          userId: string;
+          firebaseUser: any;
+          userProfile: any;
+        }) => {
+          console.log(`🧪 Setting authenticated user for testing: ${userData.userId}`);
+          set({
+            isAuthenticated: true,
+            userId: userData.userId,
+            firebaseUser: userData.firebaseUser,
+            userProfile: userData.userProfile,
+            isGuestMode: false,
+            guestId: null,
+            guestSecret: null,
+            guestToken: null,
+            needsRegistration: false
+          });
         }
       }),
       {
         name: 'biomasters-hybrid-game-store',
+        storage: createJSONStorage(() =>
+          createUserScopedIndexedDBStorage({
+            getUserId: getCurrentUserId
+          })
+        ),
         partialize: (state) => ({
           // Only persist offline state, not UI state
           hasStarterPack: state.hasStarterPack,
@@ -1090,6 +1397,9 @@ export const useHybridGameStore = create<HybridGameState>()(
     )
   )
 );
+
+// Set store reference for user ID access
+storeRef = useHybridGameStore;
 
 // Auto-sync when online status changes
 if (typeof window !== 'undefined') {

@@ -18,6 +18,37 @@ export enum Habitat {
   TROPICAL = 'Tropical'
 }
 
+// Phylo-specific enums for domino-style gameplay
+export enum PhyloTerrain {
+  FOREST = 'Forest',
+  GRASSLAND = 'Grassland',
+  OCEAN = 'Ocean',
+  FRESHWATER = 'Freshwater',
+  MOUNTAIN = 'Mountain',
+  DESERT = 'Desert',
+  URBAN = 'Urban'
+}
+
+export enum PhyloClimate {
+  COLD = 'Cold',
+  COOL = 'Cool',
+  WARM = 'Warm',
+  HOT = 'Hot'
+}
+
+export enum PhyloDietType {
+  PRODUCER = 'Producer',
+  HERBIVORE = 'Herbivore',
+  CARNIVORE = 'Carnivore',
+  OMNIVORE = 'Omnivore'
+}
+
+export enum PhyloKeyword {
+  INVASIVE = 'INVASIVE',
+  PARASITIC = 'PARASITIC',
+  POLLINATOR = 'POLLINATOR'
+}
+
 export enum WinCondition {
   APEX_PREDATOR = 'Apex Predator',
   ECOSYSTEM_BALANCE = 'Ecosystem Balance',
@@ -65,6 +96,23 @@ export interface SpeciesData {
     fly_Speed_m_per_hr?: number;
     burrow_Speed_m_per_hr?: number;
     speedModifier?: number;
+  };
+  phyloAttributes?: {
+    terrains: string[];
+    climates: string[];
+    foodchainLevel: number;
+    scale: number;
+    dietType: string;
+    movementCapability: {
+      moveValue: number;
+      canFly: boolean;
+      canSwim: boolean;
+      canBurrow: boolean;
+    };
+    specialKeywords: string[];
+    pointValue: number;
+    conservationStatus: string;
+    compatibilityNotes: string;
   };
   perception?: {
     vision_range_m?: number;
@@ -143,6 +191,24 @@ export interface Card {
     lifespan_Max_Days?: number;
     habitat?: string;
   };
+  // Phylo domino-style game attributes
+  phyloAttributes?: {
+    terrains: string[];
+    climates: string[];
+    foodchainLevel: number;
+    scale: number;
+    dietType: string;
+    movementCapability: {
+      moveValue: number;
+      canFly: boolean;
+      canSwim: boolean;
+      canBurrow: boolean;
+    };
+    specialKeywords: string[];
+    pointValue: number;
+    conservationStatus: string;
+    compatibilityNotes: string;
+  };
 }
 
 export interface CardAbility {
@@ -188,7 +254,15 @@ export interface ConservationRarity {
   glowEffect: string;
 }
 
-export const CONSERVATION_RARITY_DATA: Record<Exclude<ConservationStatus, ConservationStatus.NOT_EVALUATED>, ConservationRarity> = {
+export const CONSERVATION_RARITY_DATA: Record<ConservationStatus, ConservationRarity> = {
+  [ConservationStatus.NOT_EVALUATED]: {
+    status: ConservationStatus.NOT_EVALUATED,
+    percentage: 15.0,
+    packRarity: 150, // Common
+    description: 'Conservation status not yet assessed',
+    borderColor: '#9e9e9e',
+    glowEffect: 'rgba(158, 158, 158, 0.3)'
+  },
   [ConservationStatus.EXTINCT]: {
     status: ConservationStatus.EXTINCT,
     percentage: 0.54,
@@ -290,6 +364,49 @@ export interface WinConditionProgress {
   progress: number;
   target: number;
   achieved: boolean;
+}
+
+// Phylo domino-style game interfaces
+export interface PhyloCardPosition {
+  x: number;
+  y: number;
+  cardId: string;
+  playerId: string;
+}
+
+export interface PhyloGameBoard {
+  positions: Map<string, PhyloCardPosition>; // key: "x,y"
+  connections: Map<string, string[]>; // key: cardId, value: array of connected cardIds
+  homeCards: PhyloCardPosition[];
+}
+
+export interface PhyloCompatibility {
+  environmental: boolean; // terrain + climate match
+  foodchain: boolean; // foodchain level compatibility
+  scale: boolean; // scale requirements for carnivores
+}
+
+export interface PhyloPlacementValidation {
+  isValid: boolean;
+  compatibility: PhyloCompatibility;
+  adjacentCards: string[];
+  errorMessage?: string;
+}
+
+export interface PhyloEventCard {
+  id: string;
+  name: string;
+  description: string;
+  targetCriteria: {
+    terrains?: PhyloTerrain[];
+    climates?: PhyloClimate[];
+    minScale?: number;
+    maxScale?: number;
+    dietTypes?: PhyloDietType[];
+  };
+  effect: string;
+  isRemoveAfterUse: boolean;
+  canSpread: boolean;
 }
 
 export interface CombatEvent {

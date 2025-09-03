@@ -309,3 +309,144 @@ export function createAIDeck(allCards: Card[], difficulty: AIDifficulty): Card[]
   // Ensure we have exactly 8 cards
   return deckCards.slice(0, 8);
 }
+
+/**
+ * PHYLO DOMINO-STYLE AI SYSTEM
+ * Enhanced AI for ecosystem building gameplay
+ */
+
+export interface PhyloAIDecision {
+  type: 'place_card' | 'move_card' | 'challenge' | 'pass_turn';
+  cardId?: string;
+  position?: { x: number; y: number };
+  targetPosition?: { x: number; y: number };
+  challengeData?: {
+    targetCardId: string;
+    targetPlayerId: string;
+    claimType: string;
+    evidence: string;
+  };
+  confidence: number;
+  reasoning: string;
+}
+
+/**
+ * Makes an AI decision for Phylo domino-style gameplay
+ */
+export function makePhyloAIDecision(
+  gameState: any, // PhyloGameState from gameStateManager
+  difficulty: AIDifficulty = AIDifficulty.EASY
+): PhyloAIDecision {
+  // Easy AI: Simple random decisions
+  if (difficulty === AIDifficulty.EASY) {
+    return makeEasyPhyloDecision(gameState);
+  }
+
+  // Medium AI: Basic strategy
+  if (difficulty === AIDifficulty.MEDIUM) {
+    return makeMediumPhyloDecision(gameState);
+  }
+
+  // Hard AI: Advanced strategy
+  return makeHardPhyloDecision(gameState);
+}
+
+/**
+ * Easy AI: Random but valid moves
+ */
+function makeEasyPhyloDecision(gameState: any): PhyloAIDecision {
+  const aiPlayer = gameState.players.find((p: any) => p.id === 'ai');
+
+  if (!aiPlayer || aiPlayer.hand.length === 0) {
+    return {
+      type: 'pass_turn',
+      confidence: 0.8,
+      reasoning: 'Easy AI: No cards to play, passing turn'
+    };
+  }
+
+  // 70% chance to place a card if possible
+  if (Math.random() < 0.7) {
+    const randomCard = aiPlayer.hand[Math.floor(Math.random() * aiPlayer.hand.length)];
+    const position = findRandomValidPosition(gameState);
+
+    if (position) {
+      return {
+        type: 'place_card',
+        cardId: randomCard,
+        position,
+        confidence: 0.6,
+        reasoning: 'Easy AI: Random card placement'
+      };
+    }
+  }
+
+  // Default: pass turn
+  return {
+    type: 'pass_turn',
+    confidence: 0.8,
+    reasoning: 'Easy AI: No good moves found, passing turn'
+  };
+}
+
+/**
+ * Medium AI: Basic ecosystem strategy
+ */
+function makeMediumPhyloDecision(gameState: any): PhyloAIDecision {
+  // For now, use easy AI with slightly better reasoning
+  const decision = makeEasyPhyloDecision(gameState);
+  return {
+    ...decision,
+    confidence: Math.min(1.0, decision.confidence + 0.1),
+    reasoning: `Medium AI: ${decision.reasoning}`
+  };
+}
+
+/**
+ * Hard AI: Advanced ecosystem optimization
+ */
+function makeHardPhyloDecision(gameState: any): PhyloAIDecision {
+  // For now, use medium AI with higher confidence
+  const decision = makeMediumPhyloDecision(gameState);
+  return {
+    ...decision,
+    confidence: Math.min(1.0, decision.confidence + 0.2),
+    reasoning: `Hard AI: ${decision.reasoning}`
+  };
+}
+
+/**
+ * Helper functions for AI decision making
+ */
+function findRandomValidPosition(gameState: any): { x: number; y: number } | null {
+  const existingPositions = Array.from(gameState.gameBoard.positions.keys());
+
+  if (existingPositions.length === 0) {
+    // First card, place at origin
+    return { x: 0, y: 0 };
+  }
+
+  // Try positions adjacent to existing cards
+  for (let i = 0; i < 10; i++) { // Max 10 attempts
+    const randomExisting = existingPositions[Math.floor(Math.random() * existingPositions.length)] as string;
+    const [x, y] = randomExisting.split(',').map(Number);
+
+    const adjacentPositions = [
+      { x: x + 1, y },
+      { x: x - 1, y },
+      { x, y: y + 1 },
+      { x, y: y - 1 }
+    ];
+
+    for (const pos of adjacentPositions) {
+      const posKey = `${pos.x},${pos.y}`;
+      if (!gameState.gameBoard.positions.has(posKey)) {
+        return pos;
+      }
+    }
+  }
+
+  return null;
+}
+
+export default makeAIDecision;

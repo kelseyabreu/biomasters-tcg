@@ -1,0 +1,317 @@
+
+PLAY: This is a HOME card. The game starts with each
+player having a HOME card played on the table next to
+each other.
+HOME cards represent all TERRAIN and CLIMATE values.
+oreilly.com • @oreillymedia
+O’Reilly Media
+PLAY: This is a HOME card. The game starts with each
+player having a HOME card played on the table next to
+each other.
+HOME cards represent all TERRAIN and CLIMATE values.
+oreilly.com • @oreillymedia
+O’Reilly Media
+Animalia/Chordata/Mammalia
+PLAY: Tarsius syrichta has a MOVE of 2.
+FACT: Tarsius syrichta is one of the smallest primates in
+the Animal Kingdom.
+Tarsius syrichta
+Philippine Tarsier
+PLAY: Loxodonta africana has a MOVE of 2.
+FACT: Loxodonta africana is one of the largest living
+terrestrial animals.
+Animalia/Chordata/Mammalia
+Loxodonta africana
+African Elephant
+Animalia/Chordata/Aves
+PLAY: Macrocephalon maleo has a FLIGHT of 2
+FACT: Macrocephalon maleo’s egg is fi ve times larger
+than a chicken’s egg.
+Macrocephalon maleo
+Maleo
+Animalia/Chordata/Aves
+PLAY: Caloenas nicobarica has a FLIGHT of 2
+FACT: Caloenas nicobarica is a small-island specialist.
+Caloenas nicobarica
+Nicobar Pigeon
+Animalia/Chordata/Mammalia
+Macaca sylvanus
+Barbary Macaque
+PLAY: Macaca sylvanus has a MOVE of 2.
+FACT: Besides humans, Macaca sylvanus is the only
+free-living primate in Europe.
+Animalia/Chordata/Mammalia
+PLAY: Panthera tigris has a MOVE of 2.
+FACT: Panthera tigris is the only cat with stripes.
+Panthera tigris
+Tiger
+Animalia/Chordata/Mammalia
+PLAY: Pteropus Vampyrus has a FLIGHT of 2.
+FACT: Pteropus Vampyrus is one of the largest bat
+species.
+Pteropus vampyrus
+Large Flying Fox
+Animalia/Chordata/Reptilia
+PLAY: Eretmochelys imbricata has a MOVE of 2
+FACT: Until the practice was outlawed, Eretmochelys
+imbricata were harvested for their shells, which were
+used for decoration.
+Eretmochelys imbricata
+Hawksbill Turtle
+PLAY: Meganyctiphanes norvegica has a MOVE of1.
+Should be played adjacent to a PLANKTON species card.
+Animalia/Arthorpoda/Malacostraca
+Meganyctiphanes norvegica
+Northern Krill
+Animalia/Chordata/Mammalia
+PLAY: Rhinoceros sondaicus has a MOVE of 2.
+FACT: Rhinoceros sondaicus is critically endangered,
+with only one known population in the wild, and no
+individuals in captivity.
+Rhinoceros sondaicus
+Javan Rhinoceros
+Animalia/Chordata/Actinopterygii
+PLAY: Electrona carlsbergi has a MOVE of 2
+FACT: Electrona carlsbergi can feed on a Zooplankton
+SPECIES card.
+Electrona carlsbergi
+Lanternfi sh
+Animalia/Chordata/Aves
+PLAY: Balearica regulorum has a FLIGHT of 2.
+FACT: Balearica regulorum is the national bird of Uganda.
+Balearica regulorum
+Grey-Crowned Crane
+PLAY: Addax nasomaculatus has a MOVE of 2.
+FACT: The slow-moving Addax nasomaculatus is hunted
+as a game animal.
+Animalia/Chordata/Mammalia
+Addax nasomaculatus
+Addax
+PLAY: Conolophus subcristatus has a MOVE of 2.
+FACT: Conolophus subcristatus can live for up to 50 years.
+Animalia/Chordata/Reptilia
+Galapagos Land Iguana
+Conolophus subcristatus
+Animalia/Chordata/Mammalia
+PLAY: Eubalaena glacialis has a MOVE of 2.
+FACT: Eubalaena glacialis feeds on Zooplankton or
+Krill SPECIES cards.
+Eubalaena glacialis
+North Atlantic Right Whale
+Animalia/Chordata/Aves
+PLAY: Harpia harpyja has a FLIGHT of 2.
+FACT: Harpia harpyja is an apex predator, meaning that
+adults are at the top of a food chain and have no natural
+predators.
+Harpia harpyja
+Harpy Eagle
+Animalia/Chordata/Reptilia
+PLAY: Phrynocephalus horvathi has a MOVE of1.
+FACT: P. horvathi population is declining due to habitat
+loss, a result of human development.
+Phrynocephalus horvathi
+Agamidae Lizard
+Animalia/Chordata/Aves
+PLAY: Aptenodytes patagonicus has a MOVE of 2.
+FACT: Aptenodytes patagonicus was once hunted for oil,
+blubber, eggs, and skins.
+Aptenodytes patagonicus
+King Penguin
+Animalia/Porifera/Demospongiae
+FACT: Aplysina archeri is a simple, multicellular animal
+that feeds and breathes by fi ltering water.
+Aplysina archeri
+Stovepipe Sponge
+Animalia/Porifera/Demospongiae
+FACT: Chondrilla nucula is a favorite food of the
+Hawksbill Turtle.
+Chondrilla nucula
+Chicken-liver Sponge
+PLAY: Elaphurus davidianus has a MOVE of 2.
+FACT: Elaphurus davidianus is a semiaquatic animal
+that prefers marshland, and is native to the subtropics
+of China.
+Animalia/Chordata/Mammalia
+Elaphurus davidianus
+Père David’s Deer
+Animalia/Chordata/Aves
+PLAY: Terpsiphone paradisi has a FLIGHT of 2.
+FACT: Terpsiphone paradisi catches its food on the wing,
+thanks in part to its quick refl exes and sharp eyesight.
+Terpsiphone paradisi
+Asian Paradise Flycatcher
+PLAY: Dasyprocta mexicana has a MOVE of 2.
+FACT: Dasyprocta mexicana is threatened by habitat loss.
+Animalia/Chordata/Mammalia
+Dasyprocta mexicana
+Mexican Agouti
+Animalia/Chordata/Mammalia
+PLAY: Rhinoceros unicornis has a MOVE of 2.
+FACT: Rhinoceros unicornis has a single horn that is
+usually about 25cm long, but has been known to grow
+up to 50cm in length.
+Rhinoceros unicornis
+Indian Rhinoceros
+PLAY: Sphyrna mokarran has a MOVE of 2.
+FACT: Sphyrna mokarran’s favorite food is stingrays.
+Animalia/Chordata/ Chondrichthyes
+Sphyrna mokarran
+Great Hammerhead Shark
+PLAY: Leopardus colocolo has a MOVE of 2.
+FACT: Leopardus colocolo is native to the west
+Andean slope in central and northern Chile.
+Animalia/Chordata/Mammalia
+Leopardus colocolo
+Pampas Cat
+PLAY: Aquila clanga has a FLIGHT of 2.
+FACT: Although Aquila clanga can live to be over 20 years
+old, it is often killed by shooting or deliberate poisoning.
+Animalia/Chordata/Aves
+Aquila clanga
+Greater Spotted Eagle
+PLAY: You can play this card immediately after your
+opponent has played an EVENT card on one of your
+SPECIES.
+EFFECT:Negates the effect of the EVENT card. Does not
+work on EVENT cards that are not played specifically on
+top of SPECIES.
+The O’Reilly Animals
+animals.oreilly.com
+Conservation Advocacy
+PLAY: Place this card on any SPECIES card.
+EFFECT: This SPECIES card must be removed immediately.
+You may leave this card on the table to show that this
+location cannot be used anymore in the game.
+Event
+Event
+Habitat Loss
+PLAY: Place this card on any SPECIES card.
+EFFECT: This SPECIES card must be removed immediately.
+You may leave this card on the table to show that this
+location cannot be used anymore in the game.
+Event
+Event
+Habitat Loss
+PLAY: Place this card on any SPECIES card.
+EFFECT: This SPECIES card must be removed immediately.
+You may leave this card on the table to show that this
+location cannot be used anymore in the game.
+Event
+Event
+Habitat Loss
+PLAY: Place this card on any SPECIES cards of forest or
+grassland terrain AND scale of 6 or higher.
+EFFECT: The played SPECIES card is discarded.
+Event
+Event
+Illegal Poaching
+PLAY: Place this card on any SPECIES cards of forest or
+grassland terrain AND scale of 6 or higher.
+EFFECT: The played SPECIES card is discarded.
+Event
+Event
+Illegal Poaching
+PLAY: Place this card on any SPECIES card.
+EFFECT: The SPECIES card is IMMEDIATELY removed. In
+the same action, this Event card then moves to an adjacent
+SPECIES card. A game of rock-paper-scissors determines
+whether this 2nd SPECIES card is also discarded. Continue
+moving the Event card and removing SPECIES cards until
+your opponent wins at rock-paper-scissors. This card can
+only be played once per game.
+Event
+Event
+Climate Change
+PLAY: Place this card on any SPECIES card from an
+ocean habitat.
+EFFECT: The played SPECIES card is discarded.
+Event
+Event
+Ocean Overhunting
+FACT: The fl owers of the Acacia cultiformis are safe
+for humans to eat.
+Plantae/Angiosperms/Eudicots
+Acacia cultiformis
+Knife-leaf Wattle
+FACT: The fl owers of the Acacia cultiformis are safe
+for humans to eat.
+Plantae/Angiosperms/Eudicots
+Acacia cultiformis
+Knife-leaf Wattle
+FACT: Opuntia stricta produces yellow fl owers and
+purplish-red fruits.
+Plantae/Angiosperms/Eudicots
+Opuntia stricta
+Erect Prickly Pear
+FACT: Opuntia stricta produces yellow fl owers and
+purplish-red fruits.
+Plantae/Angiosperms/Eudicots
+Opuntia stricta
+Erect Prickly Pear
+FACT: An ear of Zea mays commonly holds about
+600 kernels.
+Plantae/Angiosperms/Monocots
+Zea mays
+Maize
+Plantae/Angiosperms/Rosids
+FACT: Magnifera indicata is the largest fruit tree in
+the world.
+Magnifera indicata
+Mango Tree
+Plantae/Angiosperms/Rosids
+FACT: Magnifera indicata is the largest fruit tree in
+the world.
+Magnifera indicata
+Mango Tree
+Plantae/Angiosperms/Malvales
+FACT: Adansonia digitata’s fruit is sometimes known as
+a superfruit.
+Adansonia digitata
+African Baobab
+Plantae/Angiosperms/Malvales
+FACT: Adansonia digitata’s fruit is sometimes known as
+a superfruit.
+Adansonia digitata
+African Baobab
+PLAY: Helix aspersa has a MOVE of 1.
+FACT: Helix aspersa has a life span of 5-10 years.
+Animalia/Arthropoda/Insecta
+Helix aspersa
+Garden Snail
+PLAY: Helix aspersa has a MOVE of1.
+FACT: Helix aspersa has a life span of 5-10 years.
+Animalia/Arthropoda/Insecta
+Helix aspersa
+Garden Snail
+PLAY: Nemoptera sinuata has a MOVE of 2.
+FACT: Nemoptera sinuata undergoes a complete
+metamorphosis with egg, larval, pupal, and winged
+adult stages.
+Animalia/Arthropoda/Insecta
+Nemoptera sinuata
+Thread-winged Antlion
+PLAY: Nemoptera sinuata has a MOVE of 2.
+FACT: Nemoptera sinuata undergoes a complete
+metamorphosis with egg, larval, pupal, and winged
+adult stages.
+Animalia/Arthropoda/Insecta
+Nemoptera sinuata
+Thread-winged Antlion
+PLAY: Copepoda has a MOVE of1.
+FACT: Copepoda live both in the sea and in freshwater
+habitats.
+Animalia/Arthropoda/Macillopoda
+Copepoda subclass
+Zooplankton
+PLAY: Copepoda has a MOVE of1.
+FACT: Copepoda live both in the sea and in freshwater
+habitats.
+Animalia/Arthropoda/Macillopoda
+Copepoda subclass
+Zooplankton
+PLAY: Copepoda has a MOVE of1.
+FACT: Copepoda live both in the sea and in freshwater
+habitats.
+Animalia/Arthropoda/Macillopoda
+Copepoda subclass
+Zooplankton

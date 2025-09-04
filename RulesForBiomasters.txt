@@ -103,9 +103,12 @@ Making a valid connection is a two-step process. You must satisfy both the **Dom
 
 ### Step 1: The Domain Rule (Is it Legal?)
 A card's Domain is its fundamental environment. This is a mandatory requirement.
-*   **Terrestrial (Default):** Can only connect to a **Terrestrial** or `[AMPHIBIOUS]` card.
-*   **`[AQUATIC]`:** Can only connect to an `[AQUATIC]` or `[AMPHIBIOUS]` card.
-*   **`[AMPHIBIOUS]`:** The universal bridge. Can connect to **any** Domain type.
+*   **`[TERRESTRIAL]` (Default):** Can only connect to a **`[TERRESTRIAL]`** or `[AMPHIBIOUS]` card.
+*   **`[FRESHWATER]`:** Can only connect to a `[FRESHWATER]`, `[AMPHIBIOUS]`, or `[EURYHALINE]` card.
+*   **`[MARINE]`:** Can only connect to a `[MARINE]`, `[AMPHIBIOUS]`, or `[EURYHALINE]` card.
+*   **`[AMPHIBIOUS]`:** The bridge between terrestrial and aquatic environments. Can connect to `[TERRESTRIAL]` and one specified water type (either `[FRESHWATER]` or `[MARINE]`, as indicated on the card).
+*   **`[EURYHALINE]`:** The salinity bridge. Can connect to both `[FRESHWATER]` and `[MARINE]` cards, allowing transitions between different aquatic environments.
+
 
 ### Step 2: The Trophic Rule (Where does it fit?)
 Once the Domain is legal, you must connect to the correct Trophic Number.

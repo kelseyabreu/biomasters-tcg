@@ -1,0 +1,340 @@
+[
+  {
+    "AbilityID": 1,
+    "Name": "Watershed Predator",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 1,
+        "SelectorID": 2,
+        "FilterKeywords": [2],
+        "ActionID": 1,
+        "Description": "Target aquatic creature adjacent to shared amphibious card"
+      }
+    ]
+  },
+  {
+    "AbilityID": 2,
+    "Name": "Apex Predator", 
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 1,
+        "SelectorID": 1,
+        "FilterTrophicCategories": [5],
+        "FilterTrophicLevels": [3, 4],
+        "ActionID": 1,
+        "Description": "Target adjacent high-level carnivore"
+      }
+    ]
+  },
+  {
+    "AbilityID": 3,
+    "Name": "Scavenge",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 2,
+        "SelectorID": 3,
+        "ActionID": 3,
+        "Description": "Take creature from detritus zone to hand"
+      }
+    ]
+  },
+  {
+    "AbilityID": 4,
+    "Name": "Parasitic Drain",
+    "TriggerID": 2,
+    "Effects": [
+      {
+        "EffectID": 3,
+        "SelectorID": 4,
+        "ActionID": 5,
+        "Description": "Prevent host from readying"
+      }
+    ]
+  },
+  {
+    "AbilityID": 5,
+    "Name": "Recycler",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 4,
+        "SelectorID": 1,
+        "FilterTrophicCategories": [6],
+        "ActionID": 6,
+        "Description": "Score adjacent decomposer for extra VP"
+      },
+      {
+        "EffectID": 2,
+        "SelectorID": 5,
+        "ActionID": 7,
+        "Description": "Draw a card"
+      }
+    ]
+  },
+  {
+    "AbilityID": 6,
+    "Name": "Photosynthesis",
+    "TriggerID": 2,
+    "Effects": [
+      {
+        "EffectID": 3,
+        "SelectorID": 4,
+        "ActionID": 2,
+        "Conditions": [
+          {
+            "Type": "AdjacentCardCount",
+            "Operator": "<",
+            "Value": 3
+          }
+        ],
+        "Description": "Ready if adjacent to fewer than 3 cards"
+      }
+    ]
+  },
+  {
+    "AbilityID": 7,
+    "Name": "Pack Hunter",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 1,
+        "SelectorID": 1,
+        "ActionID": 1,
+        "Requirements": [
+          {
+            "Type": "ExhaustAdjacentAlly",
+            "Count": 1
+          }
+        ],
+        "FilterConditions": [
+          {
+            "Type": "TrophicLevelSum",
+            "Operator": "<=",
+            "CompareToExhaustedCards": true
+          }
+        ],
+        "Description": "Exhaust with ally to target creature"
+      }
+    ]
+  },
+  {
+    "AbilityID": 8,
+    "Name": "Filter Feeder",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 2,
+        "SelectorID": 5,
+        "ActionID": 7,
+        "Conditions": [
+          {
+            "Type": "AdjacentKeyword",
+            "Keywords": [5, 20],
+            "Description": "Adjacent to marine producer"
+          }
+        ],
+        "Description": "Draw card if adjacent to marine producer"
+      }
+    ]
+  },
+  {
+    "AbilityID": 9,
+    "Name": "Metamorphosis",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 4,
+        "SelectorID": 4,
+        "ActionID": 6,
+        "SpecialActions": [
+          {
+            "Type": "PlayFromHand",
+            "CardType": "AdultForm",
+            "CostReduction": "Full"
+          }
+        ],
+        "Description": "Transform into adult form without cost"
+      }
+    ]
+  },
+  {
+    "AbilityID": 10,
+    "Name": "Decomposer",
+    "TriggerID": 3,
+    "Effects": [
+      {
+        "EffectID": 3,
+        "SelectorID": 5,
+        "ActionID": 6,
+        "TriggerConditions": [
+          {
+            "Type": "CardMovedToDetritus",
+            "Location": "Adjacent"
+          }
+        ],
+        "Description": "Gain VP when adjacent card dies"
+      }
+    ]
+  },
+  {
+    "AbilityID": 11,
+    "Name": "Venomous",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 1,
+        "SelectorID": 1,
+        "ActionID": 7,
+        "SpecialActions": [
+          {
+            "Type": "ApplyPoison",
+            "Duration": 2
+          }
+        ],
+        "Description": "Apply poison status to target"
+      }
+    ]
+  },
+  {
+    "AbilityID": 12,
+    "Name": "Frugivore",
+    "TriggerID": 2,
+    "Effects": [
+      {
+        "EffectID": 3,
+        "SelectorID": 4,
+        "ActionID": 8,
+        "Conditions": [
+          {
+            "Type": "AdjacentKeyword",
+            "Keywords": [18],
+            "Description": "Adjacent to fruit producer"
+          }
+        ],
+        "BonusEffects": [
+          {
+            "Type": "EnterReady",
+            "Description": "Enter play ready if preferred diet available"
+          }
+        ],
+        "Description": "Bonus when adjacent to fruit"
+      }
+    ]
+  },
+  {
+    "AbilityID": 13,
+    "Name": "Insectivore",
+    "TriggerID": 2,
+    "Effects": [
+      {
+        "EffectID": 3,
+        "SelectorID": 4,
+        "ActionID": 8,
+        "Conditions": [
+          {
+            "Type": "AdjacentKeyword",
+            "Keywords": [19],
+            "Description": "Adjacent to insect"
+          }
+        ],
+        "BonusEffects": [
+          {
+            "Type": "EnterReady",
+            "Description": "Enter play ready if preferred diet available"
+          }
+        ],
+        "Description": "Bonus when adjacent to insects"
+      }
+    ]
+  },
+  {
+    "AbilityID": 14,
+    "Name": "Hypercarnivore",
+    "TriggerID": 2,
+    "Effects": [
+      {
+        "EffectID": 3,
+        "SelectorID": 4,
+        "ActionID": 8,
+        "Conditions": [
+          {
+            "Type": "AdjacentTrophicCategory",
+            "Categories": [5],
+            "Count": 2,
+            "Description": "Adjacent to multiple carnivores"
+          }
+        ],
+        "BonusEffects": [
+          {
+            "Type": "ExtraVP",
+            "Amount": 1
+          }
+        ],
+        "Description": "Bonus VP when in carnivore cluster"
+      }
+    ]
+  },
+  {
+    "AbilityID": 15,
+    "Name": "Migratory",
+    "TriggerID": 5,
+    "Effects": [
+      {
+        "EffectID": 4,
+        "SelectorID": 4,
+        "ActionID": 4,
+        "SpecialActions": [
+          {
+            "Type": "Move",
+            "Range": 2,
+            "Restrictions": ["SameHabitat"]
+          }
+        ],
+        "Description": "Move up to 2 spaces at start of turn"
+      }
+    ]
+  },
+  {
+    "AbilityID": 16,
+    "Name": "Chemical Opportunist",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 2,
+        "SelectorID": 1,
+        "ActionID": 1,
+        "SpecialActions": [
+          {
+            "Type": "AlternateConnection",
+            "TargetType": "Saprotroph",
+            "Benefit": "DrawCard"
+          }
+        ],
+        "Description": "May connect to adjacent -1S card instead of HOME. If you do, draw a card."
+      }
+    ]
+  },
+  {
+    "AbilityID": 17,
+    "Name": "Detrital Processor",
+    "TriggerID": 1,
+    "Effects": [
+      {
+        "EffectID": 2,
+        "SelectorID": 1,
+        "ActionID": 1,
+        "SpecialActions": [
+          {
+            "Type": "AlternateConnection",
+            "TargetType": "Detritivore",
+            "Benefit": "VictoryPointBonus"
+          }
+        ],
+        "Description": "May connect to adjacent -2D card instead of HOME. If you do, that -2D gains +1 VP when scored."
+      }
+    ]
+  }
+]

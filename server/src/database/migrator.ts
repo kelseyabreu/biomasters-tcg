@@ -121,6 +121,29 @@ export class KyselyMigrator {
 
       await this.executeMigration('005_add_last_used_at_column', lastUsedAtSql);
 
+      // Read and execute BioMasters engine schema migration
+      const biomastersEnginePath = join(__dirname, 'migrations/006_biomasters_engine_schema.sql');
+      const biomastersEngineSql = readFileSync(biomastersEnginePath, 'utf8');
+
+      await this.executeMigration('006_biomasters_engine_schema', biomastersEngineSql);
+
+      // Read and execute game sessions table migration
+      const gameSessionsPath = join(__dirname, 'migrations/007_add_game_sessions_table.sql');
+      const gameSessionsSql = readFileSync(gameSessionsPath, 'utf8');
+
+      await this.executeMigration('007_add_game_sessions_table', gameSessionsSql);
+
+      // Read and execute enum data population migration
+      const enumDataPath = join(__dirname, 'migrations/008_populate_enum_data.sql');
+      const enumDataSql = readFileSync(enumDataPath, 'utf8');
+
+      await this.executeMigration('008_populate_enum_data', enumDataSql);
+
+      // 009: Add conservation statuses
+      const conservationStatusesPath = join(__dirname, 'migrations/009_add_conservation_statuses.sql');
+      const conservationStatusesSql = readFileSync(conservationStatusesPath, 'utf8');
+      await this.executeMigration('009_add_conservation_statuses', conservationStatusesSql);
+
       console.log('✅ All Kysely migrations completed successfully');
       
     } catch (error) {

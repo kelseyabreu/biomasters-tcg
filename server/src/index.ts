@@ -30,6 +30,9 @@ import adminRoutes from './routes/admin';
 // Import WebSocket setup
 import { setupGameSocket } from './websocket/gameSocket';
 
+// Import game data manager
+import { gameDataManager } from './services/GameDataManager';
+
 const app = express();
 const PORT = process.env['PORT'] || 3001;
 
@@ -56,6 +59,17 @@ async function initializeServices() {
       console.log('✅ Redis connected successfully');
     } catch (error) {
       console.warn('⚠️  Redis not available, using memory-based caching');
+    }
+
+    // Load game data from JSON files
+    try {
+      console.log('📚 Loading game data from JSON files...');
+      await gameDataManager.loadGameData();
+      console.log('✅ Game data loaded successfully');
+    } catch (error) {
+      console.error('❌ Failed to load game data:', error);
+      console.error('   Game engine will not function without game data');
+      process.exit(1);
     }
 
     console.log('✅ Core services initialized successfully');
@@ -137,6 +151,11 @@ const server = createServer(app);
 
 // Setup WebSocket for real-time game communication
 const io = setupGameSocket(server);
+if (io) {
+  console.log('🔌 WebSocket server initialized');
+} else {
+  console.log('⚠️ WebSocket server disabled');
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

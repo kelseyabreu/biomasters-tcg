@@ -6,6 +6,7 @@ import { db } from '../database/kysely';
 import { z } from 'zod';
 import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
+import { BioMastersEngine, GameSettings, PlayerAction } from '../game-engine/BioMastersEngine';
 
 const router = Router();
 
@@ -24,31 +25,31 @@ const createGameSessionSchema = z.object({
   }).optional()
 });
 
-const joinGameSessionSchema = z.object({
-  sessionId: z.string().uuid()
-});
+// const joinGameSessionSchema = z.object({
+//   sessionId: z.string().uuid()
+// });
 
-const gameActionSchema = z.object({
-  sessionId: z.string().uuid(),
-  action: z.object({
-    type: z.enum(['place_card', 'move_card', 'challenge', 'pass_turn']),
-    cardId: z.string().optional(),
-    position: z.object({
-      x: z.number(),
-      y: z.number()
-    }).optional(),
-    targetPosition: z.object({
-      x: z.number(),
-      y: z.number()
-    }).optional(),
-    challengeData: z.object({
-      targetCardId: z.string(),
-      targetPlayerId: z.string(),
-      claimType: z.string(),
-      evidence: z.string()
-    }).optional()
-  })
-});
+// const gameActionSchema = z.object({
+//   sessionId: z.string().uuid(),
+//   action: z.object({
+//     type: z.enum(['place_card', 'move_card', 'challenge', 'pass_turn']),
+//     cardId: z.string().optional(),
+//     position: z.object({
+//       x: z.number(),
+//       y: z.number()
+//     }).optional(),
+//     targetPosition: z.object({
+//       x: z.number(),
+//       y: z.number()
+//     }).optional(),
+//     challengeData: z.object({
+//       targetCardId: z.string(),
+//       targetPlayerId: z.string(),
+//       claimType: z.string(),
+//       evidence: z.string()
+//     }).optional()
+//   })
+// });
 
 /**
  * GET /api/game/decks
@@ -341,7 +342,7 @@ router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
       host_user_id: user.id,
       game_mode: validatedData.gameMode,
       is_private: validatedData.isPrivate,
-      max_players: validatedData.maxPlayers,
+      max_players: validatedData.maxPlayers || 2,
       current_players: 1,
       status: 'waiting',
       game_state: JSON.stringify({
@@ -387,14 +388,14 @@ router.get('/sessions', requireAuth, asyncHandler(async (req, res) => {
   let query = db
     .selectFrom('game_sessions')
     .selectAll()
-    .where('status', '=', status as string)
+    .where('status', '=', status as 'waiting' | 'playing' | 'finished' | 'cancelled')
     .where('is_private', '=', false)
-    .where('current_players', '<', db.ref('max_players'))
+    .where(({ eb }) => eb('current_players', '<', eb.ref('max_players')))
     .orderBy('created_at', 'desc')
     .limit(20);
 
   if (gameMode) {
-    query = query.where('game_mode', '=', gameMode as string);
+    query = query.where('game_mode', '=', gameMode as 'campaign' | 'online' | 'scenarios' | 'tutorial');
   }
 
   const sessions = await query.execute();
@@ -416,149 +417,312 @@ router.get('/sessions', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
+// ===== BioMasters Engine Endpoints =====
+
+// In-memory game storage (in production, use Redis or database)
+const activeGames = new Map<string, BioMastersEngine>();
+
 /**
- * POST /api/game/sessions/:sessionId/join
- * Join a game session
+ * POST /api/game/biomasters/create
+ * Create a new BioMasters game
  */
-router.post('/sessions/:sessionId/join', requireAuth, asyncHandler(async (req, res) => {
-  const { sessionId } = req.params;
-  const user = req.user!;
-
-  // Get current session
-  const session = await db
-    .selectFrom('game_sessions')
-    .selectAll()
-    .where('id', '=', sessionId)
-    .executeTakeFirst();
-
-  if (!session) {
-    res.status(404).json({ error: 'Game session not found' });
+router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'User not authenticated'
+    });
     return;
   }
 
-  if (session.status !== 'waiting') {
-    res.status(400).json({ error: 'Game session is not accepting new players' });
+  const { gameSettings, players } = req.body;
+
+  // Default game settings with proper grid size
+  const playerCount = players?.length || 2;
+  const gridSize = BioMastersEngine.getGridSize(playerCount);
+  const defaultSettings: GameSettings = {
+    maxPlayers: playerCount,
+    gridWidth: gridSize.width,
+    gridHeight: gridSize.height,
+    startingHandSize: 5,
+    maxHandSize: 10,
+    turnTimeLimit: 300 // 5 minutes
+  };
+
+  const finalSettings = { ...defaultSettings, ...gameSettings };
+
+  // Create game ID
+  const gameId = `biomasters_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Default players if not provided
+  const gamePlayers = players || [
+    { id: req.user.id, name: req.user.display_name || 'Player 1' },
+    { id: 'ai_player', name: 'AI Player' }
+  ];
+
+  try {
+    // Create new game engine instance (data loaded from GameDataManager)
+    const gameEngine = new BioMastersEngine(gameId, gamePlayers, finalSettings);
+
+    // Store game in memory
+    activeGames.set(gameId, gameEngine);
+
+    res.json({
+      success: true,
+      game_id: gameId,
+      game_state: gameEngine.getGameState(),
+      message: 'BioMasters game created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating BioMasters game:', error);
+    res.status(500).json({
+      error: 'GAME_CREATION_ERROR',
+      message: 'Failed to create BioMasters game'
+    });
+  }
+}));
+
+/**
+ * GET /api/game/biomasters/:gameId/state
+ * Get current BioMasters game state
+ */
+router.get('/biomasters/:gameId/state', requireAuth, asyncHandler(async (req, res) => {
+  const gameId = req.params['gameId'];
+  if (!gameId) {
+    res.status(400).json({ error: 'Game ID required' });
     return;
   }
 
-  if (session.current_players >= session.max_players) {
-    res.status(400).json({ error: 'Game session is full' });
+  const gameEngine = activeGames.get(gameId);
+  if (!gameEngine) {
+    res.status(404).json({
+      error: 'GAME_NOT_FOUND',
+      message: 'BioMasters game not found'
+    });
     return;
   }
-
-  // Parse current game state
-  const gameState = JSON.parse(session.game_state);
-
-  // Check if user is already in the game
-  const existingPlayer = gameState.players.find((p: any) => p.id === user.id);
-  if (existingPlayer) {
-    res.status(400).json({ error: 'You are already in this game' });
-    return;
-  }
-
-  // Add player to game state
-  gameState.players.push({
-    id: user.id,
-    name: user.display_name || user.email,
-    isReady: false
-  });
-
-  // Update session
-  const updatedSession = await db
-    .updateTable('game_sessions')
-    .set({
-      current_players: session.current_players + 1,
-      game_state: JSON.stringify(gameState),
-      updated_at: new Date()
-    })
-    .where('id', '=', sessionId)
-    .returningAll()
-    .executeTakeFirstOrThrow();
 
   res.json({
-    session: {
-      id: updatedSession.id,
-      hostUserId: updatedSession.host_user_id,
-      gameMode: updatedSession.game_mode,
-      isPrivate: updatedSession.is_private,
-      maxPlayers: updatedSession.max_players,
-      currentPlayers: updatedSession.current_players,
-      status: updatedSession.status,
-      gameState: JSON.parse(updatedSession.game_state),
-      settings: JSON.parse(updatedSession.settings),
-      createdAt: updatedSession.created_at,
-      updatedAt: updatedSession.updated_at
-    }
+    success: true,
+    game_state: gameEngine.getGameState()
   });
 }));
 
 /**
- * POST /api/game/sessions/:sessionId/ready
- * Mark player as ready
+ * POST /api/game/biomasters/:gameId/action
+ * Process a player action in BioMasters game
  */
-router.post('/sessions/:sessionId/ready', requireAuth, asyncHandler(async (req, res) => {
-  const { sessionId } = req.params;
-  const { ready = true } = req.body;
-  const user = req.user!;
-
-  // Get current session
-  const session = await db
-    .selectFrom('game_sessions')
-    .selectAll()
-    .where('id', '=', sessionId)
-    .executeTakeFirst();
-
-  if (!session) {
-    res.status(404).json({ error: 'Game session not found' });
+router.post('/biomasters/:gameId/action', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'User not authenticated'
+    });
     return;
   }
 
-  // Parse current game state
-  const gameState = JSON.parse(session.game_state);
+  const gameId = req.params['gameId'];
+  if (!gameId) {
+    res.status(400).json({ error: 'Game ID required' });
+    return;
+  }
+  const { action } = req.body;
 
-  // Find and update player
-  const playerIndex = gameState.players.findIndex((p: any) => p.id === user.id);
-  if (playerIndex === -1) {
-    res.status(400).json({ error: 'You are not in this game' });
+  const gameEngine = activeGames.get(gameId);
+  if (!gameEngine) {
+    res.status(404).json({
+      error: 'GAME_NOT_FOUND',
+      message: 'BioMasters game not found'
+    });
     return;
   }
 
-  gameState.players[playerIndex].isReady = ready;
-
-  // Check if all players are ready
-  const allReady = gameState.players.every((p: any) => p.isReady);
-  const newStatus = allReady && gameState.players.length >= 2 ? 'playing' : 'waiting';
-
-  if (allReady && gameState.players.length >= 2) {
-    gameState.phase = 'playing';
+  // Validate action format
+  if (!action || !action.type) {
+    res.status(400).json({
+      error: 'INVALID_ACTION',
+      message: 'Action type is required'
+    });
+    return;
   }
 
-  // Update session
-  const updatedSession = await db
-    .updateTable('game_sessions')
-    .set({
-      status: newStatus,
-      game_state: JSON.stringify(gameState),
-      updated_at: new Date()
-    })
-    .where('id', '=', sessionId)
-    .returningAll()
-    .executeTakeFirstOrThrow();
+  // Add player ID to action
+  const playerAction: PlayerAction = {
+    ...action,
+    playerId: req.user.id
+  };
+
+  try {
+    // Process the action
+    const result = gameEngine.processAction(playerAction);
+
+    if (!result.isValid) {
+      res.status(400).json({
+        error: 'INVALID_ACTION',
+        message: result.errorMessage || 'Action is not valid'
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      game_state: result.newState || gameEngine.getGameState(),
+      message: 'Action processed successfully'
+    });
+  } catch (error) {
+    console.error('Error processing BioMasters action:', error);
+    res.status(500).json({
+      error: 'ACTION_PROCESSING_ERROR',
+      message: 'Failed to process action'
+    });
+  }
+}));
+
+/**
+ * GET /api/game/biomasters/:gameId/valid-actions
+ * Get valid actions for current player in BioMasters game
+ */
+router.get('/biomasters/:gameId/valid-actions', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'User not authenticated'
+    });
+    return;
+  }
+
+  const gameId = req.params['gameId'];
+  if (!gameId) {
+    res.status(400).json({ error: 'Game ID required' });
+    return;
+  }
+
+  const gameEngine = activeGames.get(gameId);
+  if (!gameEngine) {
+    res.status(404).json({
+      error: 'GAME_NOT_FOUND',
+      message: 'BioMasters game not found'
+    });
+    return;
+  }
+
+  const gameState = gameEngine.getGameState();
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+  if (!currentPlayer || currentPlayer.id !== req.user.id) {
+    res.status(403).json({
+      error: 'NOT_YOUR_TURN',
+      message: 'It is not your turn'
+    });
+    return;
+  }
+
+  // Generate list of valid actions
+  const validActions = [];
+
+  // Always can pass turn
+  validActions.push({
+    type: 'PASS_TURN',
+    description: 'End your turn'
+  });
+
+  // Can play cards from hand
+  for (const cardInstanceId of currentPlayer.hand) {
+    validActions.push({
+      type: 'PLAY_CARD',
+      cardId: cardInstanceId,
+      description: `Play card ${cardInstanceId}`
+    });
+  }
+
+  // Can activate abilities of ready cards
+  for (const [, card] of gameState.grid) {
+    if (card.ownerId === req.user.id && !card.isExhausted) {
+      const cardData = gameEngine.getCardDatabase().get(card.cardId);
+      if (cardData && cardData.abilities && cardData.abilities.length > 0) {
+        for (const abilityId of cardData.abilities) {
+          validActions.push({
+            type: 'ACTIVATE_ABILITY',
+            instanceId: card.instanceId,
+            abilityId,
+            description: `Activate ability on ${cardData.commonName}`
+          });
+        }
+      }
+    }
+  }
 
   res.json({
-    session: {
-      id: updatedSession.id,
-      hostUserId: updatedSession.host_user_id,
-      gameMode: updatedSession.game_mode,
-      isPrivate: updatedSession.is_private,
-      maxPlayers: updatedSession.max_players,
-      currentPlayers: updatedSession.current_players,
-      status: updatedSession.status,
-      gameState: JSON.parse(updatedSession.game_state),
-      settings: JSON.parse(updatedSession.settings),
-      createdAt: updatedSession.created_at,
-      updatedAt: updatedSession.updated_at
+    success: true,
+    valid_actions: validActions,
+    current_player: currentPlayer.id,
+    turn_number: gameState.turnNumber
+  });
+}));
+
+/**
+ * DELETE /api/game/biomasters/:gameId
+ * End/delete a BioMasters game
+ */
+router.delete('/biomasters/:gameId', requireAuth, asyncHandler(async (req, res) => {
+  const gameId = req.params['gameId'];
+  if (!gameId) {
+    res.status(400).json({ error: 'Game ID required' });
+    return;
+  }
+
+  const gameEngine = activeGames.get(gameId);
+  if (!gameEngine) {
+    res.status(404).json({
+      error: 'GAME_NOT_FOUND',
+      message: 'BioMasters game not found'
+    });
+    return;
+  }
+
+  // Remove game from memory
+  activeGames.delete(gameId);
+
+  res.json({
+    success: true,
+    message: 'BioMasters game ended successfully'
+  });
+}));
+
+/**
+ * GET /api/game/biomasters/active
+ * Get list of active BioMasters games for user
+ */
+router.get('/biomasters/active', requireAuth, asyncHandler(async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'User not authenticated'
+    });
+    return;
+  }
+
+  const userGames = [];
+
+  for (const [gameId, gameEngine] of activeGames) {
+    const gameState = gameEngine.getGameState();
+    const isPlayerInGame = gameState.players.some(p => p.id === req.user!.id);
+
+    if (isPlayerInGame) {
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      userGames.push({
+        game_id: gameId,
+        players: gameState.players.map(p => ({ id: p.id, name: p.name })),
+        current_player: currentPlayer ? currentPlayer.id : null,
+        turn_number: gameState.turnNumber,
+        game_phase: gameState.gamePhase
+      });
     }
+  }
+
+  res.json({
+    success: true,
+    active_games: userGames
   });
 }));
 

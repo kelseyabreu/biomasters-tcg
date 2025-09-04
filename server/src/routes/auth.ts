@@ -95,7 +95,11 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
       packs_opened: 0,
       // Metadata defaults
       preferences: null,
-      last_login_at: null
+      last_login_at: null,
+      // Missing required fields
+      is_public_profile: false,
+      email_notifications: true,
+      push_notifications: true
     };
 
     const users = await trx

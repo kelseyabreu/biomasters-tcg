@@ -322,6 +322,7 @@ const BattleScreen: React.FC = () => {
       console.log('🎮 Saved decks:', offlineCollection.savedDecks);
       // Convert collection to Card objects
       Object.keys(offlineCollection.species_owned).forEach(speciesName => {
+        // perfect if things fail or are wrong make sure to correct the root cause or fix the test or ask questions if you are unsure. we want everything working correctly and as how the rules say
         // Create mock card data - in real implementation, load from JSON files
         const card: Card = {
           id: speciesName,

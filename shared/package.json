@@ -1,0 +1,29 @@
+{
+  "name": "@biomasters/shared",
+  "version": "1.0.0",
+  "description": "Shared types and enums for BioMasters TCG",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "biomasters",
+    "tcg",
+    "types",
+    "enums",
+    "shared"
+  ],
+  "author": "BioMasters TCG Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "type": "commonjs"
+}

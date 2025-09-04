@@ -10,14 +10,14 @@
 
 | Conservation Status | Species Count | Percentage | Pack Rarity | Description |
 |-------------------|---------------|------------|-------------|-------------|
-| **EXTINCT (EX)** | ~900 | 0.54% | 5/1000 | No known individuals remaining |
-| **EXTINCT IN WILD (EW)** | ~80 | 0.054% | 1/1000 | Known only to survive in captivity |
-| **CRITICALLY ENDANGERED (CR)** | ~9,200 | 5.95% | 59/1000 | Extremely high risk of extinction |
-| **ENDANGERED (EN)** | ~16,800 | 10.92% | 109/1000 | Very high risk of extinction |
-| **VULNERABLE (VU)** | ~20,300 | 13.19% | 132/1000 | High risk of extinction |
-| **NEAR THREATENED (NT)** | ~8,800 | 5.73% | 57/1000 | Close to qualifying for threatened status |
-| **LEAST CONCERN (LC)** | ~77,500 | 50.51% | 505/1000 | Widespread and abundant |
-| **DATA DEFICIENT (DD)** | ~20,000 | 12.97% | 130/1000 | Inadequate information for assessment |
+| **EXTINCT (EX)** | ~900 | 0.54% | 540/100000 | No known individuals remaining |
+| **EXTINCT IN WILD (EW)** | ~80 | 0.054% | 54/100000 | Known only to survive in captivity |
+| **CRITICALLY ENDANGERED (CR)** | ~9,200 | 5.95% | 5950/100000 | Extremely high risk of extinction |
+| **ENDANGERED (EN)** | ~16,800 | 10.92% | 10920/100000 | Very high risk of extinction |
+| **VULNERABLE (VU)** | ~20,300 | 13.19% | 13190/100000 | High risk of extinction |
+| **NEAR THREATENED (NT)** | ~8,800 | 5.73% | 5730/100000 | Close to qualifying for threatened status |
+| **LEAST CONCERN (LC)** | ~77,500 | 50.51% | 50646/100000 | Widespread and abundant |
+| **DATA DEFICIENT (DD)** | ~20,000 | 12.97% | 12970/100000 | Inadequate information for assessment |
 
 **Note:** "Not Evaluated" species are excluded from the game as they typically receive evaluation. Percentages are redistributed proportionally among evaluated species to maintain 100% total.
 
@@ -31,10 +31,10 @@
 5. **Applied to All Categories**: Each percentage multiplied by redistribution factor
 
 ### **Pack Rarity Calculation**
-- **Total Cards per 1000 Packs**: 1000 cards distributed proportionally
-- **Rarity Formula**: `pack_rarity = Math.round(percentage × 10)`
-- **Maintains Proportions**: Relative rarity relationships preserved
-- **Educational Accuracy**: Players experience realistic conservation distribution
+- **Total Cards per 100,000 Packs**: 100,000 cards distributed proportionally for maximum precision
+- **Rarity Formula**: `pack_rarity = Math.round(percentage × 1000)`
+- **Maintains Proportions**: Relative rarity relationships preserved with ultra-high precision
+- **Educational Accuracy**: Players experience realistic conservation distribution with precise percentages
 
 ### **Data Source Validation**
 - **IUCN Red List**: Official source for all conservation percentages

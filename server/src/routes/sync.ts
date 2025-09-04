@@ -283,10 +283,12 @@ router.post('/',
                   id: `temp_${species}`,
                   user_id: req.user.id,
                   species_name: species,
+                  card_id: null,
                   quantity: 1,
                   acquired_via: 'starter',
                   first_acquired_at: new Date(action.timestamp),
-                  last_acquired_at: new Date(action.timestamp)
+                  last_acquired_at: new Date(action.timestamp),
+                  migrated_from_species: false
                 });
               }
               break;
@@ -320,10 +322,12 @@ router.post('/',
                     id: `temp_${action.species_name}`,
                     user_id: req.user.id,
                     species_name: action.species_name,
+                    card_id: null,
                     quantity: action.quantity,
                     acquired_via: 'pack',
                     first_acquired_at: new Date(action.timestamp),
-                    last_acquired_at: new Date(action.timestamp)
+                    last_acquired_at: new Date(action.timestamp),
+                    migrated_from_species: false
                   });
                 }
               }
@@ -353,10 +357,12 @@ router.post('/',
             .values({
               user_id: req.user!.id,
               species_name: speciesName,
+              card_id: null,
               quantity: card.quantity,
               acquired_via: card.acquired_via,
               first_acquired_at: card.first_acquired_at,
-              last_acquired_at: card.last_acquired_at
+              last_acquired_at: card.last_acquired_at,
+              migrated_from_species: false
             })
             .onConflict((oc) => oc
               .columns(['user_id', 'species_name'])

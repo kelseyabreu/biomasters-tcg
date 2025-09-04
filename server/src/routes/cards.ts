@@ -3,12 +3,246 @@ import { requireAuth, requireRegisteredUser } from '../middleware/auth';
 import { packOpeningRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
+// Removed unused imports - using GameDataManager instead
+import {
+  getAllCardsWithRelations,
+  getCardWithRelations,
+  getCardsByTrophicLevel,
+  getCardsByKeyword,
+  getAllAbilitiesWithEffects
+} from '../database/queries/cardQueries';
+import {
+  CardId
+} from '@biomasters/shared';
 
 const router = Router();
 
 /**
+ * GET /api/cards/database
+ * Get all cards from the BioMasters database using optimized ARRAY_AGG queries
+ */
+router.get('/database', asyncHandler(async (req, res) => {
+  const { page = 1, limit = 50, search, trophic_level, trophic_category, keyword } = req.query;
+
+  // Validate query parameters
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
+  const trophicLevelNum = trophic_level ? Number(trophic_level) : null;
+  const trophicCategoryNum = trophic_category ? Number(trophic_category) : null;
+  const keywordNum = keyword ? Number(keyword) : null;
+
+  // Validate pagination parameters
+  if (isNaN(pageNum) || pageNum < 1) {
+    res.status(400).json({
+      error: 'INVALID_PAGE',
+      message: 'Page must be a positive integer'
+    });
+    return;
+  }
+
+  if (isNaN(limitNum) || limitNum < 1 || limitNum > 1000) {
+    res.status(400).json({
+      error: 'INVALID_LIMIT',
+      message: 'Limit must be between 1 and 1000'
+    });
+    return;
+  }
+
+  // Validate trophic level
+  if (trophic_level && (isNaN(trophicLevelNum!) || !Number.isInteger(trophicLevelNum!) || trophicLevelNum! < 0 || trophicLevelNum! > 10)) {
+    res.status(400).json({
+      error: 'INVALID_TROPHIC_LEVEL',
+      message: 'Trophic level must be an integer between 0 and 10'
+    });
+    return;
+  }
+
+  // Validate trophic category
+  if (trophic_category && (isNaN(trophicCategoryNum!) || trophicCategoryNum! < 1)) {
+    res.status(400).json({
+      error: 'INVALID_TROPHIC_CATEGORY',
+      message: 'Trophic category must be a positive integer'
+    });
+    return;
+  }
+
+  // Validate keyword
+  if (keyword && (isNaN(keywordNum!) || keywordNum! < 1 || keywordNum! > 87)) {
+    res.status(400).json({
+      error: 'INVALID_KEYWORD',
+      message: 'Keyword ID must be between 1 and 87'
+    });
+    return;
+  }
+
+  try {
+    let cards;
+
+    // Use optimized queries based on filters
+    if (trophicLevelNum !== null) {
+      cards = await getCardsByTrophicLevel(trophicLevelNum);
+    } else if (keywordNum !== null) {
+      cards = await getCardsByKeyword(keywordNum);
+    } else {
+      cards = await getAllCardsWithRelations();
+    }
+
+    // Apply search filter if provided
+    if (search && typeof search === 'string') {
+      const searchLower = search.toLowerCase();
+      cards = cards.filter(card =>
+        card.common_name?.toLowerCase().includes(searchLower) ||
+        card.scientific_name?.toLowerCase().includes(searchLower) ||
+        card.card_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply trophic category filter
+    if (trophicCategoryNum !== null) {
+      cards = cards.filter(card => card.trophic_category_id === trophicCategoryNum);
+    }
+
+    // Apply pagination
+    const offset = (pageNum - 1) * limitNum;
+    const paginatedCards = cards.slice(offset, offset + limitNum);
+
+    // Get conservation status names for display
+    const conservationStatuses = await db
+      .selectFrom('conservation_statuses')
+      .select(['id', 'status_name', 'percentage', 'pack_rarity', 'color', 'emoji'])
+      .execute();
+
+    const conservationMap = conservationStatuses.reduce((acc, status) => {
+      acc[status.id] = status;
+      return acc;
+    }, {} as Record<number, any>);
+
+    // Enhance cards with conservation status info and proper number types
+    const enhancedCards = paginatedCards.map(card => ({
+      ...card,
+      cost: typeof card.cost === 'string' ? JSON.parse(card.cost) : card.cost,
+      conservation_status: card.conservation_status_id ? {
+        ...conservationMap[card.conservation_status_id],
+        percentage: Number(conservationMap[card.conservation_status_id]?.percentage || 0),
+        pack_rarity: Number(conservationMap[card.conservation_status_id]?.pack_rarity || 0)
+      } : null
+    }));
+
+    res.json({
+      success: true,
+      cards: enhancedCards,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: cards.length,
+        pages: Math.ceil(cards.length / limitNum)
+      },
+      filters_applied: {
+        search: search || null,
+        trophic_level: trophicLevelNum,
+        trophic_category: trophicCategoryNum,
+        keyword: keywordNum
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching cards:', error);
+    res.status(500).json({
+      error: 'DATABASE_ERROR',
+      message: 'Failed to fetch cards from database'
+    });
+  }
+}));
+
+/**
+ * GET /api/cards/card/:id
+ * Get detailed information about a specific card using optimized query
+ */
+router.get('/card/:id', asyncHandler(async (req, res) => {
+  const cardIdParam = req.params['id'];
+  const cardId = Number(cardIdParam) as CardId;
+
+  // Validate card ID more thoroughly
+  if (isNaN(cardId) || !Number.isInteger(cardId) || cardId <= 0) {
+    res.status(400).json({
+      error: 'INVALID_CARD_ID',
+      message: 'Card ID must be a positive integer'
+    });
+    return;
+  }
+
+  // Check for extremely large numbers that could cause issues
+  if (cardId > Number.MAX_SAFE_INTEGER) {
+    res.status(400).json({
+      error: 'INVALID_CARD_ID',
+      message: 'Card ID is too large'
+    });
+    return;
+  }
+
+  try {
+    // Use optimized single card query
+    const card = await getCardWithRelations(cardId);
+
+    if (!card) {
+      res.status(404).json({
+        error: 'CARD_NOT_FOUND',
+        message: 'Card not found'
+      });
+      return;
+    }
+
+    // Get additional details
+    const [trophicCategory, conservationStatus, localizations] = await Promise.all([
+      // Get trophic category name
+      db.selectFrom('trophic_categories')
+        .select(['name', 'category_type'])
+        .where('id', '=', card.trophic_category_id)
+        .executeTakeFirst(),
+
+      // Get conservation status
+      card.conservation_status_id ?
+        db.selectFrom('conservation_statuses')
+          .selectAll()
+          .where('id', '=', card.conservation_status_id)
+          .executeTakeFirst() :
+        null,
+
+      // Get localized text
+      db.selectFrom('localizations')
+        .select(['field_name', 'localized_text'])
+        .where('object_type', '=', 'card')
+        .where('object_id', '=', cardId)
+        .where('language_code', '=', 'en')
+        .execute()
+    ]);
+
+    const localizationMap = localizations.reduce((acc, loc) => {
+      acc[loc.field_name] = loc.localized_text;
+      return acc;
+    }, {} as Record<string, string>);
+
+    res.json({
+      success: true,
+      card: {
+        ...card,
+        cost: typeof card.cost === 'string' ? JSON.parse(card.cost) : card.cost,
+        trophic_category: trophicCategory,
+        conservation_status: conservationStatus,
+        localizations: localizationMap
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching card:', error);
+    res.status(500).json({
+      error: 'DATABASE_ERROR',
+      message: 'Failed to fetch card details'
+    });
+  }
+}));
+
+/**
  * GET /api/cards/collection
- * Get user's card collection
+ * Get user's card collection (updated for new system)
  */
 router.get('/collection', requireAuth, asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -103,15 +337,59 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
     });
   }
 
-  // Simple pack contents (in production, this would be more sophisticated)
-  const availableSpecies = ['bear', 'tiger', 'eagle', 'whale', 'butterfly', 'oak-tree', 'grass', 'rabbit', 'fox'];
+  // Get available cards with conservation-based rarity
+  const availableCards = await getAllCardsWithRelations();
   const cardsPerPack = pack_type === 'basic' ? 3 : pack_type === 'premium' ? 5 : 7;
-  const newSpecies: string[] = [];
+  const newCards: any[] = [];
 
+  // Get conservation statuses for rarity calculation
+  const conservationStatuses = await db
+    .selectFrom('conservation_statuses')
+    .select(['id', 'pack_rarity'])
+    .execute();
+
+  // Map IUCN conservation status to numeric weights (higher = more common)
+  // Based on IUCN Red List percentages from IUCN_RARITY_SYSTEM.md (per 100,000 packs for maximum precision)
+  const rarityWeights: Record<string, number> = {
+    'LC': 50646,  // Least Concern - 50.51% = 50,646 per 100,000 (most common, adjusted)
+    'VU': 13190,  // Vulnerable - 13.19% = 13,190 per 100,000
+    'DD': 12970,  // Data Deficient - 12.97% = 12,970 per 100,000
+    'EN': 10920,  // Endangered - 10.92% = 10,920 per 100,000
+    'CR': 5950,   // Critically Endangered - 5.95% = 5,950 per 100,000
+    'NT': 5730,   // Near Threatened - 5.73% = 5,730 per 100,000
+    'EX': 540,    // Extinct - 0.54% = 540 per 100,000 (ultra rare)
+    'EW': 54      // Extinct in Wild - 0.054% = 54 per 100,000 (ultra rare)
+  };
+
+  const rarityMap = conservationStatuses.reduce((acc, status) => {
+    acc[status.id] = rarityWeights[status.pack_rarity] || 100;
+    return acc;
+  }, {} as Record<number, number>);
+
+  // Create weighted card pool based on IUCN conservation rarity
+  const weightedCards: { card: any; weight: number }[] = [];
+  for (const card of availableCards) {
+    const rarity = card.conservation_status_id ? rarityMap[card.conservation_status_id] || 100 : 100;
+    // Higher rarity number = more common (per 1000 packs)
+    weightedCards.push({ card, weight: rarity });
+  }
+
+  // Select cards based on weighted probability
   for (let i = 0; i < cardsPerPack; i++) {
-    const randomSpecies = availableSpecies[Math.floor(Math.random() * availableSpecies.length)];
-    if (randomSpecies) {
-      newSpecies.push(randomSpecies);
+    const totalWeight = weightedCards.reduce((sum, item) => sum + item.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const item of weightedCards) {
+      random -= item.weight;
+      if (random <= 0) {
+        newCards.push({
+          id: item.card.id,
+          card_name: item.card.card_name,
+          common_name: item.card.common_name,
+          conservation_status_id: item.card.conservation_status_id
+        });
+        break;
+      }
     }
   }
 
@@ -127,13 +405,13 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
       .where('id', '=', req.user!.id)
       .execute();
 
-    // Add species to collection
-    for (const species of newSpecies) {
+    // Add cards to collection
+    for (const card of newCards) {
       const existing = await trx
         .selectFrom('user_cards')
         .selectAll()
         .where('user_id', '=', req.user!.id)
-        .where('species_name', '=', species)
+        .where('card_id', '=', card.id)
         .executeTakeFirst();
 
       if (existing) {
@@ -145,17 +423,19 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
             last_acquired_at: new Date()
           })
           .where('user_id', '=', req.user!.id)
-          .where('species_name', '=', species)
+          .where('card_id', '=', card.id)
           .execute();
       } else {
-        // Add new species
+        // Add new card
         await trx
           .insertInto('user_cards')
           .values({
             user_id: req.user!.id,
-            species_name: species,
+            card_id: card.id,
+            species_name: card.common_name || card.card_name, // Fallback for compatibility
             quantity: 1,
-            acquired_via: 'pack'
+            acquired_via: 'pack',
+            migrated_from_species: false
           })
           .execute();
       }
@@ -177,9 +457,17 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
     success: true,
     message: 'Pack opened successfully',
     pack_type,
-    species_granted: newSpecies,
+    cards_granted: newCards,
     cost,
-    remaining_credits: req.user.eco_credits - cost
+    remaining_credits: req.user.eco_credits - cost,
+    rarity_info: newCards.map(card => {
+      const rarity = card.conservation_status_id ? rarityMap[card.conservation_status_id] : 100;
+      return {
+        card_name: card.card_name,
+        rarity_per_1000_packs: rarity,
+        is_rare: (rarity || 100) < 50
+      };
+    })
   });
   return;
 }));
@@ -266,7 +554,8 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
           user_id: req.user!.id,
           species_name: redemption.species_name,
           quantity: 1,
-          acquired_via: 'redeem'
+          acquired_via: 'redeem',
+          migrated_from_species: false
         })
         .execute();
     }
@@ -313,6 +602,274 @@ router.get('/daily-pack', requireAuth, asyncHandler(async (req, res) => {
     nextAvailable: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
   });
   return;
+}));
+
+/**
+ * GET /api/cards/keywords
+ * Get all keywords
+ */
+router.get('/keywords', asyncHandler(async (_req, res) => {
+  const keywords = await db
+    .selectFrom('keywords')
+    .selectAll()
+    .orderBy('keyword_type')
+    .orderBy('keyword_name')
+    .execute();
+
+  // Group by type
+  const keywordsByType = keywords.reduce((acc, keyword) => {
+    if (!acc[keyword.keyword_type]) {
+      acc[keyword.keyword_type] = [];
+    }
+    acc[keyword.keyword_type]?.push(keyword);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  res.json({
+    success: true,
+    keywords: keywordsByType,
+    all_keywords: keywords
+  });
+}));
+
+/**
+ * GET /api/cards/abilities
+ * Get all abilities using optimized query
+ */
+router.get('/abilities', asyncHandler(async (_req, res) => {
+  try {
+    const abilities = await getAllAbilitiesWithEffects();
+
+    // Get trigger information
+    const triggers = await db
+      .selectFrom('triggers')
+      .selectAll()
+      .execute();
+
+    const triggerMap = triggers.reduce((acc, trigger) => {
+      acc[trigger.id] = trigger;
+      return acc;
+    }, {} as Record<number, any>);
+
+    // Enhance abilities with trigger info
+    const enhancedAbilities = abilities.map(ability => ({
+      ...ability,
+      trigger: triggerMap[ability.trigger_id]
+    }));
+
+    res.json({
+      success: true,
+      abilities: enhancedAbilities,
+      triggers
+    });
+  } catch (error) {
+    console.error('Error fetching abilities:', error);
+    res.status(500).json({
+      error: 'DATABASE_ERROR',
+      message: 'Failed to fetch abilities'
+    });
+  }
+}));
+
+/**
+ * GET /api/cards/trophic-categories
+ * Get all trophic categories
+ */
+router.get('/trophic-categories', asyncHandler(async (_req, res) => {
+  const categories = await db
+    .selectFrom('trophic_categories')
+    .selectAll()
+    .orderBy('id')
+    .execute();
+
+  res.json({
+    success: true,
+    trophic_categories: categories
+  });
+}));
+
+/**
+ * GET /api/cards/conservation-statuses
+ * Get all IUCN conservation statuses with rarity data
+ */
+router.get('/conservation-statuses', asyncHandler(async (_req, res) => {
+  const statuses = await db
+    .selectFrom('conservation_statuses')
+    .selectAll()
+    .orderBy('pack_rarity', 'asc') // Rarest first
+    .execute();
+
+  // Convert DECIMAL fields to numbers for proper JSON serialization
+  const processedStatuses = statuses.map(status => ({
+    ...status,
+    percentage: Number(status.percentage), // Convert DECIMAL to number
+    pack_rarity: Number(status.pack_rarity) // Ensure integer is number
+  }));
+
+  res.json({
+    success: true,
+    conservation_statuses: processedStatuses,
+    total_percentage: processedStatuses.reduce((sum, status) => sum + status.percentage, 0)
+  });
+}));
+
+/**
+ * GET /api/cards/game-data
+ * Get all game data optimized for the game engine
+ */
+router.get('/game-data', asyncHandler(async (_req, res) => {
+  try {
+    // Get all data using optimized queries
+    const [cards, abilities, keywords, trophicCategories, conservationStatuses] = await Promise.all([
+      getAllCardsWithRelations(),
+      getAllAbilitiesWithEffects(),
+      db.selectFrom('keywords').selectAll().orderBy('id').execute(),
+      db.selectFrom('trophic_categories').selectAll().orderBy('id').execute(),
+      db.selectFrom('conservation_statuses').selectAll().orderBy('id').execute()
+    ]);
+
+    // Get triggers, effects, selectors, actions for complete game data
+    const [triggers, effects, selectors, actions] = await Promise.all([
+      db.selectFrom('triggers').selectAll().execute(),
+      db.selectFrom('effects').selectAll().execute(),
+      db.selectFrom('selectors').selectAll().execute(),
+      db.selectFrom('actions').selectAll().execute()
+    ]);
+
+    // Process cards for game engine with proper number types
+    const processedCards = cards.map(card => ({
+      ...card,
+      cost: typeof card.cost === 'string' ? JSON.parse(card.cost) : card.cost
+      // Note: DECIMAL fields are already converted by processCardDecimalFields in queries
+    }));
+
+    // Process conservation statuses with proper number types
+    const processedConservationStatuses = conservationStatuses.map(status => ({
+      ...status,
+      percentage: Number(status.percentage),
+      pack_rarity: Number(status.pack_rarity)
+    }));
+
+    res.json({
+      success: true,
+      game_data: {
+        cards: processedCards,
+        abilities,
+        keywords,
+        trophic_categories: trophicCategories,
+        conservation_statuses: processedConservationStatuses,
+        triggers,
+        effects,
+        selectors,
+        actions
+      },
+      metadata: {
+        total_cards: cards.length,
+        total_abilities: abilities.length,
+        total_keywords: keywords.length,
+        generated_at: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error loading game data:', error);
+    res.status(500).json({
+      error: 'GAME_DATA_ERROR',
+      message: 'Failed to load game data'
+    });
+  }
+}));
+
+/**
+ * POST /api/cards/validate-placement
+ * Validate card placement according to game rules
+ */
+router.post('/validate-placement', requireAuth, asyncHandler(async (req, res) => {
+  const { cardId, position, adjacentCards } = req.body;
+
+  if (!cardId || !position) {
+    res.status(400).json({
+      error: 'MISSING_PARAMETERS',
+      message: 'Card ID and position are required'
+    });
+    return;
+  }
+
+  // Get card data
+  const card = await db
+    .selectFrom('cards')
+    .leftJoin('card_keywords', 'cards.id', 'card_keywords.card_id')
+    .leftJoin('keywords', 'card_keywords.keyword_id', 'keywords.id')
+    .selectAll('cards')
+    .select(['keywords.keyword_name'])
+    .where('cards.id', '=', Number(cardId))
+    .execute();
+
+  if (card.length === 0) {
+    res.status(404).json({
+      error: 'CARD_NOT_FOUND',
+      message: 'Card not found'
+    });
+    return;
+  }
+
+  const cardData = card[0];
+  const cardKeywords = card.map(row => row.keyword_name).filter(Boolean);
+
+  // Basic validation logic (simplified)
+  const validation = {
+    isValid: true,
+    errors: [] as string[],
+    warnings: [] as string[]
+  };
+
+  // Check domain compatibility
+  const isAquatic = cardKeywords.includes('AQUATIC');
+  const isAmphibious = cardKeywords.includes('AMPHIBIOUS');
+  const isTerrestrial = !isAquatic && !isAmphibious;
+
+  // Validate against adjacent cards (if provided)
+  if (adjacentCards && adjacentCards.length > 0) {
+    for (const adjCard of adjacentCards) {
+      const adjKeywords = adjCard.keywords || [];
+      const adjIsAquatic = adjKeywords.includes('AQUATIC');
+      const adjIsAmphibious = adjKeywords.includes('AMPHIBIOUS');
+      const adjIsTerrestrial = !adjIsAquatic && !adjIsAmphibious;
+
+      // Domain compatibility check
+      if (isAquatic && !adjIsAquatic && !adjIsAmphibious) {
+        validation.isValid = false;
+        validation.errors.push('Aquatic cards can only connect to aquatic or amphibious cards');
+      }
+
+      if (isTerrestrial && !adjIsTerrestrial && !adjIsAmphibious) {
+        validation.isValid = false;
+        validation.errors.push('Terrestrial cards can only connect to terrestrial or amphibious cards');
+      }
+    }
+  }
+
+  // Trophic level validation
+  if (cardData && cardData.trophic_level && cardData.trophic_level > 1) {
+    const hasValidTrophicConnection = adjacentCards?.some((adjCard: any) =>
+      adjCard.trophic_level === cardData.trophic_level! - 1
+    );
+
+    if (adjacentCards && adjacentCards.length > 0 && !hasValidTrophicConnection) {
+      validation.isValid = false;
+      validation.errors.push(`Must connect to trophic level ${cardData.trophic_level - 1}`);
+    }
+  }
+
+  res.json({
+    success: true,
+    validation,
+    card_data: cardData ? {
+      id: cardData.id,
+      name: cardData.card_name,
+      trophic_level: cardData.trophic_level,
+      keywords: cardKeywords
+    } : null
+  });
 }));
 
 export default router;

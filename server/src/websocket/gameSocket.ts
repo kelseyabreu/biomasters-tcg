@@ -21,17 +21,17 @@ interface GameAction {
   };
 }
 
-interface GameUpdate {
-  type: 'game_state_update' | 'player_joined' | 'player_left' | 'player_ready' | 'game_started' | 'game_ended' | 'turn_change' | 'action_result';
-  sessionId: string;
-  data: any;
-  timestamp: number;
-}
+// interface GameUpdate {
+//   type: 'game_state_update' | 'player_joined' | 'player_left' | 'player_ready' | 'game_started' | 'game_ended' | 'turn_change' | 'action_result';
+//   sessionId: string;
+//   data: any;
+//   timestamp: number;
+// }
 
 export function setupGameSocket(server: HTTPServer) {
   const io = new SocketIOServer(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:3000",
+      origin: process.env['FRONTEND_URL'] || "http://localhost:3000",
       methods: ["GET", "POST"],
       credentials: true
     }
@@ -46,7 +46,7 @@ export function setupGameSocket(server: HTTPServer) {
         return next(new Error('Authentication token required'));
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      const decoded = jwt.verify(token, process.env['JWT_SECRET']!) as any;
       
       // Get user from database
       const user = await db
@@ -148,7 +148,7 @@ export function setupGameSocket(server: HTTPServer) {
         });
 
         socket.leave(socket.sessionId);
-        socket.sessionId = undefined;
+        (socket as any).sessionId = undefined;
       }
     });
 

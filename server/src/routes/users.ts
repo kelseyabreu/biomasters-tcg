@@ -79,31 +79,35 @@ router.put('/me', requireRegisteredUser, apiRateLimiter, asyncHandler(async (req
 
   // Validate input
   if (displayName && (typeof displayName !== 'string' || displayName.length > 50)) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'INVALID_DISPLAY_NAME',
       message: 'Display name must be a string with max 50 characters'
     });
+    return;
   }
 
   if (bio && (typeof bio !== 'string' || bio.length > 200)) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'INVALID_BIO',
       message: 'Bio must be a string with max 200 characters'
     });
+    return;
   }
 
   if (location && (typeof location !== 'string' || location.length > 100)) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'INVALID_LOCATION',
       message: 'Location must be a string with max 100 characters'
     });
+    return;
   }
 
   if (favoriteSpecies && (typeof favoriteSpecies !== 'string' || favoriteSpecies.length > 100)) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'INVALID_FAVORITE_SPECIES',
       message: 'Favorite species must be a string with max 100 characters'
     });
+    return;
   }
 
   try {

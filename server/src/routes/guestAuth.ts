@@ -87,7 +87,11 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
       last_login_at: null,
       is_active: true,
       is_banned: false,
-      ban_reason: null
+      ban_reason: null,
+      // Missing required fields
+      is_public_profile: false,
+      email_notifications: false,
+      push_notifications: false
     };
 
     const users = await trx

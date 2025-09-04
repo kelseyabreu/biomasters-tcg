@@ -9,6 +9,14 @@ import { Generated, Insertable, Selectable, Updateable } from 'kysely';
 export type AcquisitionMethod = 'starter' | 'pack' | 'redeem' | 'reward' | 'admin_grant';
 export type TransactionType = 'in_app_purchase' | 'pack_purchase' | 'reward' | 'redemption' | 'admin_grant';
 
+// BioMasters Engine Enum types
+export type TriggerType = 'ON_ACTIVATE' | 'PERSISTENT_ATTACHED' | 'ON_ENTER_PLAY' | 'ON_LEAVE_PLAY' | 'START_OF_TURN' | 'END_OF_TURN';
+export type EffectType = 'TARGET' | 'TAKE_CARD' | 'APPLY_STATUS' | 'MOVE_CARD' | 'EXHAUST_TARGET' | 'READY_TARGET' | 'DESTROY_TARGET' | 'GAIN_ENERGY' | 'LOSE_ENERGY';
+export type SelectorType = 'ADJACENT' | 'ADJACENT_TO_SHARED_AMPHIBIOUS' | 'CARD_IN_DETRITUS_ZONE' | 'SELF_HOST' | 'ALL_CARDS' | 'RANDOM_CARD' | 'TARGET_PLAYER';
+export type ActionType = 'EXHAUST_TARGET' | 'READY_TARGET' | 'MOVE_TO_HAND' | 'MOVE_TO_DETRITUS' | 'PREVENT_READY' | 'GAIN_VP' | 'DRAW_CARD' | 'DISCARD_CARD';
+export type DomainType = 'TERRESTRIAL' | 'AQUATIC' | 'AMPHIBIOUS' | 'FRESHWATER' | 'MARINE' | 'EURYHALINE';
+export type TrophicCategoryType = 'PHOTOAUTOTROPH' | 'CHEMOAUTOTROPH' | 'HERBIVORE' | 'OMNIVORE' | 'CARNIVORE' | 'SAPROTROPH' | 'PARASITE' | 'MUTUALIST';
+
 // Table interfaces
 export interface UsersTable {
   id: Generated<string>;
@@ -93,11 +101,13 @@ export interface OfflineActionQueueTable {
 export interface UserCardsTable {
   id: Generated<string>; // UUID for fast retrieval
   user_id: string;
-  species_name: string; // Foreign key to JSON file (e.g., 'bear', 'tiger')
+  species_name: string; // Foreign key to JSON file (e.g., 'bear', 'tiger') - legacy
+  card_id: number | null; // New foreign key to cards table
   quantity: number;
   acquired_via: AcquisitionMethod;
   first_acquired_at: Generated<Date>;
   last_acquired_at: Generated<Date>;
+  migrated_from_species: boolean; // Track migration from old system
 }
 
 export interface DecksTable {
@@ -162,6 +172,148 @@ export interface SyncActionsLogTable {
   conflict_reason: string | null;
 }
 
+// BioMasters Engine Tables
+export interface TrophicCategoriesTable {
+  id: Generated<number>;
+  name: string;
+  category_type: TrophicCategoryType;
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface KeywordsTable {
+  id: Generated<number>;
+  keyword_name: string;
+  keyword_type: string;
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface TriggersTable {
+  id: Generated<number>;
+  trigger_name: string;
+  trigger_type: TriggerType;
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface EffectsTable {
+  id: Generated<number>;
+  effect_name: string;
+  effect_type: EffectType;
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface SelectorsTable {
+  id: Generated<number>;
+  selector_name: string;
+  selector_type: SelectorType;
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface ActionsTable {
+  id: Generated<number>;
+  action_name: string;
+  action_type: ActionType;
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface AbilitiesTable {
+  id: Generated<number>;
+  ability_name: string;
+  trigger_id: number;
+  effects: string; // JSONB as string
+  description: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface ConservationStatusesTable {
+  id: Generated<number>;
+  status_name: string;
+  percentage: number;
+  pack_rarity: string;
+  color: string;
+  emoji: string;
+  created_at: Generated<Date>;
+}
+
+export interface CardsTable {
+  id: Generated<number>;
+  card_name: string;
+  trophic_level: number | null;
+  trophic_category_id: number | null;
+  conservation_status_id: number | null;
+  cost: string | null; // JSONB as string
+  victory_points: number;
+
+  // Biological data
+  common_name: string | null;
+  scientific_name: string | null;
+  taxonomy: string | null; // JSONB as string
+
+  // Physical characteristics
+  mass_kg: number | null;
+  lifespan_max_days: number | null;
+
+  // Sensory capabilities
+  vision_range_m: number | null;
+  smell_range_m: number | null;
+  hearing_range_m: number | null;
+
+  // Movement capabilities
+  walk_speed_m_per_hr: number | null;
+  run_speed_m_per_hr: number | null;
+  swim_speed_m_per_hr: number | null;
+  fly_speed_m_per_hr: number | null;
+
+  // Reproduction
+  offspring_count: number | null;
+  gestation_days: number | null;
+
+  // Game metadata
+  artwork_url: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface CardKeywordsTable {
+  card_id: number;
+  keyword_id: number;
+}
+
+export interface CardAbilitiesTable {
+  card_id: number;
+  ability_id: number;
+}
+
+export interface LocalizationsTable {
+  id: Generated<number>;
+  language_code: string;
+  object_type: string;
+  object_id: number;
+  field_name: string;
+  localized_text: string;
+  created_at: Generated<Date>;
+}
+
+// Game sessions table for multiplayer functionality
+export interface GameSessionsTable {
+  id: string; // UUID
+  host_user_id: string;
+  game_mode: 'campaign' | 'online' | 'scenarios' | 'tutorial';
+  is_private: boolean;
+  max_players: number;
+  current_players: number;
+  status: 'waiting' | 'playing' | 'finished' | 'cancelled';
+  game_state: string; // JSON string
+  settings: string; // JSON string
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 // Database interface
 export interface Database {
   users: UsersTable;
@@ -175,6 +327,21 @@ export interface Database {
   device_sync_states: DeviceSyncStatesTable;
   sync_actions_log: SyncActionsLogTable;
   offline_action_queue: OfflineActionQueueTable;
+
+  // BioMasters Engine tables
+  trophic_categories: TrophicCategoriesTable;
+  keywords: KeywordsTable;
+  triggers: TriggersTable;
+  effects: EffectsTable;
+  selectors: SelectorsTable;
+  actions: ActionsTable;
+  abilities: AbilitiesTable;
+  cards: CardsTable;
+  card_keywords: CardKeywordsTable;
+  card_abilities: CardAbilitiesTable;
+  localizations: LocalizationsTable;
+  game_sessions: GameSessionsTable;
+  conservation_statuses: ConservationStatusesTable;
 }
 
 // Helper types for CRUD operations
@@ -216,3 +383,50 @@ export type DeviceSyncStateUpdate = Updateable<DeviceSyncStatesTable>;
 
 export type SyncActionLog = Selectable<SyncActionsLogTable>;
 export type NewSyncActionLog = Insertable<SyncActionsLogTable>;
+
+// BioMasters Engine helper types
+export type TrophicCategory = Selectable<TrophicCategoriesTable>;
+export type NewTrophicCategory = Insertable<TrophicCategoriesTable>;
+export type TrophicCategoryUpdate = Updateable<TrophicCategoriesTable>;
+
+export type Keyword = Selectable<KeywordsTable>;
+export type NewKeyword = Insertable<KeywordsTable>;
+export type KeywordUpdate = Updateable<KeywordsTable>;
+
+export type Trigger = Selectable<TriggersTable>;
+export type NewTrigger = Insertable<TriggersTable>;
+export type TriggerUpdate = Updateable<TriggersTable>;
+
+export type Effect = Selectable<EffectsTable>;
+export type NewEffect = Insertable<EffectsTable>;
+export type EffectUpdate = Updateable<EffectsTable>;
+
+export type Selector = Selectable<SelectorsTable>;
+export type NewSelector = Insertable<SelectorsTable>;
+export type SelectorUpdate = Updateable<SelectorsTable>;
+
+export type Action = Selectable<ActionsTable>;
+export type NewAction = Insertable<ActionsTable>;
+export type ActionUpdate = Updateable<ActionsTable>;
+
+export type Ability = Selectable<AbilitiesTable>;
+export type NewAbility = Insertable<AbilitiesTable>;
+export type AbilityUpdate = Updateable<AbilitiesTable>;
+
+export type Card = Selectable<CardsTable>;
+export type NewCard = Insertable<CardsTable>;
+export type CardUpdate = Updateable<CardsTable>;
+
+export type CardKeyword = Selectable<CardKeywordsTable>;
+export type NewCardKeyword = Insertable<CardKeywordsTable>;
+
+export type CardAbility = Selectable<CardAbilitiesTable>;
+export type NewCardAbility = Insertable<CardAbilitiesTable>;
+
+export type Localization = Selectable<LocalizationsTable>;
+export type NewLocalization = Insertable<LocalizationsTable>;
+export type LocalizationUpdate = Updateable<LocalizationsTable>;
+
+export type ConservationStatus = Selectable<ConservationStatusesTable>;
+export type NewConservationStatus = Insertable<ConservationStatusesTable>;
+export type ConservationStatusUpdate = Updateable<ConservationStatusesTable>;

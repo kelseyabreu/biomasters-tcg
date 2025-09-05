@@ -1,0 +1,226 @@
+{
+  "archetypeName": "sockeye-salmon",
+  "identity": {
+    "speciesName": "sockeye-salmon",
+    "commonName": "Sockeye Salmon",
+    "scientificName": "Oncorhynchus nerka",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Actinopterygii",
+      "order": "Salmoniformes",
+      "family": "Salmonidae",
+      "genus": "Oncorhynchus",
+      "species": "nerka"
+    }
+  },
+  "rendering": {
+    "modelFile": "carnivore.glb",
+    "scale": 0.8
+  },
+  "body": {
+    "mass_kg": 2.5,
+    "waterRatio": 0.75,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.055
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1460,
+    "lifeStages": [
+      {
+        "name": "Fry",
+        "endAge_days": 90,
+        "modifiers": {
+          "mass_multiplier": 0.01,
+          "speed_modifier": 0.5,
+          "acquisition_modifier": 0.3,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.3,
+          "speed_modifier": 0.8,
+          "acquisition_modifier": 0.7,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 1095,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Spawning",
+        "endAge_days": 1460,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "speed_modifier": 1.2,
+          "acquisition_modifier": 0.5,
+          "is_fertile": true,
+          "health_decline_rate": 0.3
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 800,
+      "offspringCount": 3000,
+      "gestation_Days": 120,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 7.0,
+    "proteinTurnoverRate": 0.20,
+    "metabolic_Rate_kJ_per_hr": 45,
+    "energy_Reserves_Max_kJ": 8000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": true
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.98,
+    "osmoticPressure": 0.9,
+    "barrier": {
+      "barrierType": "scales",
+      "permeability_L_per_hr_per_m2": 0.05,
+      "surfaceArea_m2": 1.2,
+      "temperatureModifier": 1.0
+    },
+    "reclamation": {
+      "systemType": "gills",
+      "reclamationRate_L_per_hr": 5.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.5
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.6,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.7,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 3000,
+    "fastSwim_Speed_m_per_hr": 5000,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 25.0,
+    "smell_range_m": 100.0,
+    "taste_range_m": 1.0,
+    "hearing_range_m": 15.0,
+    "touch_range_m": 0.5,
+    "heat_range_m": 2.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Predation",
+        "preference_weight": 8.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 200.0,
+          "attackSuccessRate_pct": 0.4,
+          "handlingTime_minutes": 5.0,
+          "maxPreySize_kg": 0.5,
+          "energyContent_kJ_per_kg": 18000,
+          "digestion_carbon_efficiency": 0.85,
+          "digestion_nitrogen_efficiency": 0.90,
+          "digestion_phosphorus_efficiency": 0.92
+        }
+      },
+      {
+        "method": "Filter_Feeding",
+        "preference_weight": 6.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 500.0,
+          "intakeRate_g_per_hour": 200.0,
+          "selectivityIndex": 0.6,
+          "energyContent_kJ_per_kg": 15000,
+          "digestion_carbon_efficiency": 0.75,
+          "digestion_nitrogen_efficiency": 0.80,
+          "digestion_phosphorus_efficiency": 0.85
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 0,
+    "temperatureMaximum_C": 20,
+    "temperatureOptimalMin_C": 8,
+    "temperatureOptimalMax_C": 15,
+    "moistureOptimal_pct": 100,
+    "moistureTolerance_pct": 0,
+    "moistureLethal_pct": 95,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.5,
+    "pHTolerance": 1.0
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartHunting",
+      "StartMigrating",
+      "StartFeeding",
+      "StartMating",
+      "StartSchooling"
+    ],
+    "macroStateTriggers": {
+      "StartHunting": [
+        {"type": "energy", "operator": "<", "threshold": 50},
+        {"type": "condition_tag", "tag": "IsStarving", "required": true}
+      ],
+      "StartFeeding": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "prey_available", "operator": ">", "threshold": 0.3}
+      ],
+      "StartMigrating": [
+        {"type": "season", "operator": "==", "threshold": "spawning"},
+        {"type": "age", "operator": ">", "threshold": 1095}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "age", "operator": ">", "threshold": 1095}
+      ],
+      "StartSchooling": [
+        {"type": "energy", "operator": ">", "threshold": 40},
+        {"type": "condition_tag", "tag": "IsThreatened", "required": false}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 60,
+    "momentum": 0.8,
+    "changeThreshold": 0.4
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 6.5,
+      "agreeableness": 7.0,
+      "conscientiousness": null,
+      "neuroticism": 5.5,
+      "openness": 5.0,
+      "dominance": 4.5,
+      "activity": 8.0
+    },
+    "reliability": 0.85
+  }
+}

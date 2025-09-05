@@ -1,0 +1,217 @@
+{
+  "archetypeName": "mycorrhizal-fungi",
+  "identity": {
+    "speciesName": "mycorrhizal-fungi",
+    "commonName": "Mycorrhizal Fungi",
+    "scientificName": "Glomus intraradices",
+    "taxonomy": {
+      "kingdom": "Fungi",
+      "phylum": "Glomeromycota",
+      "class": "Glomeromycetes",
+      "order": "Glomerales",
+      "family": "Glomeraceae",
+      "genus": "Glomus",
+      "species": "intraradices"
+    }
+  },
+  "rendering": {
+    "modelFile": "mutualist.glb",
+    "scale": 0.3
+  },
+  "body": {
+    "mass_kg": 0.01,
+    "waterRatio": 0.80,
+    "carbonRatio": 0.42,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.008,
+    "otherMineralsRatio": 0.132
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 8.0,
+    "FruitSeedBiomass_gm2": 2.0,
+    "RootBiomass_gm2": 0.0,
+    "N_gm2": 0.4,
+    "P_gm2": 0.08,
+    "K_gm2": 0.2,
+    "C_gm2": 4.2,
+    "NonNPK_gm2": 1.32,
+    "LigninContent_pct": 5.0,
+    "CurrentGrowthRate": 2.0,
+    "CurrentYieldRate": 1.5
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 365,
+    "lifeStages": [
+      {
+        "name": "Spore",
+        "endAge_days": 14,
+        "modifiers": {
+          "mass_multiplier": 0.001,
+          "growth_rate_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Germination",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.01,
+          "growth_rate_modifier": 2.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Hyphal Network",
+        "endAge_days": 300,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Sporulation",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "growth_rate_modifier": 0.5,
+          "is_fertile": true,
+          "reproduction_rate_modifier": 3.0
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 10,
+      "offspringCount": 100,
+      "gestation_Days": 7,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 30.0,
+    "proteinTurnoverRate": 0.05,
+    "metabolic_Rate_kJ_per_hr": 0.1,
+    "energy_Reserves_Max_kJ": 100,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.85,
+    "osmoticPressure": 0.3,
+    "barrier": {
+      "barrierType": "cell_wall",
+      "permeability_L_per_hr_per_m2": 0.2,
+      "surfaceArea_m2": 1.0,
+      "temperatureModifier": 1.5
+    },
+    "reclamation": {
+      "systemType": "hyphal",
+      "reclamationRate_L_per_hr": 0.1,
+      "concentrationAbility": 3.0,
+      "energyCost_kJ_per_L": 0.05
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Continuous",
+    "dormancyMultiplier": 0.9,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.3,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0.01,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.1,
+    "taste_range_m": 0.05,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.1,
+    "heat_range_m": 0.05
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Mutualistic_Exchange",
+        "preference_weight": 10.0,
+        "rateDataClass": "FMutualismRates",
+        "rateData": {
+          "nutrientExchangeRate_g_per_hour": 0.5,
+          "phosphorusUptakeEfficiency": 0.95,
+          "nitrogenUptakeEfficiency": 0.80,
+          "carbonReceiptRate_g_per_hour": 1.0,
+          "hostBenefitMultiplier": 2.0,
+          "networkConnectivity": 0.8,
+          "symbiosisStability": 0.9
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 30,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 6.5,
+    "pHTolerance": 1.5
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartSymbiosis",
+      "StartNutrientExchange",
+      "StartNetworkExpansion",
+      "StartSporulation"
+    ],
+    "macroStateTriggers": {
+      "StartSymbiosis": [
+        {"type": "plant_roots_available", "operator": ">", "threshold": 0.1},
+        {"type": "energy", "operator": "<", "threshold": 60}
+      ],
+      "StartNutrientExchange": [
+        {"type": "symbiosis_established", "operator": "==", "threshold": true},
+        {"type": "soil_nutrients", "operator": ">", "threshold": 0.3}
+      ],
+      "StartNetworkExpansion": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "territory_available", "operator": ">", "threshold": 0.5}
+      ],
+      "StartSporulation": [
+        {"type": "age", "operator": ">", "threshold": 300},
+        {"type": "energy", "operator": ">", "threshold": 80}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 720,
+    "momentum": 0.8,
+    "changeThreshold": 0.2
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": 9.0,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 2.0
+    },
+    "reliability": 0.95
+  }
+}

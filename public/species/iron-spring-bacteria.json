@@ -1,0 +1,184 @@
+{
+  "archetypeName": "iron-spring-bacteria",
+  "identity": {
+    "speciesName": "iron-spring-bacteria",
+    "commonName": "Iron Spring Bacteria",
+    "scientificName": "Acidithiobacillus ferrooxidans",
+    "taxonomy": {
+      "kingdom": "Bacteria",
+      "phylum": "Proteobacteria",
+      "class": "Gammaproteobacteria",
+      "order": "Acidithiobacillales",
+      "family": "Acidithiobacillaceae",
+      "genus": "Acidithiobacillus",
+      "species": "ferrooxidans"
+    }
+  },
+  "rendering": {
+    "modelFile": "bacteria.glb",
+    "scale": 0.01
+  },
+  "body": {
+    "mass_kg": 0.000000001,
+    "waterRatio": 0.75,
+    "carbonRatio": 0.45,
+    "nitrogenRatio": 0.12,
+    "phosphorusRatio": 0.025,
+    "otherMineralsRatio": 0.155
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 0.000000001,
+    "FruitSeedBiomass_gm2": 0.0,
+    "RootBiomass_gm2": 0.0,
+    "N_gm2": 0.00000000012,
+    "P_gm2": 0.000000000025,
+    "K_gm2": 0.00000000004,
+    "C_gm2": 0.00000000045,
+    "NonNPK_gm2": 0.000000000155,
+    "LigninContent_pct": 0.0,
+    "CurrentGrowthRate": 8.0,
+    "CurrentYieldRate": 4.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1,
+    "lifeStages": [
+      {
+        "name": "Active",
+        "endAge_days": 1,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 0.000001,
+      "offspringCount": 2,
+      "gestation_Days": 0,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 0.2,
+    "proteinTurnoverRate": 0.8,
+    "metabolic_Rate_kJ_per_hr": 0.000001,
+    "energy_Reserves_Max_kJ": 0.00001,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.90,
+    "osmoticPressure": 1.5,
+    "barrier": {
+      "barrierType": "cell_membrane",
+      "permeability_L_per_hr_per_m2": 5.0,
+      "surfaceArea_m2": 0.000000001,
+      "temperatureModifier": 1.0
+    },
+    "reclamation": {
+      "systemType": "osmotic",
+      "reclamationRate_L_per_hr": 0.000000001,
+      "concentrationAbility": 8.0,
+      "energyCost_kJ_per_L": 0.002
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Continuous",
+    "dormancyMultiplier": 1.0,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.0,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0.001,
+    "fastSwim_Speed_m_per_hr": 0.002,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.001,
+    "taste_range_m": 0.0001,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0001,
+    "heat_range_m": 0.005
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Iron_Oxidation",
+        "preference_weight": 10.0,
+        "rateDataClass": "FChemosynthesisRates",
+        "rateData": {
+          "chemicalSubstrate": "ferrous_iron",
+          "maxChemosynthesisRate_gC_per_hour": 0.000000001,
+          "substrateConcentration_optimal": 50.0,
+          "energyYield_kJ_per_mol": 29.0,
+          "carbonFixationEfficiency": 0.85,
+          "nitrogenFixationCapability": false,
+          "temperatureOptimal_C": 30.0
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 10,
+    "temperatureMaximum_C": 45,
+    "temperatureOptimalMin_C": 25,
+    "temperatureOptimalMax_C": 35,
+    "moistureOptimal_pct": 100,
+    "moistureTolerance_pct": 0,
+    "moistureLethal_pct": 90,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 2.5,
+    "pHTolerance": 1.0
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartIronOxidation",
+      "StartReproducing",
+      "StartColonizing"
+    ],
+    "macroStateTriggers": {
+      "StartIronOxidation": [
+        {"type": "iron_available", "operator": ">", "threshold": 0.1},
+        {"type": "energy", "operator": "<", "threshold": 80}
+      ],
+      "StartReproducing": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "iron_abundance", "operator": ">", "threshold": 0.5}
+      ],
+      "StartColonizing": [
+        {"type": "population_density", "operator": ">", "threshold": 0.8},
+        {"type": "energy", "operator": ">", "threshold": 60}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 60,
+    "momentum": 0.9,
+    "changeThreshold": 0.1
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": null,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 8.0
+    },
+    "reliability": 0.95
+  }
+}

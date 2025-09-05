@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+server/node_modules
+shared/node_modules
 /.pnp
 .pnp.js
 
@@ -10,6 +12,8 @@
 
 # production
 /dist
+server/dist
+shared/dist
 
 # misc
 .DS_Store

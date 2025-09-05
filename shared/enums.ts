@@ -264,25 +264,24 @@ export enum GameEndReason {
 export enum CardId {
   // Producers (Trophic Level 1)
   OAK_TREE = 1,
-  KELP_FOREST = 2,
-  RIVERBANK = 3,
+  GIANT_KELP = 2,                    // Replaced "Kelp Forest" with individual species
+  REED_CANARY_GRASS = 3,             // Replaced "Riverbank Grass" with individual species
 
   // Primary Consumers (Trophic Level 2)
-  FIELD_RABBIT = 4,
+  EUROPEAN_RABBIT = 4,               // Updated from "Field Rabbit"
   SOCKEYE_SALMON = 5,
 
   // Secondary/Tertiary Consumers (Trophic Level 3-4)
-  GRIZZLY_BEAR = 6,
+  AMERICAN_BLACK_BEAR = 6,           // Updated from "Grizzly Bear"
   GREAT_WHITE_SHARK = 7,
 
   // Decomposers (Trophic Level -1)
   MYCENA_MUSHROOM = 8,
-  VULTURE = 9,
+  TURKEY_VULTURE = 9,                // Updated from "Vulture"
 
   // Parasites
   DEER_TICK = 10,
 
-  // New cards from species data and Beaty deck
   // Detritivores (Trophic Level -2)
   COMMON_EARTHWORM = 11,
   DUNG_BEETLE = 12,
@@ -292,20 +291,23 @@ export enum CardId {
   DECOMPOSER_MUSHROOM = 14,
 
   // Chemoautotrophs (Trophic Level 1)
-  SULFUR_BACTERIA = 15,
-  IRON_BACTERIA = 16,
+  DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA = 15,
+  IRON_SPRING_BACTERIA = 16,
 
   // Mutualists (Variable trophic level)
   MYCORRHIZAL_FUNGI = 17,
   NITROGEN_FIXING_BACTERIA = 18,
 
-  // Additional species from Beaty deck
+  // Marine organisms
   PACIFIC_KRILL = 19,
   PHYTOPLANKTON = 20,
   ZOOPLANKTON = 21,
   EUROPEAN_HONEY_BEE = 22,
-  BLACK_BEAR = 23,
-  BLUE_WHALE = 24
+
+  // Additional chemoautotrophs
+  VOLCANIC_HYDROGEN_BACTERIA = 25,
+  NITRIFYING_SOIL_BACTERIA = 26,
+  SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 27
 }
 
 /**
@@ -464,6 +466,107 @@ export enum ApiStatus {
   UNAUTHORIZED = 'unauthorized',
   NOT_FOUND = 'not_found'
 }
+
+// ============================================================================
+// SPECIES RENDERING ENUMS
+// ============================================================================
+
+/**
+ * CommonName Enum - Maps species common names to their file identifiers
+ * Used to connect public/species/ JSON files with OrganismRenderer.tsx
+ * Based on the manifest.json and individual species files
+ */
+export enum CommonName {
+  // Cards from cards.json - Producers (Trophic Level 1)
+  OAK_TREE = 'oak-tree',
+  GIANT_KELP = 'giant-kelp',                    // Replaced "Kelp Forest"
+  REED_CANARY_GRASS = 'reed-canary-grass',      // Replaced "Riverbank Grass"
+
+  // Primary Consumers (Trophic Level 2)
+  EUROPEAN_RABBIT = 'european-rabbit',
+  SOCKEYE_SALMON = 'sockeye-salmon',
+
+  // Secondary/Tertiary Consumers (Trophic Level 3-4)
+  AMERICAN_BLACK_BEAR = 'american-black-bear',
+  GREAT_WHITE_SHARK = 'great-white-shark',
+
+  // Decomposers (Trophic Level -1)
+  MYCENA_MUSHROOM = 'mycena-mushroom',
+  TURKEY_VULTURE = 'turkey-vulture',
+
+  // Parasites
+  DEER_TICK = 'deer-tick',
+
+  // Detritivores (Trophic Level -2)
+  COMMON_EARTHWORM = 'common-earthworm',
+  DUNG_BEETLE = 'dung-beetle',
+
+  // Saprotrophs (Trophic Level -1)
+  SOIL_BACTERIA = 'soil-bacteria',
+  DECOMPOSER_MUSHROOM = 'decomposer-mushroom',
+
+  // Chemoautotrophs (Trophic Level 1)
+  DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA = 'deep-sea-hydrothermal-vent-bacteria',
+  IRON_SPRING_BACTERIA = 'iron-spring-bacteria',
+
+  // Mutualists (Variable trophic level)
+  MYCORRHIZAL_FUNGI = 'mycorrhizal-fungi',
+  NITROGEN_FIXING_BACTERIA = 'nitrogen-fixing-bacteria',
+
+  // Marine organisms
+  PACIFIC_KRILL = 'pacific-krill',
+  PHYTOPLANKTON = 'phytoplankton',
+  ZOOPLANKTON = 'zooplankton',
+  EUROPEAN_HONEY_BEE = 'european-honey-bee',
+
+  // Additional chemoautotrophs
+  VOLCANIC_HYDROGEN_BACTERIA = 'volcanic-hydrogen-bacteria',
+  NITRIFYING_SOIL_BACTERIA = 'nitrifying-soil-bacteria',
+  SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 'sediment-chemosynthetic-bacteria',
+
+  // Legacy species from existing files (keep for backward compatibility)
+  RABBIT = 'rabbit',
+  BEAR = 'bear',
+  MOUSE = 'mouse'
+}
+
+/**
+ * Species Display Names - Maps CommonName enum to human-readable display names
+ * Based on the commonName field from species JSON files
+ */
+export const SPECIES_DISPLAY_NAMES = {
+  // Cards from cards.json - match the CommonName field exactly
+  [CommonName.OAK_TREE]: 'Oak Tree',
+  [CommonName.GIANT_KELP]: 'Giant Kelp',
+  [CommonName.REED_CANARY_GRASS]: 'Reed Canary Grass',
+  [CommonName.EUROPEAN_RABBIT]: 'European Rabbit',
+  [CommonName.SOCKEYE_SALMON]: 'Sockeye Salmon',
+  [CommonName.AMERICAN_BLACK_BEAR]: 'American Black Bear',
+  [CommonName.GREAT_WHITE_SHARK]: 'Great White Shark',
+  [CommonName.MYCENA_MUSHROOM]: 'Mycena Mushroom',
+  [CommonName.TURKEY_VULTURE]: 'Turkey Vulture',
+  [CommonName.DEER_TICK]: 'Deer Tick',
+  [CommonName.COMMON_EARTHWORM]: 'Common Earthworm',
+  [CommonName.DUNG_BEETLE]: 'Dung Beetle',
+  [CommonName.SOIL_BACTERIA]: 'Soil Bacteria',
+  [CommonName.DECOMPOSER_MUSHROOM]: 'Decomposer Mushroom',
+  [CommonName.DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA]: 'Deep Sea Hydrothermal Vent Bacteria',
+  [CommonName.IRON_SPRING_BACTERIA]: 'Iron Spring Bacteria',
+  [CommonName.MYCORRHIZAL_FUNGI]: 'Mycorrhizal Fungi',
+  [CommonName.NITROGEN_FIXING_BACTERIA]: 'Nitrogen Fixing Bacteria',
+  [CommonName.PACIFIC_KRILL]: 'Pacific Krill',
+  [CommonName.PHYTOPLANKTON]: 'Phytoplankton',
+  [CommonName.ZOOPLANKTON]: 'Zooplankton',
+  [CommonName.EUROPEAN_HONEY_BEE]: 'European Honey Bee',
+  [CommonName.VOLCANIC_HYDROGEN_BACTERIA]: 'Volcanic Hydrogen Bacteria',
+  [CommonName.NITRIFYING_SOIL_BACTERIA]: 'Nitrifying Soil Bacteria',
+  [CommonName.SEDIMENT_CHEMOSYNTHETIC_BACTERIA]: 'Sediment Chemosynthetic Bacteria',
+
+  // Legacy species (backward compatibility)
+  [CommonName.RABBIT]: 'European Rabbit',
+  [CommonName.BEAR]: 'American Black Bear',
+  [CommonName.MOUSE]: 'Mouse'
+} as const;
 
 // ============================================================================
 // UTILITY TYPES & CONSTANTS

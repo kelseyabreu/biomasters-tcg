@@ -1,0 +1,50 @@
+/**
+ * Battle Mode Selector Styles
+ */
+
+.mode-card {
+  margin: 16px 0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.mode-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.phylo-mode {
+  border-left: 4px solid var(--ion-color-success);
+}
+
+.phylo-mode:hover {
+  border-color: var(--ion-color-success);
+  background: var(--ion-color-success-tint);
+}
+
+.tcg-mode {
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+.tcg-mode:hover {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-primary-tint);
+}
+
+.mode-card ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.mode-card ion-badge {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .mode-card {
+    margin: 12px 0;
+  }
+}

@@ -29,12 +29,18 @@ export function createUserScopedStorage(options: UserScopedStorageOptions): Stat
 
         const scopedKey = `user_${userId}_${name}`;
         const value = fallbackStorage.getItem(scopedKey);
-        
+
+        // Handle both sync and async storage
+        if (value instanceof Promise) {
+          console.warn('⚠️ Async storage detected, returning null for sync call');
+          return null;
+        }
+
         if (value) {
           console.log(`📦 Retrieved user-scoped data for ${userId}:`, { key: name, hasData: true });
         }
-        
-        return value;
+
+        return value || null;
       } catch (error) {
         console.error('❌ Error retrieving user-scoped data:', error);
         return null;

@@ -1,0 +1,184 @@
+{
+  "archetypeName": "volcanic-hydrogen-bacteria",
+  "identity": {
+    "speciesName": "volcanic-hydrogen-bacteria",
+    "commonName": "Volcanic Hydrogen Bacteria",
+    "scientificName": "Hydrogenobacter thermophilus",
+    "taxonomy": {
+      "kingdom": "Bacteria",
+      "phylum": "Aquificae",
+      "class": "Aquificae",
+      "order": "Aquificales",
+      "family": "Aquificaceae",
+      "genus": "Hydrogenobacter",
+      "species": "thermophilus"
+    }
+  },
+  "rendering": {
+    "modelFile": "bacteria.glb",
+    "scale": 0.01
+  },
+  "body": {
+    "mass_kg": 0.000000001,
+    "waterRatio": 0.70,
+    "carbonRatio": 0.50,
+    "nitrogenRatio": 0.15,
+    "phosphorusRatio": 0.03,
+    "otherMineralsRatio": 0.12
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 0.000000001,
+    "FruitSeedBiomass_gm2": 0.0,
+    "RootBiomass_gm2": 0.0,
+    "N_gm2": 0.00000000015,
+    "P_gm2": 0.00000000003,
+    "K_gm2": 0.00000000005,
+    "C_gm2": 0.0000000005,
+    "NonNPK_gm2": 0.00000000012,
+    "LigninContent_pct": 0.0,
+    "CurrentGrowthRate": 12.0,
+    "CurrentYieldRate": 6.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1,
+    "lifeStages": [
+      {
+        "name": "Active",
+        "endAge_days": 1,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 0.000001,
+      "offspringCount": 2,
+      "gestation_Days": 0,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 0.05,
+    "proteinTurnoverRate": 1.5,
+    "metabolic_Rate_kJ_per_hr": 0.000002,
+    "energy_Reserves_Max_kJ": 0.00001,
+    "oxygen_Requirement": "Microaerophilic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.98,
+    "osmoticPressure": 1.5,
+    "barrier": {
+      "barrierType": "cell_membrane",
+      "permeability_L_per_hr_per_m2": 8.0,
+      "surfaceArea_m2": 0.000000001,
+      "temperatureModifier": 0.3
+    },
+    "reclamation": {
+      "systemType": "osmotic",
+      "reclamationRate_L_per_hr": 0.000000001,
+      "concentrationAbility": 12.0,
+      "energyCost_kJ_per_L": 0.0005
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Continuous",
+    "dormancyMultiplier": 1.0,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.0,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0.002,
+    "fastSwim_Speed_m_per_hr": 0.005,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.001,
+    "taste_range_m": 0.0001,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0001,
+    "heat_range_m": 0.02
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Hydrogen_Oxidation",
+        "preference_weight": 10.0,
+        "rateDataClass": "FChemosynthesisRates",
+        "rateData": {
+          "chemicalSubstrate": "hydrogen_gas",
+          "maxChemosynthesisRate_gC_per_hour": 0.000000002,
+          "substrateConcentration_optimal": 200.0,
+          "energyYield_kJ_per_mol": 237.0,
+          "carbonFixationEfficiency": 0.98,
+          "nitrogenFixationCapability": true,
+          "temperatureOptimal_C": 85.0
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 65,
+    "temperatureMaximum_C": 95,
+    "temperatureOptimalMin_C": 80,
+    "temperatureOptimalMax_C": 90,
+    "moistureOptimal_pct": 100,
+    "moistureTolerance_pct": 0,
+    "moistureLethal_pct": 95,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.5
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartHydrogenOxidation",
+      "StartReproducing",
+      "StartColonizing"
+    ],
+    "macroStateTriggers": {
+      "StartHydrogenOxidation": [
+        {"type": "hydrogen_available", "operator": ">", "threshold": 0.1},
+        {"type": "energy", "operator": "<", "threshold": 80}
+      ],
+      "StartReproducing": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "hydrogen_abundance", "operator": ">", "threshold": 0.5}
+      ],
+      "StartColonizing": [
+        {"type": "population_density", "operator": ">", "threshold": 0.8},
+        {"type": "energy", "operator": ">", "threshold": 60}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 30,
+    "momentum": 0.95,
+    "changeThreshold": 0.05
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": null,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 12.0
+    },
+    "reliability": 0.99
+  }
+}

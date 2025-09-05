@@ -1,0 +1,231 @@
+{
+  "archetypeName": "zooplankton",
+  "identity": {
+    "speciesName": "zooplankton",
+    "commonName": "Zooplankton",
+    "scientificName": "Calanus finmarchicus",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Copepoda",
+      "order": "Calanoida",
+      "family": "Calanidae",
+      "genus": "Calanus",
+      "species": "finmarchicus"
+    }
+  },
+  "rendering": {
+    "modelFile": "herbivore.glb",
+    "scale": 0.05
+  },
+  "body": {
+    "mass_kg": 0.00001,
+    "waterRatio": 0.85,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.155
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 0.008,
+    "FruitSeedBiomass_gm2": 0.002,
+    "RootBiomass_gm2": 0.0,
+    "N_gm2": 0.0004,
+    "P_gm2": 0.00015,
+    "K_gm2": 0.0003,
+    "C_gm2": 0.0018,
+    "NonNPK_gm2": 0.00155,
+    "LigninContent_pct": 1.0,
+    "CurrentGrowthRate": 3.0,
+    "CurrentYieldRate": 2.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 365,
+    "lifeStages": [
+      {
+        "name": "Nauplius",
+        "endAge_days": 14,
+        "modifiers": {
+          "mass_multiplier": 0.01,
+          "speed_modifier": 0.3,
+          "acquisition_modifier": 0.2,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Copepodite",
+        "endAge_days": 60,
+        "modifiers": {
+          "mass_multiplier": 0.3,
+          "speed_modifier": 0.7,
+          "acquisition_modifier": 0.6,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 365,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 0.1,
+      "offspringCount": 50,
+      "gestation_Days": 7,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 2.0,
+    "proteinTurnoverRate": 0.30,
+    "metabolic_Rate_kJ_per_hr": 0.01,
+    "energy_Reserves_Max_kJ": 1.0,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.90,
+    "osmoticPressure": 0.9,
+    "barrier": {
+      "barrierType": "exoskeleton",
+      "permeability_L_per_hr_per_m2": 0.5,
+      "surfaceArea_m2": 0.0001,
+      "temperatureModifier": 1.2
+    },
+    "reclamation": {
+      "systemType": "gills",
+      "reclamationRate_L_per_hr": 0.00001,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.01
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Nocturnal",
+    "dormancyMultiplier": 0.3,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.8,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 100,
+    "fastSwim_Speed_m_per_hr": 200,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.1,
+    "smell_range_m": 0.01,
+    "taste_range_m": 0.005,
+    "hearing_range_m": 0.1,
+    "touch_range_m": 0.01,
+    "heat_range_m": 0.05
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Filter_Feeding",
+        "preference_weight": 8.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "filteringRate_L_per_hour": 1.0,
+          "particleSize_min_um": 0.5,
+          "particleSize_max_um": 50.0,
+          "captureEfficiency": 0.7,
+          "energyContent_kJ_per_kg": 15000,
+          "digestion_carbon_efficiency": 0.70,
+          "digestion_nitrogen_efficiency": 0.75,
+          "digestion_phosphorus_efficiency": 0.80
+        }
+      },
+      {
+        "method": "Predation",
+        "preference_weight": 4.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 5.0,
+          "attackSuccessRate_pct": 0.3,
+          "handlingTime_minutes": 2.0,
+          "maxPreySize_kg": 0.000001,
+          "energyContent_kJ_per_kg": 18000,
+          "digestion_carbon_efficiency": 0.80,
+          "digestion_nitrogen_efficiency": 0.85,
+          "digestion_phosphorus_efficiency": 0.90
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -2,
+    "temperatureMaximum_C": 25,
+    "temperatureOptimalMin_C": 5,
+    "temperatureOptimalMax_C": 15,
+    "moistureOptimal_pct": 100,
+    "moistureTolerance_pct": 0,
+    "moistureLethal_pct": 95,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 8.1,
+    "pHTolerance": 0.3
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartFeeding",
+      "StartMigrating",
+      "StartSchooling",
+      "StartMating",
+      "StartHiding"
+    ],
+    "macroStateTriggers": {
+      "StartFeeding": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "phytoplankton_available", "operator": ">", "threshold": 0.1}
+      ],
+      "StartMigrating": [
+        {"type": "light_level", "operator": "<", "threshold": 30},
+        {"type": "energy", "operator": ">", "threshold": 40}
+      ],
+      "StartSchooling": [
+        {"type": "predator_threat", "operator": ">", "threshold": 0.2},
+        {"type": "conspecifics_nearby", "operator": ">", "threshold": 0.3}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "age", "operator": ">", "threshold": 60}
+      ],
+      "StartHiding": [
+        {"type": "light_level", "operator": ">", "threshold": 100},
+        {"type": "predator_threat", "operator": ">", "threshold": 0.4}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 60,
+    "momentum": 0.6,
+    "changeThreshold": 0.4
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 6.0,
+      "agreeableness": 7.0,
+      "conscientiousness": null,
+      "neuroticism": 7.0,
+      "openness": 4.0,
+      "dominance": 2.0,
+      "activity": 7.0
+    },
+    "reliability": 0.75
+  }
+}

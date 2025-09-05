@@ -1,0 +1,211 @@
+{
+  "archetypeName": "oak-tree",
+  "identity": {
+    "speciesName": "oak-tree",
+    "commonName": "Oak Tree",
+    "scientificName": "Quercus robur",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Fagales",
+      "family": "Fagaceae",
+      "genus": "Quercus",
+      "species": "robur"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 3.0
+  },
+  "body": {
+    "mass_kg": 50000.0,
+    "waterRatio": 0.50,
+    "carbonRatio": 0.45,
+    "nitrogenRatio": 0.015,
+    "phosphorusRatio": 0.002,
+    "otherMineralsRatio": 0.033
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 15000.0,
+    "LeafyBiomass_gm2": 800.0,
+    "HerbaceousBiomass_gm2": 0.0,
+    "FruitSeedBiomass_gm2": 200.0,
+    "RootBiomass_gm2": 5000.0,
+    "N_gm2": 315.0,
+    "P_gm2": 42.0,
+    "K_gm2": 210.0,
+    "C_gm2": 9450.0,
+    "NonNPK_gm2": 693.0,
+    "LigninContent_pct": 45.0,
+    "CurrentGrowthRate": 0.2,
+    "CurrentYieldRate": 0.3
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 36500,
+    "lifeStages": [
+      {
+        "name": "Seedling",
+        "endAge_days": 1095,
+        "modifiers": {
+          "mass_multiplier": 0.001,
+          "growth_rate_modifier": 2.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Sapling",
+        "endAge_days": 7300,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "growth_rate_modifier": 1.5,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mature Tree",
+        "endAge_days": 29200,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Ancient Tree",
+        "endAge_days": 36500,
+        "modifiers": {
+          "mass_multiplier": 1.2,
+          "growth_rate_modifier": 0.3,
+          "is_fertile": true,
+          "health_decline_rate": 0.01
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 5000,
+      "offspringCount": 1000,
+      "gestation_Days": 365,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 180.0,
+    "proteinTurnoverRate": 0.02,
+    "metabolic_Rate_kJ_per_hr": 50,
+    "energy_Reserves_Max_kJ": 500000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.98,
+    "osmoticPressure": 0.1,
+    "barrier": {
+      "barrierType": "bark",
+      "permeability_L_per_hr_per_m2": 0.001,
+      "surfaceArea_m2": 200.0,
+      "temperatureModifier": 1.2
+    },
+    "reclamation": {
+      "systemType": "root",
+      "reclamationRate_L_per_hr": 50.0,
+      "concentrationAbility": 2.0,
+      "energyCost_kJ_per_L": 0.5
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.1,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.8,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 0.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "lightSaturation_PAR": 1800.0,
+          "lightCompensation_PAR": 20.0,
+          "maxPhotosynthesisRate_gC_per_m2_per_hour": 2.5,
+          "leafAreaIndex": 6.0,
+          "carbonUseEfficiency": 0.85,
+          "nitrogenUseEfficiency": 0.75,
+          "phosphorusUseEfficiency": 0.80
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -30,
+    "temperatureMaximum_C": 40,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 40,
+    "moistureLethal_pct": 10,
+    "lightOptimal_PAR": 1200,
+    "lightSaturation_PAR": 1800,
+    "lightCompensation_PAR": 20,
+    "pHOptimal": 6.5,
+    "pHTolerance": 2.0
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartPhotosynthesis",
+      "StartGrowing",
+      "StartReproducing"
+    ],
+    "macroStateTriggers": {
+      "StartPhotosynthesis": [
+        {"type": "light_level", "operator": ">", "threshold": 20}
+      ],
+      "StartGrowing": [
+        {"type": "energy", "operator": ">", "threshold": 30},
+        {"type": "water_level", "operator": ">", "threshold": 40}
+      ],
+      "StartReproducing": [
+        {"type": "energy", "operator": ">", "threshold": 80},
+        {"type": "age", "operator": ">", "threshold": 7300}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 1440,
+    "momentum": 0.9,
+    "changeThreshold": 0.1
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": null,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 1.0
+    },
+    "reliability": 0.95
+  }
+}

@@ -188,7 +188,7 @@ class OfflineSecurityService {
       expires_at: expiresAt
     };
 
-    localStorage.setItem(OfflineSecurityService.SIGNING_KEY_STORAGE, JSON.stringify(keyData));
+    localStorage.setItem(this.getUserScopedSigningKey(null), JSON.stringify(keyData));
   }
 
   /**
@@ -405,8 +405,8 @@ class OfflineSecurityService {
    * Clear all offline data (for testing or reset)
    */
   clearOfflineData(): void {
-    localStorage.removeItem(OfflineSecurityService.STORAGE_KEY);
-    localStorage.removeItem(OfflineSecurityService.SIGNING_KEY_STORAGE);
+    localStorage.removeItem(this.getUserScopedCollectionKey(null));
+    localStorage.removeItem(this.getUserScopedSigningKey(null));
     localStorage.removeItem('biomasters_device_id');
   }
 }

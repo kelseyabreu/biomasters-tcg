@@ -14,7 +14,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { library, construct, flash, trophy, settings, leaf, water, sunny, snow, thermometer } from 'ionicons/icons';
 import { addIcons } from 'ionicons';
 import DeckBuilder from './components/collection/DeckBuilder';
-import BattleScreen from './components/battle/BattleScreen';
+import BattleModeSelector from './components/battle/BattleModeSelector';
 import MainMenu from './pages/MainMenu';
 import PackOpening from './pages/PackOpening';
 import AuthPage from './pages/AuthPage';
@@ -134,7 +134,7 @@ const App: React.FC = () => {
                 <DeckBuilder />
               </Route>
               <Route exact path="/battle">
-                <BattleScreen />
+                <BattleModeSelector />
               </Route>
               <Route exact path="/packs">
                 <PackOpening />

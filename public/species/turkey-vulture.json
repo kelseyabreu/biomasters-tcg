@@ -1,0 +1,212 @@
+{
+  "archetypeName": "turkey-vulture",
+  "identity": {
+    "speciesName": "turkey-vulture",
+    "commonName": "Turkey Vulture",
+    "scientificName": "Cathartes aura",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Aves",
+      "order": "Cathartiformes",
+      "family": "Cathartidae",
+      "genus": "Cathartes",
+      "species": "aura"
+    }
+  },
+  "rendering": {
+    "modelFile": "carnivore.glb",
+    "scale": 1.2
+  },
+  "body": {
+    "mass_kg": 2.0,
+    "waterRatio": 0.65,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.055
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 6205,
+    "lifeStages": [
+      {
+        "name": "Chick",
+        "endAge_days": 90,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "speed_modifier": 0.0,
+          "acquisition_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.7,
+          "speed_modifier": 0.8,
+          "acquisition_modifier": 0.6,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 5475,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Elder",
+        "endAge_days": 6205,
+        "modifiers": {
+          "mass_multiplier": 0.9,
+          "speed_modifier": 0.8,
+          "acquisition_modifier": 1.1,
+          "is_fertile": true,
+          "health_decline_rate": 0.05
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 500,
+      "offspringCount": 2,
+      "gestation_Days": 40,
+      "parentalCare_Days": 90
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 14.0,
+    "proteinTurnoverRate": 0.15,
+    "metabolic_Rate_kJ_per_hr": 35,
+    "energy_Reserves_Max_kJ": 5000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": true
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.95,
+    "osmoticPressure": 0.3,
+    "barrier": {
+      "barrierType": "feathers",
+      "permeability_L_per_hr_per_m2": 0.002,
+      "surfaceArea_m2": 3.0,
+      "temperatureModifier": 0.8
+    },
+    "reclamation": {
+      "systemType": "kidneys",
+      "reclamationRate_L_per_hr": 0.5,
+      "concentrationAbility": 3.0,
+      "energyCost_kJ_per_L": 2.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.3,
+    "bRequiresSleep": true,
+    "sleepHrsNeeded": 8,
+    "circadianStrength": 0.9,
+    "sleepUrgeThreshold": 80,
+    "wakefulnessThreshold": 20
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 1000,
+    "run_Speed_m_per_hr": 2000,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 25000,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 1000.0,
+    "smell_range_m": 1500.0,
+    "taste_range_m": 0.5,
+    "hearing_range_m": 100.0,
+    "touch_range_m": 0.2,
+    "heat_range_m": 5.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Scavenging",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 5000.0,
+          "detectionSuccessRate_pct": 0.9,
+          "handlingTime_minutes": 30.0,
+          "maxCarrionSize_kg": 50.0,
+          "energyContent_kJ_per_kg": 16000,
+          "digestion_carbon_efficiency": 0.80,
+          "digestion_nitrogen_efficiency": 0.85,
+          "digestion_phosphorus_efficiency": 0.90
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -10,
+    "temperatureMaximum_C": 45,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 30,
+    "moistureOptimal_pct": 50,
+    "moistureTolerance_pct": 40,
+    "moistureLethal_pct": 10,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.0
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartScavenging",
+      "StartSoaring",
+      "StartNesting",
+      "StartMating",
+      "StartRoosting"
+    ],
+    "macroStateTriggers": {
+      "StartScavenging": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "carrion_available", "operator": ">", "threshold": 0.1}
+      ],
+      "StartSoaring": [
+        {"type": "energy", "operator": ">", "threshold": 40},
+        {"type": "thermal_activity", "operator": ">", "threshold": 0.5}
+      ],
+      "StartNesting": [
+        {"type": "season", "operator": "==", "threshold": "spring"},
+        {"type": "age", "operator": ">", "threshold": 365}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "age", "operator": ">", "threshold": 365}
+      ],
+      "StartRoosting": [
+        {"type": "light_level", "operator": "<", "threshold": 10},
+        {"type": "energy", "operator": "<", "threshold": 30}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 120,
+    "momentum": 0.7,
+    "changeThreshold": 0.3
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 4.0,
+      "agreeableness": 6.0,
+      "conscientiousness": null,
+      "neuroticism": 4.0,
+      "openness": 7.0,
+      "dominance": 3.0,
+      "activity": 6.0
+    },
+    "reliability": 0.80
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "archetypeName": "great-white-shark",
+  "identity": {
+    "speciesName": "great-white-shark",
+    "commonName": "Great White Shark",
+    "scientificName": "Carcharodon carcharias",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Chondrichthyes",
+      "order": "Lamniformes",
+      "family": "Lamnidae",
+      "genus": "Carcharodon",
+      "species": "carcharias"
+    }
+  },
+  "rendering": {
+    "modelFile": "carnivore.glb",
+    "scale": 2.5
+  },
+  "body": {
+    "mass_kg": 2000.0,
+    "waterRatio": 0.70,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.065
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 25550,
+    "lifeStages": [
+      {
+        "name": "Pup",
+        "endAge_days": 1095,
+        "modifiers": {
+          "mass_multiplier": 0.05,
+          "speed_modifier": 0.7,
+          "acquisition_modifier": 0.4,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 5475,
+        "modifiers": {
+          "mass_multiplier": 0.3,
+          "speed_modifier": 0.9,
+          "acquisition_modifier": 0.8,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 21900,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Elder",
+        "endAge_days": 25550,
+        "modifiers": {
+          "mass_multiplier": 1.1,
+          "speed_modifier": 0.8,
+          "acquisition_modifier": 1.2,
+          "is_fertile": true,
+          "health_decline_rate": 0.02
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 15000,
+      "offspringCount": 8,
+      "gestation_Days": 365,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 30.0,
+    "proteinTurnoverRate": 0.08,
+    "metabolic_Rate_kJ_per_hr": 800,
+    "energy_Reserves_Max_kJ": 200000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": true
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.99,
+    "osmoticPressure": 0.9,
+    "barrier": {
+      "barrierType": "skin",
+      "permeability_L_per_hr_per_m2": 0.001,
+      "surfaceArea_m2": 25.0,
+      "temperatureModifier": 1.0
+    },
+    "reclamation": {
+      "systemType": "gills",
+      "reclamationRate_L_per_hr": 20.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.2
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Crepuscular",
+    "dormancyMultiplier": 0.7,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.6,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 15000,
+    "fastSwim_Speed_m_per_hr": 25000,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 50.0,
+    "smell_range_m": 500.0,
+    "taste_range_m": 2.0,
+    "hearing_range_m": 200.0,
+    "touch_range_m": 1.0,
+    "heat_range_m": 10.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Predation",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "searchRate_m2_per_hour": 1000.0,
+          "attackSuccessRate_pct": 0.8,
+          "handlingTime_minutes": 60.0,
+          "maxPreySize_kg": 500.0,
+          "energyContent_kJ_per_kg": 20000,
+          "digestion_carbon_efficiency": 0.90,
+          "digestion_nitrogen_efficiency": 0.95,
+          "digestion_phosphorus_efficiency": 0.98
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 25,
+    "temperatureOptimalMin_C": 12,
+    "temperatureOptimalMax_C": 20,
+    "moistureOptimal_pct": 100,
+    "moistureTolerance_pct": 0,
+    "moistureLethal_pct": 95,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 8.1,
+    "pHTolerance": 0.3
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartHunting",
+      "StartPatrolling",
+      "StartMating",
+      "StartMigrating"
+    ],
+    "macroStateTriggers": {
+      "StartHunting": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "prey_available", "operator": ">", "threshold": 0.2}
+      ],
+      "StartPatrolling": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "territory_threat", "operator": ">", "threshold": 0.3}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 80},
+        {"type": "age", "operator": ">", "threshold": 5475}
+      ],
+      "StartMigrating": [
+        {"type": "season", "operator": "==", "threshold": "winter"},
+        {"type": "temperature", "operator": "<", "threshold": 10}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 180,
+    "momentum": 0.9,
+    "changeThreshold": 0.2
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 2.0,
+      "agreeableness": 1.0,
+      "conscientiousness": null,
+      "neuroticism": 3.0,
+      "openness": 4.0,
+      "dominance": 9.5,
+      "activity": 6.0
+    },
+    "reliability": 0.95
+  }
+}

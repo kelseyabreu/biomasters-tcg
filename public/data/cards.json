@@ -39,7 +39,7 @@
     "Cost": null,
     "Keywords": [2, 5, 8, 20],
     "VictoryPoints": 1,
-    "CommonName": "Kelp Forest",
+    "CommonName": "Giant Kelp",
     "ScientificName": "Macrocystis pyrifera",
     "Taxonomy": {
       "kingdom": "Chromista",
@@ -71,7 +71,7 @@
     "Cost": null,
     "Keywords": [3, 4, 7, 20],
     "VictoryPoints": 1,
-    "CommonName": "Riverbank Grass",
+    "CommonName": "Reed Canary Grass",
     "ScientificName": "Phalaris arundinacea",
     "Taxonomy": {
       "kingdom": "Plantae",

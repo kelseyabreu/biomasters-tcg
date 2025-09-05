@@ -1,0 +1,212 @@
+{
+  "archetypeName": "deer-tick",
+  "identity": {
+    "speciesName": "deer-tick",
+    "commonName": "Deer Tick",
+    "scientificName": "Ixodes scapularis",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Arachnida",
+      "order": "Ixodida",
+      "family": "Ixodidae",
+      "genus": "Ixodes",
+      "species": "scapularis"
+    }
+  },
+  "rendering": {
+    "modelFile": "parasite.glb",
+    "scale": 0.1
+  },
+  "body": {
+    "mass_kg": 0.0001,
+    "waterRatio": 0.60,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.155
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 730,
+    "lifeStages": [
+      {
+        "name": "Egg",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.01,
+          "speed_modifier": 0.0,
+          "acquisition_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Larva",
+        "endAge_days": 120,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "speed_modifier": 0.5,
+          "acquisition_modifier": 0.3,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Nymph",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.5,
+          "speed_modifier": 0.8,
+          "acquisition_modifier": 0.7,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Adult",
+        "endAge_days": 730,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 0.1,
+      "offspringCount": 2000,
+      "gestation_Days": 30,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 365.0,
+    "proteinTurnoverRate": 0.05,
+    "metabolic_Rate_kJ_per_hr": 0.001,
+    "energy_Reserves_Max_kJ": 1.0,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.85,
+    "osmoticPressure": 0.5,
+    "barrier": {
+      "barrierType": "exoskeleton",
+      "permeability_L_per_hr_per_m2": 0.1,
+      "surfaceArea_m2": 0.0001,
+      "temperatureModifier": 2.0
+    },
+    "reclamation": {
+      "systemType": "malpighian",
+      "reclamationRate_L_per_hr": 0.0001,
+      "concentrationAbility": 5.0,
+      "energyCost_kJ_per_L": 1.0
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Nocturnal",
+    "dormancyMultiplier": 0.1,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.8,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 10,
+    "run_Speed_m_per_hr": 20,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 0.1,
+    "smell_range_m": 5.0,
+    "taste_range_m": 0.01,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.05,
+    "heat_range_m": 1.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Parasitism",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "attachmentSuccessRate_pct": 0.6,
+          "feedingRate_mL_per_hour": 0.1,
+          "detachmentTime_hours": 72.0,
+          "hostSize_kg_min": 1.0,
+          "hostSize_kg_max": 500.0,
+          "energyContent_kJ_per_mL": 4.0,
+          "digestion_carbon_efficiency": 0.95,
+          "digestion_nitrogen_efficiency": 0.98,
+          "digestion_phosphorus_efficiency": 0.99
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -5,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 85,
+    "moistureTolerance_pct": 20,
+    "moistureLethal_pct": 30,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.0
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartQuesting",
+      "StartAttaching",
+      "StartFeeding",
+      "StartMating",
+      "StartHiding"
+    ],
+    "macroStateTriggers": {
+      "StartQuesting": [
+        {"type": "energy", "operator": "<", "threshold": 30},
+        {"type": "host_available", "operator": ">", "threshold": 0.1}
+      ],
+      "StartAttaching": [
+        {"type": "host_contact", "operator": "==", "threshold": true},
+        {"type": "energy", "operator": "<", "threshold": 50}
+      ],
+      "StartFeeding": [
+        {"type": "attached", "operator": "==", "threshold": true},
+        {"type": "energy", "operator": "<", "threshold": 80}
+      ],
+      "StartMating": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "age", "operator": ">", "threshold": 365}
+      ],
+      "StartHiding": [
+        {"type": "light_level", "operator": ">", "threshold": 50},
+        {"type": "energy", "operator": ">", "threshold": 40}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 60,
+    "momentum": 0.6,
+    "changeThreshold": 0.5
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 2.0,
+      "agreeableness": 1.0,
+      "conscientiousness": null,
+      "neuroticism": 7.0,
+      "openness": 3.0,
+      "dominance": 1.0,
+      "activity": 4.0
+    },
+    "reliability": 0.70
+  }
+}

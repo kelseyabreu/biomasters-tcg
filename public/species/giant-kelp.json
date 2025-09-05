@@ -1,0 +1,211 @@
+{
+  "archetypeName": "giant-kelp",
+  "identity": {
+    "speciesName": "giant-kelp",
+    "commonName": "Giant Kelp",
+    "scientificName": "Macrocystis pyrifera",
+    "taxonomy": {
+      "kingdom": "Chromista",
+      "phylum": "Ochrophyta",
+      "class": "Phaeophyceae",
+      "order": "Laminariales",
+      "family": "Laminariaceae",
+      "genus": "Macrocystis",
+      "species": "pyrifera"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 2.5
+  },
+  "body": {
+    "mass_kg": 150.0,
+    "waterRatio": 0.90,
+    "carbonRatio": 0.35,
+    "nitrogenRatio": 0.025,
+    "phosphorusRatio": 0.003,
+    "otherMineralsRatio": 0.022
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 2000.0,
+    "HerbaceousBiomass_gm2": 500.0,
+    "FruitSeedBiomass_gm2": 50.0,
+    "RootBiomass_gm2": 100.0,
+    "N_gm2": 66.25,
+    "P_gm2": 7.95,
+    "K_gm2": 39.75,
+    "C_gm2": 927.5,
+    "NonNPK_gm2": 58.3,
+    "LigninContent_pct": 5.0,
+    "CurrentGrowthRate": 2.0,
+    "CurrentYieldRate": 1.5
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 2555,
+    "lifeStages": [
+      {
+        "name": "Spore",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.0001,
+          "growth_rate_modifier": 5.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Juvenile",
+        "endAge_days": 365,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "growth_rate_modifier": 3.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mature Kelp",
+        "endAge_days": 2190,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senescent",
+        "endAge_days": 2555,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "growth_rate_modifier": 0.2,
+          "is_fertile": true,
+          "health_decline_rate": 0.1
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 1000,
+      "offspringCount": 10000,
+      "gestation_Days": 30,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 7.0,
+    "proteinTurnoverRate": 0.15,
+    "metabolic_Rate_kJ_per_hr": 25,
+    "energy_Reserves_Max_kJ": 15000,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.85,
+    "osmoticPressure": 0.8,
+    "barrier": {
+      "barrierType": "cell_wall",
+      "permeability_L_per_hr_per_m2": 0.1,
+      "surfaceArea_m2": 50.0,
+      "temperatureModifier": 1.5
+    },
+    "reclamation": {
+      "systemType": "osmotic",
+      "reclamationRate_L_per_hr": 10.0,
+      "concentrationAbility": 1.0,
+      "energyCost_kJ_per_L": 0.1
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.3,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.6,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 0.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "lightSaturation_PAR": 800.0,
+          "lightCompensation_PAR": 5.0,
+          "maxPhotosynthesisRate_gC_per_m2_per_hour": 4.0,
+          "leafAreaIndex": 8.0,
+          "carbonUseEfficiency": 0.90,
+          "nitrogenUseEfficiency": 0.85,
+          "phosphorusUseEfficiency": 0.90
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 20,
+    "temperatureOptimalMin_C": 10,
+    "temperatureOptimalMax_C": 15,
+    "moistureOptimal_pct": 100,
+    "moistureTolerance_pct": 0,
+    "moistureLethal_pct": 95,
+    "lightOptimal_PAR": 400,
+    "lightSaturation_PAR": 800,
+    "lightCompensation_PAR": 5,
+    "pHOptimal": 8.1,
+    "pHTolerance": 0.5
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartPhotosynthesis",
+      "StartGrowing",
+      "StartReproducing"
+    ],
+    "macroStateTriggers": {
+      "StartPhotosynthesis": [
+        {"type": "light_level", "operator": ">", "threshold": 5}
+      ],
+      "StartGrowing": [
+        {"type": "energy", "operator": ">", "threshold": 20},
+        {"type": "nutrients", "operator": ">", "threshold": 30}
+      ],
+      "StartReproducing": [
+        {"type": "energy", "operator": ">", "threshold": 70},
+        {"type": "age", "operator": ">", "threshold": 365}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 720,
+    "momentum": 0.8,
+    "changeThreshold": 0.2
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": null,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 2.0
+    },
+    "reliability": 0.85
+  }
+}

@@ -1,0 +1,239 @@
+{
+  "archetypeName": "european-honey-bee",
+  "identity": {
+    "speciesName": "european-honey-bee",
+    "commonName": "European Honey Bee",
+    "scientificName": "Apis mellifera",
+    "taxonomy": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Hymenoptera",
+      "family": "Apidae",
+      "genus": "Apis",
+      "species": "mellifera"
+    }
+  },
+  "rendering": {
+    "modelFile": "herbivore.glb",
+    "scale": 0.1
+  },
+  "body": {
+    "mass_kg": 0.0001,
+    "waterRatio": 0.70,
+    "carbonRatio": 0.18,
+    "nitrogenRatio": 0.04,
+    "phosphorusRatio": 0.015,
+    "otherMineralsRatio": 0.155
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 0.08,
+    "FruitSeedBiomass_gm2": 0.02,
+    "RootBiomass_gm2": 0.0,
+    "N_gm2": 0.004,
+    "P_gm2": 0.0015,
+    "K_gm2": 0.003,
+    "C_gm2": 0.018,
+    "NonNPK_gm2": 0.0155,
+    "LigninContent_pct": 3.0,
+    "CurrentGrowthRate": 1.0,
+    "CurrentYieldRate": 2.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 45,
+    "lifeStages": [
+      {
+        "name": "Egg",
+        "endAge_days": 3,
+        "modifiers": {
+          "mass_multiplier": 0.001,
+          "speed_modifier": 0.0,
+          "acquisition_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Larva",
+        "endAge_days": 9,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "speed_modifier": 0.0,
+          "acquisition_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Pupa",
+        "endAge_days": 21,
+        "modifiers": {
+          "mass_multiplier": 0.8,
+          "speed_modifier": 0.0,
+          "acquisition_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Worker",
+        "endAge_days": 45,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "speed_modifier": 1.0,
+          "acquisition_modifier": 1.0,
+          "is_fertile": false
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 1.0,
+      "offspringCount": 0,
+      "gestation_Days": 21,
+      "parentalCare_Days": 21
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 1.0,
+    "proteinTurnoverRate": 0.40,
+    "metabolic_Rate_kJ_per_hr": 0.1,
+    "energy_Reserves_Max_kJ": 2.0,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": true
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.85,
+    "osmoticPressure": 0.5,
+    "barrier": {
+      "barrierType": "exoskeleton",
+      "permeability_L_per_hr_per_m2": 0.2,
+      "surfaceArea_m2": 0.001,
+      "temperatureModifier": 1.5
+    },
+    "reclamation": {
+      "systemType": "malpighian",
+      "reclamationRate_L_per_hr": 0.0001,
+      "concentrationAbility": 4.0,
+      "energyCost_kJ_per_L": 0.5
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.2,
+    "bRequiresSleep": true,
+    "sleepHrsNeeded": 8,
+    "circadianStrength": 0.9,
+    "sleepUrgeThreshold": 80,
+    "wakefulnessThreshold": 20
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 100,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 15000,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 1.0
+  },
+  "perception": {
+    "vision_range_m": 5.0,
+    "smell_range_m": 1000.0,
+    "taste_range_m": 0.1,
+    "hearing_range_m": 10.0,
+    "touch_range_m": 0.05,
+    "heat_range_m": 2.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Nectar_Collection",
+        "preference_weight": 8.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "collectionRate_mL_per_hour": 0.5,
+          "flowerVisitRate_per_hour": 100.0,
+          "nectarConcentration_optimal": 0.3,
+          "energyContent_kJ_per_mL": 12.0,
+          "digestion_carbon_efficiency": 0.95,
+          "digestion_nitrogen_efficiency": 0.70,
+          "digestion_phosphorus_efficiency": 0.75
+        }
+      },
+      {
+        "method": "Pollen_Collection",
+        "preference_weight": 6.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "collectionRate_g_per_hour": 0.01,
+          "pollenLoad_max_g": 0.02,
+          "proteinContent_pct": 0.25,
+          "energyContent_kJ_per_kg": 20000,
+          "digestion_carbon_efficiency": 0.80,
+          "digestion_nitrogen_efficiency": 0.90,
+          "digestion_phosphorus_efficiency": 0.85
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 10,
+    "temperatureMaximum_C": 40,
+    "temperatureOptimalMin_C": 20,
+    "temperatureOptimalMax_C": 30,
+    "moistureOptimal_pct": 60,
+    "moistureTolerance_pct": 30,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.0
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartForaging",
+      "StartCommunicating",
+      "StartHiveWork",
+      "StartDefending",
+      "StartResting"
+    ],
+    "macroStateTriggers": {
+      "StartForaging": [
+        {"type": "energy", "operator": "<", "threshold": 60},
+        {"type": "flowers_available", "operator": ">", "threshold": 0.2}
+      ],
+      "StartCommunicating": [
+        {"type": "food_source_found", "operator": "==", "threshold": true},
+        {"type": "energy", "operator": ">", "threshold": 40}
+      ],
+      "StartHiveWork": [
+        {"type": "hive_needs", "operator": ">", "threshold": 0.3},
+        {"type": "energy", "operator": ">", "threshold": 50}
+      ],
+      "StartDefending": [
+        {"type": "hive_threat", "operator": ">", "threshold": 0.5},
+        {"type": "energy", "operator": ">", "threshold": 30}
+      ],
+      "StartResting": [
+        {"type": "energy", "operator": "<", "threshold": 20},
+        {"type": "light_level", "operator": "<", "threshold": 10}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 30,
+    "momentum": 0.8,
+    "changeThreshold": 0.3
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": 8.0,
+      "agreeableness": 9.0,
+      "conscientiousness": 9.5,
+      "neuroticism": 4.0,
+      "openness": 7.0,
+      "dominance": 3.0,
+      "activity": 9.0
+    },
+    "reliability": 0.95
+  }
+}

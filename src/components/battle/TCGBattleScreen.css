@@ -1,0 +1,324 @@
+/**
+ * TCG Battle Screen Styles
+ * Styles for the BioMasters Trading Card Game battle interface
+ * All styles are scoped to .tcg-battle-screen to avoid conflicts
+ */
+
+/* TCG Battle Screen Container */
+.tcg-battle-screen {
+  /* All TCG styles are scoped within this container */
+}
+
+/* Game Status Bar */
+.tcg-battle-screen .game-status-card {
+  margin: 8px;
+  background: linear-gradient(135deg, var(--ion-color-primary-tint), var(--ion-color-secondary-tint));
+}
+
+.tcg-battle-screen .status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--ion-color-primary-contrast);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tcg-battle-screen .status-item ion-icon {
+  font-size: 18px;
+}
+
+/* Game Grid */
+.tcg-battle-screen .game-grid-card {
+  margin: 8px;
+}
+
+.tcg-battle-screen .tcg-grid {
+  background: var(--ion-color-light-tint);
+  border: 2px solid var(--ion-color-medium);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.tcg-battle-screen .grid-cell {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tcg-battle-screen .grid-cell.empty:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  box-shadow:
+    0 0 20px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transform: translateZ(5px) !important;
+}
+
+.tcg-battle-screen .grid-cell.highlighted {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.5) !important;
+  box-shadow:
+    0 0 30px rgba(34, 197, 94, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  animation: pulse-highlight 2s infinite;
+  cursor: pointer !important;
+}
+
+.tcg-battle-screen .grid-cell.valid-position {
+  animation: pulse-valid 1.5s infinite;
+  cursor: pointer !important;
+}
+
+.tcg-battle-screen .grid-cell.valid-position:hover {
+  background-color: var(--ion-color-success) !important;
+  transform: scale(1.05);
+}
+
+@keyframes pulse-highlight {
+  0%, 100% {
+    box-shadow:
+      0 0 30px rgba(34, 197, 94, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 50px rgba(34, 197, 94, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes pulse-valid {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(var(--ion-color-success-rgb), 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(var(--ion-color-success-rgb), 0);
+  }
+}
+
+.tcg-battle-screen .grid-card {
+  animation: card-place 0.3s ease-out;
+}
+
+@keyframes card-place {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Player Hand */
+.tcg-battle-screen .player-hand-card {
+  margin: 8px;
+  background: var(--ion-color-light);
+}
+
+.tcg-battle-screen .hand-cards {
+  min-height: 100px;
+}
+
+.tcg-battle-screen .hand-card {
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tcg-battle-screen .hand-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tcg-battle-screen .hand-card.selected {
+  transform: translateY(-8px);
+  box-shadow: 0 6px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+  animation: card-select 0.3s ease-out;
+}
+
+@keyframes card-select {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.05);
+  }
+  100% {
+    transform: translateY(-8px) scale(1);
+  }
+}
+
+/* Action Buttons */
+.tcg-battle-screen .action-buttons-card {
+  margin: 8px;
+  background: var(--ion-color-secondary-tint);
+}
+
+.tcg-battle-screen .action-buttons-card ion-button {
+  --border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Game Phase Indicators */
+.setup-phase {
+  background: linear-gradient(135deg, var(--ion-color-warning-tint), var(--ion-color-warning-shade));
+  color: var(--ion-color-warning-contrast);
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  margin: 8px;
+}
+
+.playing-phase {
+  background: linear-gradient(135deg, var(--ion-color-success-tint), var(--ion-color-success-shade));
+  color: var(--ion-color-success-contrast);
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+  margin: 8px;
+}
+
+/* Turn Indicators */
+.player-turn {
+  border-left: 4px solid var(--ion-color-primary);
+  background: var(--ion-color-primary-tint);
+}
+
+.ai-turn {
+  border-left: 4px solid var(--ion-color-danger);
+  background: var(--ion-color-danger-tint);
+}
+
+/* Card Details */
+.card-details {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.trophic-level {
+  background: var(--ion-color-primary);
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: bold;
+}
+
+.victory-points {
+  background: var(--ion-color-success);
+  color: white;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 8px;
+  font-weight: bold;
+}
+
+/* HOME Card Styling */
+.tcg-battle-screen .home-card {
+  background: radial-gradient(circle, var(--ion-color-warning), var(--ion-color-warning-shade));
+  color: var(--ion-color-warning-contrast);
+  border: 2px solid var(--ion-color-warning-shade);
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.tcg-battle-screen .grid-cell.home-position {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow:
+    0 0 30px rgba(245, 158, 11, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 16px;
+}
+
+.loading-container h2 {
+  color: var(--ion-color-primary);
+  margin: 0;
+}
+
+.loading-container p {
+  color: var(--ion-color-medium);
+  text-align: center;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tcg-grid {
+    max-width: 300px;
+  }
+  
+  .hand-card {
+    min-width: 60px;
+    width: 60px;
+    height: 80px;
+    font-size: 8px;
+  }
+  
+  .status-item {
+    font-size: 10px;
+  }
+  
+  .status-item ion-icon {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tcg-grid {
+    max-width: 250px;
+  }
+  
+  .hand-card {
+    min-width: 50px;
+    width: 50px;
+    height: 70px;
+    font-size: 7px;
+  }
+}
+
+/* Accessibility */
+.grid-cell:focus,
+.hand-card:focus {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .tcg-grid {
+    background: var(--ion-color-dark-tint);
+    border-color: var(--ion-color-medium-shade);
+  }
+  
+  .hand-card {
+    background: var(--ion-color-dark);
+    border-color: var(--ion-color-medium-shade);
+  }
+  
+  .grid-cell.empty {
+    background-color: var(--ion-color-dark-shade);
+  }
+}

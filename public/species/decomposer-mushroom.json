@@ -1,0 +1,207 @@
+{
+  "archetypeName": "decomposer-mushroom",
+  "identity": {
+    "speciesName": "decomposer-mushroom",
+    "commonName": "Decomposer Mushroom",
+    "scientificName": "Agaricus bisporus",
+    "taxonomy": {
+      "kingdom": "Fungi",
+      "phylum": "Basidiomycota",
+      "class": "Agaricomycetes",
+      "order": "Agaricales",
+      "family": "Agaricaceae",
+      "genus": "Agaricus",
+      "species": "bisporus"
+    }
+  },
+  "rendering": {
+    "modelFile": "decomposer.glb",
+    "scale": 0.5
+  },
+  "body": {
+    "mass_kg": 0.1,
+    "waterRatio": 0.85,
+    "carbonRatio": 0.40,
+    "nitrogenRatio": 0.05,
+    "phosphorusRatio": 0.01,
+    "otherMineralsRatio": 0.09
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 0.0,
+    "HerbaceousBiomass_gm2": 80.0,
+    "FruitSeedBiomass_gm2": 20.0,
+    "RootBiomass_gm2": 0.0,
+    "N_gm2": 5.0,
+    "P_gm2": 1.0,
+    "K_gm2": 3.0,
+    "C_gm2": 40.0,
+    "NonNPK_gm2": 9.0,
+    "LigninContent_pct": 10.0,
+    "CurrentGrowthRate": 3.0,
+    "CurrentYieldRate": 2.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 30,
+    "lifeStages": [
+      {
+        "name": "Spore",
+        "endAge_days": 3,
+        "modifiers": {
+          "mass_multiplier": 0.001,
+          "growth_rate_modifier": 0.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mycelium",
+        "endAge_days": 14,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "growth_rate_modifier": 5.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Fruiting Body",
+        "endAge_days": 30,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 5,
+      "offspringCount": 1000000,
+      "gestation_Days": 7,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 3.0,
+    "proteinTurnoverRate": 0.30,
+    "metabolic_Rate_kJ_per_hr": 0.5,
+    "energy_Reserves_Max_kJ": 50,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.70,
+    "osmoticPressure": 0.2,
+    "barrier": {
+      "barrierType": "cell_wall",
+      "permeability_L_per_hr_per_m2": 0.5,
+      "surfaceArea_m2": 0.1,
+      "temperatureModifier": 2.0
+    },
+    "reclamation": {
+      "systemType": "osmotic",
+      "reclamationRate_L_per_hr": 0.01,
+      "concentrationAbility": 1.5,
+      "energyCost_kJ_per_L": 0.1
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Continuous",
+    "dormancyMultiplier": 0.8,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.2,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 0.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.1,
+    "taste_range_m": 0.05,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.01,
+    "heat_range_m": 0.1
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Decomposition",
+        "preference_weight": 10.0,
+        "rateDataClass": "FConsumptionRates",
+        "rateData": {
+          "decompositionRate_g_per_hour": 5.0,
+          "substrateSelectivity": 0.8,
+          "enzymeEfficiency": 0.9,
+          "energyContent_kJ_per_kg": 12000,
+          "digestion_carbon_efficiency": 0.70,
+          "digestion_nitrogen_efficiency": 0.85,
+          "digestion_phosphorus_efficiency": 0.90
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": 5,
+    "temperatureMaximum_C": 30,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 80,
+    "moistureTolerance_pct": 20,
+    "moistureLethal_pct": 30,
+    "lightOptimal_PAR": 0,
+    "lightSaturation_PAR": 0,
+    "lightCompensation_PAR": 0,
+    "pHOptimal": 6.5,
+    "pHTolerance": 1.5
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartDecomposing",
+      "StartGrowing",
+      "StartSporulating",
+      "StartColonizing"
+    ],
+    "macroStateTriggers": {
+      "StartDecomposing": [
+        {"type": "organic_matter_available", "operator": ">", "threshold": 0.1},
+        {"type": "energy", "operator": "<", "threshold": 70}
+      ],
+      "StartGrowing": [
+        {"type": "energy", "operator": ">", "threshold": 30},
+        {"type": "nutrients", "operator": ">", "threshold": 20}
+      ],
+      "StartSporulating": [
+        {"type": "energy", "operator": ">", "threshold": 60},
+        {"type": "age", "operator": ">", "threshold": 14}
+      ],
+      "StartColonizing": [
+        {"type": "substrate_depleted", "operator": ">", "threshold": 0.8},
+        {"type": "energy", "operator": ">", "threshold": 40}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 360,
+    "momentum": 0.6,
+    "changeThreshold": 0.4
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": null,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 3.0
+    },
+    "reliability": 0.90
+  }
+}

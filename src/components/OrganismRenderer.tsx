@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { add, remove, refresh } from 'ionicons/icons';
 import { Card as CardType } from '../types';
+import { CommonName, SPECIES_DISPLAY_NAMES } from '../../shared/enums';
 
 // Import the organism models
 import { organismModels } from '../ecosystem-organisms';
@@ -12,6 +13,59 @@ interface OrganismRendererProps {
   className?: string;
   showControls?: boolean;
 }
+
+interface SpeciesData {
+  identity: {
+    commonName: string;
+    scientificName: string;
+    speciesName: string;
+  };
+  rendering: {
+    modelFile: string;
+    scale: number;
+  };
+}
+
+// Cache for loaded species data
+const speciesDataCache = new Map<string, SpeciesData>();
+
+// Function to load species data from public/species/ files
+const loadSpeciesData = async (speciesName: string): Promise<SpeciesData | null> => {
+  if (speciesDataCache.has(speciesName)) {
+    return speciesDataCache.get(speciesName)!;
+  }
+
+  try {
+    const response = await fetch(`/species/${speciesName}.json`);
+    if (response.ok) {
+      const data = await response.json();
+      speciesDataCache.set(speciesName, data);
+      return data;
+    }
+  } catch (error) {
+    console.warn(`Failed to load species data for ${speciesName}:`, error);
+  }
+
+  return null;
+};
+
+// Enhanced species mapping using CommonName enum
+const getSpeciesKey = (card: CardType): string => {
+  // First try to map to CommonName enum values
+  const commonNameLower = card.commonName.toLowerCase().replace(/[^a-z]/g, '');
+  const speciesNameLower = card.speciesName.toLowerCase().replace(/[^a-z]/g, '');
+
+  // Check if it matches any CommonName enum value
+  for (const [key, value] of Object.entries(CommonName)) {
+    const enumValue = value.replace(/-/g, '').replace(/_/g, '');
+    if (enumValue === commonNameLower || enumValue === speciesNameLower) {
+      return value; // Return the enum value (e.g., 'wolf', 'apple-tree')
+    }
+  }
+
+  // Fallback to original logic
+  return speciesNameLower || commonNameLower;
+};
 
 const OrganismRenderer: React.FC<OrganismRendererProps> = ({
   card,
@@ -32,7 +86,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
     if (!containerRef.current) return;
 
     // Add a small delay to ensure DOM is fully rendered
-    const renderOrganism = () => {
+    const renderOrganism = async () => {
       // Create organism data structure expected by the renderer
       const organism = {
         size: size,
@@ -48,21 +102,32 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
     // Try to find the most specific renderer first
     let renderer = null;
 
-    // Create mapping keys
-    const speciesKey = card.speciesName.toLowerCase().replace(/[^a-z]/g, '');
+    // Use enhanced species mapping with CommonName enum
+    const speciesKey = getSpeciesKey(card);
+
+    // Try to load species data from public/species/ files
+    const speciesData = await loadSpeciesData(speciesKey).catch(() => null);
+
+    // Create mapping keys (fallback to original logic)
+    const speciesKeyFallback = card.speciesName.toLowerCase().replace(/[^a-z]/g, '');
     const commonKey = card.commonName.toLowerCase().replace(/[^a-z]/g, '');
 
-    // 1. Try exact species name match (e.g., "wolf", "deer", "mouse")
+    // 1. Try exact species name match using enum-based key
     if (organismModels[speciesKey]) {
       renderer = organismModels[speciesKey];
     }
 
-    // 2. Try common name match
+    // 2. Try fallback species name match
+    if (!renderer && organismModels[speciesKeyFallback]) {
+      renderer = organismModels[speciesKeyFallback];
+    }
+
+    // 3. Try common name match
     if (!renderer && organismModels[commonKey]) {
       renderer = organismModels[commonKey];
     }
 
-    // 3. Try specific mappings for known species
+    // 4. Try specific mappings for known species
     if (!renderer) {
       const mappings: { [key: string]: string } = {
         'bear': 'omnivore',
@@ -95,7 +160,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
       }
     }
 
-    // 4. Try partial matches for common names
+    // 5. Try partial matches for common names
     if (!renderer) {
       const commonWords = card.commonName.toLowerCase().split(' ');
       for (const word of commonWords) {
@@ -106,16 +171,16 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
         }
       }
     }
-    
-    // 4. Fall back to trophic role
+
+    // 6. Fall back to trophic role
     if (!renderer) {
       const trophicKey = card.trophicRole.toLowerCase();
       if (organismModels[trophicKey]) {
         renderer = organismModels[trophicKey];
       }
     }
-    
-    // 5. Final fallback
+
+    // 7. Final fallback
     if (!renderer) {
       renderer = organismModels.herbivore; // Default fallback
     }
@@ -177,7 +242,11 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
     };
 
     // Call renderOrganism with a small delay to ensure DOM is ready
-    setTimeout(renderOrganism, 10);
+    setTimeout(() => {
+      renderOrganism().catch(error => {
+        console.warn('Error in renderOrganism:', error);
+      });
+    }, 10);
   }, [card, size]);
 
   // Zoom functions

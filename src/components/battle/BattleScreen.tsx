@@ -75,7 +75,11 @@ interface CampaignLevel {
   rewards: string[];
 }
 
-const BattleScreen: React.FC = () => {
+interface BattleScreenProps {
+  onExit?: () => void;
+}
+
+const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
   const {
     offlineCollection,
     setActiveBattle,
@@ -813,6 +817,11 @@ const BattleScreen: React.FC = () => {
 
     // Clear active battle state
     clearActiveBattle();
+
+    // Call onExit to return to BattleModeSelector
+    if (onExit) {
+      onExit();
+    }
   };
 
   // Tutorial handlers
@@ -867,10 +876,15 @@ const BattleScreen: React.FC = () => {
     setActionMode('place');
     clearActiveBattle();
 
+    // Call onExit to return to BattleModeSelector
+    if (onExit) {
+      onExit();
+    }
+
     // Show confirmation message
     setTimeout(() => {
       console.log('🏳️ Showing forfeit confirmation message');
-      setAlertMessage('Match forfeited. Returning to main menu.');
+      setAlertMessage('Match forfeited. Returning to mode selection.');
       setShowAlert(true);
     }, 100);
   };

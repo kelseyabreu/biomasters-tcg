@@ -11,5 +11,18 @@ export default defineConfig({
   assetsInclude: ['**/*.json'],
   json: {
     stringify: false
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['src/setupTests.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/server/**', // Exclude server tests (they use Jest)
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*'
+    ]
   }
 })

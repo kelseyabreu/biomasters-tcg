@@ -1,0 +1,211 @@
+{
+  "archetypeName": "reed-canary-grass",
+  "identity": {
+    "speciesName": "reed-canary-grass",
+    "commonName": "Reed Canary Grass",
+    "scientificName": "Phalaris arundinacea",
+    "taxonomy": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Liliopsida",
+      "order": "Poales",
+      "family": "Poaceae",
+      "genus": "Phalaris",
+      "species": "arundinacea"
+    }
+  },
+  "rendering": {
+    "modelFile": "producer.glb",
+    "scale": 1.0
+  },
+  "body": {
+    "mass_kg": 0.5,
+    "waterRatio": 0.75,
+    "carbonRatio": 0.40,
+    "nitrogenRatio": 0.03,
+    "phosphorusRatio": 0.005,
+    "otherMineralsRatio": 0.015
+  },
+  "detailedBiomass": {
+    "WoodyBiomass_gm2": 0.0,
+    "LeafyBiomass_gm2": 300.0,
+    "HerbaceousBiomass_gm2": 150.0,
+    "FruitSeedBiomass_gm2": 50.0,
+    "RootBiomass_gm2": 200.0,
+    "N_gm2": 21.0,
+    "P_gm2": 3.5,
+    "K_gm2": 14.0,
+    "C_gm2": 280.0,
+    "NonNPK_gm2": 10.5,
+    "LigninContent_pct": 15.0,
+    "CurrentGrowthRate": 1.5,
+    "CurrentYieldRate": 1.0
+  },
+  "lifecycle": {
+    "lifespan_Max_Days": 1095,
+    "lifeStages": [
+      {
+        "name": "Seed",
+        "endAge_days": 30,
+        "modifiers": {
+          "mass_multiplier": 0.001,
+          "growth_rate_modifier": 3.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Seedling",
+        "endAge_days": 90,
+        "modifiers": {
+          "mass_multiplier": 0.1,
+          "growth_rate_modifier": 2.0,
+          "is_fertile": false
+        }
+      },
+      {
+        "name": "Mature Grass",
+        "endAge_days": 1000,
+        "isDefault": true,
+        "modifiers": {
+          "mass_multiplier": 1.0,
+          "growth_rate_modifier": 1.0,
+          "is_fertile": true
+        }
+      },
+      {
+        "name": "Senescent",
+        "endAge_days": 1095,
+        "modifiers": {
+          "mass_multiplier": 0.7,
+          "growth_rate_modifier": 0.3,
+          "is_fertile": false,
+          "health_decline_rate": 0.2
+        }
+      }
+    ],
+    "reproductionStrategy": {
+      "energyCost_kJ": 100,
+      "offspringCount": 200,
+      "gestation_Days": 90,
+      "parentalCare_Days": 0
+    }
+  },
+  "metabolism": {
+    "DaysTillStarvation": 14.0,
+    "proteinTurnoverRate": 0.10,
+    "metabolic_Rate_kJ_per_hr": 2,
+    "energy_Reserves_Max_kJ": 500,
+    "oxygen_Requirement": "Aerobic",
+    "bIsEndotherm": false
+  },
+  "waterStorage": {
+    "membraneIntegrity": 0.90,
+    "osmoticPressure": 0.3,
+    "barrier": {
+      "barrierType": "cuticle",
+      "permeability_L_per_hr_per_m2": 0.01,
+      "surfaceArea_m2": 2.0,
+      "temperatureModifier": 1.8
+    },
+    "reclamation": {
+      "systemType": "root",
+      "reclamationRate_L_per_hr": 1.0,
+      "concentrationAbility": 2.5,
+      "energyCost_kJ_per_L": 0.2
+    }
+  },
+  "circadianRhythm": {
+    "activityPeriod": "Diurnal",
+    "dormancyMultiplier": 0.2,
+    "bRequiresSleep": false,
+    "sleepHrsNeeded": 0,
+    "circadianStrength": 0.7,
+    "sleepUrgeThreshold": 0,
+    "wakefulnessThreshold": 0
+  },
+  "movement": {
+    "walk_Speed_m_per_hr": 0,
+    "run_Speed_m_per_hr": 0,
+    "swim_Speed_m_per_hr": 0,
+    "fastSwim_Speed_m_per_hr": 0,
+    "fly_Speed_m_per_hr": 0,
+    "burrow_Speed_m_per_hr": 0,
+    "speedModifier": 0.0
+  },
+  "perception": {
+    "vision_range_m": 0.0,
+    "smell_range_m": 0.0,
+    "taste_range_m": 0.0,
+    "hearing_range_m": 0.0,
+    "touch_range_m": 0.0,
+    "heat_range_m": 0.0
+  },
+  "acquisition": {
+    "capabilities": [
+      {
+        "method": "Photosynthesis",
+        "preference_weight": 10.0,
+        "rateDataClass": "FPhotosynthesisRates",
+        "rateData": {
+          "lightSaturation_PAR": 1200.0,
+          "lightCompensation_PAR": 15.0,
+          "maxPhotosynthesisRate_gC_per_m2_per_hour": 3.0,
+          "leafAreaIndex": 4.0,
+          "carbonUseEfficiency": 0.80,
+          "nitrogenUseEfficiency": 0.70,
+          "phosphorusUseEfficiency": 0.75
+        }
+      }
+    ]
+  },
+  "environmentalResponse": {
+    "temperatureMinimum_C": -15,
+    "temperatureMaximum_C": 35,
+    "temperatureOptimalMin_C": 15,
+    "temperatureOptimalMax_C": 25,
+    "moistureOptimal_pct": 80,
+    "moistureTolerance_pct": 30,
+    "moistureLethal_pct": 20,
+    "lightOptimal_PAR": 800,
+    "lightSaturation_PAR": 1200,
+    "lightCompensation_PAR": 15,
+    "pHOptimal": 7.0,
+    "pHTolerance": 1.5
+  },
+  "behaviorConfig": {
+    "motivationPriority": [
+      "StartPhotosynthesis",
+      "StartGrowing",
+      "StartReproducing"
+    ],
+    "macroStateTriggers": {
+      "StartPhotosynthesis": [
+        {"type": "light_level", "operator": ">", "threshold": 15}
+      ],
+      "StartGrowing": [
+        {"type": "energy", "operator": ">", "threshold": 25},
+        {"type": "water_level", "operator": ">", "threshold": 50}
+      ],
+      "StartReproducing": [
+        {"type": "energy", "operator": ">", "threshold": 60},
+        {"type": "age", "operator": ">", "threshold": 90}
+      ]
+    },
+    "microStateTriggers": {},
+    "evaluationFrequency": 360,
+    "momentum": 0.7,
+    "changeThreshold": 0.3
+  },
+  "personalityProfile": {
+    "baseline": {
+      "extraversion": null,
+      "agreeableness": null,
+      "conscientiousness": null,
+      "neuroticism": null,
+      "openness": null,
+      "dominance": null,
+      "activity": 1.5
+    },
+    "reliability": 0.80
+  }
+}

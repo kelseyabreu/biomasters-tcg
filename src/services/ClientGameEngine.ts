@@ -1,7 +1,7 @@
 /**
  * Client-Side BioMasters Game Engine
- * Offline-first implementation that mirrors server/src/game-engine/BioMastersEngine.ts
- * Uses public/data/*.json as single source of truth
+ * Lightweight wrapper around the shared BioMastersEngine
+ * Handles client-specific data loading and UI state management
  */
 
 import {
@@ -13,7 +13,16 @@ import {
   TrophicCategoryId,
   Domain,
   DOMAIN_COMPATIBILITY
-} from '../../shared/enums';
+} from '@shared/enums';
+
+// Import the shared, authoritative game engine
+import { 
+  BioMastersEngine, 
+  GameState as ServerGameState,
+  CardData as ServerCardData,
+  AbilityData as ServerAbilityData,
+  PlayerAction as ServerPlayerAction
+} from '@shared/game-engine/BioMastersEngine';
 
 // Import JSON data types
 interface JSONCardData {
@@ -47,18 +56,7 @@ interface JSONCardData {
   Offspring_count: number;
 }
 
-interface JSONAbilityData {
-  AbilityID: number;
-  AbilityName: string;
-  Description: string;
-  TriggerID: number;
-  EffectType: string;
-  EffectValue: any;
-  TargetType: string;
-  Cost: any;
-}
-
-// Game state interfaces (mirroring server)
+// Client-specific interfaces for UI compatibility
 export interface ClientGameState {
   gameId: string;
   players: ClientPlayer[];
@@ -77,8 +75,8 @@ export interface ClientGameState {
 export interface ClientPlayer {
   id: string;
   name: string;
-  hand: string[]; // card instance IDs
-  deck: string[]; // card instance IDs
+  hand: string[];
+  deck: string[];
   scorePile: ClientGridCard[];
   energy: number;
   isReady: boolean;
@@ -98,9 +96,10 @@ export interface ClientGridCard {
 
 export interface ClientStatusEffect {
   effectId: string;
-  type: string;
+  name: string;
+  description: string;
   duration: number;
-  source: string;
+  stackable: boolean;
   metadata: Record<string, any>;
 }
 
@@ -111,10 +110,8 @@ export interface ClientGameSettings {
   startingHandSize: number;
   maxHandSize: number;
   startingEnergy?: number;
-  turnTimeLimit?: number;
 }
 
-// Action interfaces
 export interface ClientPlayerAction {
   type: GameActionType;
   playerId: string;
@@ -124,108 +121,55 @@ export interface ClientPlayerAction {
 export interface ClientPlayCardPayload {
   cardId: string;
   position: { x: number; y: number };
-  connectionTargetId?: string;
-  cost?: any;
 }
 
 export interface ClientActivateAbilityPayload {
-  instanceId: string;
+  cardInstanceId: string;
   abilityId: number;
-  targetInstanceId?: string;
-  additionalTargets?: string[];
+  targetPosition?: { x: number; y: number };
 }
 
-/**
- * Client-side Game Data Manager
- * Loads and manages JSON data from public/data/
- */
+// Client Game Data Manager
 class ClientGameDataManager {
-  private cardDatabase = new Map<number, JSONCardData>();
-  private abilityDatabase = new Map<number, JSONAbilityData>();
-  private localizationData = new Map<string, string>();
-  private isLoaded = false;
+  private cards: Map<number, JSONCardData> = new Map();
+  private dataLoaded = false;
 
   async loadGameData(): Promise<void> {
-    if (this.isLoaded) {
-      console.log('📦 [ClientGameDataManager] Data already loaded, skipping');
-      return;
-    }
-
-    console.log('📦 [ClientGameDataManager] Starting data load...');
+    if (this.dataLoaded) return;
 
     try {
-      // Load cards.json
-      console.log('📦 [ClientGameDataManager] Loading cards.json...');
-      const cardsResponse = await fetch('/data/cards.json');
-      if (!cardsResponse.ok) {
-        throw new Error(`Failed to fetch cards.json: ${cardsResponse.status} ${cardsResponse.statusText}`);
+      console.log('📚 [ClientGameDataManager] Loading card data...');
+      const response = await fetch('/data/cards.json');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch cards.json: ${response.statusText}`);
       }
-      const cardsData: JSONCardData[] = await cardsResponse.json();
-      console.log('📦 [ClientGameDataManager] Cards data received:', cardsData.length, 'cards');
-
-      cardsData.forEach(card => {
-        this.cardDatabase.set(card.CardID, card);
+      
+      const cardsArray: JSONCardData[] = await response.json();
+      console.log(`📚 [ClientGameDataManager] Loaded ${cardsArray.length} cards`);
+      
+      this.cards.clear();
+      cardsArray.forEach(card => {
+        this.cards.set(card.CardID, card);
       });
 
-      // Load abilities.json
-      console.log('📦 [ClientGameDataManager] Loading abilities.json...');
-      const abilitiesResponse = await fetch('/data/abilities.json');
-      if (!abilitiesResponse.ok) {
-        throw new Error(`Failed to fetch abilities.json: ${abilitiesResponse.status} ${abilitiesResponse.statusText}`);
-      }
-      const abilitiesData: JSONAbilityData[] = await abilitiesResponse.json();
-      console.log('📦 [ClientGameDataManager] Abilities data received:', abilitiesData.length, 'abilities');
-
-      abilitiesData.forEach(ability => {
-        this.abilityDatabase.set(ability.AbilityID, ability);
-      });
-
-      // Load en.json (localization)
-      console.log('📦 [ClientGameDataManager] Loading en.json...');
-      const localizationResponse = await fetch('/data/en.json');
-      if (!localizationResponse.ok) {
-        throw new Error(`Failed to fetch en.json: ${localizationResponse.status} ${localizationResponse.statusText}`);
-      }
-      const localizationData = await localizationResponse.json();
-      console.log('📦 [ClientGameDataManager] Localization data received:', Object.keys(localizationData).length, 'entries');
-
-      Object.entries(localizationData).forEach(([key, value]) => {
-        this.localizationData.set(key, value as string);
-      });
-
-      this.isLoaded = true;
-      console.log('✅ [ClientGameDataManager] Client game data loaded successfully');
-      console.log(`📄 Cards: ${this.cardDatabase.size}`);
-      console.log(`⚡ Abilities: ${this.abilityDatabase.size}`);
-      console.log(`🌐 Localization entries: ${this.localizationData.size}`);
+      this.dataLoaded = true;
+      console.log('✅ [ClientGameDataManager] Game data loaded successfully');
     } catch (error) {
-      console.error('❌ [ClientGameDataManager] Failed to load client game data:', error);
+      console.error('❌ [ClientGameDataManager] Failed to load game data:', error);
       throw error;
     }
   }
 
-  getCard(cardId: number): JSONCardData | undefined {
-    return this.cardDatabase.get(cardId);
-  }
-
-  getAbility(abilityId: number): JSONAbilityData | undefined {
-    return this.abilityDatabase.get(abilityId);
-  }
-
-  getLocalization(key: string): string {
-    return this.localizationData.get(key) || key;
+  isDataLoaded(): boolean {
+    return this.dataLoaded;
   }
 
   getAllCards(): JSONCardData[] {
-    return Array.from(this.cardDatabase.values());
+    return Array.from(this.cards.values());
   }
 
-  getAllAbilities(): JSONAbilityData[] {
-    return Array.from(this.abilityDatabase.values());
-  }
-
-  isDataLoaded(): boolean {
-    return this.isLoaded;
+  getCard(cardId: number): JSONCardData | undefined {
+    return this.cards.get(cardId);
   }
 }
 
@@ -234,9 +178,11 @@ export const clientGameDataManager = new ClientGameDataManager();
 
 /**
  * Client-side BioMasters Game Engine
- * Handles offline gameplay with optional server sync
+ * Lightweight wrapper around the shared BioMastersEngine
+ * Handles client-specific data loading and UI state management
  */
 export class ClientGameEngine {
+  private coreEngine: BioMastersEngine | null = null;
   private gameState: ClientGameState | null = null;
   private gameDataManager: ClientGameDataManager;
 
@@ -248,27 +194,24 @@ export class ClientGameEngine {
    * Initialize the game engine with JSON data
    */
   async initialize(): Promise<void> {
-    await this.gameDataManager.loadGameData();
-  }
-
-  /**
-   * Get grid dimensions based on player count
-   * 2 players: 9x10 grid (9 rows, 10 columns)
-   * 4 players: 10x10 grid (symmetric)
-   */
-  private getGridDimensions(playerCount: number): { width: number; height: number } {
-    switch (playerCount) {
-      case 2:
-        return { width: 10, height: 9 }; // 9 rows, 10 columns
-      case 4:
-        return { width: 10, height: 10 }; // 10x10 for 4 players
-      default:
-        throw new Error(`Invalid player count: ${playerCount}. Only 2 or 4 players supported.`);
+    if (!this.gameDataManager.isDataLoaded()) {
+      await this.gameDataManager.loadGameData();
     }
   }
 
   /**
-   * Create a new game
+   * Get grid dimensions based on player count
+   */
+  private getGridDimensions(playerCount: number): { width: number; height: number } {
+    if (playerCount === 2) {
+      return { width: 10, height: 9 }; // 1v1 mode: 10 columns x 9 rows
+    } else {
+      return { width: 10, height: 10 }; // 2v2 or 4-player mode
+    }
+  }
+
+  /**
+   * Create a new game using the shared engine
    */
   async createGame(
     gameId: string,
@@ -276,27 +219,22 @@ export class ClientGameEngine {
     settings: Partial<ClientGameSettings> = {}
   ): Promise<ClientGameState> {
     console.log('🎮 [ClientGameEngine] Creating game:', gameId, 'with', players.length, 'players');
-    console.log('🎮 [ClientGameEngine] Players:', players);
-    console.log('🎮 [ClientGameEngine] Settings:', settings);
 
-    if (!this.gameDataManager.isDataLoaded()) {
-      console.log('🎮 [ClientGameEngine] Data not loaded, initializing...');
-      await this.initialize();
+    // Ensure data is loaded
+    await this.initialize();
+
+    // Validate inputs
+    if (!gameId || !players || players.length === 0) {
+      throw new Error('Invalid game parameters');
     }
 
-    // Validate player count (only 2 or 4 players allowed for symmetry)
-    console.log('🎮 [ClientGameEngine] Validating player count:', players.length);
+    // Validate player count for symmetric gameplay
     if (players.length !== 2 && players.length !== 4) {
-      const error = 'Invalid player count. Only 2 or 4 players allowed for symmetric gameplay.';
-      console.error('❌ [ClientGameEngine]', error);
-      throw new Error(error);
+      throw new Error('Invalid player count. Only 2 or 4 players allowed for symmetric gameplay.');
     }
 
     // Set grid dimensions based on player count
-    console.log('🎮 [ClientGameEngine] Getting grid dimensions for', players.length, 'players');
     const gridDimensions = this.getGridDimensions(players.length);
-    console.log('🎮 [ClientGameEngine] Grid dimensions:', gridDimensions);
-
     const defaultSettings: ClientGameSettings = {
       maxPlayers: players.length,
       gridWidth: gridDimensions.width,
@@ -307,242 +245,132 @@ export class ClientGameEngine {
       ...settings
     };
 
-    console.log('🎮 [ClientGameEngine] Final settings:', defaultSettings);
-
-    // Initialize players
-    console.log('🎮 [ClientGameEngine] Initializing players...');
-    const initializedPlayers: ClientPlayer[] = players.map(player => ({
-      id: player.id,
-      name: player.name,
-      hand: [],
-      deck: this.createStartingDeck(),
-      scorePile: [],
-      energy: defaultSettings.startingEnergy || 3,
-      isReady: false
-    }));
-    console.log('🎮 [ClientGameEngine] Players initialized:', initializedPlayers.length);
-
-    // Create initial game state
-    console.log('🎮 [ClientGameEngine] Creating initial game state...');
-    this.gameState = {
-      gameId,
-      players: initializedPlayers,
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.SETUP,
-      turnPhase: TurnPhase.READY,
-      actionsRemaining: 1,
-      turnNumber: 1,
-      grid: new Map(),
-      gameSettings: defaultSettings,
-      metadata: {},
-      isOffline: true,
-      lastSyncTimestamp: Date.now()
-    };
-    console.log('🎮 [ClientGameEngine] Initial game state created');
-
-    // Place HOME cards
-    console.log('🎮 [ClientGameEngine] Placing HOME cards...');
-    this.placeHOMECards();
-    console.log('🎮 [ClientGameEngine] HOME cards placed. Grid size:', this.gameState.grid.size);
-
-    // Deal starting hands
-    console.log('🎮 [ClientGameEngine] Dealing starting hands...');
-    this.dealStartingHands();
-    console.log('🎮 [ClientGameEngine] Starting hands dealt');
-
-    console.log('🎮 [ClientGameEngine] ✅ Client game created successfully:', gameId);
-    console.log('🎮 [ClientGameEngine] Final game state:', {
-      gameId: this.gameState.gameId,
-      playerCount: this.gameState.players.length,
-      gridSize: this.gameState.grid.size,
-      gridDimensions: `${this.gameState.gameSettings.gridWidth}x${this.gameState.gameSettings.gridHeight}`,
-      gamePhase: this.gameState.gamePhase,
-      turnPhase: this.gameState.turnPhase
+    // Prepare data for the shared engine
+    const cardDatabase = new Map<number, ServerCardData>();
+    this.gameDataManager.getAllCards().forEach(rawCard => {
+      const card: ServerCardData = {
+        cardId: rawCard.CardID,
+        trophicLevel: rawCard.TrophicLevel,
+        trophicCategory: rawCard.TrophicCategory,
+        domain: rawCard.Domain,
+        cost: rawCard.Cost,
+        keywords: rawCard.Keywords,
+        abilities: [], // TODO: Add abilities to JSON data when available
+        victoryPoints: rawCard.VictoryPoints,
+        commonName: rawCard.CommonName,
+        scientificName: rawCard.ScientificName
+      };
+      cardDatabase.set(card.cardId, card);
     });
+
+    // For now, use empty ability and keyword databases
+    const abilityDatabase = new Map<number, ServerAbilityData>();
+    const keywordDatabase = new Map<number, string>();
+
+    // Create the shared engine instance
+    this.coreEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+
+    // Initialize the game using the shared engine
+    const serverGameState = this.coreEngine.initializeNewGame(gameId, players, {
+      maxPlayers: defaultSettings.maxPlayers,
+      gridWidth: defaultSettings.gridWidth,
+      gridHeight: defaultSettings.gridHeight,
+      startingHandSize: defaultSettings.startingHandSize,
+      maxHandSize: defaultSettings.maxHandSize,
+      startingEnergy: defaultSettings.startingEnergy
+    });
+
+    // Convert server state to client format
+    this.gameState = this.convertServerStateToClient(serverGameState, defaultSettings);
+    console.log('🎮 [ClientGameEngine] Game created using shared engine');
 
     return this.gameState;
   }
 
   /**
-   * Process a player action
+   * Convert server game state to client format
+   */
+  private convertServerStateToClient(serverState: ServerGameState, settings: ClientGameSettings): ClientGameState {
+    const clientPlayers: ClientPlayer[] = serverState.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      hand: p.hand,
+      deck: p.deck,
+      scorePile: p.scorePile.map(card => ({
+        ...card,
+        attachments: [],
+        statusEffects: []
+      })),
+      energy: p.energy,
+      isReady: p.isReady
+    }));
+
+    const clientGrid = new Map<string, ClientGridCard>();
+    serverState.grid.forEach((card, key) => {
+      clientGrid.set(key, {
+        cardId: card.cardId,
+        ownerId: card.ownerId,
+        position: card.position,
+        isExhausted: card.isExhausted,
+        isHOME: card.isHOME,
+        isDetritus: card.isDetritus,
+        instanceId: card.instanceId,
+        attachments: [], // Initialize empty for client
+        statusEffects: [] // Initialize empty for client
+      });
+    });
+
+    return {
+      gameId: serverState.gameId,
+      players: clientPlayers,
+      currentPlayerIndex: serverState.currentPlayerIndex,
+      gamePhase: serverState.gamePhase,
+      turnPhase: serverState.turnPhase,
+      actionsRemaining: serverState.actionsRemaining,
+      turnNumber: serverState.turnNumber,
+      grid: clientGrid,
+      gameSettings: settings,
+      metadata: {},
+      isOffline: true,
+      lastSyncTimestamp: Date.now()
+    };
+  }
+
+  /**
+   * Process a player action using the shared engine
    */
   processAction(action: ClientPlayerAction): {
     isValid: boolean;
     newState?: ClientGameState;
     errorMessage?: string;
   } {
-    if (!this.gameState) {
-      return { isValid: false, errorMessage: 'Game not initialized' };
+    if (!this.coreEngine) {
+      return { isValid: false, errorMessage: 'Game engine not initialized' };
     }
-
-    // Validate it's the current player's turn
-    const currentPlayer = this.gameState.players[this.gameState.currentPlayerIndex];
-    if (action.playerId !== currentPlayer.id) {
-      return { isValid: false, errorMessage: 'Not your turn' };
-    }
-
-    // Clone game state for processing
-    const newState = this.cloneGameState(this.gameState);
 
     try {
-      switch (action.type) {
-        case GameActionType.PLAY_CARD:
-          return this.handlePlayCard(newState, action.payload as ClientPlayCardPayload);
+      // Convert client action to server format
+      const serverAction: ServerPlayerAction = {
+        type: action.type,
+        playerId: action.playerId,
+        payload: action.payload
+      };
 
-        case GameActionType.ACTIVATE_ABILITY:
-          return this.handleActivateAbility(newState, action.payload as ClientActivateAbilityPayload);
+      // Process action through the shared engine
+      const result = this.coreEngine.processAction(serverAction);
 
-        case GameActionType.PASS_TURN:
-          return this.handlePassTurn(newState);
-
-        case GameActionType.PLAYER_READY:
-          return this.handlePlayerReady(newState, action.playerId);
-
-        default:
-          return { isValid: false, errorMessage: `Unknown action type: ${action.type}` };
+      if (result.isValid && result.newState) {
+        // Convert server state back to client format
+        const newClientState = this.convertServerStateToClient(result.newState, this.gameState!.gameSettings);
+        this.gameState = newClientState;
+        return { isValid: true, newState: newClientState };
+      } else {
+        return { isValid: false, errorMessage: result.errorMessage };
       }
     } catch (error) {
-      console.error('Error processing action:', error);
+      console.error('❌ [ClientGameEngine] Error processing action:', error);
       return { isValid: false, errorMessage: 'Action processing failed' };
     }
-  }
-
-  /**
-   * Handle playing a card
-   */
-  private handlePlayCard(gameState: ClientGameState, payload: ClientPlayCardPayload): {
-    isValid: boolean;
-    newState?: ClientGameState;
-    errorMessage?: string;
-  } {
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-
-    // Find card in hand
-    const cardIndex = currentPlayer.hand.findIndex(instanceId => instanceId === payload.cardId);
-    if (cardIndex === -1) {
-      return { isValid: false, errorMessage: 'Card not in hand' };
-    }
-
-    // Extract card ID from instance ID (simplified)
-    const cardId = this.extractCardIdFromInstance(payload.cardId);
-    const cardData = this.gameDataManager.getCard(cardId);
-    if (!cardData) {
-      return { isValid: false, errorMessage: 'Invalid card data' };
-    }
-
-    // Check if position is valid
-    if (!this.isValidCardPlacement(cardId, payload.position, currentPlayer.id)) {
-      return { isValid: false, errorMessage: 'Invalid card placement' };
-    }
-
-    // Check if position is empty
-    const positionKey = `${payload.position.x},${payload.position.y}`;
-    if (gameState.grid.has(positionKey)) {
-      return { isValid: false, errorMessage: 'Position already occupied' };
-    }
-
-    // Create grid card
-    const gridCard: ClientGridCard = {
-      instanceId: payload.cardId,
-      cardId: cardId,
-      ownerId: currentPlayer.id,
-      position: payload.position,
-      isExhausted: false,
-      attachments: [],
-      statusEffects: [],
-      isDetritus: false,
-      isHOME: false
-    };
-
-    // Place card on grid
-    gameState.grid.set(positionKey, gridCard);
-
-    // Remove card from hand
-    currentPlayer.hand.splice(cardIndex, 1);
-
-    // Reduce actions remaining
-    gameState.actionsRemaining = Math.max(0, gameState.actionsRemaining - 1);
-
-    // Update game state
-    this.gameState = gameState;
-
-    return { isValid: true, newState: gameState };
-  }
-
-  /**
-   * Handle activating an ability
-   */
-  private handleActivateAbility(gameState: ClientGameState, payload: ClientActivateAbilityPayload): {
-    isValid: boolean;
-    newState?: ClientGameState;
-    errorMessage?: string;
-  } {
-    // TODO: Implement ability activation
-    // For now, just return success
-    return { isValid: true, newState: gameState };
-  }
-
-  /**
-   * Handle passing turn
-   */
-  private handlePassTurn(gameState: ClientGameState): {
-    isValid: boolean;
-    newState?: ClientGameState;
-    errorMessage?: string;
-  } {
-    // Move to next player
-    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-
-    // Reset actions for new turn
-    gameState.actionsRemaining = 1;
-
-    // Increment turn number if back to first player
-    if (gameState.currentPlayerIndex === 0) {
-      gameState.turnNumber++;
-    }
-
-    // Update game state
-    this.gameState = gameState;
-
-    return { isValid: true, newState: gameState };
-  }
-
-  /**
-   * Handle player ready
-   */
-  private handlePlayerReady(gameState: ClientGameState, playerId: string): {
-    isValid: boolean;
-    newState?: ClientGameState;
-    errorMessage?: string;
-  } {
-    const player = gameState.players.find(p => p.id === playerId);
-    if (!player) {
-      return { isValid: false, errorMessage: 'Player not found' };
-    }
-
-    console.log('🎮 [ClientGameEngine] Player ready:', playerId);
-    player.isReady = true;
-
-    // In client mode (practice), automatically mark AI players as ready
-    gameState.players.forEach(p => {
-      if (p.id !== playerId && p.id.includes('ai')) {
-        console.log('🤖 [ClientGameEngine] Auto-marking AI player as ready:', p.id);
-        p.isReady = true;
-      }
-    });
-
-    // Check if all players are ready
-    const allReady = gameState.players.every(p => p.isReady);
-    console.log('🎮 [ClientGameEngine] All players ready check:', allReady, 'Current phase:', gameState.gamePhase);
-
-    if (allReady && gameState.gamePhase === GamePhase.SETUP) {
-      console.log('🎮 [ClientGameEngine] Transitioning to PLAYING phase');
-      gameState.gamePhase = GamePhase.PLAYING;
-      gameState.turnPhase = TurnPhase.ACTION;
-    }
-
-    this.gameState = gameState;
-    return { isValid: true, newState: gameState };
   }
 
   /**
@@ -550,231 +378,6 @@ export class ClientGameEngine {
    */
   getGameState(): ClientGameState | null {
     return this.gameState;
-  }
-
-  /**
-   * Sync with server (when online)
-   */
-  async syncWithServer(gameId: string): Promise<void> {
-    try {
-      // TODO: Implement server sync
-      console.log('🔄 Syncing with server:', gameId);
-    } catch (error) {
-      console.warn('⚠️ Server sync failed, continuing offline:', error);
-    }
-  }
-
-  // Private helper methods
-
-  private placeHOMECards(): void {
-    if (!this.gameState) return;
-
-    const { gridWidth, gridHeight } = this.gameState.gameSettings;
-    const playerCount = this.gameState.players.length;
-
-    // Calculate HOME positions based on player count for symmetry
-    const homePositions = this.getHOMEPositions(gridWidth, gridHeight, playerCount);
-
-    // Place HOME cards for each player
-    this.gameState.players.forEach((player, index) => {
-      const position = homePositions[index];
-
-      const homeCard: ClientGridCard = {
-        instanceId: `home-${player.id}`,
-        cardId: 0, // Special HOME card ID
-        ownerId: player.id,
-        position: position,
-        isExhausted: false,
-        attachments: [],
-        statusEffects: [],
-        isDetritus: false,
-        isHOME: true
-      };
-
-      const positionKey = `${homeCard.position.x},${homeCard.position.y}`;
-      this.gameState!.grid.set(positionKey, homeCard);
-    });
-  }
-
-  /**
-   * Get symmetric HOME positions based on grid size and player count
-   * HOME cards are always placed in the center of the grid
-   */
-  private getHOMEPositions(gridWidth: number, gridHeight: number, playerCount: number): { x: number; y: number }[] {
-    const positions: { x: number; y: number }[] = [];
-    const centerX = Math.floor(gridWidth / 2);
-    const centerY = Math.floor(gridHeight / 2);
-
-    if (playerCount === 2) {
-      // 2 players: 9x10 grid (9 rows, 10 columns)
-      // Center is at (5, 4) - place HOME cards adjacent horizontally
-      positions.push({ x: centerX - 1, y: centerY }); // Player 1: Left of center
-      positions.push({ x: centerX, y: centerY });     // Player 2: Right of center
-    } else if (playerCount === 4) {
-      // 4 players: 10x10 grid
-      // Center is at (5, 5) - place HOME cards in center 2x2 formation
-      positions.push({ x: centerX - 1, y: centerY - 1 }); // Player 1: Top-left
-      positions.push({ x: centerX, y: centerY - 1 });     // Player 2: Top-right
-      positions.push({ x: centerX - 1, y: centerY });     // Player 3: Bottom-left
-      positions.push({ x: centerX, y: centerY });         // Player 4: Bottom-right
-    }
-
-    return positions;
-  }
-
-  private dealStartingHands(): void {
-    if (!this.gameState) return;
-
-    this.gameState.players.forEach(player => {
-      // Draw starting hand from deck
-      for (let i = 0; i < this.gameState!.gameSettings.startingHandSize; i++) {
-        if (player.deck.length > 0) {
-          const cardId = player.deck.pop()!;
-          player.hand.push(cardId);
-        }
-      }
-    });
-  }
-
-  private createStartingDeck(): string[] {
-    // Create a basic starting deck with available cards
-    const availableCards = this.gameDataManager.getAllCards();
-    const deck: string[] = [];
-
-    // Add some basic cards to the deck (simplified for now)
-    availableCards.slice(0, 10).forEach((card, index) => {
-      // Create instance IDs for deck cards
-      deck.push(`card-instance-${card.CardID}-${index}`);
-    });
-
-    // Shuffle deck
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-
-    return deck;
-  }
-
-  /**
-   * Get valid positions for placing a card
-   */
-  getValidPositions(cardId: number, playerId: string): { x: number; y: number }[] {
-    if (!this.gameState) return [];
-
-    const validPositions: { x: number; y: number }[] = [];
-    const { gridWidth, gridHeight } = this.gameState.gameSettings;
-
-    // Check each position on the grid
-    for (let x = 0; x < gridWidth; x++) {
-      for (let y = 0; y < gridHeight; y++) {
-        const positionKey = `${x},${y}`;
-
-        // Skip if position is occupied
-        if (this.gameState.grid.has(positionKey)) continue;
-
-        // Check if position is valid for this card
-        if (this.isValidCardPlacement(cardId, { x, y }, playerId)) {
-          validPositions.push({ x, y });
-        }
-      }
-    }
-
-    return validPositions;
-  }
-
-  /**
-   * Check if a card can be placed at a specific position
-   */
-  private isValidCardPlacement(cardId: number, position: { x: number; y: number }, playerId: string): boolean {
-    if (!this.gameState) return false;
-
-    const cardData = this.gameDataManager.getCard(cardId);
-    if (!cardData) return false;
-
-    // Get adjacent cards
-    const adjacentCards = this.getAdjacentCards(position);
-
-    // Basic validation: must be adjacent to at least one card (or HOME)
-    if (adjacentCards.length === 0) {
-      // Check if adjacent to HOME
-      const homeAdjacent = this.isAdjacentToHOME(position, playerId);
-      return homeAdjacent;
-    }
-
-    // TODO: Implement full trophic level and domain compatibility checks
-    // For now, allow placement if adjacent to any card
-    return true;
-  }
-
-  /**
-   * Get cards adjacent to a position
-   */
-  private getAdjacentCards(position: { x: number; y: number }): ClientGridCard[] {
-    if (!this.gameState) return [];
-
-    const adjacent: ClientGridCard[] = [];
-    const directions = [
-      { x: 0, y: 1 },   // North
-      { x: 1, y: 0 },   // East
-      { x: 0, y: -1 },  // South
-      { x: -1, y: 0 }   // West
-    ];
-
-    directions.forEach(dir => {
-      const adjX = position.x + dir.x;
-      const adjY = position.y + dir.y;
-      const positionKey = `${adjX},${adjY}`;
-
-      const card = this.gameState!.grid.get(positionKey);
-      if (card) {
-        adjacent.push(card);
-      }
-    });
-
-    return adjacent;
-  }
-
-  /**
-   * Check if position is adjacent to player's HOME card
-   */
-  private isAdjacentToHOME(position: { x: number; y: number }, playerId: string): boolean {
-    const adjacentCards = this.getAdjacentCards(position);
-    return adjacentCards.some(card => card.isHOME && card.ownerId === playerId);
-  }
-
-  /**
-   * Generate unique instance ID
-   */
-  private generateInstanceId(): string {
-    return `instance-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Clone game state for safe mutation
-   */
-  private cloneGameState(gameState: ClientGameState): ClientGameState {
-    return {
-      ...gameState,
-      players: gameState.players.map(player => ({
-        ...player,
-        hand: [...player.hand],
-        deck: [...player.deck],
-        scorePile: [...player.scorePile]
-      })),
-      grid: new Map(gameState.grid),
-      gameSettings: { ...gameState.gameSettings },
-      metadata: { ...gameState.metadata }
-    };
-  }
-
-  /**
-   * Extract card ID from instance ID
-   */
-  private extractCardIdFromInstance(instanceId: string): number {
-    // Extract card ID from instance ID format: "card-instance-{cardId}-{index}"
-    const match = instanceId.match(/card-instance-(\d+)-/);
-    return match ? parseInt(match[1], 10) : 0;
   }
 
   /**
@@ -786,25 +389,80 @@ export class ClientGameEngine {
   }
 
   /**
-   * Check if game is over
+   * Get valid positions for placing a card
    */
-  isGameOver(): boolean {
-    if (!this.gameState) return false;
+  getValidPositions(cardId: number, playerId: string): { x: number; y: number }[] {
+    if (!this.gameState) {
+      console.log('❌ No game state available for valid positions');
+      return [];
+    }
 
-    // TODO: Implement win conditions
-    // For now, game continues indefinitely
-    return false;
+    console.log(`🔍 Getting valid positions for card ${cardId}, player ${playerId}`);
+    console.log(`🔍 Grid size: ${this.gameState.gameSettings.gridWidth}x${this.gameState.gameSettings.gridHeight}`);
+    console.log(`🔍 Current grid contents:`, Array.from(this.gameState.grid.entries()));
+
+    const validPositions: { x: number; y: number }[] = [];
+    const { gridWidth, gridHeight } = this.gameState.gameSettings;
+
+    // Check all positions on the grid
+    for (let x = 0; x < gridWidth; x++) {
+      for (let y = 0; y < gridHeight; y++) {
+        const position = { x, y };
+        const positionKey = `${x},${y}`;
+
+        // Position must be empty
+        if (this.gameState.grid.has(positionKey)) {
+          console.log(`🔍 Position ${positionKey} is occupied`);
+          continue;
+        }
+
+        // Must be adjacent to a HOME card or existing card owned by the player
+        if (this.isAdjacentToPlayerCard(position, playerId)) {
+          console.log(`✅ Position ${positionKey} is valid (adjacent to player card)`);
+          validPositions.push(position);
+        } else {
+          console.log(`❌ Position ${positionKey} is not adjacent to player card`);
+        }
+      }
+    }
+
+    console.log(`🎯 Found ${validPositions.length} valid positions:`, validPositions);
+    return validPositions;
   }
 
   /**
-   * Get game winner
+   * Check if position is adjacent to a player's card (including HOME)
    */
-  getWinner(): ClientPlayer | null {
-    if (!this.isGameOver()) return null;
+  private isAdjacentToPlayerCard(position: { x: number; y: number }, playerId: string): boolean {
+    if (!this.gameState) return false;
 
-    // TODO: Implement winner determination
-    // For now, return null
-    return null;
+    const directions = [
+      { x: 0, y: 1 },   // North
+      { x: 1, y: 0 },   // East
+      { x: 0, y: -1 },  // South
+      { x: -1, y: 0 }   // West
+    ];
+
+    for (const dir of directions) {
+      const adjX = position.x + dir.x;
+      const adjY = position.y + dir.y;
+      const adjKey = `${adjX},${adjY}`;
+
+      const adjacentCard = this.gameState.grid.get(adjKey);
+      if (adjacentCard) {
+        console.log(`🔍 Adjacent card at ${adjKey}:`, adjacentCard);
+        // Allow placement adjacent to HOME cards (which belong to all players)
+        // or cards owned by the current player
+        if (adjacentCard.isHOME || adjacentCard.ownerId === playerId) {
+          console.log(`✅ Valid adjacency: HOME=${adjacentCard.isHOME}, owner=${adjacentCard.ownerId}, player=${playerId}`);
+          return true;
+        } else {
+          console.log(`❌ Invalid adjacency: owner=${adjacentCard.ownerId}, player=${playerId}`);
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -816,7 +474,7 @@ export class ClientGameEngine {
     try {
       const serializedState = JSON.stringify({
         ...this.gameState,
-        grid: Array.from(this.gameState.grid.entries()) // Convert Map to array for serialization
+        grid: Array.from(this.gameState.grid.entries())
       });
       localStorage.setItem(`biomasters-game-${this.gameState.gameId}`, serializedState);
       console.log('💾 Game saved to local storage');
@@ -834,11 +492,9 @@ export class ClientGameEngine {
       if (!serializedState) return false;
 
       const parsedState = JSON.parse(serializedState);
-
-      // Restore Map from array
       parsedState.grid = new Map(parsedState.grid);
+      this.gameState = parsedState;
 
-      this.gameState = parsedState as ClientGameState;
       console.log('📂 Game loaded from local storage');
       return true;
     } catch (error) {

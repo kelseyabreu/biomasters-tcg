@@ -1,10 +1,10 @@
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import { gameDataManager } from '../../services/GameDataManager';
 import { Domain } from '@biomasters/shared';
 
 describe('Domain System Tests', () => {
   let engine: BioMastersEngine;
-  let gameSettings: GameSettings;
+  let _gameSettings: GameSettings;
 
   beforeAll(async () => {
     console.log('🧪 Loading game data for domain tests...');
@@ -17,7 +17,7 @@ describe('Domain System Tests', () => {
     const playerCount = 2;
     const gridSize = BioMastersEngine.getGridSize(playerCount);
 
-    gameSettings = {
+    _gameSettings = {
       maxPlayers: playerCount,
       gridWidth: gridSize.width,   // 9 for 1v1
       gridHeight: gridSize.height, // 10 for 1v1
@@ -28,10 +28,13 @@ describe('Domain System Tests', () => {
     };
 
     // Create engine with real data using production constructor
-    engine = new BioMastersEngine('domain-test', [
+    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('domain-test', [
       { id: 'Alice', name: 'Alice' },
       { id: 'Bob', name: 'Bob' }
-    ], gameSettings);
+    ], _gameSettings);
   });
 
   test('should use new Domain system for compatibility checks', () => {
@@ -86,7 +89,15 @@ describe('Domain System Tests', () => {
       console.log(`  ${card.commonName} (TL: ${card.trophicLevel}, TC: ${card.trophicCategory})`);
       
       // Test that the engine correctly identifies them as chemoautotrophs
-      const isChemoautotroph = engine.isChemoautotroph(card);
+      // Convert to engine-compatible format
+      const engineCard = {
+        ...card,
+        cardId: Number(card.cardId),
+        victoryPoints: card.victoryPoints || 0,
+        abilities: card.abilities || [],
+        scientificName: card.scientificName || card.commonName || 'Unknown'
+      };
+      const isChemoautotroph = engine.isChemoautotroph(engineCard);
       expect(isChemoautotroph).toBe(true);
     });
 

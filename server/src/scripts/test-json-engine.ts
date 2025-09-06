@@ -4,7 +4,7 @@
  */
 
 import { gameDataManager } from '../services/GameDataManager';
-import { BioMastersEngine } from '../game-engine/BioMastersEngine';
+import { BioMastersEngine, CardData as SharedCardData, AbilityData as SharedAbilityData } from '../../../shared/game-engine/BioMastersEngine';
 
 async function testJSONEngine() {
   console.log('🧪 Testing JSON-Driven Game Engine...\n');
@@ -61,7 +61,46 @@ async function testJSONEngine() {
       enableAI: false
     };
     
-    const engine = new BioMastersEngine('test-game', players, gameSettings);
+    // Load game data first
+    await gameDataManager.loadGameData();
+
+    // Convert server data to shared format
+    const cardDatabase = new Map<number, SharedCardData>();
+    gameDataManager.getCards().forEach((serverCard, id) => {
+      const sharedCard: SharedCardData = {
+        cardId: serverCard.cardId,
+        trophicLevel: serverCard.trophicLevel,
+        trophicCategory: serverCard.trophicCategory,
+        domain: serverCard.domain,
+        cost: serverCard.cost,
+        keywords: serverCard.keywords,
+        abilities: serverCard.abilities || [],
+        victoryPoints: serverCard.victoryPoints || 0,
+        commonName: serverCard.commonName,
+        scientificName: serverCard.scientificName || ''
+      };
+      cardDatabase.set(id, sharedCard);
+    });
+
+    const abilityDatabase = new Map<number, SharedAbilityData>();
+    gameDataManager.getAbilities().forEach((serverAbility, id) => {
+      const sharedAbility: SharedAbilityData = {
+        abilityId: serverAbility.abilityID,
+        abilityID: serverAbility.abilityID,
+        name: `Ability ${serverAbility.abilityID}`,
+        description: `Ability with trigger ${serverAbility.triggerID}`,
+        cost: {},
+        effects: serverAbility.effects,
+        triggerID: serverAbility.triggerID
+      };
+      abilityDatabase.set(id, sharedAbility);
+    });
+
+    const keywordMap = new Map<number, string>();
+    gameDataManager.getKeywords().forEach((keyword, id) => keywordMap.set(id, keyword.keyword_name));
+
+    const engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordMap);
+    engine.initializeNewGame('test-game', players, gameSettings);
     console.log(`✅ Game engine created successfully`);
     console.log(`  Game ID: ${engine.getGameState().gameId}`);
     console.log(`  Players: ${engine.getGameState().players.length}`);

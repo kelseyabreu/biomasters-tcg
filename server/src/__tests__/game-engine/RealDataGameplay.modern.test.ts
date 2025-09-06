@@ -4,11 +4,9 @@
  * Validates biological accuracy and game balance
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
-  GamePhase,
-  TurnPhase,
   TrophicLevel,
   TrophicCategoryId,
   KeywordId
@@ -263,41 +261,17 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'realdata-test',
-      players: [
-        { 
-          id: 'alice', 
-          name: 'Alice', 
-          hand: ['1', '2', '3', '4', '5', '6'], // All test cards
-          deck: ['1', '2', '3', '4', '5', '6'], // Deck for drawing
-          scorePile: [], 
-          energy: 10, 
-          isReady: false 
-        },
-        { 
-          id: 'bob', 
-          name: 'Bob', 
-          hand: ['1', '2', '3', '4', '5', '6'], // All test cards
-          deck: ['1', '2', '3', '4', '5', '6'], // Deck for drawing
-          scorePile: [], 
-          energy: 10, 
-          isReady: false 
-        }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.SETUP,
-      turnPhase: TurnPhase.READY,
-      actionsRemaining: 0,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, mockCardDatabase, mockAbilityDatabase, new Map());
+    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('realdata-test', [
+      { id: 'alice', name: 'Alice' },
+      { id: 'bob', name: 'Bob' }
+    ], gameSettings);
   });
 
   describe('Marine Ecosystem Gameplay', () => {

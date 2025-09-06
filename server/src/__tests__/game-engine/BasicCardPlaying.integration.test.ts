@@ -4,13 +4,14 @@
  * NO MOCKS - Tests the complete flow: Database → GameDataManager → Engine → Game Logic
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import { gameDataManager } from '../../services/GameDataManager';
 import {
   GameActionType,
   KeywordId,
   CardId,
-  TrophicLevel
+  TrophicLevel,
+
 } from '@biomasters/shared';
 
 describe('Basic Card Playing - Integration Tests', () => {
@@ -65,19 +66,41 @@ describe('Basic Card Playing - Integration Tests', () => {
       turnTimeLimit: 1800000 // 30 minutes
     };
 
-    // Create engine with real data
-    engine = new BioMastersEngine(
-      'integration-test-game',
-      [
-        { id: 'player1', name: 'Test Player 1' },
-        { id: 'player2', name: 'Test Player 2' }
-      ],
-      gameSettings
-    );
 
-    // Start game by having both players ready
-    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
-    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
+    // Use real game data loaded in beforeAll
+    const rawCards = gameDataManager.getCards();
+    const rawAbilities = gameDataManager.getAbilities();
+    const rawKeywords = gameDataManager.getKeywords();
+
+    // Convert data to engine-expected format
+    const cardDatabase = new Map<number, any>();
+    rawCards.forEach((card, cardId) => {
+      cardDatabase.set(Number(cardId), {
+        ...card,
+        cardId: Number(cardId),
+        victoryPoints: card.victoryPoints || 1 // Ensure required field
+      });
+    });
+
+    const abilityDatabase = new Map<number, any>();
+    rawAbilities.forEach((ability, abilityId) => {
+      abilityDatabase.set(abilityId, ability);
+    });
+
+    const keywordDatabase = new Map<number, string>();
+    rawKeywords.forEach((keyword, keywordId) => {
+      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    });
+
+    // Create engine with real data using production constructor
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+
+    // Initialize the game properly
+    engine.initializeNewGame('integration-test', [
+      { id: 'player1', name: 'Player 1' },
+      { id: 'player2', name: 'Player 2' }
+    ], gameSettings);
   });
 
   afterAll(async () => {
@@ -86,6 +109,10 @@ describe('Basic Card Playing - Integration Tests', () => {
   });
 
   test('should place Oak Tree (Producer) adjacent to HOME using real enum', async () => {
+    // Transition to playing phase first
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
     // Use real CardId enum
     const oakTreeId = CardId.OAK_TREE;
 
@@ -133,6 +160,10 @@ describe('Basic Card Playing - Integration Tests', () => {
   });
 
   test('should reject invalid position using real validation', async () => {
+    // Transition to playing phase first
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
     const oakTreeId = CardId.OAK_TREE;
 
     // Add card to player's hand
@@ -157,8 +188,12 @@ describe('Basic Card Playing - Integration Tests', () => {
   });
 
   test('should connect Field Rabbit (+2) to Oak Tree (+1) following trophic rules', async () => {
+    // Transition to playing phase first
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
     const oakTreeId = CardId.OAK_TREE;
-    const rabbitId = CardId.FIELD_RABBIT;
+    const rabbitId = CardId.EUROPEAN_RABBIT;
 
     // Verify both cards exist and have compatible domains and trophic levels
     const cards = gameDataManager.getCards();
@@ -206,12 +241,7 @@ describe('Basic Card Playing - Integration Tests', () => {
         oakCard.isExhausted = false; // Make it ready to pay cost
       }
 
-      engine = new BioMastersEngine(
-        oakResult.newState,
-        gameDataManager.getCards(),
-        gameDataManager.getAbilities(),
-        new Map() // Keywords not needed for this test
-      );
+      // Engine is already initialized in beforeEach, just continue with the test
     }
 
     // Find a free position adjacent to Oak Tree for Rabbit
@@ -262,8 +292,12 @@ describe('Basic Card Playing - Integration Tests', () => {
   });
 
   test('should reject incompatible domain connection (terrestrial to aquatic)', async () => {
+    // Transition to playing phase first
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
     const oakTreeId = CardId.OAK_TREE; // Terrestrial Producer
-    const kelpId = CardId.KELP_FOREST; // Aquatic Producer
+    const kelpId = CardId.GIANT_KELP; // Aquatic Producer
 
     // Verify domain incompatibility (both are producers, so trophic level is same)
     const cards = gameDataManager.getCards();
@@ -300,12 +334,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       // Add kelp card to hand in the updated state before creating new engine
       oakResult.newState.players[0]?.hand.push(kelpId.toString());
 
-      engine = new BioMastersEngine(
-        oakResult.newState,
-        gameDataManager.getCards(),
-        gameDataManager.getAbilities(),
-        new Map() // Keywords not needed for this test
-      );
+      // Engine is already initialized in beforeEach, just continue with the test
     }
 
     // Try to place Kelp connected to Oak Tree (should fail due to domain incompatibility)
@@ -343,8 +372,12 @@ describe('Basic Card Playing - Integration Tests', () => {
   });
 
   test('should handle card lookup by CommonName from database', async () => {
+    // Transition to playing phase first
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
     const oakTreeId = CardId.OAK_TREE;
-    
+
     // Get CommonName from database
     const cards = gameDataManager.getCards();
     const oakTree = cards.get(oakTreeId);
@@ -388,7 +421,7 @@ describe('Basic Card Playing - Integration Tests', () => {
     expect(oakTree!.commonName).toBe('Oak Tree');
     expect(oakTree!.trophicLevel).toBe(TrophicLevel.PRODUCER);
     
-    const rabbit = cards.get(CardId.FIELD_RABBIT);
+    const rabbit = cards.get(CardId.EUROPEAN_RABBIT);
     expect(rabbit).toBeDefined();
     expect(rabbit!.commonName).toBe('European Rabbit');
     expect(rabbit!.trophicLevel).toBe(TrophicLevel.PRIMARY_CONSUMER);

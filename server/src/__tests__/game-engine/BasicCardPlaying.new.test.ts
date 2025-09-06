@@ -3,11 +3,9 @@
  * Updated to use proper enums, data-driven approach, and correct card playing mechanics
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
-  GamePhase,
-  TurnPhase,
   TrophicLevel,
   TrophicCategoryId,
   KeywordId
@@ -144,41 +142,21 @@ describe('Basic Card Playing - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'card-test',
-      players: [
-        { 
-          id: 'alice', 
-          name: 'Alice', 
-          hand: ['1', '2', '3'], // Oak Tree, Field Rabbit, Kelp
-          deck: [], 
-          scorePile: [], 
-          energy: 10, 
-          isReady: true 
-        },
-        { 
-          id: 'bob', 
-          name: 'Bob', 
-          hand: ['1', '2', '3'], // Oak Tree, Field Rabbit, Kelp
-          deck: [], 
-          scorePile: [], 
-          energy: 10, 
-          isReady: true 
-        }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.PLAYING,
-      turnPhase: TurnPhase.ACTION,
-      actionsRemaining: 3,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, mockCardDatabase, mockAbilityDatabase, new Map());
+    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('card-test', [
+      { id: 'alice', name: 'Alice' },
+      { id: 'bob', name: 'Bob' }
+    ], gameSettings);
+
+    // Transition to playing phase for card placement tests
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'alice', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
   });
 
   describe('Basic Card Placement', () => {

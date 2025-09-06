@@ -48,7 +48,7 @@ import { useHybridGameStore } from '../state/hybridGameStore';
 import { Avatar } from '../components/Avatar';
 import { updateProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { updateUserProfile as updateUserProfileAPI } from '../services/profileService';
+import { authApi } from '../services/apiClient';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -122,7 +122,7 @@ const Profile: React.FC = () => {
       const token = await firebaseUser.getIdToken();
 
       // Update server profile
-      await updateUserProfileAPI(token, {
+      await authApi.updateProfile({
         displayName: displayName.trim(),
         bio: bio.trim() || undefined,
         location: location.trim() || undefined,

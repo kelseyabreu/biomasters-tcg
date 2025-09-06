@@ -1,6 +1,7 @@
 import legacy from '@vitejs/plugin-legacy'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,6 +9,12 @@ export default defineConfig({
     react(),
     // legacy() // Temporarily disabled due to core-js issue
   ],
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, './shared')
+    },
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
+  },
   assetsInclude: ['**/*.json'],
   json: {
     stringify: false

@@ -3,7 +3,7 @@
  * BioMasters Trading Card Game battle interface using ClientGameEngine
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import './TCGBattleScreen.css';
 import '../game/EcosystemBoard.css';
 import {
@@ -43,10 +43,11 @@ import {
   rocket
 } from 'ionicons/icons';
 
-import { ClientGameEngine, ClientGameState, ClientPlayer, ClientGridCard } from '../../services/ClientGameEngine';
-import { GameActionType, GamePhase, TurnPhase } from '../../../shared/enums';
-import { CommonName, SPECIES_DISPLAY_NAMES } from '../../../shared/enums';
+// Import the battle store instead of game engine
+import useHybridGameStore from '../../state/hybridGameStore';
+import { CommonName, SPECIES_DISPLAY_NAMES, GamePhase } from '../../../shared/enums';
 import OrganismRenderer from '../OrganismRenderer';
+import { TCGGameService } from '../../services/TCGGameService';
 
 interface TCGBattleScreenProps {
   onExit?: () => void;
@@ -60,208 +61,158 @@ interface TCGGameSettings {
 }
 
 export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
-  // Game engine and state
-  const [gameEngine] = useState(() => new ClientGameEngine());
-  const [gameState, setGameState] = useState<ClientGameState | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  // UI state
-  const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [validPositions, setValidPositions] = useState<{ x: number; y: number }[]>([]);
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [showForfeitAlert, setShowForfeitAlert] = useState(false);
-  const [gameSettings] = useState<TCGGameSettings>({
+  // Create TCG game service instance
+  const [tcgGameService] = React.useState(() => new TCGGameService());
+
+  // Get all state from the battle store
+  const gameState = useHybridGameStore(state => state.battle.tcgGameState);
+  const isLoading = useHybridGameStore(state => state.battle.isLoading);
+  const error = useHybridGameStore(state => state.battle.error);
+  const selectedHandCardId = useHybridGameStore(state => state.battle.uiState.selectedHandCardId);
+  const selectedBoardCardId = useHybridGameStore(state => state.battle.uiState.selectedBoardCardId);
+  const highlightedPositions = useHybridGameStore(state => state.battle.uiState.highlightedPositions);
+
+  // Get battle actions from the store
+  const startTCGGame = useHybridGameStore(state => state.battle.actions.startTCGGame);
+  const playCard = useHybridGameStore(state => state.battle.actions.playCard);
+  const passTurn = useHybridGameStore(state => state.battle.actions.passTurn);
+  const selectHandCard = useHybridGameStore(state => state.battle.actions.selectHandCard);
+  const setHighlightedPositions = useHybridGameStore(state => state.battle.actions.setHighlightedPositions);
+  const clearUIState = useHybridGameStore(state => state.battle.actions.clearUIState);
+
+  // Local UI state (non-game related)
+  const [showForfeitAlert, setShowForfeitAlert] = React.useState(false);
+
+  // Game settings (could be moved to store if needed)
+  const gameSettings: TCGGameSettings = {
     gameMode: 'practice',
     difficulty: 'easy',
     playerCount: 2
-  });
+  };
 
-  // Initialize game engine and create game
+  // Initialize TCG game using store action
   useEffect(() => {
     const initializeGame = async () => {
-      try {
-        console.log('🎮 [TCG] Initializing TCG Battle...');
-        console.log('🎮 [TCG] Game settings:', gameSettings);
+      console.log('🎮 [TCG] Initializing TCG Battle...');
+      console.log('🎮 [TCG] Game settings:', gameSettings);
 
-        // Initialize the game engine
-        console.log('🎮 [TCG] Initializing game engine...');
-        await gameEngine.initialize();
-        console.log('✅ [TCG] Game engine initialized');
+      // Create players based on game settings
+      const players = [];
+      console.log('🎮 [TCG] Creating players for count:', gameSettings.playerCount);
 
-        // Create players based on game settings
-        const players = [];
-        console.log('🎮 [TCG] Creating players for count:', gameSettings.playerCount);
-
-        if (gameSettings.playerCount === 2) {
-          players.push(
-            { id: 'human', name: 'Player' },
-            { id: 'ai', name: 'AI Opponent' }
-          );
-        } else if (gameSettings.playerCount === 4) {
-          players.push(
-            { id: 'human', name: 'Player' },
-            { id: 'ai1', name: 'AI Opponent 1' },
-            { id: 'ai2', name: 'AI Opponent 2' },
-            { id: 'ai3', name: 'AI Opponent 3' }
-          );
-        }
-
-        console.log('🎮 [TCG] Players created:', players);
-
-        console.log('🎮 [TCG] Creating game...');
-        const newGameState = await gameEngine.createGame('tcg-battle', players, {
-          startingHandSize: 5,
-          maxHandSize: 10
-          // Grid dimensions will be set automatically based on player count
-        });
-
-        console.log('🎮 [TCG] Game state created:', {
-          gameId: newGameState.gameId,
-          playerCount: newGameState.players.length,
-          gridWidth: newGameState.gameSettings.gridWidth,
-          gridHeight: newGameState.gameSettings.gridHeight,
-          gamePhase: newGameState.gamePhase,
-          turnPhase: newGameState.turnPhase,
-          gridSize: newGameState.grid.size
-        });
-
-        setGameState(newGameState);
-        setIsInitialized(true);
-
-        console.log('✅ [TCG] TCG Battle initialized successfully');
-        console.log('✅ [TCG] Component state updated - isInitialized:', true);
-      } catch (error) {
-        console.error('❌ [TCG] Failed to initialize TCG Battle:', error);
-        console.error('❌ [TCG] Error details:', error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '');
-        setAlertMessage('Failed to initialize game. Please try again.');
-        setShowAlert(true);
+      if (gameSettings.playerCount === 2) {
+        players.push(
+          { id: 'human', name: 'Player' },
+          { id: 'ai', name: 'AI Opponent' }
+        );
+      } else if (gameSettings.playerCount === 4) {
+        players.push(
+          { id: 'human', name: 'Player' },
+          { id: 'ai1', name: 'AI Opponent 1' },
+          { id: 'ai2', name: 'AI Opponent 2' },
+          { id: 'ai3', name: 'AI Opponent 3' }
+        );
       }
+
+      console.log('🎮 [TCG] Players created:', players);
+
+      // Use store action to start the game
+      await startTCGGame('tcg-battle', players, {
+        startingHandSize: 5,
+        maxHandSize: 10
+      });
+
+      console.log('✅ [TCG] TCG Battle initialization requested');
     };
 
-    console.log('🎮 [TCG] useEffect triggered - starting initialization');
-    initializeGame();
-  }, [gameEngine]);
+    // Only initialize if we don't have a game state yet
+    if (!gameState && !isLoading) {
+      initializeGame();
+    }
+  }, [gameState, isLoading, startTCGGame]);
 
   // Handle card selection from hand
   const handleCardSelect = useCallback((cardInstanceId: string) => {
     if (!gameState) return;
-    
-    const currentPlayer = gameEngine.getCurrentPlayer();
+
+    // Check if this card is in the current player's hand
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (!currentPlayer || !currentPlayer.hand.includes(cardInstanceId)) {
       return;
     }
 
-    if (selectedCard === cardInstanceId) {
+    if (selectedHandCardId === cardInstanceId) {
       // Deselect
-      setSelectedCard(null);
-      setValidPositions([]);
+      selectHandCard(null);
+      setHighlightedPositions([]);
     } else {
       // Select card and show valid positions
-      setSelectedCard(cardInstanceId);
-      
-      // Extract card ID from instance ID
-      const cardId = extractCardIdFromInstance(cardInstanceId);
-      const positions = gameEngine.getValidPositions(cardId, currentPlayer.id);
-      setValidPositions(positions);
+      selectHandCard(cardInstanceId);
+
+      // Calculate valid positions using the game service
+      try {
+        // Extract card ID from instance ID (e.g., "1" from "1_0")
+        const cardId = parseInt(cardInstanceId.split('_')[0]);
+        const validPositions = tcgGameService.getValidPositions(cardId, currentPlayer.id);
+
+        console.log(`🎯 Valid positions for card ${cardInstanceId}:`, validPositions);
+        setHighlightedPositions(validPositions);
+      } catch (error) {
+        console.error('❌ Error calculating valid positions:', error);
+        // Fallback to empty positions
+        setHighlightedPositions([]);
+      }
     }
-  }, [gameState, selectedCard, gameEngine]);
+  }, [gameState, selectedHandCardId, selectHandCard, setHighlightedPositions]);
 
   // Handle card placement on grid
-  const handleGridPositionClick = useCallback((x: number, y: number) => {
-    if (!gameState || !selectedCard) return;
+  const handleGridPositionClick = useCallback(async (x: number, y: number) => {
+    if (!gameState || !selectedHandCardId) return;
 
-    const currentPlayer = gameEngine.getCurrentPlayer();
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (!currentPlayer) return;
 
     // Check if position is valid
-    const isValidPosition = validPositions.some(pos => pos.x === x && pos.y === y);
+    const isValidPosition = highlightedPositions.some(pos => pos.x === x && pos.y === y);
     if (!isValidPosition) {
-      setAlertMessage('Invalid position for this card');
-      setShowAlert(true);
+      console.log('❌ Invalid position for this card');
       return;
     }
 
-    // Process play card action
-    const action = {
-      type: GameActionType.PLAY_CARD,
-      playerId: currentPlayer.id,
-      payload: {
-        cardId: selectedCard,
-        position: { x, y }
-      }
-    };
+    // Use the selected card ID directly (it should already be the card ID)
+    // Use store action to play the card
+    await playCard(selectedHandCardId, { x, y });
 
-    const result = gameEngine.processAction(action);
-    
-    if (result.isValid && result.newState) {
-      setGameState(result.newState);
-      setSelectedCard(null);
-      setValidPositions([]);
-      
-      // Save game state
-      gameEngine.saveToLocalStorage();
-    } else {
-      setAlertMessage(result.errorMessage || 'Failed to play card');
-      setShowAlert(true);
-    }
-  }, [gameState, selectedCard, validPositions, gameEngine]);
+    console.log('✅ Card placement requested');
+  }, [gameState, selectedHandCardId, highlightedPositions, playCard]);
 
   // Handle pass turn
-  const handlePassTurn = useCallback(() => {
+  const handlePassTurn = useCallback(async () => {
     if (!gameState) return;
 
-    const currentPlayer = gameEngine.getCurrentPlayer();
-    if (!currentPlayer) return;
+    // Use store action to pass turn
+    await passTurn();
 
-    const action = {
-      type: GameActionType.PASS_TURN,
-      playerId: currentPlayer.id,
-      payload: {}
-    };
-
-    const result = gameEngine.processAction(action);
-    
-    if (result.isValid && result.newState) {
-      setGameState(result.newState);
-      setSelectedCard(null);
-      setValidPositions([]);
-      
-      // Save game state
-      gameEngine.saveToLocalStorage();
-    }
-  }, [gameState, gameEngine]);
-
-  // Handle player ready (for game start)
-  const handlePlayerReady = useCallback(() => {
-    if (!gameState) return;
-
-    const currentPlayer = gameEngine.getCurrentPlayer();
-    if (!currentPlayer) return;
-
-    const action = {
-      type: GameActionType.PLAYER_READY,
-      playerId: currentPlayer.id,
-      payload: {}
-    };
-
-    const result = gameEngine.processAction(action);
-    
-    if (result.isValid && result.newState) {
-      setGameState(result.newState);
-    }
-  }, [gameState, gameEngine]);
+    console.log('✅ Pass turn requested');
+  }, [gameState, passTurn]);
 
   // Helper function to extract card ID from instance ID
-  const extractCardIdFromInstance = (instanceId: string): number => {
+  const extractCardIdFromInstance = (instanceId: string): string => {
+    // For now, return the instanceId as-is since we're using string IDs
     const match = instanceId.match(/card-instance-(\d+)-/);
-    return match ? parseInt(match[1], 10) : 0;
+    return match ? match[1] : instanceId;
   };
 
-  // Helper function to get card data
-  const getCardData = (instanceId: string) => {
-    const cardId = extractCardIdFromInstance(instanceId);
-    return gameEngine['gameDataManager']?.getCard(cardId);
+  // Helper function to get card data (simplified for now)
+  const getCardData = (instanceId: string): any => {
+    // TODO: Get card data from store or game state
+    // For now, return a placeholder object
+    return {
+      CommonName: 'Card',
+      ScientificName: 'Species name',
+      VictoryPoints: 1,
+      TrophicLevel: 1
+    };
   };
 
   // Handle forfeit/quit match
@@ -269,28 +220,21 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     console.log('🏳️ Player forfeiting TCG match');
     setShowForfeitAlert(false);
 
-    // Clear game state and exit
-    setGameState(null);
-    setSelectedCard(null);
-    setValidPositions([]);
-    setIsInitialized(false);
+    // Clear UI state
+    clearUIState();
 
     // Call onExit to return to mode selector
     if (onExit) {
       onExit();
     }
 
-    // Show confirmation message
-    setTimeout(() => {
-      setAlertMessage('Match forfeited. Returning to mode selection.');
-      setShowAlert(true);
-    }, 100);
+    console.log('✅ Match forfeited, returning to mode selection');
   };
 
   // Render loading state
-  console.log('🎮 [TCG] Render check - isInitialized:', isInitialized, 'gameState:', !!gameState);
+  console.log('🎮 [TCG] Render check - isLoading:', isLoading, 'gameState:', !!gameState, 'error:', error);
 
-  if (!isInitialized || !gameState) {
+  if (isLoading || !gameState) {
     console.log('🎮 [TCG] Rendering loading state');
     return (
       <IonPage>
@@ -300,34 +244,36 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             height: '100%',
             flexDirection: 'column'
           }}>
             <h2>🧬 Initializing BioMasters TCG...</h2>
             <IonProgressBar type="indeterminate" />
-            <p>Loading game data and setting up battle...</p>
+            <p>{isLoading ? 'Loading game data and setting up battle...' : 'Loading game...'}</p>
+            {error && <p style={{ color: 'red' }}>Error: {error}</p>}
           </div>
         </IonContent>
       </IonPage>
     );
   }
 
-  const currentPlayer = gameEngine.getCurrentPlayer();
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isPlayerTurn = currentPlayer?.id === 'human';
-  const availableActions = gameEngine.getAvailableActions();
+  // TODO: Get available actions from game state or calculate them
 
   console.log('🎮 [TCG] Rendering main UI with:', {
     currentPlayer: currentPlayer?.id,
     isPlayerTurn,
     gamePhase: gameState.gamePhase,
-    gridWidth: gameState.gameSettings.gridWidth,
-    gridHeight: gameState.gameSettings.gridHeight,
-    gridCards: gameState.grid.size,
-    availableActions
+    turnPhase: gameState.turnPhase,
+    gridSize: gameState.grid?.size || 0,
+    gridWidth: gameState.gameSettings?.gridWidth,
+    gridHeight: gameState.gameSettings?.gridHeight,
+    gridContents: gameState.grid ? Array.from(gameState.grid.entries()) : []
   });
 
   return (
@@ -365,19 +311,19 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                 <IonCol size="3">
                   <div className="status-item">
                     <IonIcon icon={people} />
-                    <span>Turn {gameState.turnNumber}</span>
+                    <span>Turn {gameState.turnNumber || 1}</span>
                   </div>
                 </IonCol>
                 <IonCol size="3">
                   <div className="status-item">
                     <IonIcon icon={star} />
-                    <span>Phase: {gameState.turnPhase}</span>
+                    <span>Phase: {gameState.turnPhase || 'ACTION'}</span>
                   </div>
                 </IonCol>
                 <IonCol size="3">
                   <div className="status-item">
                     <IonIcon icon={flash} />
-                    <span>Actions: {gameState.actionsRemaining}</span>
+                    <span>Actions: {gameState.actionsRemaining || 1}</span>
                   </div>
                 </IonCol>
                 <IonCol size="3">
@@ -400,20 +346,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
               <IonCardTitle>Game Setup</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <p>Prepare for battle! Click Ready when you're set to begin.</p>
-              <IonButton
-                expand="block"
-                onClick={handlePlayerReady}
-                disabled={currentPlayer?.isReady}
-              >
-                {currentPlayer?.isReady ? 'Ready!' : 'Ready to Battle'}
-              </IonButton>
+              <p>Game is being set up. Please wait...</p>
+              <IonProgressBar type="indeterminate" />
             </IonCardContent>
           </IonCard>
         )}
 
         {/* Game Grid */}
-        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING) && (
+        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING) && gameState.gameSettings && (
           <IonCard className="game-grid-card">
             <IonCardHeader>
               <IonCardTitle>Ecosystem Grid ({gameState.gameSettings.gridWidth}x{gameState.gameSettings.gridHeight})</IonCardTitle>
@@ -436,7 +376,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                   Array.from({ length: gameState.gameSettings.gridWidth }, (_, x) => {
                     const positionKey = `${x},${y}`;
                     const card = gameState.grid.get(positionKey);
-                    const isValidPosition = validPositions.some(pos => pos.x === x && pos.y === y);
+                    const isValidPosition = highlightedPositions.some((pos: any) => pos.x === x && pos.y === y);
                     const isHomePosition = card?.isHOME;
 
 
@@ -541,9 +481,9 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                 overflowX: 'auto',
                 padding: '8px 0'
               }}>
-                {currentPlayer.hand.map((cardInstanceId) => {
+                {currentPlayer.hand.map((cardInstanceId: any) => {
                   const cardData = getCardData(cardInstanceId);
-                  const isSelected = selectedCard === cardInstanceId;
+                  const isSelected = selectedHandCardId === cardInstanceId;
 
                   return (
                     <div
@@ -612,7 +552,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                       expand="block"
                       fill="outline"
                       onClick={handlePassTurn}
-                      disabled={!availableActions.includes('pass_turn')}
                     >
                       Pass Turn
                     </IonButton>
@@ -621,7 +560,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                     <IonButton
                       expand="block"
                       fill="outline"
-                      disabled={!selectedCard || validPositions.length === 0}
+                      disabled={!selectedHandCardId || highlightedPositions.length === 0}
                     >
                       Play Card
                     </IonButton>
@@ -632,14 +571,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
           </IonCard>
         )}
 
-        {/* Alert for messages */}
-        <IonAlert
-          isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header="Game Message"
-          message={alertMessage}
-          buttons={['OK']}
-        />
+        {/* Error display */}
+        {error && (
+          <IonCard color="danger">
+            <IonCardContent>
+              <p>{error}</p>
+            </IonCardContent>
+          </IonCard>
+        )}
 
         {/* Forfeit confirmation alert */}
         <IonAlert

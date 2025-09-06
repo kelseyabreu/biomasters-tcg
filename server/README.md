@@ -17,6 +17,9 @@ Backend API server for BioMasters TCG using the **FIRE stack** with JSON-driven 
 - **⚡ Real-time**: WebSocket support for multiplayer features
 - **✅ Production-Ready**: 100% test coverage with 19/19 integration tests passing
 - **🧬 Biologically Accurate**: Real ecosystem data with proper trophic relationships
+- **🎯 Authoritative Server**: `server/src/game-engine/BioMastersEngine.ts` for TCG online mode
+- **🔄 Automatic Turn Management**: State machine handles Ready→Draw→Action phases with timeouts
+- **🏠 HOME Card System**: Domain 0 for universal compatibility, chemoautotrophs connect to geological entities
 
 ## 🚀 Quick Start
 
@@ -135,8 +138,14 @@ const cards = gameDataManager.getCards();        // cards.json
 const abilities = gameDataManager.getAbilities(); // abilities.json
 const localization = gameDataManager.getLocalization(); // en.json
 
-// BioMasters Engine uses loaded data
-const engine = new BioMastersEngine(gameId, players, settings);
+// BioMasters Engine uses loaded data (authoritative for TCG)
+const engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+const gameState = engine.initializeNewGame(gameId, players, settings);
+
+// Automatic turn progression with state machine
+engine.processAction({ type: GameActionType.PLAYER_READY, playerId, payload: {} });
+// Transitions: SETUP → PLAYING when all players ready
+// Turn phases: READY → DRAW → ACTION (3 actions per turn)
 ```
 
 ### **Data Flow Architecture**
@@ -145,11 +154,15 @@ const engine = new BioMastersEngine(gameId, players, settings);
     ↓
 GameDataManager (Server startup)
     ↓
-BioMasters Engine (Game logic)
+BioMasters Engine (Authoritative TCG game logic)
     ↓
-API Endpoints (Game state management)
-    ↓
-WebSocket (Real-time updates)
+    ├── TCGGameService (Client wrapper for offline mode)
+    ├── API Endpoints (Game state management)
+    └── WebSocket (Real-time updates)
+
+Frontend Engines:
+├── ClientGameEngine (Wraps BioMastersEngine for offline TCG)
+└── PhyloGameService (Educational campaign mode)
 ```
 
 ### **Database Role**
@@ -232,10 +245,12 @@ npx tsx src/scripts/edge-case-tests.ts         # Edge case validation
 - ✅ **HOME System**: Photoautotroph connections, chemoautotroph restrictions (cannot connect to HOME)
 - ✅ **Advanced Mechanics**: Mixotrophs, Metamorphosis, Parasites, Mutualists
 - ✅ **Turn Management**: 3 actions per turn, automatic turn transitions
-- ✅ **Game Phase Management**: SETUP → PLAYING phase transitions
+- ✅ **Game Phase Management**: SETUP → PLAYING phase transitions with player ready states
 - ✅ **Victory Conditions**: Game end detection, VP calculation
 - ✅ **Ability System**: Complete effect execution with proper EffectID handling
-- ✅ **Data Integrity**: Real JSON data validation (10 cards, 15 abilities, 40 keywords)
+- ✅ **Data Integrity**: Real JSON data validation (25 cards, 15 abilities, 40 keywords)
+- ✅ **Card Distribution**: Real species data from card database for starting hands/decks
+- ✅ **Valid Position Calculation**: Adjacent placement rules with HOME card compatibility
 
 ### 🎯 **Comprehensive Integration Testing**
 Our `ComprehensiveGameRules.integration.test.ts` suite achieves **100% test coverage** of core game mechanics:
@@ -245,6 +260,9 @@ Our `ComprehensiveGameRules.integration.test.ts` suite achieves **100% test cove
 - **Production-ready validation** ensuring game engine reliability
 - **Fixed ability execution** - All effects now execute properly with correct EffectID handling
 - **Enhanced rule compliance** - Chemoautotrophs, Detritivores, and attachment systems fully implemented
+- **Turn state management** - Automatic Ready→Draw→Action progression with player ready validation
+- **Card distribution system** - Real species data used for starting hands and deck construction
+- **Grid placement validation** - HOME card adjacency rules and valid position calculation
 
 ## 🔧 Troubleshooting
 

@@ -3,11 +3,10 @@
  * Updated to use proper enums and correct grid logic
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
-  GamePhase,
-  TurnPhase
+  GamePhase
 } from '@biomasters/shared';
 
 describe('BioMasters Engine Basics - Modern', () => {
@@ -63,25 +62,16 @@ describe('BioMasters Engine Basics - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'test-game-1',
-      players: [
-        { id: 'player1', name: 'Test Player 1', hand: [], deck: [], scorePile: [], energy: 0, isReady: false },
-        { id: 'player2', name: 'Test Player 2', hand: [], deck: [], scorePile: [], energy: 0, isReady: false }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.SETUP,
-      turnPhase: TurnPhase.READY,
-      actionsRemaining: 0,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, new Map(), new Map(), new Map());
+    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('test-game-1', [
+      { id: 'player1', name: 'Test Player 1' },
+      { id: 'player2', name: 'Test Player 2' }
+    ], gameSettings);
   });
 
   describe('Engine Initialization', () => {

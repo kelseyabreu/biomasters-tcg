@@ -4,13 +4,13 @@
  * Uses only real card data - no mocks
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
 import { gameDataManager } from '../../services/GameDataManager';
 import { GameActionType } from '@biomasters/shared';
 
 describe('🧬 Advanced Mechanics Integration Tests', () => {
   let engine: BioMastersEngine;
-  let gameSettings: GameSettings;
+  // Game settings will be initialized by the engine
 
   beforeAll(async () => {
     await gameDataManager.loadGameData();
@@ -18,24 +18,61 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
 
   beforeEach(() => {
     // Create 1v1 game with proper grid size
-    const playerCount = 2;
-    const gridSize = BioMastersEngine.getGridSize(playerCount);
+    // const playerCount = 2;
+    // const gridSize = BioMastersEngine.getGridSize(playerCount);
     
-    gameSettings = {
-      maxPlayers: playerCount,
-      gridWidth: gridSize.width,   // 9 for 1v1
-      gridHeight: gridSize.height, // 10 for 1v1
-      startingHandSize: 5,
-      maxHandSize: 7,
-      startingEnergy: 10,
-      turnTimeLimit: 300
-    };
+    // Game settings will be initialized by the engine
+    // const gameSettings = {
+    //   maxPlayers: playerCount,
+    //   gridWidth: gridSize.width,   // 9 for 1v1
+    //   gridHeight: gridSize.height, // 10 for 1v1
+    //   startingHandSize: 5,
+    //   maxHandSize: 7,
+    //   startingEnergy: 10,
+    //   turnTimeLimit: 300
+    // };
+
+    // Use real game data loaded in beforeAll
+    const rawCards = gameDataManager.getCards();
+    const rawAbilities = gameDataManager.getAbilities();
+    const rawKeywords = gameDataManager.getKeywords();
+
+    // Convert data to engine-expected format
+    const cardDatabase = new Map<number, any>();
+    rawCards.forEach((card, cardId) => {
+      cardDatabase.set(Number(cardId), {
+        ...card,
+        cardId: Number(cardId),
+        victoryPoints: card.victoryPoints || 1 // Ensure required field
+      });
+    });
+
+    const abilityDatabase = new Map<number, any>();
+    rawAbilities.forEach((ability, abilityId) => {
+      abilityDatabase.set(abilityId, ability);
+    });
+
+    const keywordDatabase = new Map<number, string>();
+    rawKeywords.forEach((keyword, keywordId) => {
+      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    });
 
     // Create engine with real data using production constructor
-    engine = new BioMastersEngine('advanced-test', [
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+
+    // Initialize the game properly
+    engine.initializeNewGame('advanced-test', [
       { id: 'Alice', name: 'Alice' },
       { id: 'Bob', name: 'Bob' }
-    ], gameSettings);
+    ], {
+      gridWidth: 10,
+      gridHeight: 10,
+      maxHandSize: 7,
+      startingEnergy: 10,
+      turnTimeLimit: 300,
+      maxPlayers: 2,
+      startingHandSize: 5
+    });
 
     // Start game
     engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'Alice', payload: {} });

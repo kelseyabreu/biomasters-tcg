@@ -4,7 +4,7 @@
  * Based on BioMasterEngine.txt and RulesForBiomasters.txt
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
   GamePhase,
@@ -232,41 +232,17 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'gameplay-test',
-      players: [
-        { 
-          id: 'alice', 
-          name: 'BioMaster Alice', 
-          hand: ['1', '2', '3', '4', '5', '6'], // All test cards
-          deck: ['1', '2', '3', '4', '5', '6'], // Deck for drawing
-          scorePile: [], 
-          energy: 10, 
-          isReady: false 
-        },
-        { 
-          id: 'bob', 
-          name: 'BioMaster Bob', 
-          hand: ['1', '2', '3', '4', '5', '6'], // All test cards
-          deck: ['1', '2', '3', '4', '5', '6'], // Deck for drawing
-          scorePile: [], 
-          energy: 10, 
-          isReady: false 
-        }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.SETUP,
-      turnPhase: TurnPhase.READY,
-      actionsRemaining: 0,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, mockCardDatabase, mockAbilityDatabase, new Map());
+    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('gameplay-test', [
+      { id: 'alice', name: 'Alice' },
+      { id: 'bob', name: 'Bob' }
+    ], gameSettings);
   });
 
   describe('Game Phase Transitions', () => {
@@ -603,20 +579,30 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
 
       const initialHandSize = engine.getGameState().players[0]?.hand.length || 0;
 
-      // Play a card
+      // Play a card - find a producer card in the player's hand
       const gameState = engine.getGameState();
+      const player1 = gameState.players[0];
+      // Find a producer card (trophic level 1) that can be placed adjacent to HOME
+      console.log('🃏 Player hand:', player1?.hand);
+      const producerCards = ['1', '2']; // Giant Kelp, Oak Tree (both producers)
+      const cardToPlay = player1?.hand.find(cardId => producerCards.includes(cardId));
+      console.log('🎯 Card to play:', cardToPlay);
+      expect(cardToPlay).toBeDefined();
+
       const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
       const adjacentPosition = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'alice',
-        payload: { cardId: '1', position: adjacentPosition }
+        payload: { cardId: cardToPlay, position: adjacentPosition }
       });
+
+      console.log('🎮 Result:', result.isValid, result.errorMessage);
 
       expect(result.isValid).toBe(true);
       expect(result.newState?.players[0]?.hand.length).toBe(initialHandSize - 1);
-      expect(result.newState?.players[0]?.hand).not.toContain('1');
+      expect(result.newState?.players[0]?.hand).not.toContain(cardToPlay);
     });
 
     test('should handle multiple players correctly', () => {

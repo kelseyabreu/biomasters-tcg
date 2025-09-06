@@ -5,7 +5,7 @@
  * NO MOCKS - Full end-to-end testing
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
 import { gameDataManager } from '../../services/GameDataManager';
 import {
   GameActionType,
@@ -14,7 +14,7 @@ import {
 
 describe('Comprehensive Game Rules - Integration Tests', () => {
   let engine: BioMastersEngine;
-  let gameSettings: GameSettings;
+  // Game settings will be initialized by the engine
 
   beforeAll(async () => {
     console.log('🎮 Loading real game data for comprehensive rule testing...');
@@ -24,24 +24,183 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
 
   beforeEach(() => {
     // Create 1v1 game with proper grid size
-    const playerCount = 2;
-    const gridSize = BioMastersEngine.getGridSize(playerCount);
+    // const playerCount = 2;
+    // const gridSize = BioMastersEngine.getGridSize(playerCount);
     
-    gameSettings = {
-      maxPlayers: playerCount,
-      gridWidth: gridSize.width,   // 9 for 1v1
-      gridHeight: gridSize.height, // 10 for 1v1
-      startingHandSize: 5,
-      maxHandSize: 7,
-      startingEnergy: 10,
-      turnTimeLimit: 300
-    };
+    // Game settings will be initialized by the engine
+    // const gameSettings = {
+    //   maxPlayers: playerCount,
+    //   gridWidth: gridSize.width,   // 9 for 1v1
+    //   gridHeight: gridSize.height, // 10 for 1v1
+    //   startingHandSize: 5,
+    //   maxHandSize: 7,
+    //   startingEnergy: 10,
+    //   turnTimeLimit: 300
+    // };
+
+    // Create engine with comprehensive test data (unused - using real data now)
+    /* const mockCardDatabase = new Map([
+      // Oak Tree - Terrestrial Producer
+      [CardId.OAK_TREE, {
+        cardId: CardId.OAK_TREE,
+        commonName: 'Oak Tree',
+        scientificName: 'Quercus robur',
+        trophicLevel: TrophicLevel.PRODUCER,
+        trophicCategory: TrophicCategoryId.PHOTOAUTOTROPH,
+        cost: null,
+        victoryPoints: 1,
+        keywords: [KeywordId.TERRESTRIAL],
+        abilities: [],
+        domain: 1, // Terrestrial domain
+        massKg: 1000,
+        lifespanMaxDays: 36500,
+        visionRangeM: 0,
+        smellRangeM: 0,
+        hearingRangeM: 0,
+        walkSpeedMPerHr: 0,
+        runSpeedMPerHr: 0,
+        swimSpeedMPerHr: 0,
+        flySpeedMPerHr: 0,
+        offspringCount: 0,
+        gestationDays: 0,
+        taxonomy: { Kingdom: 'Plantae', Phylum: 'Magnoliophyta' }
+      }],
+      // European Rabbit - Terrestrial Herbivore
+      [CardId.EUROPEAN_RABBIT, {
+        cardId: CardId.EUROPEAN_RABBIT,
+        commonName: 'European Rabbit',
+        scientificName: 'Oryctolagus cuniculus',
+        trophicLevel: TrophicLevel.PRIMARY_CONSUMER,
+        trophicCategory: TrophicCategoryId.HERBIVORE,
+        cost: { Requires: [{ Category: TrophicCategoryId.PHOTOAUTOTROPH, Count: 1 }] },
+        victoryPoints: 2,
+        keywords: [KeywordId.TERRESTRIAL],
+        abilities: [],
+        domain: 1, // Terrestrial domain
+        massKg: 2.5,
+        lifespanMaxDays: 3650,
+        visionRangeM: 100,
+        smellRangeM: 50,
+        hearingRangeM: 200,
+        walkSpeedMPerHr: 15000,
+        runSpeedMPerHr: 45000,
+        swimSpeedMPerHr: 0,
+        flySpeedMPerHr: 0,
+        offspringCount: 6,
+        gestationDays: 30,
+        taxonomy: { Kingdom: 'Animalia', Phylum: 'Chordata' }
+      }],
+      // Giant Kelp - Aquatic Producer
+      [CardId.GIANT_KELP, {
+        cardId: CardId.GIANT_KELP,
+        commonName: 'Giant Kelp',
+        scientificName: 'Macrocystis pyrifera',
+        trophicLevel: TrophicLevel.PRODUCER,
+        trophicCategory: TrophicCategoryId.PHOTOAUTOTROPH,
+        cost: null,
+        victoryPoints: 1,
+        keywords: [KeywordId.AQUATIC, KeywordId.MARINE],
+        abilities: [],
+        domain: 2, // Aquatic domain
+        massKg: 100,
+        lifespanMaxDays: 365,
+        visionRangeM: 0,
+        smellRangeM: 0,
+        hearingRangeM: 0,
+        walkSpeedMPerHr: 0,
+        runSpeedMPerHr: 0,
+        swimSpeedMPerHr: 0,
+        flySpeedMPerHr: 0,
+        offspringCount: 0,
+        gestationDays: 0,
+        taxonomy: { Kingdom: 'Plantae', Phylum: 'Ochrophyta' }
+      }],
+      // Decomposer Mushroom - Saprotroph
+      [CardId.DECOMPOSER_MUSHROOM, {
+        cardId: CardId.DECOMPOSER_MUSHROOM,
+        commonName: 'Decomposer Mushroom',
+        scientificName: 'Agaricus bisporus',
+        trophicLevel: TrophicLevel.SAPROTROPH,
+        trophicCategory: TrophicCategoryId.SAPROTROPH,
+        cost: null,
+        victoryPoints: 1,
+        keywords: [KeywordId.TERRESTRIAL],
+        abilities: [],
+        domain: 1, // Terrestrial domain
+        massKg: 0.1,
+        lifespanMaxDays: 14,
+        visionRangeM: 0,
+        smellRangeM: 0,
+        hearingRangeM: 0,
+        walkSpeedMPerHr: 0,
+        runSpeedMPerHr: 0,
+        swimSpeedMPerHr: 0,
+        flySpeedMPerHr: 0,
+        offspringCount: 0,
+        gestationDays: 0,
+        taxonomy: { Kingdom: 'Fungi', Phylum: 'Basidiomycota' }
+      }]
+    ]);
+
+    // const mockAbilityDatabase = new Map([
+    //   [1, {
+    //     abilityId: 1,
+    //     name: 'Test Ability',
+    //     description: 'A test ability for integration tests',
+    //     cost: null,
+    //     effects: [
+    //       {
+    //         effectID: 1,
+    //         type: 'GAIN_ENERGY',
+    //         value: 2,
+    //         selectorID: 1
+    //       }
+    //     ],
+    //     triggerID: 1
+    //   }]
+    // ]); */
+
+    // Use real game data loaded in beforeAll
+    const rawCards = gameDataManager.getCards();
+    const rawAbilities = gameDataManager.getAbilities();
+    const rawKeywords = gameDataManager.getKeywords();
+
+    // Convert data to engine-expected format
+    const cardDatabase = new Map<number, any>();
+    rawCards.forEach((card, cardId) => {
+      cardDatabase.set(Number(cardId), {
+        ...card,
+        cardId: Number(cardId),
+        victoryPoints: card.victoryPoints || 1 // Ensure required field
+      });
+    });
+
+    const abilityDatabase = new Map<number, any>();
+    rawAbilities.forEach((ability, abilityId) => {
+      abilityDatabase.set(abilityId, ability);
+    });
+
+    const keywordDatabase = new Map<number, string>();
+    rawKeywords.forEach((keyword, keywordId) => {
+      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    });
 
     // Create engine with real data using production constructor
-    engine = new BioMastersEngine('integration-test', [
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+
+    // Initialize the game properly
+    engine.initializeNewGame('comprehensive-test', [
       { id: 'Alice', name: 'Alice' },
       { id: 'Bob', name: 'Bob' }
-    ], gameSettings);
+    ], {
+      gridWidth: 10,
+      gridHeight: 10,
+      maxHandSize: 7,
+      startingEnergy: 10,
+      turnTimeLimit: 300,
+      maxPlayers: 2,
+      startingHandSize: 5
+    });
   });
 
   // Helper function to start the game (transition from SETUP to PLAYING)

@@ -143,7 +143,12 @@ export enum TriggerId {
   ON_DAMAGE = 9,         // When taking damage
   ON_DEATH = 10,         // When creature dies
   ON_ATTACK = 11,        // When attacking
-  ON_DEFEND = 12         // When being attacked
+  ON_DEFEND = 12,        // When being attacked
+  ON_PLAY = 13,          // When card is played (alias)
+  ON_ATTACH = 14,        // When attached to host
+  ON_DETACH = 15,        // When detached from host
+  PERSISTENT = 16,       // Always active while in play
+  ACTION = 17            // Activated by player action
 }
 
 /**
@@ -187,8 +192,17 @@ export enum SelectorId {
   DETRITUS = 12,         // Cards in detritus zone
   HAND = 13,             // Cards in hand
   DECK = 14,             // Cards in deck
-  SCORE_PILE = 15        // Cards in score pile
+  SCORE_PILE = 15,       // Cards in score pile
+  ADJACENT_SAME_DOMAIN = 16,       // Adjacent cards with same domain
+  ADJACENT_AQUATIC = 17,           // Adjacent aquatic cards
+  ADJACENT_TERRESTRIAL = 18,       // Adjacent terrestrial cards
+  ADJACENT_TO_SHARED_AMPHIBIOUS = 19, // Adjacent to shared amphibious card
+  ALL_OWNED_CARDS = 20,            // All cards owned by player
+  TARGET_CREATURE = 21,            // Specific targeted creature
+  HOST_CREATURE = 22               // Host creature (for parasites/mutualists)
 }
+
+
 
 /**
  * Action Types - What happens to targets
@@ -218,6 +232,7 @@ export enum ActionId {
 export enum GamePhase {
   SETUP = 'setup',
   PLAYING = 'playing',
+  FINAL_TURN = 'final_turn',  // Final turn phase when a player can't draw
   ENDED = 'ended'
 }
 

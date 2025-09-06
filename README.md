@@ -19,8 +19,16 @@ BioMasters TCG is a **living card game of strategy and synergy** for 2-4 players
 - **🌍 Real IUCN Data**: Card rarity based on actual conservation status percentages
 - **📱 Cross-Platform**: Web and mobile with full offline support
 - **🧬 Production-Ready Engine**: 100% test coverage with real biological data validation
+- **🎮 Dual Game Modes**: TCG Battle for competitive play, Phylo Campaign for education
+- **🔄 Automatic Turn Management**: State machine handles Ready→Draw→Action phases with timeouts
+- **🌐 Hybrid Online/Offline**: Seamless switching with local state and server synchronization
 
 ## 🎮 How to Play
+
+### Game Modes
+- **🎯 TCG Battle**: Full trading card game with deck building and strategic gameplay
+- **🌱 Phylo Campaign**: Educational single-player mode with pre-built decks
+- **🔄 Hybrid System**: Seamless switching between modes with shared card collection
 
 ### Turn Structure
 Each turn follows the **Ready → Draw → Action** sequence:
@@ -144,17 +152,24 @@ biomasters-tcg/
 │   └── en.json          # Localization data
 ├── src/                  # Frontend (React + Ionic)
 │   ├── components/      # UI components
+│   │   ├── battle/     # TCG Battle screens
+│   │   ├── game/       # Phylo Campaign screens
+│   │   └── cards/      # Card rendering components
 │   ├── pages/          # Screen components
-│   ├── services/       # API clients
-│   └── state/          # Zustand state management
+│   ├── services/       # Game engines and API clients
+│   │   ├── ClientGameEngine.ts    # TCG offline engine
+│   │   ├── TCGGameService.ts      # TCG service layer
+│   │   └── PhyloGameService.ts    # Phylo service layer
+│   └── state/          # Zustand hybrid game store
 ├── server/              # Backend (Express + PostgreSQL)
 │   ├── src/
 │   │   ├── routes/     # API endpoints
-│   │   ├── game-engine/ # BioMasters game engine
+│   │   ├── game-engine/ # Authoritative BioMasters engine
 │   │   ├── services/   # GameDataManager (reads /public/data/)
 │   │   └── database/   # PostgreSQL queries (API only)
 │   └── public/         # (removed - no duplicates)
 └── shared/             # TypeScript enums & types
+    └── game-engine/    # Shared BioMasters engine
 ```
 
 ### Data Flow
@@ -162,9 +177,18 @@ biomasters-tcg/
 /public/data/*.json (Single Source)
     ↓
     ├── Frontend: Direct JSON loading (offline-first)
+    │   ├── ClientGameEngine (TCG offline mode)
+    │   └── PhyloGameService (Campaign mode)
     ├── Server: GameDataManager reads same files
+    │   └── BioMastersEngine (Authoritative online mode)
     └── Database: Synced via import script (API queries only)
 ```
+
+### Game Engine Architecture
+- **🎯 TCG Mode**: Uses `server/src/game-engine/BioMastersEngine.ts` as authoritative source
+- **🌱 Phylo Mode**: Uses `src/game-logic/gameStateManager.ts` for educational gameplay
+- **🔄 Client Engine**: `src/services/ClientGameEngine.ts` wraps BioMastersEngine for offline TCG
+- **🌐 Hybrid Store**: `src/state/hybridGameStore.ts` manages both modes with seamless switching
 
 ## 🧬 Game Engine
 
@@ -217,6 +241,8 @@ The game engine is **completely data-driven** using three core files:
 - **Vite** for fast development builds
 - **Capacitor 5** for native iOS/Android deployment
 - **PWA** with service worker for offline play
+- **Zustand** for state management with persistence
+- **Hybrid Architecture** supporting both TCG and Phylo modes
 
 ### Backend (FIRE Stack)
 - **Firebase** Authentication with guest support
@@ -229,6 +255,9 @@ The game engine is **completely data-driven** using three core files:
 - **Offline-first** design with online sync
 - **Type-safe enums** shared between frontend/backend
 - **Real-time** WebSocket support for multiplayer
+- **Dual Engine System**: BioMastersEngine (TCG) + PhyloGameService (Campaign)
+- **Automatic Turn Management**: State machine with Ready→Draw→Action phases
+- **Cross-Platform Deployment**: Web, iOS, Android with offline capabilities
 
 ## 📱 Mobile Deployment
 

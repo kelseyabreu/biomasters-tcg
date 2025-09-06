@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and correct grid logic
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
   GamePhase,
@@ -63,25 +63,14 @@ describe('Simple BioMasters Gameplay - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'simple-test',
-      players: [
-        { id: 'alice', name: 'Alice the Ecologist', hand: [], deck: [], scorePile: [], energy: 0, isReady: false },
-        { id: 'bob', name: 'Bob the Biologist', hand: [], deck: [], scorePile: [], energy: 0, isReady: false }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.SETUP,
-      turnPhase: TurnPhase.READY,
-      actionsRemaining: 0,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
-
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, new Map(), new Map(), new Map());
+    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('simple-test', [
+      { id: 'alice', name: 'Alice the Ecologist' },
+      { id: 'bob', name: 'Bob the Biologist' }
+    ], gameSettings);
   });
 
   describe('Game Setup and Phase Transitions', () => {

@@ -243,6 +243,8 @@ class BioMastersEngine {
 
         // 3. SYNERGY CHECK (Preferred Diet)
         // Check for "Preferred Diet" conditions and if met, set `isExhausted: false` on the new card
+        // NOTE: All producers (+1) including both Photoautotrophs and Chemoautotrophs can connect to HOME
+        // HOME cards represent geological foundations supporting both photosynthetic and chemosynthetic life
         
         this.gameState = newState;
         return { isValid: true, newState: this.gameState };

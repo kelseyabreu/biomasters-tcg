@@ -54,7 +54,7 @@ export interface CardData {
   domain: number; // Required domain for habitat compatibility
   cost: any; // JSON cost structure
   keywords: KeywordId[];
-  abilities?: number[];
+  abilities: number[]; // Required - always initialized as empty array if not present
   victoryPoints?: number;
   conservationStatus?: ConservationStatus;
   commonName: string;  // Required for game logic
@@ -177,7 +177,7 @@ export class GameDataManager {
           domain: rawCard.Domain,
           cost: rawCard.Cost,
           keywords: rawCard.Keywords,
-          ...(rawCard.Abilities !== undefined && { abilities: rawCard.Abilities }),
+          abilities: rawCard.Abilities || [], // Always initialize as empty array if not present
           ...(rawCard.VictoryPoints !== undefined && { victoryPoints: rawCard.VictoryPoints }),
           ...(rawCard.ConservationStatus !== undefined && { conservationStatus: rawCard.ConservationStatus }),
           commonName: rawCard.CommonName,

@@ -3,11 +3,9 @@
  * Updated to use proper enums, data-driven approach, and correct biological validation
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
-  GamePhase,
-  TurnPhase,
   TrophicLevel,
   TrophicCategoryId,
   KeywordId
@@ -203,41 +201,21 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'validation-test',
-      players: [
-        { 
-          id: 'player1', 
-          name: 'Player 1', 
-          hand: ['1', '2', '3', '4', '5'], // All test cards
-          deck: [], 
-          scorePile: [], 
-          energy: 10, 
-          isReady: true 
-        },
-        { 
-          id: 'player2', 
-          name: 'Player 2', 
-          hand: ['1', '2', '4'], // Kelp, Urchin, Oak
-          deck: [], 
-          scorePile: [], 
-          energy: 10, 
-          isReady: true 
-        }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.PLAYING,
-      turnPhase: TurnPhase.ACTION,
-      actionsRemaining: 5, // Give enough actions for complex tests
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, mockCardDatabase, mockAbilityDatabase, new Map());
+    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('validation-test', [
+      { id: 'player1', name: 'Player 1' },
+      { id: 'player2', name: 'Player 2' }
+    ], gameSettings);
+
+    // Transition to playing phase for card placement tests
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+    engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
   });
 
   describe('Basic Card Placement Validation', () => {

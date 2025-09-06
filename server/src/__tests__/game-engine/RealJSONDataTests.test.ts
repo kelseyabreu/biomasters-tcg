@@ -5,7 +5,7 @@
  * ensuring compatibility with the new JSON-driven architecture.
  */
 
-import { BioMastersEngine } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
 import { gameDataManager } from '../../services/GameDataManager';
 
 describe('BioMasters Engine - Real JSON Data Tests', () => {
@@ -47,12 +47,9 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
 
   describe('Engine Creation with Real Data', () => {
     it('should create engine instance successfully', () => {
-      const players = [
-        { id: 'player1', name: 'Alice', isAI: false },
-        { id: 'player2', name: 'Bob', isAI: false }
-      ];
+      // Players will be initialized by the engine
 
-      const gameSettings = {
+      const _gameSettings = {
         maxPlayers: 2,
         deckSize: 8,
         startingHandSize: 3,
@@ -63,9 +60,15 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine('test-game', players, gameSettings);
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
       expect(engine).toBeDefined();
-      
+
+      // Initialize the game properly
+      engine.initializeNewGame('test-game', [
+        { id: 'player1', name: 'Alice' },
+        { id: 'player2', name: 'Bob' }
+      ], _gameSettings);
+
       const gameState = engine.getGameState();
       expect(gameState.players).toHaveLength(2);
       expect(gameState.players[0]?.name).toBe('Alice');
@@ -73,12 +76,9 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
     });
 
     it('should have proper initial game state', () => {
-      const players = [
-        { id: 'player1', name: 'Alice', isAI: false },
-        { id: 'player2', name: 'Bob', isAI: false }
-      ];
+      // Players will be initialized by the engine
 
-      const gameSettings = {
+      const _gameSettings = {
         maxPlayers: 2,
         deckSize: 8,
         startingHandSize: 3,
@@ -89,7 +89,14 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine('test-game', players, gameSettings);
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+      // Initialize the game properly
+      engine.initializeNewGame('test-game-2', [
+        { id: 'player1', name: 'Alice' },
+        { id: 'player2', name: 'Bob' }
+      ], _gameSettings);
+
       const gameState = engine.getGameState();
       
       // Test initial state
@@ -147,12 +154,9 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
 
   describe('Game Mechanics with Real Data', () => {
     it('should handle card placement validation', () => {
-      const players = [
-        { id: 'player1', name: 'Alice', isAI: false },
-        { id: 'player2', name: 'Bob', isAI: false }
-      ];
+      // Players will be initialized by the engine
 
-      const gameSettings = {
+      const _gameSettings = {
         maxPlayers: 2,
         deckSize: 8,
         startingHandSize: 3,
@@ -163,12 +167,18 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine('test-game', players, gameSettings);
-      
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+      // Initialize the game properly
+      engine.initializeNewGame('test-game-3', [
+        { id: 'player1', name: 'Alice' },
+        { id: 'player2', name: 'Bob' }
+      ], _gameSettings);
+
       // Test that engine can validate card placement
       const oakTree = gameDataManager.getCard(1); // Oak Tree
       expect(oakTree).toBeDefined();
-      
+
       // This should not throw an error
       expect(() => {
         engine.getGameState();
@@ -176,12 +186,9 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
     });
 
     it('should handle turn progression', () => {
-      const players = [
-        { id: 'player1', name: 'Alice', isAI: false },
-        { id: 'player2', name: 'Bob', isAI: false }
-      ];
+      // Players will be initialized by the engine
 
-      const gameSettings = {
+      const _gameSettings = {
         maxPlayers: 2,
         deckSize: 8,
         startingHandSize: 3,
@@ -192,7 +199,14 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine('test-game', players, gameSettings);
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+      // Initialize the game properly
+      engine.initializeNewGame('test-game-4', [
+        { id: 'player1', name: 'Alice' },
+        { id: 'player2', name: 'Bob' }
+      ], _gameSettings);
+
       const initialState = engine.getGameState();
       
       expect(initialState.currentPlayerIndex).toBe(0);

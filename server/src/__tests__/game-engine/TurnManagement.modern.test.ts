@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and correct turn phases
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
   GamePhase,
@@ -63,25 +63,17 @@ describe('BioMasters Turn Management - Modern', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'turn-test',
-      players: [
-        { id: 'player1', name: 'Player One', hand: [], deck: [], scorePile: [], energy: 0, isReady: false },
-        { id: 'player2', name: 'Player Two', hand: [], deck: [], scorePile: [], energy: 0, isReady: false }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.SETUP,
-      turnPhase: TurnPhase.READY,
-      actionsRemaining: 0,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, new Map(), new Map(), new Map());
+    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('turn-test', [
+      { id: 'player1', name: 'Player 1' },
+      { id: 'player2', name: 'Player 2' }
+    ], gameSettings);
   });
 
   describe('Game Phase Management', () => {

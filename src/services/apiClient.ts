@@ -216,20 +216,35 @@ export const api = {
 /**
  * Specialized API methods for common app operations
  */
+// Profile update interface
+export interface ProfileUpdateData {
+  displayName?: string;
+  bio?: string;
+  location?: string;
+  favoriteSpecies?: string;
+  isPublicProfile?: boolean;
+  emailNotifications?: boolean;
+  pushNotifications?: boolean;
+}
+
 export const authApi = {
   // Check authentication status
   getStatus: () => api.get<ApiResponse>('/api/auth/status'),
-  
+
   // Register new user
-  register: (userData: { username: string }) => 
+  register: (userData: { username: string }) =>
     api.post<ApiResponse>('/api/auth/register', userData),
-  
+
   // Get user profile
   getProfile: () => api.get<ApiResponse>('/api/auth/profile'),
-  
-  // Update user profile
-  updateProfile: (profileData: { displayName?: string; preferences?: any }) =>
-    api.put<ApiResponse>('/api/auth/profile', profileData),
+
+  // Update user profile (enhanced version)
+  updateProfile: (profileData: ProfileUpdateData) =>
+    api.put<ApiResponse>('/api/users/me', profileData),
+
+  // Get public user profile by ID
+  getPublicProfile: (userId: string) =>
+    api.get<ApiResponse>(`/api/users/${userId}/public`),
 };
 
 export const guestApi = {
@@ -252,22 +267,88 @@ export const guestApi = {
 export const gameApi = {
   // Get user collection
   getCollection: () => api.get<ApiResponse>('/api/cards/collection'),
-  
+
+  // Get user collection with pagination and search
+  getUserCollection: (page = 1, limit = 50, search?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    if (search) {
+      params.append('search', search);
+    }
+    return api.get<ApiResponse>(`/api/cards/collection?${params}`);
+  },
+
+  // Check if user owns a specific species
+  checkCardOwnership: async (speciesName: string): Promise<boolean> => {
+    try {
+      const response = await gameApi.getUserCollection(1, 1000);
+      return response.data.data?.collection?.some((card: any) => card.species_name === speciesName) || false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  // Get quantity of a specific species owned
+  getCardQuantity: async (speciesName: string): Promise<number> => {
+    try {
+      const response = await gameApi.getUserCollection(1, 1000);
+      const card = response.data.data?.collection?.find((card: any) => card.species_name === speciesName);
+      return card?.quantity || 0;
+    } catch (error) {
+      return 0;
+    }
+  },
+
+  // Get collection stats
+  getCollectionStats: () => api.get<ApiResponse>('/api/cards/collection/stats'),
+
+  // Pack opening
+  openPack: (packType: string) => api.post<ApiResponse>('/api/packs/open', { packType }),
+
   // Sync collection
   syncCollection: (data: any) => api.post<ApiResponse>('/api/sync', data),
-  
+
   // Get decks
   getDecks: () => api.get<ApiResponse>('/api/decks'),
-  
+
   // Create deck
   createDeck: (deckData: any) => api.post<ApiResponse>('/api/decks', deckData),
-  
+
   // Update deck
-  updateDeck: (deckId: string, deckData: any) => 
+  updateDeck: (deckId: string, deckData: any) =>
     api.put<ApiResponse>(`/api/decks/${deckId}`, deckData),
-  
+
   // Delete deck
   deleteDeck: (deckId: string) => api.delete<ApiResponse>(`/api/decks/${deckId}`),
+
+  // TCG Game API endpoints
+  createGame: (gameData: {
+    gameId: string;
+    players: any[];
+    settings?: any;
+  }) => api.post<ApiResponse>('/api/game/tcg/create', gameData),
+
+  playCard: (actionData: {
+    gameId: string;
+    playerId: string;
+    cardId: string;
+    position: { x: number; y: number };
+  }) => api.post<ApiResponse>('/api/game/tcg/play-card', actionData),
+
+  passTurn: (actionData: {
+    gameId: string;
+    playerId: string;
+  }) => api.post<ApiResponse>('/api/game/tcg/pass-turn', actionData),
+
+  syncOfflineGame: (syncData: {
+    gameId: string;
+    gameState: any;
+    actionHistory: any[];
+  }) => api.post<ApiResponse>('/api/game/tcg/sync', syncData),
+
+  getGameState: (gameId: string) => api.get<ApiResponse>(`/api/game/tcg/${gameId}/state`),
 };
 
 // Export the main client for custom requests

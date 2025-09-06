@@ -3,9 +3,8 @@
  * Handles synchronization between offline and online data with conflict resolution
  */
 
-import { apiService } from './apiService';
-import { offlineSecurityService, OfflineCollection, OfflineAction, SyncPayload, SyncResponse } from './offlineSecurityService';
 import { gameApi } from './apiClient';
+import { offlineSecurityService, OfflineCollection, OfflineAction, SyncPayload, SyncResponse } from './offlineSecurityService';
 
 export interface SyncConflict {
   action_id: string;

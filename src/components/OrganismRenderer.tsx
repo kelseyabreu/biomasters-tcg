@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { add, remove, refresh } from 'ionicons/icons';
 import { Card as CardType } from '../types';
-import { CommonName, SPECIES_DISPLAY_NAMES } from '../../shared/enums';
+import { CommonName, SPECIES_DISPLAY_NAMES } from '@shared/enums';
 
 // Import the organism models
 import { organismModels } from '../ecosystem-organisms';

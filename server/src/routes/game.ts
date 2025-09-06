@@ -6,7 +6,8 @@ import { db } from '../database/kysely';
 import { z } from 'zod';
 import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
-import { BioMastersEngine, GameSettings, PlayerAction } from '../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, PlayerAction, CardData as SharedCardData, AbilityData as SharedAbilityData } from '../../../shared/game-engine/BioMastersEngine';
+import { gameDataManager } from '../services/GameDataManager';
 
 const router = Router();
 
@@ -461,8 +462,53 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
   ];
 
   try {
-    // Create new game engine instance (data loaded from GameDataManager)
-    const gameEngine = new BioMastersEngine(gameId, gamePlayers, finalSettings);
+    // Ensure game data is loaded
+    if (!gameDataManager.isDataLoaded()) {
+      await gameDataManager.loadGameData();
+    }
+
+    // Convert server data to shared format
+    const cardDatabase = new Map<number, SharedCardData>();
+    gameDataManager.getCards().forEach((serverCard, id) => {
+      const sharedCard: SharedCardData = {
+        cardId: serverCard.cardId,
+        trophicLevel: serverCard.trophicLevel,
+        trophicCategory: serverCard.trophicCategory,
+        domain: serverCard.domain,
+        cost: serverCard.cost,
+        keywords: serverCard.keywords,
+        abilities: serverCard.abilities || [], // Default to empty array if missing
+        victoryPoints: serverCard.victoryPoints || 0, // Default to 0 if missing
+        commonName: serverCard.commonName,
+        scientificName: serverCard.scientificName || '' // Default to empty string if missing
+      };
+      cardDatabase.set(id, sharedCard);
+    });
+
+    const abilityDatabase = new Map<number, SharedAbilityData>();
+    gameDataManager.getAbilities().forEach((serverAbility, id) => {
+      const sharedAbility: SharedAbilityData = {
+        abilityId: serverAbility.abilityID,
+        abilityID: serverAbility.abilityID, // Legacy support
+        name: `Ability ${serverAbility.abilityID}`, // Default name since server doesn't have it
+        description: `Ability with trigger ${serverAbility.triggerID}`, // Default description
+        cost: {}, // Default empty cost
+        effects: serverAbility.effects,
+        triggerID: serverAbility.triggerID
+      };
+      abilityDatabase.set(id, sharedAbility);
+    });
+
+    const keywordMap = new Map<number, string>();
+    gameDataManager.getKeywords().forEach((keyword, id) => {
+      keywordMap.set(id, keyword.keyword_name);
+    });
+
+    // Create new game engine instance with injected data
+    const gameEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordMap);
+
+    // Initialize the game
+    gameEngine.initializeNewGame(gameId, gamePlayers, finalSettings);
 
     // Store game in memory
     activeGames.set(gameId, gameEngine);

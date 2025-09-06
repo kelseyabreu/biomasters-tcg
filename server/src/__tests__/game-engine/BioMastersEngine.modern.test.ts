@@ -3,7 +3,7 @@
  * Updated to use proper enums and interfaces from shared module
  */
 
-import { BioMastersEngine, GameSettings } from '../../game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
 import {
   GameActionType,
   GamePhase,
@@ -135,25 +135,18 @@ describe('BioMasters Engine Modern Tests', () => {
     };
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
-    const testGameState = {
-      gameId: 'test-game-1',
-      players: [
-        { id: 'player1', name: 'Test Player 1', hand: [], deck: [], scorePile: [], energy: 5, isReady: false },
-        { id: 'player2', name: 'Test Player 2', hand: [], deck: [], scorePile: [], energy: 5, isReady: false }
-      ],
-      currentPlayerIndex: 0,
-      gamePhase: GamePhase.PLAYING,
-      turnPhase: TurnPhase.ACTION,
-      actionsRemaining: 3,
-      turnNumber: 1,
-      grid,
-      detritus: [],
-      gameSettings,
-      metadata: {}
-    };
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
+    // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(testGameState, mockCardDatabase, mockAbilityDatabase, new Map());
+    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map());
+
+    // Initialize the game properly
+    engine.initializeNewGame('test-game-1', [
+      { id: 'player1', name: 'Test Player 1' },
+      { id: 'player2', name: 'Test Player 2' }
+    ], gameSettings);
   });
 
   describe('Engine Initialization', () => {
@@ -162,9 +155,9 @@ describe('BioMasters Engine Modern Tests', () => {
       
       expect(gameState.gameId).toBe('test-game-1');
       expect(gameState.players).toHaveLength(2);
-      expect(gameState.gamePhase).toBe(GamePhase.PLAYING);
-      expect(gameState.turnPhase).toBe(TurnPhase.ACTION);
-      expect(gameState.actionsRemaining).toBe(3);
+      expect(gameState.gamePhase).toBe(GamePhase.SETUP);
+      expect(gameState.turnPhase).toBe(TurnPhase.READY);
+      expect(gameState.actionsRemaining).toBe(0);
     });
 
     test('should have correct grid size for 1v1 mode', () => {
@@ -204,6 +197,10 @@ describe('BioMasters Engine Modern Tests', () => {
 
   describe('Action Processing with Enums', () => {
     test('should process PLAY_CARD action using enum', () => {
+      // First transition to playing phase
+      engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player1', payload: {} });
+      engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'player2', payload: {} });
+
       const gameState = engine.getGameState();
       gameState.players[0]?.hand.push('2'); // Add kelp card to hand
 

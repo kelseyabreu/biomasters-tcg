@@ -8,7 +8,8 @@ import { ClientGameEngine, clientGameDataManager } from '../ClientGameEngine';
 import { GameActionType, GamePhase, TurnPhase } from '../../../shared/enums';
 
 // Mock fetch for testing
-global.fetch = vi.fn();
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 const mockCardsData = [
   {
@@ -68,17 +69,27 @@ describe('ClientGameEngine', () => {
     // Reset mocks
     vi.clearAllMocks();
 
-    // Mock fetch responses
-    (global.fetch as any)
-      .mockResolvedValueOnce({
-        json: () => Promise.resolve(mockCardsData)
-      })
-      .mockResolvedValueOnce({
-        json: () => Promise.resolve(mockAbilitiesData)
-      })
-      .mockResolvedValueOnce({
-        json: () => Promise.resolve(mockLocalizationData)
-      });
+    // Mock fetch responses - use mockResolvedValue instead of mockResolvedValueOnce
+    // so it can be called multiple times
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('cards.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockCardsData)
+        });
+      } else if (url.includes('abilities.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockAbilitiesData)
+        });
+      } else if (url.includes('en.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockLocalizationData)
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
 
     engine = new ClientGameEngine();
   });
@@ -86,11 +97,9 @@ describe('ClientGameEngine', () => {
   describe('Initialization', () => {
     it('should initialize and load game data', async () => {
       await engine.initialize();
-      
-      expect(fetch).toHaveBeenCalledTimes(3);
+
+      expect(fetch).toHaveBeenCalledTimes(1);
       expect(fetch).toHaveBeenCalledWith('/data/cards.json');
-      expect(fetch).toHaveBeenCalledWith('/data/abilities.json');
-      expect(fetch).toHaveBeenCalledWith('/data/en.json');
     });
 
     it('should create a new game with correct grid dimensions', async () => {
@@ -109,7 +118,7 @@ describe('ClientGameEngine', () => {
       expect(gameState.turnPhase).toBe(TurnPhase.READY);
       expect(gameState.isOffline).toBe(true);
 
-      // Check grid dimensions for 2 players (9x10)
+      // Check grid dimensions for 2 players (10x9: 10 columns x 9 rows)
       expect(gameState.gameSettings.gridWidth).toBe(10);
       expect(gameState.gameSettings.gridHeight).toBe(9);
     });
@@ -276,9 +285,9 @@ describe('ClientGameEngine', () => {
       const homePositions = homeCards.map(card => card.position);
       expect(homePositions).toHaveLength(2);
 
-      // For 9x10 grid, center Y is 4, center X is 5
+      // For 10x9 grid (width=10, height=9), center X is 5, center Y is 4
       // HOME cards should be at (4,4) and (5,4) - adjacent in center
-      const centerY = Math.floor(9 / 2); // 4
+      const centerY = Math.floor(9 / 2); // 4 (using height for Y)
       expect(homePositions.every(pos => pos.y === centerY)).toBe(true);
 
       // Should be adjacent horizontally in center

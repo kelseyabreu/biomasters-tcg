@@ -17,6 +17,10 @@ import { onAuthStateChanged, User, signInAnonymously, signOut } from 'firebase/a
 import { tokenManager } from '../services/tokenStorage';
 import { createUserScopedIndexedDBStorage, clearUserData, migrateToUserScopedStorage } from '../utils/userScopedStorage';
 import { guestApi } from '../services/apiClient';
+import { tcgGameService, ServiceResult } from '../services/TCGGameService';
+import { phyloGameService } from '../services/PhyloGameService';
+import type { GameState } from '../game-logic/gameStateManager';
+import type { ClientGameState } from '../services/ClientGameEngine';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
@@ -28,7 +32,93 @@ const getCurrentUserId = (): string | null => {
   return state.userId || state.guestId || null;
 };
 
+// Battle State Interfaces
+export interface Position {
+  x: number;
+  y: number;
+}
+
+// Import the actual ClientGameState from ClientGameEngine to ensure compatibility
+
+export interface TCGGameState extends ClientGameState {
+  // Additional properties specific to the store
+  isInitialized?: boolean;
+  // Add other TCG-specific state properties as needed
+}
+
+// Import the actual GameState from gameStateManager to ensure compatibility
+
+export interface PhyloGameState extends GameState {
+  // Additional properties specific to the store
+  levelId?: string | null;
+  difficulty?: 'easy' | 'medium' | 'hard' | null;
+  currentTurn?: 'player' | 'ai' | null;
+
+  // Turn State Management
+  currentTurnState?: {
+    playerId: string;
+    actionsRemaining: number;
+    maxActions: number;
+    hasDrawnCard: boolean;
+    canEndTurn: boolean;
+  } | null;
+
+  isInitialized?: boolean;
+  battlePhase?: string;
+}
+
+export interface BattleSlice {
+  // Game Mode and State
+  gameMode: 'TCG' | 'Phylo' | null;
+  tcgGameState: TCGGameState | null;
+  phyloGameState: PhyloGameState | null;
+
+  // Connection State
+  isOnline: boolean;
+  isLoading: boolean; // For async actions and AI turns
+  error: string | null;
+
+  // UI-specific state (separated from game logic)
+  uiState: {
+    selectedHandCardId: string | null;
+    selectedBoardCardId: string | null;
+    highlightedPositions: Position[];
+    showValidMoves: boolean;
+    isCardDragging: boolean;
+  };
+
+  // Battle Actions
+  actions: {
+    // TCG Actions
+    startTCGGame: (gameId: string, players: any[], settings?: any) => Promise<void>;
+    playCard: (cardId: string, position: Position) => Promise<void>;
+    passTurn: () => Promise<void>;
+
+    // Phylo Actions
+    startCampaignLevel: (payload: { levelId: string; difficulty: 'easy' | 'medium' | 'hard'; playerDeck: any[] }) => Promise<void>;
+    playPhyloCard: (payload: { cardId: string; position: Position; playerId: string }) => Promise<void>;
+    handleAITurn: (payload: { currentState: any }) => Promise<void>;
+    endTurn: (payload: { playerId: string }) => Promise<void>;
+    calculateValidMoves: (cardId?: string) => Promise<void>;
+
+    // UI Actions
+    selectHandCard: (cardId: string | null) => void;
+    selectBoardCard: (cardId: string | null) => void;
+    setHighlightedPositions: (positions: Position[]) => void;
+    clearUIState: () => void;
+
+    // Mode Switching
+    switchToTCGMode: () => void;
+    switchToPhyloMode: () => void;
+    goOnline: () => Promise<void>;
+    goOffline: () => void;
+  };
+}
+
 export interface HybridGameState {
+  // Battle State Slice
+  battle: BattleSlice;
+
   // Offline State
   offlineCollection: OfflineCollection | null;
   hasStarterPack: boolean;
@@ -147,12 +237,517 @@ export const useHybridGameStore = create<HybridGameState>()(
   subscribeWithSelector(
     persist(
       (set, get) => ({
+        // Battle State Slice
+        battle: {
+          gameMode: null,
+          tcgGameState: null,
+          phyloGameState: null,
+          isOnline: false,
+          isLoading: false,
+          error: null,
+          uiState: {
+            selectedHandCardId: null,
+            selectedBoardCardId: null,
+            highlightedPositions: [],
+            showValidMoves: false,
+            isCardDragging: false,
+          },
+          actions: {
+            // TCG Actions
+            startTCGGame: async (gameId: string, players: any[], settings?: any) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null,
+                  gameMode: 'TCG'
+                }
+              }));
+
+              try {
+                const currentState = get().battle;
+                const result = await tcgGameService.startGame(
+                  { gameId, players, settings },
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      tcgGameState: result.newState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to start TCG game'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to start TCG game'
+                  }
+                }));
+              }
+            },
+
+            playCard: async (cardId: string, position: Position) => {
+              const state = get();
+
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = state.battle;
+                const result = await tcgGameService.playCard(
+                  {
+                    cardId,
+                    position,
+                    playerId: state.userId || state.guestId || 'player1'
+                  },
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      tcgGameState: result.newState,
+                      isLoading: false,
+                      error: null,
+                      uiState: {
+                        ...state.battle.uiState,
+                        selectedHandCardId: null,
+                        highlightedPositions: []
+                      }
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to play card'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to play card'
+                  }
+                }));
+              }
+            },
+
+            passTurn: async () => {
+              const state = get();
+
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = state.battle;
+                const result = await tcgGameService.passTurn(
+                  { playerId: state.userId || state.guestId || 'player1' },
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      tcgGameState: result.newState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to pass turn'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to pass turn'
+                  }
+                }));
+              }
+            },
+
+            // Phylo Actions
+            startCampaignLevel: async (payload: { levelId: string; difficulty: 'easy' | 'medium' | 'hard'; playerDeck: any[] }) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null,
+                  gameMode: 'Phylo'
+                }
+              }));
+
+              try {
+                const currentState = get().battle;
+                const result = await phyloGameService.startCampaignLevel(
+                  payload,
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      phyloGameState: result.newState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to start campaign level'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to start campaign level'
+                  }
+                }));
+              }
+            },
+
+            playPhyloCard: async (payload: { cardId: string; position: Position; playerId: string }) => {
+              const state = get();
+
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = state.battle;
+                const result = await phyloGameService.playCard(
+                  payload,
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      phyloGameState: result.newState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to play Phylo card'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to play Phylo card'
+                  }
+                }));
+              }
+            },
+
+            handleAITurn: async (payload: { currentState: any }) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = get().battle;
+                const result = await phyloGameService.handleAITurn(
+                  { currentState },
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      phyloGameState: result.newState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'AI turn failed'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'AI turn failed'
+                  }
+                }));
+              }
+            },
+
+            endTurn: async (payload: { playerId: string }) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = get().battle;
+                const result = await phyloGameService.endTurn(
+                  payload,
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      phyloGameState: result.newState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to end turn'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to end turn'
+                  }
+                }));
+              }
+            },
+
+            calculateValidMoves: async (cardId?: string) => {
+              try {
+                const currentState = get().battle;
+                const result = await phyloGameService.calculateValidMoves(
+                  { cardId, playerId: 'human' },
+                  currentState
+                );
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      uiState: {
+                        ...state.battle.uiState,
+                        highlightedPositions: result.newState.validPositions || []
+                      }
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                console.error('Failed to calculate valid moves:', error);
+              }
+            },
+
+            // UI Actions (synchronous, no service calls needed)
+            selectHandCard: (cardId: string | null) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    selectedHandCardId: cardId,
+                    selectedBoardCardId: null
+                  }
+                }
+              }));
+            },
+
+            selectBoardCard: (cardId: string | null) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    selectedBoardCardId: cardId,
+                    selectedHandCardId: null
+                  }
+                }
+              }));
+            },
+
+            setHighlightedPositions: (positions: Position[]) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    highlightedPositions: positions
+                  }
+                }
+              }));
+            },
+
+            clearUIState: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    selectedHandCardId: null,
+                    selectedBoardCardId: null,
+                    highlightedPositions: [],
+                    showValidMoves: false,
+                    isCardDragging: false
+                  }
+                }
+              }));
+            },
+
+            // Mode Switching Actions
+            switchToTCGMode: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  gameMode: 'TCG',
+                  phyloGameState: null,
+                  error: null
+                }
+              }));
+            },
+
+            switchToPhyloMode: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  gameMode: 'Phylo',
+                  tcgGameState: null,
+                  error: null
+                }
+              }));
+            },
+
+            goOnline: async () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = get().battle;
+                const result = await tcgGameService.syncAndGoOnline({}, currentState);
+
+                if (result.isValid) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isOnline: true,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to go online'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to go online'
+                  }
+                }));
+              }
+            },
+
+            goOffline: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isOnline: false,
+                  error: null
+                }
+              }));
+            }
+          }
+        },
+
         // Initial State
         offlineCollection: null,
         hasStarterPack: false,
         isFirstLaunch: true,
 
-        // Active battle state
+        // Active battle state (legacy - will be replaced by battle slice)
         activeBattle: {
           sessionId: null,
           gameMode: null,
@@ -1348,6 +1943,157 @@ export const useHybridGameStore = create<HybridGameState>()(
               isActive: false
             }
           });
+        },
+
+        // Battle Actions Implementation
+        // TCG Actions
+        startTCGGame: async (gameId: string, players: any[], settings?: any) => {
+          set((state) => ({
+            battle: {
+              ...state.battle,
+              isLoading: true,
+              error: null,
+              gameMode: 'TCG'
+            }
+          }));
+
+          try {
+            const currentState = get().battle;
+            const result = await tcgGameService.startGame(
+              { gameId, players, settings },
+              currentState
+            );
+
+            if (result.isValid && result.newState) {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  tcgGameState: result.newState,
+                  isLoading: false,
+                  error: null
+                }
+              }));
+            } else {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: false,
+                  error: result.errorMessage || 'Failed to start TCG game'
+                }
+              }));
+            }
+          } catch (error: any) {
+            set((state) => ({
+              battle: {
+                ...state.battle,
+                isLoading: false,
+                error: error.message || 'Failed to start TCG game'
+              }
+            }));
+          }
+        },
+
+        playCard: async (cardId: string, position: Position) => {
+          const state = get();
+
+          set((state) => ({
+            battle: {
+              ...state.battle,
+              isLoading: true,
+              error: null
+            }
+          }));
+
+          try {
+            const currentState = state.battle;
+            const result = await tcgGameService.playCard(
+              {
+                cardId,
+                position,
+                playerId: state.userId || state.guestId || 'player1'
+              },
+              currentState
+            );
+
+            if (result.isValid && result.newState) {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  tcgGameState: result.newState,
+                  isLoading: false,
+                  error: null,
+                  uiState: {
+                    ...state.battle.uiState,
+                    selectedHandCardId: null,
+                    highlightedPositions: []
+                  }
+                }
+              }));
+            } else {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: false,
+                  error: result.errorMessage || 'Failed to play card'
+                }
+              }));
+            }
+          } catch (error: any) {
+            set((state) => ({
+              battle: {
+                ...state.battle,
+                isLoading: false,
+                error: error.message || 'Failed to play card'
+              }
+            }));
+          }
+        },
+
+        passTurn: async () => {
+          const state = get();
+
+          set((state) => ({
+            battle: {
+              ...state.battle,
+              isLoading: true,
+              error: null
+            }
+          }));
+
+          try {
+            const currentState = state.battle;
+            const result = await tcgGameService.passTurn(
+              { playerId: state.userId || state.guestId || 'player1' },
+              currentState
+            );
+
+            if (result.isValid && result.newState) {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  tcgGameState: result.newState,
+                  isLoading: false,
+                  error: null
+                }
+              }));
+            } else {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: false,
+                  error: result.errorMessage || 'Failed to pass turn'
+                }
+              }));
+            }
+          } catch (error: any) {
+            set((state) => ({
+              battle: {
+                ...state.battle,
+                isLoading: false,
+                error: error.message || 'Failed to pass turn'
+              }
+            }));
+          }
         },
 
         // Test helper method for setting authenticated user state

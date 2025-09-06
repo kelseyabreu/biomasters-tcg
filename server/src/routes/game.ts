@@ -8,6 +8,7 @@ import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
 import { BioMastersEngine, GameSettings, PlayerAction, CardData as SharedCardData, AbilityData as SharedAbilityData } from '../../../shared/game-engine/BioMastersEngine';
 import { gameDataManager } from '../services/GameDataManager';
+import { createMockLocalizationManager } from '../utils/mockLocalizationManager';
 
 const router = Router();
 
@@ -472,6 +473,10 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
     gameDataManager.getCards().forEach((serverCard, id) => {
       const sharedCard: SharedCardData = {
         cardId: serverCard.cardId,
+        nameId: `CARD_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
+        scientificNameId: `SCIENTIFIC_${serverCard.scientificName?.toUpperCase().replace(/\s+/g, '_')}` as any,
+        descriptionId: `DESC_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
+        taxonomyId: `TAXONOMY_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
         trophicLevel: serverCard.trophicLevel,
         trophicCategory: serverCard.trophicCategory,
         domain: serverCard.domain,
@@ -479,6 +484,19 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
         keywords: serverCard.keywords,
         abilities: serverCard.abilities || [], // Default to empty array if missing
         victoryPoints: serverCard.victoryPoints || 0, // Default to 0 if missing
+        conservationStatus: 7, // Default conservation status
+        mass_kg: 1000, // Default mass
+        lifespan_max_days: 365, // Default lifespan
+        vision_range_m: 0, // Default vision range
+        smell_range_m: 0, // Default smell range
+        hearing_range_m: 0, // Default hearing range
+
+        walk_speed_m_per_hr: 0, // Default walk speed
+        run_speed_m_per_hr: 0, // Default run speed
+        swim_speed_m_per_hr: 0, // Default swim speed
+        fly_speed_m_per_hr: 0, // Default fly speed
+        offspring_count: 1, // Default offspring count
+        gestation_days: 30, // Default gestation period
         commonName: serverCard.commonName,
         scientificName: serverCard.scientificName || '' // Default to empty string if missing
       };
@@ -489,12 +507,15 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
     gameDataManager.getAbilities().forEach((serverAbility, id) => {
       const sharedAbility: SharedAbilityData = {
         abilityId: serverAbility.abilityID,
+        nameId: `ABILITY_${serverAbility.abilityID}` as any,
+        descriptionId: `DESC_ABILITY_${serverAbility.abilityID}` as any,
         abilityID: serverAbility.abilityID, // Legacy support
         name: `Ability ${serverAbility.abilityID}`, // Default name since server doesn't have it
         description: `Ability with trigger ${serverAbility.triggerID}`, // Default description
         cost: {}, // Default empty cost
         effects: serverAbility.effects,
-        triggerID: serverAbility.triggerID
+        triggerId: serverAbility.triggerID,
+        triggerID: serverAbility.triggerID // Legacy support
       };
       abilityDatabase.set(id, sharedAbility);
     });
@@ -505,7 +526,8 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
     });
 
     // Create new game engine instance with injected data
-    const gameEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordMap);
+    const mockLocalizationManager = createMockLocalizationManager();
+    const gameEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordMap, mockLocalizationManager);
 
     // Initialize the game
     gameEngine.initializeNewGame(gameId, gamePlayers, finalSettings);

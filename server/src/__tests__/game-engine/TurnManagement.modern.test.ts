@@ -4,6 +4,7 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,
   GamePhase,
@@ -67,7 +68,8 @@ describe('BioMasters Turn Management - Modern', () => {
     // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('turn-test', [

@@ -1,0 +1,180 @@
+[
+  {
+    "abilityId": 1,
+    "nameId": "ABILITY_WATERSHED_PREDATOR",
+    "descriptionId": "DESC_WATERSHED_PREDATOR",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 1,
+        "selectorId": 2,
+        "filterKeywords": [2],
+        "actionId": 1
+      }
+    ]
+  },
+  {
+    "abilityId": 2,
+    "nameId": "ABILITY_APEX_PREDATOR",
+    "descriptionId": "DESC_APEX_PREDATOR",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 1,
+        "selectorId": 1,
+        "filterTrophicCategories": [5],
+        "filterTrophicLevels": [3, 4],
+        "actionId": 1
+      }
+    ]
+  },
+  {
+    "abilityId": 3,
+    "nameId": "ABILITY_SCAVENGE",
+    "descriptionId": "DESC_SCAVENGE",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 2,
+        "selectorId": 3,
+        "actionId": 3
+      }
+    ]
+  },
+  {
+    "abilityId": 4,
+    "nameId": "ABILITY_PARASITIC_DRAIN",
+    "descriptionId": "DESC_PARASITIC_DRAIN",
+    "triggerId": 2,
+    "effects": [
+      {
+        "effectId": 3,
+        "selectorId": 4,
+        "actionId": 5
+      }
+    ]
+  },
+  {
+    "abilityId": 5,
+    "nameId": "ABILITY_RECYCLER",
+    "descriptionId": "DESC_RECYCLER",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 4,
+        "selectorId": 1,
+        "filterTrophicCategories": [6],
+        "actionId": 6
+      },
+      {
+        "effectId": 2,
+        "selectorId": 5,
+        "actionId": 7
+      }
+    ]
+  },
+  {
+    "abilityId": 6,
+    "nameId": "ABILITY_PHOTOSYNTHESIS",
+    "descriptionId": "DESC_PHOTOSYNTHESIS",
+    "triggerId": 2,
+    "effects": [
+      {
+        "effectId": 3,
+        "selectorId": 4,
+        "actionId": 2,
+        "conditions": [
+          {
+            "type": "AdjacentCardCount",
+            "operator": "<",
+            "value": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "abilityId": 7,
+    "nameId": "ABILITY_PACK_HUNTER",
+    "descriptionId": "DESC_PACK_HUNTER",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 1,
+        "selectorId": 1,
+        "actionId": 1,
+        "requirements": [
+          {
+            "type": "ExhaustAdjacentAlly",
+            "count": 1
+          }
+        ],
+        "filterConditions": [
+          {
+            "type": "TrophicLevelSum",
+            "operator": "<=",
+            "compareToExhaustedCards": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "abilityId": 8,
+    "nameId": "ABILITY_FILTER_FEEDER",
+    "descriptionId": "DESC_FILTER_FEEDER",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 2,
+        "selectorId": 5,
+        "actionId": 7,
+        "conditions": [
+          {
+            "type": "AdjacentKeyword",
+            "keywords": [5, 20]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "abilityId": 9,
+    "nameId": "ABILITY_METAMORPHOSIS",
+    "descriptionId": "DESC_METAMORPHOSIS",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 4,
+        "selectorId": 4,
+        "actionId": 6,
+        "specialActions": [
+          {
+            "type": "PlayFromHand",
+            "cardType": "AdultForm",
+            "costReduction": "Full"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "abilityId": 10,
+    "nameId": "ABILITY_DECOMPOSER",
+    "descriptionId": "DESC_DECOMPOSER",
+    "triggerId": 3,
+    "effects": [
+      {
+        "effectId": 3,
+        "selectorId": 5,
+        "actionId": 6,
+        "triggerConditions": [
+          {
+            "type": "CardMovedToDetritus",
+            "location": "Adjacent"
+          }
+        ]
+      }
+    ]
+  }
+]

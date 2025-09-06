@@ -1,0 +1,254 @@
+{
+  "taxonomy": {
+    "TAXONOMY_OAK_TREE": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Magnoliopsida",
+      "order": "Fagales",
+      "family": "Fagaceae",
+      "genus": "Quercus",
+      "species": "robur",
+      "commonNames": ["English Oak", "Pedunculate Oak", "European Oak"]
+    },
+    "TAXONOMY_GIANT_KELP": {
+      "kingdom": "Chromista",
+      "phylum": "Ochrophyta",
+      "class": "Phaeophyceae",
+      "order": "Laminariales",
+      "family": "Laminariaceae",
+      "genus": "Macrocystis",
+      "species": "pyrifera",
+      "commonNames": ["Giant Kelp", "Giant Bladder Kelp"]
+    },
+    "TAXONOMY_REED_CANARY_GRASS": {
+      "kingdom": "Plantae",
+      "phylum": "Tracheophyta",
+      "class": "Liliopsida",
+      "order": "Poales",
+      "family": "Poaceae",
+      "genus": "Phalaris",
+      "species": "arundinacea",
+      "commonNames": ["Reed Canary Grass", "Canary Grass"]
+    },
+    "TAXONOMY_EUROPEAN_RABBIT": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Lagomorpha",
+      "family": "Leporidae",
+      "genus": "Oryctolagus",
+      "species": "cuniculus",
+      "commonNames": ["European Rabbit", "Common Rabbit"]
+    },
+    "TAXONOMY_SOCKEYE_SALMON": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Actinopterygii",
+      "order": "Salmoniformes",
+      "family": "Salmonidae",
+      "genus": "Oncorhynchus",
+      "species": "nerka",
+      "commonNames": ["Sockeye Salmon", "Red Salmon", "Blueback Salmon"]
+    },
+    "TAXONOMY_AMERICAN_BLACK_BEAR": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Carnivora",
+      "family": "Ursidae",
+      "genus": "Ursus",
+      "species": "americanus",
+      "commonNames": ["American Black Bear", "Black Bear"]
+    },
+    "TAXONOMY_GREAT_WHITE_SHARK": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Chondrichthyes",
+      "order": "Lamniformes",
+      "family": "Lamnidae",
+      "genus": "Carcharodon",
+      "species": "carcharias",
+      "commonNames": ["Great White Shark", "White Shark", "White Pointer"]
+    },
+    "TAXONOMY_MYCENA_MUSHROOM": {
+      "kingdom": "Fungi",
+      "phylum": "Basidiomycota",
+      "class": "Agaricomycetes",
+      "order": "Agaricales",
+      "family": "Mycenaceae",
+      "genus": "Mycena",
+      "species": "galericulata",
+      "commonNames": ["Common Bonnet", "Rosy-gill Fairy Helmet"]
+    },
+    "TAXONOMY_TURKEY_VULTURE": {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Aves",
+      "order": "Cathartiformes",
+      "family": "Cathartidae",
+      "genus": "Cathartes",
+      "species": "aura",
+      "commonNames": ["Turkey Vulture", "Turkey Buzzard", "Buzzard"]
+    },
+    "TAXONOMY_DEER_TICK": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Arachnida",
+      "order": "Ixodida",
+      "family": "Ixodidae",
+      "genus": "Ixodes",
+      "species": "scapularis",
+      "commonNames": ["Deer Tick", "Blacklegged Tick", "Bear Tick"]
+    },
+    "TAXONOMY_COMMON_EARTHWORM": {
+      "kingdom": "Animalia",
+      "phylum": "Annelida",
+      "class": "Clitellata",
+      "order": "Opisthopora",
+      "family": "Lumbricidae",
+      "genus": "Lumbricus",
+      "species": "terrestris",
+      "commonNames": ["Common Earthworm", "European Nightcrawler", "Lob Worm"]
+    },
+    "TAXONOMY_DUNG_BEETLE": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Coleoptera",
+      "family": "Scarabaeidae",
+      "genus": "Scarabaeus",
+      "species": "laticollis",
+      "commonNames": ["Dung Beetle", "Sacred Scarab", "Scarab Beetle"]
+    },
+    "TAXONOMY_SOIL_BACTERIA": {
+      "kingdom": "Bacteria",
+      "phylum": "Firmicutes",
+      "class": "Bacilli",
+      "order": "Bacillales",
+      "family": "Bacillaceae",
+      "genus": "Bacillus",
+      "species": "subtilis",
+      "commonNames": ["Hay Bacillus", "Grass Bacillus"]
+    },
+    "TAXONOMY_DECOMPOSER_MUSHROOM": {
+      "kingdom": "Fungi",
+      "phylum": "Basidiomycota",
+      "class": "Agaricomycetes",
+      "order": "Agaricales",
+      "family": "Agaricaceae",
+      "genus": "Agaricus",
+      "species": "bisporus",
+      "commonNames": ["Button Mushroom", "White Mushroom", "Portobello"]
+    },
+    "TAXONOMY_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA": {
+      "kingdom": "Bacteria",
+      "phylum": "Thermotogae",
+      "class": "Thermotogae",
+      "order": "Thermotogales",
+      "family": "Thermotogaceae",
+      "genus": "Thermotoga",
+      "species": "maritima",
+      "commonNames": ["Marine Thermotoga"]
+    },
+    "TAXONOMY_IRON_SPRING_BACTERIA": {
+      "kingdom": "Bacteria",
+      "phylum": "Proteobacteria",
+      "class": "Gammaproteobacteria",
+      "order": "Acidithiobacillales",
+      "family": "Acidithiobacillaceae",
+      "genus": "Acidithiobacillus",
+      "species": "ferrooxidans",
+      "commonNames": ["Iron-oxidizing Bacteria"]
+    },
+    "TAXONOMY_MYCORRHIZAL_FUNGI": {
+      "kingdom": "Fungi",
+      "phylum": "Glomeromycota",
+      "class": "Glomeromycetes",
+      "order": "Glomerales",
+      "family": "Glomeraceae",
+      "genus": "Glomus",
+      "species": "intraradices",
+      "commonNames": ["Arbuscular Mycorrhizal Fungi", "AM Fungi"]
+    },
+    "TAXONOMY_NITROGEN_FIXING_BACTERIA": {
+      "kingdom": "Bacteria",
+      "phylum": "Proteobacteria",
+      "class": "Alphaproteobacteria",
+      "order": "Rhizobiales",
+      "family": "Rhizobiaceae",
+      "genus": "Rhizobium",
+      "species": "leguminosarum",
+      "commonNames": ["Legume Root Nodule Bacteria"]
+    },
+    "TAXONOMY_PACIFIC_KRILL": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Malacostraca",
+      "order": "Euphausiacea",
+      "family": "Euphausiidae",
+      "genus": "Euphausia",
+      "species": "pacifica",
+      "commonNames": ["Pacific Krill", "North Pacific Krill"]
+    },
+    "TAXONOMY_PHYTOPLANKTON": {
+      "kingdom": "Various",
+      "phylum": "Various",
+      "class": "Various",
+      "order": "Various",
+      "family": "Various",
+      "genus": "Various",
+      "species": "Mixed",
+      "commonNames": ["Phytoplankton", "Marine Algae", "Microalgae"]
+    },
+    "TAXONOMY_ZOOPLANKTON": {
+      "kingdom": "Animalia",
+      "phylum": "Various",
+      "class": "Various",
+      "order": "Various",
+      "family": "Various",
+      "genus": "Various",
+      "species": "Mixed",
+      "commonNames": ["Zooplankton", "Animal Plankton"]
+    },
+    "TAXONOMY_EUROPEAN_HONEY_BEE": {
+      "kingdom": "Animalia",
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Hymenoptera",
+      "family": "Apidae",
+      "genus": "Apis",
+      "species": "mellifera",
+      "commonNames": ["European Honey Bee", "Western Honey Bee"]
+    },
+    "TAXONOMY_VOLCANIC_HYDROGEN_BACTERIA": {
+      "kingdom": "Archaea",
+      "phylum": "Euryarchaeota",
+      "class": "Thermococci",
+      "order": "Thermococcales",
+      "family": "Thermococcaceae",
+      "genus": "Pyrococcus",
+      "species": "furiosus",
+      "commonNames": ["Furious Fire Ball"]
+    },
+    "TAXONOMY_NITRIFYING_SOIL_BACTERIA": {
+      "kingdom": "Bacteria",
+      "phylum": "Proteobacteria",
+      "class": "Betaproteobacteria",
+      "order": "Nitrosomonadales",
+      "family": "Nitrosomonadaceae",
+      "genus": "Nitrosomonas",
+      "species": "europaea",
+      "commonNames": ["Ammonia-oxidizing Bacteria"]
+    },
+    "TAXONOMY_SEDIMENT_CHEMOSYNTHETIC_BACTERIA": {
+      "kingdom": "Bacteria",
+      "phylum": "Proteobacteria",
+      "class": "Gammaproteobacteria",
+      "order": "Thiotrichales",
+      "family": "Beggiatoaceae",
+      "genus": "Beggiatoa",
+      "species": "alba",
+      "commonNames": ["Sulfur Bacteria", "White Sulfur Bacteria"]
+    }
+  }
+}

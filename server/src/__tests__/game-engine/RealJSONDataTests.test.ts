@@ -6,6 +6,7 @@
  */
 
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { gameDataManager } from '../../services/GameDataManager';
 
 describe('BioMasters Engine - Real JSON Data Tests', () => {
@@ -60,7 +61,8 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+      const mockLocalizationManager = createMockLocalizationManager();
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
       expect(engine).toBeDefined();
 
       // Initialize the game properly
@@ -89,7 +91,8 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+      const mockLocalizationManager = createMockLocalizationManager();
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
 
       // Initialize the game properly
       engine.initializeNewGame('test-game-2', [
@@ -167,7 +170,8 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+      const mockLocalizationManager = createMockLocalizationManager();
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
 
       // Initialize the game properly
       engine.initializeNewGame('test-game-3', [
@@ -199,7 +203,8 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         maxHandSize: 7
       };
 
-      const engine = new BioMastersEngine(new Map(), new Map(), new Map());
+      const mockLocalizationManager = createMockLocalizationManager();
+      const engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
 
       // Initialize the game properly
       engine.initializeNewGame('test-game-4', [

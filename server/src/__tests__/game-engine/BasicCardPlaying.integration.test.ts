@@ -5,6 +5,7 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { gameDataManager } from '../../services/GameDataManager';
 import {
   GameActionType,
@@ -94,7 +95,8 @@ describe('Basic Card Playing - Integration Tests', () => {
     });
 
     // Create engine with real data using production constructor
-    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('integration-test', [

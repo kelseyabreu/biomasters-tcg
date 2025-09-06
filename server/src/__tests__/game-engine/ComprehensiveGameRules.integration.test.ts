@@ -6,6 +6,7 @@
  */
 
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { gameDataManager } from '../../services/GameDataManager';
 import {
   GameActionType,
@@ -186,7 +187,8 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     });
 
     // Create engine with real data using production constructor
-    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('comprehensive-test', [

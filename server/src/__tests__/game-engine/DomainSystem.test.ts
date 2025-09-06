@@ -1,6 +1,8 @@
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, CardData } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { gameDataManager } from '../../services/GameDataManager';
 import { Domain } from '@biomasters/shared';
+import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../../../../shared/text-ids';
 
 describe('Domain System Tests', () => {
   let engine: BioMastersEngine;
@@ -28,7 +30,8 @@ describe('Domain System Tests', () => {
     };
 
     // Create engine with real data using production constructor
-    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('domain-test', [
@@ -90,12 +93,31 @@ describe('Domain System Tests', () => {
       
       // Test that the engine correctly identifies them as chemoautotrophs
       // Convert to engine-compatible format
-      const engineCard = {
-        ...card,
+      const engineCard: CardData = {
         cardId: Number(card.cardId),
-        victoryPoints: card.victoryPoints || 0,
+        nameId: CardNameId.CARD_OAK_TREE, // Using placeholder since we don't have real mapping
+        scientificNameId: ScientificNameId.SCIENTIFIC_QUERCUS_ROBUR, // Using placeholder
+        descriptionId: CardDescriptionId.DESC_OAK_TREE, // Using placeholder
+        taxonomyId: TaxonomyId.TAXONOMY_OAK_TREE, // Using placeholder
+        trophicLevel: card.trophicLevel,
+        trophicCategory: card.trophicCategory,
+        domain: card.domain || 0,
+        cost: card.cost || { energy: 0 },
+        keywords: card.keywords || [],
         abilities: card.abilities || [],
-        scientificName: card.scientificName || card.commonName || 'Unknown'
+        victoryPoints: card.victoryPoints || 0,
+        conservationStatus: card.conservationStatus || 0,
+        mass_kg: card.massKg || 0,
+        lifespan_max_days: card.lifespanMaxDays || 0,
+        vision_range_m: card.visionRangeM || 0,
+        smell_range_m: card.smellRangeM || 0,
+        hearing_range_m: card.hearingRangeM || 0,
+        walk_speed_m_per_hr: card.walkSpeedMPerHr || 0,
+        run_speed_m_per_hr: card.runSpeedMPerHr || 0,
+        swim_speed_m_per_hr: card.swimSpeedMPerHr || 0,
+        fly_speed_m_per_hr: card.flySpeedMPerHr || 0,
+        offspring_count: card.offspringCount || 0,
+        gestation_days: card.gestationDays || 0
       };
       const isChemoautotroph = engine.isChemoautotroph(engineCard);
       expect(isChemoautotroph).toBe(true);

@@ -4,6 +4,7 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { gameDataManager } from '../../services/GameDataManager';
 import {
   GameActionType
@@ -224,7 +225,8 @@ describe('Cost Payment System - Modern', () => {
     });
 
     // Initialize engine with real data
-    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('cost-test', [

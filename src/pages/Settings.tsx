@@ -45,6 +45,8 @@ import {
 } from 'ionicons/icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { ThemeConfig, PREDEFINED_THEMES } from '../theme/themeSystem';
+import { useLocalization } from '../contexts/LocalizationContext';
+import { LanguageSelector } from '../components/localization/LanguageSelector';
 import './Settings.css';
 
 const Settings: React.FC = () => {
@@ -58,6 +60,13 @@ const Settings: React.FC = () => {
     organismRenderMode,
     setOrganismRenderMode
   } = useTheme();
+
+  const {
+    currentLanguage,
+    changeLanguage,
+    availableLanguages,
+    getUIText
+  } = useLocalization();
 
   const [showCustomThemeModal, setShowCustomThemeModal] = useState(false);
   const [customThemeName, setCustomThemeName] = useState('');
@@ -182,6 +191,32 @@ const Settings: React.FC = () => {
                 <IonIcon icon={eyedrop} slot="start" />
                 Create Custom Theme
               </IonButton>
+            </IonCardContent>
+          </IonCard>
+
+          {/* Language Settings */}
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={colorPalette} style={{ marginRight: '8px' }} />
+                Language Settings
+              </IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonList>
+                <IonItem>
+                  <IonLabel>
+                    <h3>Game Language</h3>
+                    <p>Choose your preferred language for the game interface</p>
+                  </IonLabel>
+                </IonItem>
+                <LanguageSelector
+                  currentLanguage={currentLanguage}
+                  onLanguageChange={changeLanguage}
+                  showLabel={true}
+                  compact={false}
+                />
+              </IonList>
             </IonCardContent>
           </IonCard>
 

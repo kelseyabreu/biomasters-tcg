@@ -9,6 +9,7 @@
 
 import { gameDataManager } from '../services/GameDataManager';
 import { BioMastersEngine, CardData as SharedCardData, AbilityData as SharedAbilityData } from '../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../utils/mockLocalizationManager';
 
 interface TestResult {
   name: string;
@@ -127,6 +128,10 @@ class WorkingSystemsTest {
       gameDataManager.getCards().forEach((serverCard, id) => {
         const sharedCard: SharedCardData = {
           cardId: serverCard.cardId,
+          nameId: `CARD_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
+          scientificNameId: `SCIENTIFIC_${serverCard.scientificName?.toUpperCase().replace(/\s+/g, '_')}` as any,
+          descriptionId: `DESC_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
+          taxonomyId: `TAXONOMY_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
           trophicLevel: serverCard.trophicLevel,
           trophicCategory: serverCard.trophicCategory,
           domain: serverCard.domain,
@@ -134,6 +139,18 @@ class WorkingSystemsTest {
           keywords: serverCard.keywords,
           abilities: serverCard.abilities || [],
           victoryPoints: serverCard.victoryPoints || 0,
+          conservationStatus: 7,
+          mass_kg: 1000,
+          lifespan_max_days: 365,
+          vision_range_m: 0,
+          smell_range_m: 0,
+          hearing_range_m: 0,
+          walk_speed_m_per_hr: 0,
+          run_speed_m_per_hr: 0,
+          swim_speed_m_per_hr: 0,
+          fly_speed_m_per_hr: 0,
+          offspring_count: 1,
+          gestation_days: 30,
           commonName: serverCard.commonName,
           scientificName: serverCard.scientificName || ''
         };
@@ -144,6 +161,9 @@ class WorkingSystemsTest {
       gameDataManager.getAbilities().forEach((serverAbility, id) => {
         const sharedAbility: SharedAbilityData = {
           abilityId: serverAbility.abilityID,
+          nameId: `ABILITY_${serverAbility.abilityID}` as any,
+          descriptionId: `DESC_ABILITY_${serverAbility.abilityID}` as any,
+          triggerId: serverAbility.triggerID,
           abilityID: serverAbility.abilityID,
           name: `Ability ${serverAbility.abilityID}`,
           description: `Ability with trigger ${serverAbility.triggerID}`,
@@ -157,7 +177,8 @@ class WorkingSystemsTest {
       const keywordMap = new Map<number, string>();
       gameDataManager.getKeywords().forEach((keyword, id) => keywordMap.set(id, keyword.keyword_name));
 
-      const engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordMap);
+      const mockLocalizationManager = createMockLocalizationManager();
+      const engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordMap, mockLocalizationManager);
       engine.initializeNewGame('test-game', players, gameSettings);
       
       this.addResult(

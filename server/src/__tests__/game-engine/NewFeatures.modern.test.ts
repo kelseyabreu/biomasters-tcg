@@ -4,6 +4,7 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,
   TrophicLevel,
@@ -308,7 +309,8 @@ describe('BioMasters New Features - Modern', () => {
     // Game state will be initialized by the engine
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map());
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(mockCardDatabase, mockAbilityDatabase, new Map(), mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('newfeatures-test', [

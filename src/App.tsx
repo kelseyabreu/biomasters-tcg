@@ -24,6 +24,7 @@ import Profile from './pages/Profile';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useHybridGameStore } from './state/hybridGameStore';
 import { ActiveBattleIndicator } from './components/navigation/ActiveBattleIndicator';
+import { LocalizationProvider } from './contexts/LocalizationContext';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -116,7 +117,8 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider>
-      <IonApp>
+      <LocalizationProvider basePath="/data/localization">
+        <IonApp>
         <IonReactRouter>
           {/* Active Battle Indicator - shows when there's an active battle */}
           <ActiveBattleIndicator />
@@ -175,7 +177,8 @@ const App: React.FC = () => {
           </IonTabBar>
           </IonTabs>
         </IonReactRouter>
-      </IonApp>
+        </IonApp>
+      </LocalizationProvider>
     </ThemeProvider>
   );
 };

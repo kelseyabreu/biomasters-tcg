@@ -4,6 +4,7 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,
   GamePhase,
@@ -64,7 +65,8 @@ describe('Simple BioMasters Gameplay - Modern', () => {
     grid.set(`${home2.position.x},${home2.position.y}`, home2);
 
     // Initialize engine with test constructor
-    engine = new BioMastersEngine(new Map(), new Map(), new Map());
+    const mockLocalizationManager = createMockLocalizationManager();
+    engine = new BioMastersEngine(new Map(), new Map(), new Map(), mockLocalizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('simple-test', [

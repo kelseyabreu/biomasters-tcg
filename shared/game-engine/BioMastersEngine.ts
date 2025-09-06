@@ -18,9 +18,25 @@ import {
   DOMAIN_COMPATIBILITY
 } from '../enums';
 
+// Import localization types
+import {
+  CardNameId,
+  ScientificNameId,
+  CardDescriptionId,
+  AbilityNameId,
+  AbilityDescriptionId,
+  TaxonomyId
+} from '../text-ids';
+
+import { ILocalizationManager } from '../localization-manager';
+
 // Data interfaces that must be provided by the environment
 export interface CardData {
   cardId: number;
+  nameId: CardNameId;
+  scientificNameId: ScientificNameId;
+  descriptionId: CardDescriptionId;
+  taxonomyId: TaxonomyId;
   trophicLevel: number | null;
   trophicCategory: number | null;
   domain: number;
@@ -28,17 +44,35 @@ export interface CardData {
   keywords: number[];
   abilities: number[]; // Required - conversion layer ensures this exists
   victoryPoints: number;
-  commonName: string;
-  scientificName: string;
+  conservationStatus: number;
+  // Biological data
+  mass_kg: number;
+  lifespan_max_days: number;
+  vision_range_m: number;
+  smell_range_m: number;
+  hearing_range_m: number;
+  walk_speed_m_per_hr: number;
+  run_speed_m_per_hr: number;
+  swim_speed_m_per_hr: number;
+  fly_speed_m_per_hr: number;
+  offspring_count: number;
+  gestation_days: number;
+  // Legacy support for existing code
+  commonName?: string;
+  scientificName?: string;
 }
 
 export interface AbilityData {
   abilityId: number;
   abilityID?: number; // Legacy support for existing code
-  name: string;
-  description: string;
-  cost: any;
+  nameId: AbilityNameId;
+  descriptionId: AbilityDescriptionId;
+  triggerId: number;
   effects: any[];
+  // Legacy support for existing code
+  name?: string;
+  description?: string;
+  cost?: any;
   triggerID?: number; // Trigger type for ability activation
 }
 
@@ -141,6 +175,7 @@ export class BioMastersEngine {
   public readonly cardDatabase: Map<number, CardData>;
   public readonly abilityDatabase: Map<number, AbilityData>;
   public readonly keywordDatabase: Map<number, string>;
+  public readonly localizationManager: ILocalizationManager;
 
   /**
    * Environment-agnostic constructor
@@ -149,13 +184,50 @@ export class BioMastersEngine {
   constructor(
     cardDatabase: Map<number, CardData>,
     abilityDatabase: Map<number, AbilityData>,
-    keywordDatabase: Map<number, string>
+    keywordDatabase: Map<number, string>,
+    localizationManager: ILocalizationManager
   ) {
     this.cardDatabase = cardDatabase;
     this.abilityDatabase = abilityDatabase;
     this.keywordDatabase = keywordDatabase;
+    this.localizationManager = localizationManager;
 
     console.log(`🎮 Engine initialized with data: ${this.cardDatabase.size} cards, ${this.abilityDatabase.size} abilities, ${this.keywordDatabase.size} keywords`);
+  }
+
+  /**
+   * Get localized card name
+   */
+  public getCardName(cardData: CardData): string {
+    return this.localizationManager.getCardName(cardData.nameId);
+  }
+
+  /**
+   * Get localized scientific name
+   */
+  public getScientificName(cardData: CardData): string {
+    return this.localizationManager.getScientificName(cardData.scientificNameId);
+  }
+
+  /**
+   * Get localized card description
+   */
+  public getCardDescription(cardData: CardData): string {
+    return this.localizationManager.getCardDescription(cardData.descriptionId);
+  }
+
+  /**
+   * Get localized ability name
+   */
+  public getAbilityName(abilityData: AbilityData): string {
+    return this.localizationManager.getAbilityName(abilityData.nameId);
+  }
+
+  /**
+   * Get localized ability description
+   */
+  public getAbilityDescription(abilityData: AbilityData): string {
+    return this.localizationManager.getAbilityDescription(abilityData.descriptionId);
   }
 
 
@@ -472,7 +544,8 @@ export class BioMastersEngine {
 
       // If still not found, try to find by card name
       if (handIndex === -1) {
-        handIndex = currentPlayer.hand.indexOf(cardData.commonName);
+        const cardName = this.getCardName(cardData);
+        handIndex = currentPlayer.hand.indexOf(cardName);
       }
 
       if (handIndex !== -1) {
@@ -694,7 +767,8 @@ export class BioMastersEngine {
   private isSaprotroph(cardData: CardData): boolean {
     const result = cardData.trophicLevel === TrophicLevel.SAPROTROPH &&
            cardData.trophicCategory === TrophicCategoryId.SAPROTROPH;
-    console.log(`🍄 isSaprotroph check for ${cardData.commonName} (CardID: ${cardData.cardId}):`);
+    const cardName = this.getCardName(cardData);
+    console.log(`🍄 isSaprotroph check for ${cardName} (CardID: ${cardData.cardId}):`);
     console.log(`🍄   TrophicLevel: ${cardData.trophicLevel} === ${TrophicLevel.SAPROTROPH} = ${cardData.trophicLevel === TrophicLevel.SAPROTROPH}`);
     console.log(`🍄   TrophicCategory: ${cardData.trophicCategory} === ${TrophicCategoryId.SAPROTROPH} = ${cardData.trophicCategory === TrophicCategoryId.SAPROTROPH}`);
     console.log(`🍄   Result: ${result}`);
@@ -825,7 +899,10 @@ export class BioMastersEngine {
       host.attachments.push(attachmentCard);
 
       const attachmentType = this.isParasite(cardData) ? 'Parasite' : 'Mutualist';
-      console.log(`🔗 ${attachmentType} ${cardData.commonName} attached to host ${this.cardDatabase.get(host.cardId)?.commonName}`);
+      const attachmentName = this.getCardName(cardData);
+      const hostData = this.cardDatabase.get(host.cardId);
+      const hostName = hostData ? this.getCardName(hostData) : 'Unknown';
+      console.log(`🔗 ${attachmentType} ${attachmentName} attached to host ${hostName}`);
 
       // Apply attachment effects
       this.applyAttachmentEffects(attachmentCard, host, cardData);
@@ -1289,7 +1366,8 @@ export class BioMastersEngine {
     // Special handling for Saprotrophs: they can use detritus as cost source
     const isSaprotroph = cardData.trophicLevel === TrophicLevel.SAPROTROPH && this.isSaprotroph(cardData);
 
-    console.log(`🍄 Cost validation for ${cardData.commonName}:`);
+    const cardName = this.getCardName(cardData);
+    console.log(`🍄 Cost validation for ${cardName}:`);
     console.log(`🍄 TrophicLevel: ${cardData.trophicLevel}, TrophicCategory: ${cardData.trophicCategory}`);
     console.log(`🍄 Is Saprotroph: ${isSaprotroph}`);
     console.log(`🍄 Position: ${position ? `${position.x},${position.y}` : 'none'}`);
@@ -1368,10 +1446,11 @@ export class BioMastersEngine {
     const cost = typeof cardData.cost === 'string' ? JSON.parse(cardData.cost) : cardData.cost;
     const playerCards = Array.from(state.grid.values()).filter(card => card.ownerId === playerId);
 
-    console.log(`💰 Paying cost for ${cardData.commonName}: ${JSON.stringify(cost)}`);
+    const cardName = this.getCardName(cardData);
+    console.log(`💰 Paying cost for ${cardName}: ${JSON.stringify(cost)}`);
     console.log(`🎯 Player has ${playerCards.length} cards on grid`);
 
-    console.log(`💰 Paying cost for ${cardData.commonName}:`, cost);
+    console.log(`💰 Paying cost for ${cardName}:`, cost);
 
     // Special handling for Saprotrophs
     const isSaprotroph = cardData.trophicLevel === TrophicLevel.SAPROTROPH && this.isSaprotroph(cardData);
@@ -1407,7 +1486,8 @@ export class BioMastersEngine {
                 // The detritus will be consumed when the saprotroph is placed
                 // For now, just count it as available for cost payment
                 remainingCost--;
-                console.log(`🍄 Saprotroph can use detritus (${detritusCardData.commonName}) to pay cost`);
+                const detritusName = this.getCardName(detritusCardData);
+                console.log(`🍄 Saprotroph can use detritus (${detritusName}) to pay cost`);
               }
             }
           }
@@ -1449,7 +1529,8 @@ export class BioMastersEngine {
           if (card) {
             card.isExhausted = true;
             const exhaustedCardData = this.cardDatabase.get(card.cardId);
-            console.log(`😴 Exhausted ${exhaustedCardData?.commonName} to pay cost`);
+            const exhaustedCardName = exhaustedCardData ? this.getCardName(exhaustedCardData) : 'Unknown';
+            console.log(`😴 Exhausted ${exhaustedCardName} to pay cost`);
           }
         }
       }
@@ -1508,7 +1589,8 @@ export class BioMastersEngine {
     if (hasPreferredDiet) {
       // Enter play ready instead of exhausted
       gridCard.isExhausted = false;
-      console.log(`🌟 Synergy bonus: ${cardData.commonName} enters play ready due to preferred diet`);
+      const cardName = this.getCardName(cardData);
+      console.log(`🌟 Synergy bonus: ${cardName} enters play ready due to preferred diet`);
     }
   }
 
@@ -1604,7 +1686,8 @@ export class BioMastersEngine {
    */
   private checkMixotrophPreyBonus(cardData: CardData, adjacentCards: GridCard[]): boolean {
     // Venus Flytrap example: gets bonus when adjacent to insects
-    if (cardData.commonName.toLowerCase().includes('venus flytrap') ||
+    const cardName = this.getCardName(cardData).toLowerCase();
+    if (cardName.includes('venus flytrap') ||
         cardData.keywords.includes(19)) { // INSECTIVORE
       return adjacentCards.some(card => {
         const adjCardData = this.cardDatabase.get(card.cardId);
@@ -1613,7 +1696,7 @@ export class BioMastersEngine {
     }
 
     // Sundew example: gets bonus when adjacent to small arthropods
-    if (cardData.commonName.toLowerCase().includes('sundew')) {
+    if (cardName.includes('sundew')) {
       return adjacentCards.some(card => {
         const adjCardData = this.cardDatabase.get(card.cardId);
         return adjCardData && (
@@ -1624,7 +1707,7 @@ export class BioMastersEngine {
     }
 
     // Bladderwort example: gets bonus when adjacent to aquatic microorganisms
-    if (cardData.commonName.toLowerCase().includes('bladderwort')) {
+    if (cardName.includes('bladderwort')) {
       return adjacentCards.some(card => {
         const adjCardData = this.cardDatabase.get(card.cardId);
         return adjCardData &&
@@ -1661,7 +1744,8 @@ export class BioMastersEngine {
       const player = gameState.players.find(p => p.id === mixotroph.ownerId);
       if (player) {
         player.energy += 1;
-        console.log(`🌱⚡ Mixotroph ${cardData.commonName} gained energy from dual nutrition`);
+        const cardName = this.getCardName(cardData);
+        console.log(`🌱⚡ Mixotroph ${cardName} gained energy from dual nutrition`);
       }
     }
 
@@ -1669,7 +1753,8 @@ export class BioMastersEngine {
     if (this.checkMixotrophPreyBonus(cardData, adjacentCards)) {
       // Ready the mixotroph for capturing prey
       mixotroph.isExhausted = false;
-      console.log(`🌱🦟 Mixotroph ${cardData.commonName} ready to capture prey`);
+      const cardName = this.getCardName(cardData);
+      console.log(`🌱🦟 Mixotroph ${cardName} ready to capture prey`);
     }
   }
 
@@ -2877,8 +2962,9 @@ export class BioMastersEngine {
 
     // Check if player has the adult card in hand
     const currentPlayer = this.getCurrentPlayer();
+    const adultName = this.getCardName(adultData);
     const adultInHand = currentPlayer.hand.includes(adultCardId.toString()) ||
-                       currentPlayer.hand.includes(adultData.commonName);
+                       currentPlayer.hand.includes(adultName);
 
     if (!adultInHand) {
       return { isValid: false, errorMessage: 'Adult card not in hand' };
@@ -2921,8 +3007,9 @@ export class BioMastersEngine {
     }
 
     // Check life stage progression (juvenile → adult)
-    if (juvenile.commonName.toLowerCase().includes('juvenile') &&
-        !adult.commonName.toLowerCase().includes('adult')) {
+    const juvenileName = this.getCardName(juvenile).toLowerCase();
+    const adultName = this.getCardName(adult).toLowerCase();
+    if (juvenileName.includes('juvenile') && !adultName.includes('adult')) {
       return { isValid: false, errorMessage: 'Must metamorphose from juvenile to adult form' };
     }
 
@@ -2950,7 +3037,8 @@ export class BioMastersEngine {
     // Remove adult card from hand
     let handIndex = currentPlayer.hand.indexOf(adultData.cardId.toString());
     if (handIndex === -1) {
-      handIndex = currentPlayer.hand.indexOf(adultData.commonName);
+      const adultName = this.getCardName(adultData);
+      handIndex = currentPlayer.hand.indexOf(adultName);
     }
 
     if (handIndex !== -1) {
@@ -2966,7 +3054,8 @@ export class BioMastersEngine {
     // Preserve position and attachments
     // (position and attachments are already part of the GridCard)
 
-    console.log(`🦋 Metamorphosis: ${juvenileCard.instanceId} transformed into ${adultData.commonName} (enters ready)`);
+    const adultName = this.getCardName(adultData);
+    console.log(`🦋 Metamorphosis: ${juvenileCard.instanceId} transformed into ${adultName} (enters ready)`);
 
     // Process any ON_PLAY abilities of the adult form
     this.processOnPlayAbilities(state, juvenileCard, adultData);

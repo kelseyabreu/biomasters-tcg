@@ -12,17 +12,35 @@ import {
   TrophicLevel,
   TrophicCategoryId,
   Domain,
-  DOMAIN_COMPATIBILITY
+  DOMAIN_COMPATIBILITY,
+  CardId
 } from '@shared/enums';
 
 // Import the shared, authoritative game engine
-import { 
-  BioMastersEngine, 
+import {
+  BioMastersEngine,
   GameState as ServerGameState,
   CardData as ServerCardData,
   AbilityData as ServerAbilityData,
   PlayerAction as ServerPlayerAction
 } from '@shared/game-engine/BioMastersEngine';
+
+// Import localization system
+import {
+  ILocalizationManager,
+  LocalizationManager,
+  JSONFileDataLoader
+} from '@shared/localization-manager';
+
+import {
+  CardNameId,
+  ScientificNameId,
+  CardDescriptionId,
+  AbilityNameId,
+  AbilityDescriptionId,
+  TaxonomyId,
+  SupportedLanguage
+} from '@shared/text-ids';
 
 // Import JSON data types
 interface JSONCardData {
@@ -245,11 +263,27 @@ export class ClientGameEngine {
       ...settings
     };
 
+    // Create localization manager
+    const localizationManager = new LocalizationManager(
+      new JSONFileDataLoader('/data/localization')
+    );
+    await localizationManager.loadLanguage(SupportedLanguage.ENGLISH); // Default to English
+
     // Prepare data for the shared engine
     const cardDatabase = new Map<number, ServerCardData>();
     this.gameDataManager.getAllCards().forEach(rawCard => {
+      // Create text IDs based on card names (simplified mapping for legacy data)
+      const nameId = `CARD_${rawCard.CommonName.toUpperCase().replace(/\s+/g, '_')}` as CardNameId;
+      const scientificNameId = `SCIENTIFIC_${rawCard.ScientificName.toUpperCase().replace(/\s+/g, '_')}` as ScientificNameId;
+      const descriptionId = `DESC_${rawCard.CommonName.toUpperCase().replace(/\s+/g, '_')}` as CardDescriptionId;
+      const taxonomyId = `TAXONOMY_${rawCard.CommonName.toUpperCase().replace(/\s+/g, '_')}` as TaxonomyId;
+
       const card: ServerCardData = {
         cardId: rawCard.CardID,
+        nameId,
+        scientificNameId,
+        descriptionId,
+        taxonomyId,
         trophicLevel: rawCard.TrophicLevel,
         trophicCategory: rawCard.TrophicCategory,
         domain: rawCard.Domain,
@@ -257,6 +291,19 @@ export class ClientGameEngine {
         keywords: rawCard.Keywords,
         abilities: [], // TODO: Add abilities to JSON data when available
         victoryPoints: rawCard.VictoryPoints,
+        conservationStatus: 1, // Default value
+        mass_kg: 1, // Default value
+        lifespan_max_days: 365, // Default value
+        vision_range_m: 10, // Default value
+        smell_range_m: 5, // Default value
+        hearing_range_m: 20, // Default value
+        walk_speed_m_per_hr: 5, // Default value
+        run_speed_m_per_hr: 15, // Default value
+        swim_speed_m_per_hr: 2, // Default value
+        fly_speed_m_per_hr: 0, // Default value
+        offspring_count: 2, // Default value
+        gestation_days: 30, // Default value
+        // Legacy properties for backwards compatibility
         commonName: rawCard.CommonName,
         scientificName: rawCard.ScientificName
       };
@@ -268,7 +315,7 @@ export class ClientGameEngine {
     const keywordDatabase = new Map<number, string>();
 
     // Create the shared engine instance
-    this.coreEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase);
+    this.coreEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, localizationManager);
 
     // Initialize the game using the shared engine
     const serverGameState = this.coreEngine.initializeNewGame(gameId, players, {

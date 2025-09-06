@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ClientGameEngine, clientGameDataManager } from '../ClientGameEngine';
+import { SupportedLanguage } from '@shared/text-ids';
 import { GameActionType, GamePhase, TurnPhase } from '../../../shared/enums';
 
 // Mock fetch for testing
@@ -86,6 +87,51 @@ describe('ClientGameEngine', () => {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockLocalizationData)
+        });
+      } else if (url.includes('/data/localization/en/cards.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            names: { CARD_TEST_CARD: "Test Card" },
+            scientificNames: { SCIENTIFIC_TEST: "Testus cardus" },
+            descriptions: { DESC_TEST_CARD: "A test card for testing" }
+          })
+        });
+      } else if (url.includes('/data/localization/en/abilities.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            names: { ABILITY_TEST: "Test Ability" },
+            descriptions: { DESC_TEST_ABILITY: "A test ability" },
+            flavorTexts: { FLAVOR_TEST: "Test flavor" }
+          })
+        });
+      } else if (url.includes('/data/localization/en/ui.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            gameActions: { UI_PLAY_CARD: "Play Card", UI_ATTACK: "Attack" },
+            gamePhases: { UI_ACTION_PHASE: "Action Phase" },
+            resources: { UI_ENERGY: "Energy" },
+            errors: { UI_INVALID_MOVE: "Invalid Move" },
+            keywords: { UI_TERRESTRIAL: "Terrestrial" },
+            menus: { UI_MAIN_MENU: "Main Menu" },
+            notifications: { UI_GAME_SAVED: "Game Saved" }
+          })
+        });
+      } else if (url.includes('/data/localization/en/taxonomy.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            kingdoms: { KINGDOM_PLANTAE: "Plantae" },
+            phylums: { PHYLUM_CHORDATA: "Chordata" },
+            classes: { CLASS_MAMMALIA: "Mammalia" },
+            orders: { ORDER_PRIMATES: "Primates" },
+            families: { FAMILY_HOMINIDAE: "Hominidae" },
+            genera: { GENUS_HOMO: "Homo" },
+            species: { SPECIES_SAPIENS: "sapiens" },
+            commonNames: { COMMON_HUMAN: "human" }
+          })
         });
       }
       return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));

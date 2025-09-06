@@ -26,6 +26,7 @@ import deckRoutes from './routes/decks';
 import syncRoutes from './routes/sync';
 import gameRoutes from './routes/game';
 import adminRoutes from './routes/admin';
+import localizationRoutes from './routes/localization';
 
 // Import WebSocket setup
 import { setupGameSocket } from './websocket/gameSocket';
@@ -133,6 +134,7 @@ app.use('/api/decks', deckRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/localization', localizationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

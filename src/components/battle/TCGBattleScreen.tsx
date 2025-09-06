@@ -46,6 +46,8 @@ import {
 // Import the battle store instead of game engine
 import useHybridGameStore from '../../state/hybridGameStore';
 import { CommonName, SPECIES_DISPLAY_NAMES, GamePhase } from '../../../shared/enums';
+import { useLocalization } from '../../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../../utils/cardLocalizationMapping';
 import OrganismRenderer from '../OrganismRenderer';
 import { TCGGameService } from '../../services/TCGGameService';
 
@@ -63,6 +65,9 @@ interface TCGGameSettings {
 export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
   // Create TCG game service instance
   const [tcgGameService] = React.useState(() => new TCGGameService());
+
+  // Localization
+  const localization = useLocalization();
 
   // Get all state from the battle store
   const gameState = useHybridGameStore(state => state.battle.tcgGameState);
@@ -213,6 +218,31 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
       VictoryPoints: 1,
       TrophicLevel: 1
     };
+  };
+
+  // Helper function to get localized card names for battle screen
+  const getLocalizedCardName = (cardData: any): string => {
+    if (!cardData?.CommonName) return 'Unknown';
+
+    const mockCard = {
+      commonName: cardData.CommonName,
+      scientificName: cardData.ScientificName || ''
+    };
+
+    const localizedCard = getLocalizedCardData(mockCard, localization);
+    return localizedCard.displayName;
+  };
+
+  const getLocalizedScientificName = (cardData: any): string => {
+    if (!cardData?.ScientificName) return '';
+
+    const mockCard = {
+      commonName: cardData.CommonName || '',
+      scientificName: cardData.ScientificName
+    };
+
+    const localizedCard = getLocalizedCardData(mockCard, localization);
+    return localizedCard.displayScientificName;
   };
 
   // Handle forfeit/quit match
@@ -438,7 +468,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                                 textAlign: 'center'
                               }}>
                                 <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
-                                  {getCardData(card.instanceId)?.CommonName?.slice(0, 6) || 'Card'}
+                                  {getLocalizedCardName(getCardData(card.instanceId))?.slice(0, 6) || 'Card'}
                                 </div>
                                 <div style={{ fontSize: '6px', opacity: 0.8 }}>
                                   VP: {getCardData(card.instanceId)?.VictoryPoints || 0}
@@ -512,14 +542,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                       }}
                     >
                       <div style={{ fontWeight: 'bold', fontSize: '9px' }}>
-                        {cardData?.CommonName || 'Unknown'}
+                        {getLocalizedCardName(cardData) || 'Unknown'}
                       </div>
                       <div style={{
                         fontSize: '8px',
                         color: 'var(--ion-color-medium)',
                         fontStyle: 'italic'
                       }}>
-                        {cardData?.ScientificName || ''}
+                        {getLocalizedScientificName(cardData) || ''}
                       </div>
                       <div style={{
                         display: 'flex',

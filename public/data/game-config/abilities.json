@@ -8,8 +8,10 @@
       {
         "effectId": 1,
         "selectorId": 2,
-        "filterKeywords": [2],
-        "actionId": 1
+        "actionId": 1,
+        "filterKeywords": [
+          2
+        ]
       }
     ]
   },
@@ -22,9 +24,14 @@
       {
         "effectId": 1,
         "selectorId": 1,
-        "filterTrophicCategories": [5],
-        "filterTrophicLevels": [3, 4],
-        "actionId": 1
+        "actionId": 1,
+        "filterTrophicCategories": [
+          5
+        ],
+        "filterTrophicLevels": [
+          3,
+          4
+        ]
       }
     ]
   },
@@ -63,8 +70,10 @@
       {
         "effectId": 4,
         "selectorId": 1,
-        "filterTrophicCategories": [6],
-        "actionId": 6
+        "actionId": 6,
+        "filterTrophicCategories": [
+          6
+        ]
       },
       {
         "effectId": 2,
@@ -82,14 +91,7 @@
       {
         "effectId": 3,
         "selectorId": 4,
-        "actionId": 2,
-        "conditions": [
-          {
-            "type": "AdjacentCardCount",
-            "operator": "<",
-            "value": 3
-          }
-        ]
+        "actionId": 2
       }
     ]
   },
@@ -102,20 +104,7 @@
       {
         "effectId": 1,
         "selectorId": 1,
-        "actionId": 1,
-        "requirements": [
-          {
-            "type": "ExhaustAdjacentAlly",
-            "count": 1
-          }
-        ],
-        "filterConditions": [
-          {
-            "type": "TrophicLevelSum",
-            "operator": "<=",
-            "compareToExhaustedCards": true
-          }
-        ]
+        "actionId": 1
       }
     ]
   },
@@ -128,13 +117,7 @@
       {
         "effectId": 2,
         "selectorId": 5,
-        "actionId": 7,
-        "conditions": [
-          {
-            "type": "AdjacentKeyword",
-            "keywords": [5, 20]
-          }
-        ]
+        "actionId": 7
       }
     ]
   },
@@ -147,14 +130,7 @@
       {
         "effectId": 4,
         "selectorId": 4,
-        "actionId": 6,
-        "specialActions": [
-          {
-            "type": "PlayFromHand",
-            "cardType": "AdultForm",
-            "costReduction": "Full"
-          }
-        ]
+        "actionId": 6
       }
     ]
   },
@@ -167,13 +143,98 @@
       {
         "effectId": 3,
         "selectorId": 5,
-        "actionId": 6,
-        "triggerConditions": [
-          {
-            "type": "CardMovedToDetritus",
-            "location": "Adjacent"
-          }
-        ]
+        "actionId": 6
+      }
+    ]
+  },
+  {
+    "abilityId": 11,
+    "nameId": "ABILITY_VENOMOUS",
+    "descriptionId": "DESC_VENOMOUS",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 1,
+        "selectorId": 1,
+        "actionId": 7
+      }
+    ]
+  },
+  {
+    "abilityId": 12,
+    "nameId": "ABILITY_FRUGIVORE",
+    "descriptionId": "DESC_FRUGIVORE",
+    "triggerId": 2,
+    "effects": [
+      {
+        "effectId": 3,
+        "selectorId": 4,
+        "actionId": 8
+      }
+    ]
+  },
+  {
+    "abilityId": 13,
+    "nameId": "ABILITY_INSECTIVORE",
+    "descriptionId": "DESC_INSECTIVORE",
+    "triggerId": 2,
+    "effects": [
+      {
+        "effectId": 3,
+        "selectorId": 4,
+        "actionId": 8
+      }
+    ]
+  },
+  {
+    "abilityId": 14,
+    "nameId": "ABILITY_HYPERCARNIVORE",
+    "descriptionId": "DESC_HYPERCARNIVORE",
+    "triggerId": 2,
+    "effects": [
+      {
+        "effectId": 3,
+        "selectorId": 4,
+        "actionId": 8
+      }
+    ]
+  },
+  {
+    "abilityId": 15,
+    "nameId": "ABILITY_MIGRATORY",
+    "descriptionId": "DESC_MIGRATORY",
+    "triggerId": 5,
+    "effects": [
+      {
+        "effectId": 4,
+        "selectorId": 4,
+        "actionId": 4
+      }
+    ]
+  },
+  {
+    "abilityId": 16,
+    "nameId": "ABILITY_CHEMICAL_OPPORTUNIST",
+    "descriptionId": "DESC_CHEMICAL_OPPORTUNIST",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 2,
+        "selectorId": 1,
+        "actionId": 1
+      }
+    ]
+  },
+  {
+    "abilityId": 17,
+    "nameId": "ABILITY_DETRITAL_PROCESSOR",
+    "descriptionId": "DESC_DETRITAL_PROCESSOR",
+    "triggerId": 1,
+    "effects": [
+      {
+        "effectId": 2,
+        "selectorId": 1,
+        "actionId": 1
       }
     ]
   }

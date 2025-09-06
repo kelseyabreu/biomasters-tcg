@@ -8,6 +8,8 @@ import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonIcon
 import { lockClosed, checkmarkCircle, star, add, remove } from 'ionicons/icons';
 import { Card } from '../../types';
 import { starterPackService } from '../../services/starterPackService';
+import { useLocalization } from '../../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../../utils/cardLocalizationMapping';
 import OrganismRenderer from '../OrganismRenderer';
 import './CollectionCard.css';
 
@@ -49,6 +51,8 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   propertyFilter = { habitat: true, role: true, conservationStatus: true, acquisitionType: true },
   deckControls
 }) => {
+  const localization = useLocalization();
+  const localizedCard = getLocalizedCardData(species, localization);
   const isStarter = starterPackService.isStarterSpecies(species.speciesName);
   const educationalInfo = starterPackService.getEducationalInfo(species.speciesName);
 
@@ -110,14 +114,14 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
 
       <IonCardHeader className="pb-0">
         <IonCardTitle className={!isOwned ? 'greyed-text' : ''}>
-          {species.commonName}
+          {localizedCard.displayName}
         </IonCardTitle>
-        
+
         {/* Show basic info for all cards, detailed info only for owned */}
         {(isOwned || showBasicInfo) && (
           <div className="card-subtitle">
             <IonText color="medium" className={!isOwned ? 'greyed-text' : ''}>
-              <em>{species.scientificName}</em>
+              <em>{localizedCard.displayScientificName}</em>
             </IonText>
           </div>
         )}

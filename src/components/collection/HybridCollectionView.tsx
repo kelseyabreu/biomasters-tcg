@@ -9,6 +9,8 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonSearchbar, Ion
 import { search, filter, statsChart, sync, options, close } from 'ionicons/icons';
 import { Card } from '../../types';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import { useLocalization } from '../../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../../utils/cardLocalizationMapping';
 import { CollectionCard, CardPropertyFilter } from './CollectionCard';
 import { CollectionStats } from './CollectionStats';
 import { SyncStatus } from './SyncStatus';
@@ -25,6 +27,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   onCardSelect,
   showOnlyOwned = false
 }) => {
+  const localization = useLocalization();
   const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'owned' | 'unowned'>('all');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -115,13 +118,18 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
     // Apply search filter
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase();
-      filtered = filtered.filter(species =>
-        species.commonName.toLowerCase().includes(searchLower) ||
-        species.scientificName.toLowerCase().includes(searchLower) ||
-        species.speciesName.toLowerCase().includes(searchLower) ||
-        species.habitat.toString().toLowerCase().includes(searchLower) ||
-        species.trophicRole.toString().toLowerCase().includes(searchLower)
-      );
+      filtered = filtered.filter(species => {
+        const localizedCard = getLocalizedCardData(species, localization);
+        return (
+          species.commonName.toLowerCase().includes(searchLower) ||
+          species.scientificName.toLowerCase().includes(searchLower) ||
+          localizedCard.displayName.toLowerCase().includes(searchLower) ||
+          localizedCard.displayScientificName.toLowerCase().includes(searchLower) ||
+          species.speciesName.toLowerCase().includes(searchLower) ||
+          species.habitat.toString().toLowerCase().includes(searchLower) ||
+          species.trophicRole.toString().toLowerCase().includes(searchLower)
+        );
+      });
     }
 
     // Apply sorting
@@ -130,7 +138,9 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
 
       switch (sortBy) {
         case 'name':
-          comparison = a.commonName.localeCompare(b.commonName);
+          const localizedA = getLocalizedCardData(a, localization);
+          const localizedB = getLocalizedCardData(b, localization);
+          comparison = localizedA.displayName.localeCompare(localizedB.displayName);
           break;
         case 'rarity':
           const rarityOrder = { 'Least Concern': 1, 'Near Threatened': 2, 'Vulnerable': 3, 'Endangered': 4, 'Critically Endangered': 5 };
@@ -158,14 +168,16 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
         if (aOwned && !bOwned) return -1;
         if (!aOwned && bOwned) return 1;
 
-        return a.commonName.localeCompare(b.commonName);
+        const localizedA = getLocalizedCardData(a, localization);
+        const localizedB = getLocalizedCardData(b, localization);
+        return localizedA.displayName.localeCompare(localizedB.displayName);
       }
 
       return comparison;
     });
 
     return filtered;
-  }, [allSpeciesCards, offlineCollection, selectedFilter, searchText, rarityFilter, typeFilter, trophicRoleFilter, sortBy, sortOrder]);
+  }, [allSpeciesCards, offlineCollection, selectedFilter, searchText, rarityFilter, typeFilter, trophicRoleFilter, sortBy, sortOrder, localization]);
 
   // Collection statistics
   const collectionStats = useMemo(() => {

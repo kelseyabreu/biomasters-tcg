@@ -42,36 +42,32 @@ import {
   SupportedLanguage
 } from '@shared/text-ids';
 
-// Import JSON data types
-interface JSONCardData {
-  CardID: number;
-  TrophicLevel: number | null;
-  TrophicCategory: number | null;
-  Domain: number;
-  Cost: any;
-  Keywords: number[];
-  VictoryPoints: number;
-  CommonName: string;
-  ScientificName: string;
-  Taxonomy: {
-    kingdom: string;
-    phylum: string;
-    class: string;
-    order: string;
-    family: string;
-    genus: string;
-    species: string;
-  };
-  Mass_kg: number;
-  Lifespan_max_days: number;
-  Vision_range_m: number;
-  Smell_range_m: number;
-  Hearing_range_m: number;
-  Walk_speed_m_per_hr: number;
-  Run_speed_m_per_hr: number;
-  Swim_speed_m_per_hr: number;
-  Fly_speed_m_per_hr: number;
-  Offspring_count: number;
+// Enum-based card data interface (matches game-config/cards.json)
+interface EnumBasedCardData {
+  cardId: number;
+  nameId: CardNameId;
+  scientificNameId: ScientificNameId;
+  descriptionId: CardDescriptionId;
+  taxonomyId: TaxonomyId;
+  trophicLevel: number | null;
+  trophicCategory: number;
+  domain: number;
+  cost: any;
+  keywords: number[];
+  abilities: number[];
+  victoryPoints: number;
+  conservationStatus: number;
+  mass_kg: number;
+  lifespan_max_days: number;
+  vision_range_m: number;
+  smell_range_m: number;
+  hearing_range_m: number;
+  walk_speed_m_per_hr: number;
+  run_speed_m_per_hr: number;
+  swim_speed_m_per_hr: number;
+  fly_speed_m_per_hr: number;
+  offspring_count: number;
+  gestation_days: number;
 }
 
 // Client-specific interfaces for UI compatibility
@@ -149,7 +145,7 @@ export interface ClientActivateAbilityPayload {
 
 // Client Game Data Manager
 class ClientGameDataManager {
-  private cards: Map<number, JSONCardData> = new Map();
+  private cards: Map<number, EnumBasedCardData> = new Map();
   private dataLoaded = false;
 
   async loadGameData(): Promise<void> {
@@ -157,17 +153,34 @@ class ClientGameDataManager {
 
     try {
       console.log('📚 [ClientGameDataManager] Loading card data...');
-      const response = await fetch('/data/cards.json');
+      const response = await fetch('/data/game-config/cards.json');
       if (!response.ok) {
-        throw new Error(`Failed to fetch cards.json: ${response.statusText}`);
+        throw new Error(`Failed to fetch game-config/cards.json: ${response.statusText}`);
       }
-      
-      const cardsArray: JSONCardData[] = await response.json();
+
+      const cardsArray: EnumBasedCardData[] = await response.json();
       console.log(`📚 [ClientGameDataManager] Loaded ${cardsArray.length} cards`);
-      
+
+      // Check for data integrity
+      let invalidCards = 0;
+      cardsArray.forEach((card, index) => {
+        if (!card.nameId || typeof card.nameId !== 'string') {
+          console.error(`❌ [ClientGameDataManager] Invalid card at index ${index}:`, {
+            cardId: card.cardId,
+            nameId: card.nameId,
+            type: typeof card.nameId
+          });
+          invalidCards++;
+        }
+      });
+
+      if (invalidCards > 0) {
+        throw new Error(`Found ${invalidCards} cards with invalid nameId fields`);
+      }
+
       this.cards.clear();
       cardsArray.forEach(card => {
-        this.cards.set(card.CardID, card);
+        this.cards.set(card.cardId, card);
       });
 
       this.dataLoaded = true;
@@ -182,11 +195,11 @@ class ClientGameDataManager {
     return this.dataLoaded;
   }
 
-  getAllCards(): JSONCardData[] {
+  getAllCards(): EnumBasedCardData[] {
     return Array.from(this.cards.values());
   }
 
-  getCard(cardId: number): JSONCardData | undefined {
+  getCard(cardId: number): EnumBasedCardData | undefined {
     return this.cards.get(cardId);
   }
 }
@@ -271,41 +284,39 @@ export class ClientGameEngine {
 
     // Prepare data for the shared engine
     const cardDatabase = new Map<number, ServerCardData>();
-    this.gameDataManager.getAllCards().forEach(rawCard => {
-      // Create text IDs based on card names (simplified mapping for legacy data)
-      const nameId = `CARD_${rawCard.CommonName.toUpperCase().replace(/\s+/g, '_')}` as CardNameId;
-      const scientificNameId = `SCIENTIFIC_${rawCard.ScientificName.toUpperCase().replace(/\s+/g, '_')}` as ScientificNameId;
-      const descriptionId = `DESC_${rawCard.CommonName.toUpperCase().replace(/\s+/g, '_')}` as CardDescriptionId;
-      const taxonomyId = `TAXONOMY_${rawCard.CommonName.toUpperCase().replace(/\s+/g, '_')}` as TaxonomyId;
+    this.gameDataManager.getAllCards().forEach(enumCard => {
+      // Validate enum-based card data
+      if (!enumCard.nameId || !enumCard.scientificNameId) {
+        console.warn(`⚠️ [ClientGameEngine] Skipping card ${enumCard.cardId} - missing enum IDs`);
+        return;
+      }
 
+      // Use the enum IDs directly - no need to derive them!
       const card: ServerCardData = {
-        cardId: rawCard.CardID,
-        nameId,
-        scientificNameId,
-        descriptionId,
-        taxonomyId,
-        trophicLevel: rawCard.TrophicLevel,
-        trophicCategory: rawCard.TrophicCategory,
-        domain: rawCard.Domain,
-        cost: rawCard.Cost,
-        keywords: rawCard.Keywords,
-        abilities: [], // TODO: Add abilities to JSON data when available
-        victoryPoints: rawCard.VictoryPoints,
-        conservationStatus: 1, // Default value
-        mass_kg: 1, // Default value
-        lifespan_max_days: 365, // Default value
-        vision_range_m: 10, // Default value
-        smell_range_m: 5, // Default value
-        hearing_range_m: 20, // Default value
-        walk_speed_m_per_hr: 5, // Default value
-        run_speed_m_per_hr: 15, // Default value
-        swim_speed_m_per_hr: 2, // Default value
-        fly_speed_m_per_hr: 0, // Default value
-        offspring_count: 2, // Default value
-        gestation_days: 30, // Default value
-        // Legacy properties for backwards compatibility
-        commonName: rawCard.CommonName,
-        scientificName: rawCard.ScientificName
+        cardId: enumCard.cardId,
+        nameId: enumCard.nameId,
+        scientificNameId: enumCard.scientificNameId,
+        descriptionId: enumCard.descriptionId,
+        taxonomyId: enumCard.taxonomyId,
+        trophicLevel: enumCard.trophicLevel,
+        trophicCategory: enumCard.trophicCategory,
+        domain: enumCard.domain,
+        cost: enumCard.cost,
+        keywords: enumCard.keywords,
+        abilities: enumCard.abilities,
+        victoryPoints: enumCard.victoryPoints,
+        conservationStatus: enumCard.conservationStatus,
+        mass_kg: enumCard.mass_kg,
+        lifespan_max_days: enumCard.lifespan_max_days,
+        vision_range_m: enumCard.vision_range_m,
+        smell_range_m: enumCard.smell_range_m,
+        hearing_range_m: enumCard.hearing_range_m,
+        walk_speed_m_per_hr: enumCard.walk_speed_m_per_hr,
+        run_speed_m_per_hr: enumCard.run_speed_m_per_hr,
+        swim_speed_m_per_hr: enumCard.swim_speed_m_per_hr,
+        fly_speed_m_per_hr: enumCard.fly_speed_m_per_hr,
+        offspring_count: enumCard.offspring_count,
+        gestation_days: enumCard.gestation_days
       };
       cardDatabase.set(card.cardId, card);
     });

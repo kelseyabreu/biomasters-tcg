@@ -16,7 +16,15 @@
     "ABILITY_MYCORRHIZAL": "Micorrízico",
     "ABILITY_POLLINATOR": "Polinizador",
     "ABILITY_SEED_DISPERSER": "Dispersor de Semillas",
-    "ABILITY_TERRITORIAL": "Territorial"
+    "ABILITY_TERRITORIAL": "Territorial",
+    "ABILITY_FILTER_FEEDER": "Filter Feeder",
+    "ABILITY_METAMORPHOSIS": "Metamorphosis",
+    "ABILITY_VENOMOUS": "Venomous",
+    "ABILITY_FRUGIVORE": "Frugivore",
+    "ABILITY_INSECTIVORE": "Insectivore",
+    "ABILITY_MIGRATORY": "Migratory",
+    "ABILITY_CHEMICAL_OPPORTUNIST": "Chemical Opportunist",
+    "ABILITY_DETRITAL_PROCESSOR": "Detrital Processor"
   },
   "descriptions": {
     "DESC_WATERSHED_PREDATOR": "Cuando esta carta entra en juego, puedes agotar una carta adyacente de nivel trófico inferior para obtener +1 energía.",
@@ -35,7 +43,15 @@
     "DESC_MYCORRHIZAL": "Forma conexiones simbióticas con plantas adyacentes. Tanto esta carta como las plantas adyacentes obtienen +1 energía al comienzo de tu turno.",
     "DESC_POLLINATOR": "Cuando te mueves adyacente a una planta con flores, tanto tú como la planta obtienen +1 energía. Las plantas pueden reproducirse más fácilmente.",
     "DESC_SEED_DISPERSER": "Cuando comes frutas o semillas, puedes colocar una copia de esa carta de planta en cualquier posición válida del tablero.",
-    "DESC_TERRITORIAL": "Las cartas enemigas no pueden moverse a posiciones adyacentes a esta carta. Esta carta obtiene +1 de ataque por cada carta enemiga adyacente."
+    "DESC_TERRITORIAL": "Las cartas enemigas no pueden moverse a posiciones adyacentes a esta carta. Esta carta obtiene +1 de ataque por cada carta enemiga adyacente.",
+    "DESC_FILTER_FEEDER": "Si esta carta está adyacente a un productor marino, roba una carta.",
+    "DESC_METAMORPHOSIS": "Transfórmate en forma adulta sin pagar su costo.",
+    "DESC_VENOMOUS": "Aplica estado de veneno a la criatura objetivo durante 2 turnos.",
+    "DESC_FRUGIVORE": "Entra en juego listo si está adyacente a una planta que produce frutos.",
+    "DESC_INSECTIVORE": "Entra en juego listo si está adyacente a un insecto.",
+    "DESC_MIGRATORY": "Muévete hasta 2 espacios al inicio de tu turno dentro del mismo hábitat.",
+    "DESC_CHEMICAL_OPPORTUNIST": "Puede conectarse a una carta -1S adyacente en lugar de HOGAR. Si lo haces, roba una carta.",
+    "DESC_DETRITAL_PROCESSOR": "Puede conectarse a una carta -2D adyacente en lugar de HOGAR. Si lo haces, esa -2D gana +1 PV cuando se puntúa."
   },
   "flavorTexts": {
     "FLAVOR_WATERSHED_PREDATOR": "\"En los ecosistemas acuáticos, el control del territorio significa control de los recursos.\"",
@@ -55,5 +71,24 @@
     "FLAVOR_POLLINATOR": "\"Mensajeros alados del amor de las plantas.\"",
     "FLAVOR_SEED_DISPERSER": "\"Plantando el futuro con cada comida.\"",
     "FLAVOR_TERRITORIAL": "\"Este es mi espacio. Encuentra el tuyo.\""
+  },
+  "flavorText": {
+    "ABILITY_WATERSHED_PREDATOR": "Los osos son maestros de la frontera entre tierra y agua, usando su tamaño e inteligencia para cazar a través de ecosistemas.",
+    "ABILITY_APEX_PREDATOR": "En la cima de la cadena alimentaria, pocas criaturas pueden desafiar el dominio de este depredador.",
+    "ABILITY_SCAVENGE": "El equipo de limpieza de la naturaleza, convirtiendo la muerte en oportunidad y manteniendo los ecosistemas saludables.",
+    "ABILITY_PARASITIC_DRAIN": "Una relación que beneficia a uno a expensas de otro, pero que juega un papel crucial en el control de poblaciones.",
+    "ABILITY_RECYCLER": "Descomponiendo lo complejo en lo simple, estos organismos son la base de todos los ciclos de nutrientes.",
+    "ABILITY_PHOTOSYNTHESIS": "Aprovechando el poder del sol, estos organismos convierten la luz en la vida misma.",
+    "ABILITY_PACK_HUNTER": "La cooperación y coordinación permiten a estos depredadores derribar presas mucho más grandes que ellos mismos.",
+    "ABILITY_FILTER_FEEDER": "Filtrando nutrientes de la columna de agua, estos organismos forman la base de muchas redes alimentarias acuáticas.",
+    "ABILITY_METAMORPHOSIS": "Una transformación completa que permite a los organismos explotar diferentes nichos ecológicos a lo largo de sus vidas.",
+    "ABILITY_DECOMPOSER": "La muerte alimenta la vida en un ciclo sin fin, con estos organismos sirviendo como recicladores de la naturaleza.",
+    "ABILITY_VENOMOUS": "Guerra química en la naturaleza, donde las toxinas sirven como arma y defensa.",
+    "ABILITY_FRUGIVORE": "Una relación mutuamente beneficiosa donde los animales dispersan semillas mientras obtienen nutrición.",
+    "ABILITY_INSECTIVORE": "Cazadores especializados que ayudan a controlar las poblaciones de insectos mientras satisfacen sus propias necesidades nutricionales.",
+    "ABILITY_HYPERCARNIVORE": "Los depredadores definitivos, estas especies han evolucionado para cazar y consumir otros carnívoros.",
+    "ABILITY_MIGRATORY": "Siguiendo senderos ancestrales, estas especies conectan ecosistemas distantes a través de sus viajes.",
+    "ABILITY_CHEMICAL_OPPORTUNIST": "Explotando fuentes de energía química que la mayoría de la vida no puede acceder, estos organismos prosperan en condiciones extremas.",
+    "ABILITY_DETRITAL_PROCESSOR": "Especialistas en descomponer materia orgánica, estos organismos son esenciales para el ciclo de nutrientes."
   }
 }

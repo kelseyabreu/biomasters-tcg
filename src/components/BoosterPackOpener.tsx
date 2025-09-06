@@ -26,6 +26,8 @@ import {
 } from 'ionicons/icons';
 import { BoosterPackSystem, PackOpeningResult, displayConservationEducation } from '../utils/boosterPackSystem';
 import { Card as CardType, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
+import { useLocalization } from '../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
 import Card from './Card';
 import './BoosterPackOpener.css';
 
@@ -34,6 +36,7 @@ interface BoosterPackOpenerProps {
 }
 
 const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
+  const localization = useLocalization();
   const [packSystem] = useState(() => new BoosterPackSystem(allCards));
   const [lastOpenedPack, setLastOpenedPack] = useState<PackOpeningResult | null>(null);
   const [isOpening, setIsOpening] = useState(false);
@@ -53,7 +56,10 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
     
     // Log educational information
     console.log('🎴 Booster Pack Opened!');
-    console.log('Cards received:', result.pack.cards.map(c => `${c.commonName} (${c.conservationStatus})`));
+    console.log('Cards received:', result.pack.cards.map(c => {
+      const localizedCard = getLocalizedCardData(c, localization);
+      return `${localizedCard.displayName} (${c.conservationStatus})`;
+    }));
     console.log('Pack value:', result.totalValue);
     console.log('Rare cards:', result.rareCards.length);
   };

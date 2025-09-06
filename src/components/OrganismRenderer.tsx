@@ -51,20 +51,122 @@ const loadSpeciesData = async (speciesName: string): Promise<SpeciesData | null>
 
 // Enhanced species mapping using CommonName enum
 const getSpeciesKey = (card: CardType): string => {
-  // First try to map to CommonName enum values
-  const commonNameLower = card.commonName.toLowerCase().replace(/[^a-z]/g, '');
-  const speciesNameLower = card.speciesName.toLowerCase().replace(/[^a-z]/g, '');
+  // Create a direct mapping from common names to species file names
+  const commonNameToSpeciesFile: Record<string, string> = {
+    'Oak Tree': 'oak-tree',
+    'Giant Kelp': 'giant-kelp',
+    'Reed Canary Grass': 'reed-canary-grass',
+    'European Rabbit': 'european-rabbit',
+    'Sockeye Salmon': 'sockeye-salmon',
+    'American Black Bear': 'american-black-bear',
+    'Great White Shark': 'great-white-shark',
+    'Mycena Mushroom': 'mycena-mushroom',
+    'Turkey Vulture': 'turkey-vulture',
+    'Deer Tick': 'deer-tick',
+    'Common Earthworm': 'common-earthworm',
+    'Dung Beetle': 'dung-beetle',
+    'Soil Bacteria': 'soil-bacteria',
+    'Decomposer Mushroom': 'decomposer-mushroom',
+    'Deep Sea Hydrothermal Vent Bacteria': 'deep-sea-hydrothermal-vent-bacteria',
+    'Iron Spring Bacteria': 'iron-spring-bacteria',
+    'Mycorrhizal Fungi': 'mycorrhizal-fungi',
+    'Nitrogen Fixing Bacteria': 'nitrogen-fixing-bacteria',
+    'Pacific Krill': 'pacific-krill',
+    'Phytoplankton': 'phytoplankton',
+    'Zooplankton': 'zooplankton',
+    'European Honey Bee': 'european-honey-bee',
+    'Volcanic Hydrogen Bacteria': 'volcanic-hydrogen-bacteria',
+    'Nitrifying Soil Bacteria': 'nitrifying-soil-bacteria',
+    'Sediment Chemosynthetic Bacteria': 'sediment-chemosynthetic-bacteria',
 
-  // Check if it matches any CommonName enum value
-  for (const [key, value] of Object.entries(CommonName)) {
-    const enumValue = value.replace(/-/g, '').replace(/_/g, '');
-    if (enumValue === commonNameLower || enumValue === speciesNameLower) {
-      return value; // Return the enum value (e.g., 'wolf', 'apple-tree')
-    }
+    // New species
+    'Apple Tree': 'apple-tree',
+    'English Oak': 'deciduous-tree',
+    'Scots Pine': 'evergreen-tree',
+    'Coconut Palm': 'palm-tree',
+    'Cherry Blossom': 'cherry-blossom',
+    'Bush Cherry': 'bush-cherry',
+    'Prickly Pear Cactus': 'prickly-pear',
+    'Common Grape Vine': 'grapes',
+    'Perennial Ryegrass': 'grass',
+    'Common Daisy': 'daisy',
+    'Spearmint': 'herb',
+    'Hibiscus': 'hibiscus',
+    'Sweet Briar': 'rose',
+    'Garden Strawberry': 'strawberry',
+    'Common Sunflower': 'sunflower',
+    'Garden Tulip': 'tulip',
+    'White Clover': 'white-clover',
+    'Eelgrass': 'eelgrass',
+    'Corn/Maize': 'corn',
+    'Rice': 'rice',
+    'North American Beaver': 'beaver',
+    'American Bison': 'bison',
+    'White-tailed Deer': 'deer',
+    'Eastern Chipmunk': 'chipmunk',
+    'Domestic Cattle': 'cow',
+    'Domestic Goat': 'goat',
+    'Golden Hamster': 'hamster',
+    'European Hedgehog': 'hedgehog',
+    'Domestic Horse': 'horse',
+    'Koala': 'koala',
+    'Llama': 'llama',
+    'House Mouse': 'mouse',
+    'Ox': 'ox',
+    'Giant Panda': 'panda',
+    'Domestic Pig': 'pig',
+    'Common Raccoon': 'raccoon',
+    'Bighorn Sheep': 'ram',
+    'White Rhinoceros': 'rhinoceros',
+    'Asian Water Buffalo': 'water-buffalo',
+    'Plains Zebra': 'zebra',
+    'Giraffe': 'giraffe',
+    'African Bush Elephant': 'elephant',
+    'Dromedary Camel': 'camel',
+    'Woolly Mammoth': 'mammoth',
+    'Wild Boar': 'boar',
+    'Domestic Cat': 'cat',
+    'Domestic Dog': 'dog',
+    'Red Fox': 'fox',
+    'Leopard': 'leopard',
+    'African Lion': 'lion',
+    'Mountain Gorilla': 'gorilla',
+    'Common Chimpanzee': 'monkey',
+    'Bornean Orangutan': 'orangutan',
+    'Tiger': 'tiger',
+    'Gray Wolf': 'wolf',
+    'Common Hippopotamus': 'hippopotamus',
+    'Red Wood Ant': 'ant',
+    'Monarch Butterfly': 'butterfly',
+    'Monarch Caterpillar': 'caterpillar',
+    'Butterfly Egg': 'caterpillar_egg',
+    'House Cricket': 'cricket',
+    'Sacred Dung Beetle': 'dung-beetle',
+    'Desert Hairy Scorpion': 'scorpion',
+    'Roman Snail': 'snail',
+    'Garden Spider': 'spider',
+    'Common Decomposer': 'mushroom',
+    'Desert Lizard': 'lizard',
+    'Ball Python': 'snake',
+    'Common Frog': 'frog',
+    'Green Sea Turtle': 'turtle'
+  };
+
+  // First try direct mapping
+  if (commonNameToSpeciesFile[card.commonName]) {
+    return commonNameToSpeciesFile[card.commonName];
   }
 
-  // Fallback to original logic
-  return speciesNameLower || commonNameLower;
+  // If speciesName is available, use it
+  if (card.speciesName) {
+    return card.speciesName.toLowerCase().replace(/[^a-z-]/g, '');
+  }
+
+  // Fallback: convert common name to file format
+  return card.commonName.toLowerCase()
+    .replace(/[^a-z\s]/g, '') // Remove non-alphabetic characters except spaces
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
 };
 
 const OrganismRenderer: React.FC<OrganismRendererProps> = ({

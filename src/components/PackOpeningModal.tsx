@@ -38,6 +38,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { Card as CardType, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
+import { useLocalization } from '../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
 import Card from './Card';
 import OrganismRenderer from './OrganismRenderer';
 import './PackOpeningModal.css';
@@ -64,6 +66,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   packName
 }) => {
   const { openPack, openStarterPack, allSpeciesCards } = useHybridGameStore();
+  const localization = useLocalization();
   const [isOpening, setIsOpening] = useState(false);
   const [packResult, setPackResult] = useState<PackResult | null>(null);
   const [showCards, setShowCards] = useState(false);
@@ -338,8 +341,12 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                               </div>
 
                               {/* Card Info */}
-                              <div className="card-title">{card.commonName}</div>
-                              <div className="card-subtitle">{card.scientificName}</div>
+                              <div className="card-title">
+                                {getLocalizedCardData(card, localization).displayName}
+                              </div>
+                              <div className="card-subtitle">
+                                {getLocalizedCardData(card, localization).displayScientificName}
+                              </div>
 
                               {/* Conservation Status Badge */}
                               <div className="card-badges">

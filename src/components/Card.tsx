@@ -4,6 +4,8 @@ import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/re
 import { flash, leaf, paw, skull, heart, eye, speedometer, library, thermometer, trash, close } from 'ionicons/icons';
 import { Card as CardType, TrophicRole, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
+import { useLocalization } from '../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
 import CardDetailsModal from './CardDetailsModal';
 import OrganismRenderer from './OrganismRenderer';
 import './Card.css';
@@ -25,6 +27,8 @@ interface CardProps {
   context?: 'collection' | 'deck' | 'battle';
 }
 
+
+
 const Card: React.FC<CardProps> = ({
   card,
   isPlayable = false,
@@ -43,6 +47,10 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const { currentTheme, organismRenderMode } = useTheme();
+  const localization = useLocalization();
+
+  // Get localized card data
+  const localizedCard = getLocalizedCardData(card, localization);
 
   const getConservationRarity = (status: ConservationStatus) => {
     return CONSERVATION_RARITY_DATA[status] || CONSERVATION_RARITY_DATA[ConservationStatus.NOT_EVALUATED];
@@ -320,8 +328,8 @@ const Card: React.FC<CardProps> = ({
         <IonCardContent className="card-content">
           {/* Species Names */}
           <div className="species-names">
-            <h3 className="common-name">{card.commonName}</h3>
-            <p className="scientific-name">{card.scientificName}</p>
+            <h3 className="common-name">{localizedCard.displayName}</h3>
+            <p className="scientific-name">{localizedCard.displayScientificName}</p>
           </div>
 
           {/* Trophic Role & Habitat */}

@@ -14,47 +14,46 @@ global.fetch = mockFetch;
 
 const mockCardsData = [
   {
-    CardID: 1,
-    TrophicLevel: 1,
-    TrophicCategory: 1,
-    Domain: 1,
-    Cost: null,
-    Keywords: [1, 6, 20],
-    VictoryPoints: 1,
-    CommonName: "Oak Tree",
-    ScientificName: "Quercus robur",
-    Taxonomy: {
-      kingdom: "Plantae",
-      phylum: "Tracheophyta",
-      class: "Magnoliopsida",
-      order: "Fagales",
-      family: "Fagaceae",
-      genus: "Quercus",
-      species: "robur"
-    },
-    Mass_kg: 50000,
-    Lifespan_max_days: 36500,
-    Vision_range_m: 0,
-    Smell_range_m: 0,
-    Hearing_range_m: 0,
-    Walk_speed_m_per_hr: 0,
-    Run_speed_m_per_hr: 0,
-    Swim_speed_m_per_hr: 0,
-    Fly_speed_m_per_hr: 0,
-    Offspring_count: 1000
+    cardId: 1,
+    nameId: "CARD_OAK_TREE",
+    scientificNameId: "SCIENTIFIC_QUERCUS_ROBUR",
+    descriptionId: "DESC_OAK_TREE",
+    taxonomyId: "TAXONOMY_OAK_TREE",
+    trophicLevel: 1,
+    trophicCategory: 1,
+    domain: 1,
+    cost: null,
+    keywords: [1, 6, 20],
+    abilities: [6],
+    victoryPoints: 1,
+    conservationStatus: 7,
+    mass_kg: 50000,
+    lifespan_max_days: 36500,
+    vision_range_m: 0,
+    smell_range_m: 0,
+    hearing_range_m: 0,
+    walk_speed_m_per_hr: 0,
+    run_speed_m_per_hr: 0,
+    swim_speed_m_per_hr: 0,
+    fly_speed_m_per_hr: 0,
+    offspring_count: 1000,
+    gestation_days: 365
   }
 ];
 
 const mockAbilitiesData = [
   {
-    AbilityID: 1,
-    AbilityName: "Photosynthesis",
-    Description: "Gain energy from sunlight",
-    TriggerID: 1,
-    EffectType: "gain_energy",
-    EffectValue: 1,
-    TargetType: "self",
-    Cost: null
+    abilityId: 1,
+    nameId: "ABILITY_PHOTOSYNTHESIS",
+    descriptionId: "DESC_PHOTOSYNTHESIS",
+    triggerId: 1,
+    effects: [
+      {
+        effectId: 1,
+        selectorId: 1,
+        actionId: 1
+      }
+    ]
   }
 ];
 
@@ -73,12 +72,12 @@ describe('ClientGameEngine', () => {
     // Mock fetch responses - use mockResolvedValue instead of mockResolvedValueOnce
     // so it can be called multiple times
     mockFetch.mockImplementation((url: string) => {
-      if (url.includes('cards.json')) {
+      if (url.includes('/data/game-config/cards.json')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockCardsData)
         });
-      } else if (url.includes('abilities.json')) {
+      } else if (url.includes('/data/game-config/abilities.json')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(mockAbilitiesData)
@@ -92,8 +91,8 @@ describe('ClientGameEngine', () => {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
-            names: { CARD_TEST_CARD: "Test Card" },
-            scientificNames: { SCIENTIFIC_TEST: "Testus cardus" },
+            names: { CARD_OAK_TREE: "Oak Tree" },
+            scientificNames: { SCIENTIFIC_QUERCUS_ROBUR: "Quercus robur" },
             descriptions: { DESC_TEST_CARD: "A test card for testing" }
           })
         });
@@ -145,7 +144,7 @@ describe('ClientGameEngine', () => {
       await engine.initialize();
 
       expect(fetch).toHaveBeenCalledTimes(1);
-      expect(fetch).toHaveBeenCalledWith('/data/cards.json');
+      expect(fetch).toHaveBeenCalledWith('/data/game-config/cards.json');
     });
 
     it('should create a new game with correct grid dimensions', async () => {

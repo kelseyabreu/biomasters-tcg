@@ -539,10 +539,91 @@ export enum CommonName {
   NITRIFYING_SOIL_BACTERIA = 'nitrifying-soil-bacteria',
   SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 'sediment-chemosynthetic-bacteria',
 
+  // Additional Producers (Trees and Plants)
+  APPLE_TREE = 'apple-tree',
+  ENGLISH_OAK = 'deciduous-tree',
+  SCOTS_PINE = 'evergreen-tree',
+  COCONUT_PALM = 'palm-tree',
+  CHERRY_BLOSSOM = 'cherry-blossom',
+  BUSH_CHERRY = 'bush-cherry',
+  PRICKLY_PEAR_CACTUS = 'prickly-pear',
+  COMMON_GRAPE_VINE = 'grapes',
+  PERENNIAL_RYEGRASS = 'grass',
+  COMMON_DAISY = 'daisy',
+  SPEARMINT = 'herb',
+  HIBISCUS = 'hibiscus',
+  SWEET_BRIAR = 'rose',
+  GARDEN_STRAWBERRY = 'strawberry',
+  COMMON_SUNFLOWER = 'sunflower',
+  GARDEN_TULIP = 'tulip',
+  WHITE_CLOVER = 'white-clover',
+  EELGRASS = 'eelgrass',
+  CORN_MAIZE = 'corn',
+  RICE = 'rice',
+
+  // Additional Primary Consumers (Herbivores)
+  NORTH_AMERICAN_BEAVER = 'beaver',
+  AMERICAN_BISON = 'bison',
+  WHITE_TAILED_DEER = 'deer',
+  EASTERN_CHIPMUNK = 'chipmunk',
+  DOMESTIC_CATTLE = 'cow',
+  DOMESTIC_GOAT = 'goat',
+  GOLDEN_HAMSTER = 'hamster',
+  EUROPEAN_HEDGEHOG = 'hedgehog',
+  DOMESTIC_HORSE = 'horse',
+  KOALA = 'koala',
+  LLAMA = 'llama',
+  HOUSE_MOUSE = 'mouse',
+  OX = 'ox',
+  GIANT_PANDA = 'panda',
+  DOMESTIC_PIG = 'pig',
+  COMMON_RACCOON = 'raccoon',
+  BIGHORN_SHEEP = 'ram',
+  WHITE_RHINOCEROS = 'rhinoceros',
+  ASIAN_WATER_BUFFALO = 'water-buffalo',
+  PLAINS_ZEBRA = 'zebra',
+  GIRAFFE = 'giraffe',
+  AFRICAN_BUSH_ELEPHANT = 'elephant',
+  DROMEDARY_CAMEL = 'camel',
+  WOOLLY_MAMMOTH = 'mammoth',
+
+  // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
+  WILD_BOAR = 'boar',
+  DOMESTIC_CAT = 'cat',
+  DOMESTIC_DOG = 'dog',
+  RED_FOX = 'fox',
+  LEOPARD = 'leopard',
+  AFRICAN_LION = 'lion',
+  MOUNTAIN_GORILLA = 'gorilla',
+  COMMON_CHIMPANZEE = 'monkey',
+  BORNEAN_ORANGUTAN = 'orangutan',
+  TIGER = 'tiger',
+  GRAY_WOLF = 'wolf',
+  COMMON_HIPPOPOTAMUS = 'hippopotamus',
+
+  // Additional Invertebrates and Small Animals
+  RED_WOOD_ANT = 'ant',
+  MONARCH_BUTTERFLY = 'butterfly',
+  MONARCH_CATERPILLAR = 'caterpillar',
+  BUTTERFLY_EGG = 'caterpillar_egg',
+  HOUSE_CRICKET = 'cricket',
+  SACRED_DUNG_BEETLE = 'sacred-dung-beetle',
+  DESERT_HAIRY_SCORPION = 'scorpion',
+  ROMAN_SNAIL = 'snail',
+  GARDEN_SPIDER = 'spider',
+
+  // Additional Decomposers
+  COMMON_DECOMPOSER = 'mushroom',
+
+  // Reptiles and Amphibians
+  DESERT_LIZARD = 'lizard',
+  BALL_PYTHON = 'snake',
+  COMMON_FROG = 'frog',
+  GREEN_SEA_TURTLE = 'turtle',
+
   // Legacy species from existing files (keep for backward compatibility)
   RABBIT = 'rabbit',
-  BEAR = 'bear',
-  MOUSE = 'mouse'
+  BEAR = 'bear'
 }
 
 /**
@@ -577,10 +658,91 @@ export const SPECIES_DISPLAY_NAMES = {
   [CommonName.NITRIFYING_SOIL_BACTERIA]: 'Nitrifying Soil Bacteria',
   [CommonName.SEDIMENT_CHEMOSYNTHETIC_BACTERIA]: 'Sediment Chemosynthetic Bacteria',
 
+  // Additional Producers (Trees and Plants)
+  [CommonName.APPLE_TREE]: 'Apple Tree',
+  [CommonName.ENGLISH_OAK]: 'English Oak',
+  [CommonName.SCOTS_PINE]: 'Scots Pine',
+  [CommonName.COCONUT_PALM]: 'Coconut Palm',
+  [CommonName.CHERRY_BLOSSOM]: 'Cherry Blossom',
+  [CommonName.BUSH_CHERRY]: 'Bush Cherry',
+  [CommonName.PRICKLY_PEAR_CACTUS]: 'Prickly Pear Cactus',
+  [CommonName.COMMON_GRAPE_VINE]: 'Common Grape Vine',
+  [CommonName.PERENNIAL_RYEGRASS]: 'Perennial Ryegrass',
+  [CommonName.COMMON_DAISY]: 'Common Daisy',
+  [CommonName.SPEARMINT]: 'Spearmint',
+  [CommonName.HIBISCUS]: 'Hibiscus',
+  [CommonName.SWEET_BRIAR]: 'Sweet Briar',
+  [CommonName.GARDEN_STRAWBERRY]: 'Garden Strawberry',
+  [CommonName.COMMON_SUNFLOWER]: 'Common Sunflower',
+  [CommonName.GARDEN_TULIP]: 'Garden Tulip',
+  [CommonName.WHITE_CLOVER]: 'White Clover',
+  [CommonName.EELGRASS]: 'Eelgrass',
+  [CommonName.CORN_MAIZE]: 'Corn/Maize',
+  [CommonName.RICE]: 'Rice',
+
+  // Additional Primary Consumers (Herbivores)
+  [CommonName.NORTH_AMERICAN_BEAVER]: 'North American Beaver',
+  [CommonName.AMERICAN_BISON]: 'American Bison',
+  [CommonName.WHITE_TAILED_DEER]: 'White-tailed Deer',
+  [CommonName.EASTERN_CHIPMUNK]: 'Eastern Chipmunk',
+  [CommonName.DOMESTIC_CATTLE]: 'Domestic Cattle',
+  [CommonName.DOMESTIC_GOAT]: 'Domestic Goat',
+  [CommonName.GOLDEN_HAMSTER]: 'Golden Hamster',
+  [CommonName.EUROPEAN_HEDGEHOG]: 'European Hedgehog',
+  [CommonName.DOMESTIC_HORSE]: 'Domestic Horse',
+  [CommonName.KOALA]: 'Koala',
+  [CommonName.LLAMA]: 'Llama',
+  [CommonName.HOUSE_MOUSE]: 'House Mouse',
+  [CommonName.OX]: 'Ox',
+  [CommonName.GIANT_PANDA]: 'Giant Panda',
+  [CommonName.DOMESTIC_PIG]: 'Domestic Pig',
+  [CommonName.COMMON_RACCOON]: 'Common Raccoon',
+  [CommonName.BIGHORN_SHEEP]: 'Bighorn Sheep',
+  [CommonName.WHITE_RHINOCEROS]: 'White Rhinoceros',
+  [CommonName.ASIAN_WATER_BUFFALO]: 'Asian Water Buffalo',
+  [CommonName.PLAINS_ZEBRA]: 'Plains Zebra',
+  [CommonName.GIRAFFE]: 'Giraffe',
+  [CommonName.AFRICAN_BUSH_ELEPHANT]: 'African Bush Elephant',
+  [CommonName.DROMEDARY_CAMEL]: 'Dromedary Camel',
+  [CommonName.WOOLLY_MAMMOTH]: 'Woolly Mammoth',
+
+  // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
+  [CommonName.WILD_BOAR]: 'Wild Boar',
+  [CommonName.DOMESTIC_CAT]: 'Domestic Cat',
+  [CommonName.DOMESTIC_DOG]: 'Domestic Dog',
+  [CommonName.RED_FOX]: 'Red Fox',
+  [CommonName.LEOPARD]: 'Leopard',
+  [CommonName.AFRICAN_LION]: 'African Lion',
+  [CommonName.MOUNTAIN_GORILLA]: 'Mountain Gorilla',
+  [CommonName.COMMON_CHIMPANZEE]: 'Common Chimpanzee',
+  [CommonName.BORNEAN_ORANGUTAN]: 'Bornean Orangutan',
+  [CommonName.TIGER]: 'Tiger',
+  [CommonName.GRAY_WOLF]: 'Gray Wolf',
+  [CommonName.COMMON_HIPPOPOTAMUS]: 'Common Hippopotamus',
+
+  // Additional Invertebrates and Small Animals
+  [CommonName.RED_WOOD_ANT]: 'Red Wood Ant',
+  [CommonName.MONARCH_BUTTERFLY]: 'Monarch Butterfly',
+  [CommonName.MONARCH_CATERPILLAR]: 'Monarch Caterpillar',
+  [CommonName.BUTTERFLY_EGG]: 'Butterfly Egg',
+  [CommonName.HOUSE_CRICKET]: 'House Cricket',
+  [CommonName.SACRED_DUNG_BEETLE]: 'Sacred Dung Beetle',
+  [CommonName.DESERT_HAIRY_SCORPION]: 'Desert Hairy Scorpion',
+  [CommonName.ROMAN_SNAIL]: 'Roman Snail',
+  [CommonName.GARDEN_SPIDER]: 'Garden Spider',
+
+  // Additional Decomposers
+  [CommonName.COMMON_DECOMPOSER]: 'Common Decomposer',
+
+  // Reptiles and Amphibians
+  [CommonName.DESERT_LIZARD]: 'Desert Lizard',
+  [CommonName.BALL_PYTHON]: 'Ball Python',
+  [CommonName.COMMON_FROG]: 'Common Frog',
+  [CommonName.GREEN_SEA_TURTLE]: 'Green Sea Turtle',
+
   // Legacy species (backward compatibility)
   [CommonName.RABBIT]: 'European Rabbit',
-  [CommonName.BEAR]: 'American Black Bear',
-  [CommonName.MOUSE]: 'Mouse'
+  [CommonName.BEAR]: 'American Black Bear'
 } as const;
 
 // ============================================================================

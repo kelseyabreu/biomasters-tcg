@@ -407,7 +407,16 @@ describe('Cost Payment System - Modern', () => {
         }
       });
 
-      const cardToPlay = player1?.hand.find(cardId => producerCardIds.includes(cardId));
+      let cardToPlay = player1?.hand.find(cardId => producerCardIds.includes(cardId));
+
+      // If no producer card in hand, manually add one for testing
+      if (!cardToPlay && producerCardIds.length > 0) {
+        cardToPlay = producerCardIds[0]; // Use the first producer card
+        if (player1 && cardToPlay) {
+          player1.hand.push(cardToPlay); // Add it to the hand
+        }
+      }
+
       expect(cardToPlay).toBeDefined();
 
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');

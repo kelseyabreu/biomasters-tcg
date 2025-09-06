@@ -27,8 +27,12 @@ import {
   water
 } from 'ionicons/icons';
 import { Card as CardType, TrophicRole } from '../types';
+import { useLocalization } from '../contexts/LocalizationContext';
+import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
 import OrganismRenderer from './OrganismRenderer';
 import './CardDetailsModal.css';
+
+
 
 interface CardDetailsModalProps {
   isOpen: boolean;
@@ -45,7 +49,12 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
   onAddToDeck,
   showAddToDeck = false
 }) => {
+  const localization = useLocalization();
+
   if (!card) return null;
+
+  // Get localized card data
+  const localizedCard = getLocalizedCardData(card, localization);
 
 
 
@@ -128,7 +137,7 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
     >
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{card.commonName}</IonTitle>
+          <IonTitle>{localizedCard.displayName}</IonTitle>
           <IonButton
             slot="end"
             fill="clear"
@@ -149,8 +158,8 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
           </div>
           
           <div className="species-info">
-            <h1>{card.commonName}</h1>
-            <h2>{card.scientificName}</h2>
+            <h1>{localizedCard.displayName}</h1>
+            <h2>{localizedCard.displayScientificName}</h2>
             <div className="badges">
               <IonBadge color={getTrophicColor(card.trophicRole)}>
                 <IonIcon icon={getTrophicIcon(card.trophicRole)} />

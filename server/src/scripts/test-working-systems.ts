@@ -123,38 +123,11 @@ class WorkingSystemsTest {
       // Load game data first
       await gameDataManager.loadGameData();
 
-      // Convert server data to shared format
+      // Use enum-based data directly (no conversion needed)
       const cardDatabase = new Map<number, SharedCardData>();
       gameDataManager.getCards().forEach((serverCard, id) => {
-        const sharedCard: SharedCardData = {
-          cardId: serverCard.cardId,
-          nameId: `CARD_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-          scientificNameId: `SCIENTIFIC_${serverCard.scientificName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-          descriptionId: `DESC_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-          taxonomyId: `TAXONOMY_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-          trophicLevel: serverCard.trophicLevel,
-          trophicCategory: serverCard.trophicCategory,
-          domain: serverCard.domain,
-          cost: serverCard.cost,
-          keywords: serverCard.keywords,
-          abilities: serverCard.abilities || [],
-          victoryPoints: serverCard.victoryPoints || 0,
-          conservationStatus: 7,
-          mass_kg: 1000,
-          lifespan_max_days: 365,
-          vision_range_m: 0,
-          smell_range_m: 0,
-          hearing_range_m: 0,
-          walk_speed_m_per_hr: 0,
-          run_speed_m_per_hr: 0,
-          swim_speed_m_per_hr: 0,
-          fly_speed_m_per_hr: 0,
-          offspring_count: 1,
-          gestation_days: 30,
-          commonName: serverCard.commonName,
-          scientificName: serverCard.scientificName || ''
-        };
-        cardDatabase.set(id, sharedCard);
+        // Server card is already in enum-based format, just use it directly
+        cardDatabase.set(id, serverCard);
       });
 
       const abilityDatabase = new Map<number, SharedAbilityData>();

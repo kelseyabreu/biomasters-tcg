@@ -107,17 +107,17 @@ describe('Domain System Tests', () => {
         abilities: card.abilities || [],
         victoryPoints: card.victoryPoints || 0,
         conservationStatus: card.conservationStatus || 0,
-        mass_kg: card.massKg || 0,
-        lifespan_max_days: card.lifespanMaxDays || 0,
-        vision_range_m: card.visionRangeM || 0,
-        smell_range_m: card.smellRangeM || 0,
-        hearing_range_m: card.hearingRangeM || 0,
-        walk_speed_m_per_hr: card.walkSpeedMPerHr || 0,
-        run_speed_m_per_hr: card.runSpeedMPerHr || 0,
-        swim_speed_m_per_hr: card.swimSpeedMPerHr || 0,
-        fly_speed_m_per_hr: card.flySpeedMPerHr || 0,
-        offspring_count: card.offspringCount || 0,
-        gestation_days: card.gestationDays || 0
+        mass_kg: card.mass_kg || 0,
+        lifespan_max_days: card.lifespan_max_days || 0,
+        vision_range_m: card.vision_range_m || 0,
+        smell_range_m: card.smell_range_m || 0,
+        hearing_range_m: card.hearing_range_m || 0,
+        walk_speed_m_per_hr: card.walk_speed_m_per_hr || 0,
+        run_speed_m_per_hr: card.run_speed_m_per_hr || 0,
+        swim_speed_m_per_hr: card.swim_speed_m_per_hr || 0,
+        fly_speed_m_per_hr: card.fly_speed_m_per_hr || 0,
+        offspring_count: card.offspring_count || 0,
+        gestation_days: card.gestation_days || 0
       };
       const isChemoautotroph = engine.isChemoautotroph(engineCard);
       expect(isChemoautotroph).toBe(true);

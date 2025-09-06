@@ -468,39 +468,11 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
       await gameDataManager.loadGameData();
     }
 
-    // Convert server data to shared format
+    // Use enum-based data directly (no conversion needed)
     const cardDatabase = new Map<number, SharedCardData>();
     gameDataManager.getCards().forEach((serverCard, id) => {
-      const sharedCard: SharedCardData = {
-        cardId: serverCard.cardId,
-        nameId: `CARD_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-        scientificNameId: `SCIENTIFIC_${serverCard.scientificName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-        descriptionId: `DESC_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-        taxonomyId: `TAXONOMY_${serverCard.commonName?.toUpperCase().replace(/\s+/g, '_')}` as any,
-        trophicLevel: serverCard.trophicLevel,
-        trophicCategory: serverCard.trophicCategory,
-        domain: serverCard.domain,
-        cost: serverCard.cost,
-        keywords: serverCard.keywords,
-        abilities: serverCard.abilities || [], // Default to empty array if missing
-        victoryPoints: serverCard.victoryPoints || 0, // Default to 0 if missing
-        conservationStatus: 7, // Default conservation status
-        mass_kg: 1000, // Default mass
-        lifespan_max_days: 365, // Default lifespan
-        vision_range_m: 0, // Default vision range
-        smell_range_m: 0, // Default smell range
-        hearing_range_m: 0, // Default hearing range
-
-        walk_speed_m_per_hr: 0, // Default walk speed
-        run_speed_m_per_hr: 0, // Default run speed
-        swim_speed_m_per_hr: 0, // Default swim speed
-        fly_speed_m_per_hr: 0, // Default fly speed
-        offspring_count: 1, // Default offspring count
-        gestation_days: 30, // Default gestation period
-        commonName: serverCard.commonName,
-        scientificName: serverCard.scientificName || '' // Default to empty string if missing
-      };
-      cardDatabase.set(id, sharedCard);
+      // Server card is already in enum-based format, just use it directly
+      cardDatabase.set(id, serverCard);
     });
 
     const abilityDatabase = new Map<number, SharedAbilityData>();

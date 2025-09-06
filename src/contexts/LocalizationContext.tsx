@@ -10,12 +10,13 @@ import {
   LocalizationManager, 
   JSONFileDataLoader 
 } from '@shared/localization-manager';
-import { 
-  SupportedLanguage, 
-  CardNameId, 
-  AbilityNameId, 
+import {
+  SupportedLanguage,
+  CardNameId,
+  ScientificNameId,
+  AbilityNameId,
   UITextId,
-  LANGUAGE_CONFIG 
+  LANGUAGE_CONFIG
 } from '@shared/text-ids';
 
 interface LocalizationContextType {
@@ -30,6 +31,7 @@ interface LocalizationContextType {
   
   // Text retrieval methods
   getCardName: (nameId: CardNameId) => string;
+  getScientificName: (nameId: ScientificNameId) => string;
   getAbilityName: (nameId: AbilityNameId) => string;
   getUIText: (textId: UITextId) => string;
   
@@ -121,6 +123,11 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({
     return localizationManager.getCardName(nameId);
   };
 
+  const getScientificName = (nameId: ScientificNameId): string => {
+    if (!isInitialized) return `[${nameId}]`;
+    return localizationManager.getScientificName(nameId);
+  };
+
   const getAbilityName = (nameId: AbilityNameId): string => {
     if (!isInitialized) return `[${nameId}]`;
     return localizationManager.getAbilityName(nameId);
@@ -146,6 +153,7 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({
     changeLanguage,
     availableLanguages: Object.values(SupportedLanguage),
     getCardName,
+    getScientificName,
     getAbilityName,
     getUIText,
     getLanguageInfo,

@@ -1,7 +1,8 @@
 // Booster Pack System based on IUCN Red List Conservation Status
 // Uses real-world conservation percentages to determine card rarity
 
-import { Card, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
+import { Card, CONSERVATION_RARITY_DATA } from '../types';
+import { ConservationStatus } from '@shared/enums';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BoosterPack {
@@ -40,7 +41,9 @@ export class BoosterPackSystem {
     
     // Initialize all rarity categories
     Object.values(ConservationStatus).forEach(status => {
-      this.cardsByRarity.set(status, []);
+      if (typeof status === 'number') {
+        this.cardsByRarity.set(status, []);
+      }
     });
 
     // Sort cards into rarity buckets
@@ -53,27 +56,41 @@ export class BoosterPackSystem {
 
   /**
    * Generate a booster pack using IUCN conservation percentages
-   * Standard pack: 8 cards with realistic rarity distribution
+   * @param packName Name of the pack
+   * @param cardCount Number of cards to generate (default: 8)
    */
-  generateBoosterPack(packName: string = 'Species Conservation Pack'): BoosterPack {
+  generateBoosterPack(packName: string = 'Species Conservation Pack', cardCount: number = 8): BoosterPack {
     const packCards: Card[] = [];
     const rarityBreakdown: Record<ConservationStatus, number> = {} as Record<ConservationStatus, number>;
 
+    console.log(`🎁 Generating ${packName} with ${cardCount} cards`);
+    console.log(`📊 Available cards by rarity:`, Array.from(this.cardsByRarity.entries()).map(([status, cards]) =>
+      `${ConservationStatus[status]}: ${cards.length} cards`
+    ));
+
     // Initialize rarity breakdown
     Object.values(ConservationStatus).forEach(status => {
-      rarityBreakdown[status] = 0;
+      if (typeof status === 'number') {
+        rarityBreakdown[status] = 0;
+      }
     });
 
-    // Generate 8 cards based on IUCN percentages
-    for (let i = 0; i < 8; i++) {
+    // Generate specified number of cards based on IUCN percentages
+    for (let i = 0; i < cardCount; i++) {
       const selectedRarity = this.selectRarityByIUCNPercentage();
       const card = this.selectRandomCardFromRarity(selectedRarity);
-      
+
+      console.log(`🎴 Card ${i + 1}: Rarity ${ConservationStatus[selectedRarity]}, Card: ${card?.nameId || 'null'}`);
+
       if (card) {
         packCards.push(card);
         rarityBreakdown[selectedRarity]++;
+      } else {
+        console.warn(`⚠️ Failed to find card for rarity ${ConservationStatus[selectedRarity]}`);
       }
     }
+
+    console.log(`✅ Generated pack with ${packCards.length} cards`);
 
     return {
       id: uuidv4(),
@@ -98,7 +115,7 @@ export class BoosterPackSystem {
     for (const [status, data] of sortedRarities) {
       cumulative += data.percentage;
       if (random <= cumulative) {
-        return status as ConservationStatus;
+        return parseInt(status) as ConservationStatus;
       }
     }
 
@@ -168,11 +185,13 @@ export class BoosterPackSystem {
     const totalCards = this.allCards.length;
 
     Object.values(ConservationStatus).forEach(status => {
-      const cards = this.cardsByRarity.get(status) || [];
-      distribution[status] = {
-        count: cards.length,
-        percentage: totalCards > 0 ? (cards.length / totalCards) * 100 : 0
-      };
+      if (typeof status === 'number') {
+        const cards = this.cardsByRarity.get(status) || [];
+        distribution[status] = {
+          count: cards.length,
+          percentage: totalCards > 0 ? (cards.length / totalCards) * 100 : 0
+        };
+      }
     });
 
     return distribution;
@@ -194,7 +213,9 @@ export class BoosterPackSystem {
 
     // Initialize stats
     Object.values(ConservationStatus).forEach(status => {
-      rarityStats[status] = 0;
+      if (typeof status === 'number') {
+        rarityStats[status] = 0;
+      }
     });
 
     // Generate packs
@@ -207,7 +228,10 @@ export class BoosterPackSystem {
 
       // Count rarities
       Object.entries(pack.rarityBreakdown).forEach(([status, count]) => {
-        rarityStats[status as ConservationStatus] += count;
+        const statusNum = parseInt(status);
+        if (!isNaN(statusNum)) {
+          rarityStats[statusNum as ConservationStatus] += count;
+        }
       });
     }
 
@@ -228,12 +252,15 @@ export function displayConservationEducation(): void {
   console.log('═══════════════════════════════════════════════════════');
   
   Object.entries(CONSERVATION_RARITY_DATA).forEach(([status, data]) => {
-    const emoji = getConservationEmoji(status as ConservationStatus);
-    console.log(`${emoji} ${status.toUpperCase()}`);
-    console.log(`   📊 ${data.percentage}% of all species`);
-    console.log(`   🎴 ${data.packRarity}/1000 cards in packs`);
-    console.log(`   📝 ${data.description}`);
-    console.log('');
+    const statusNum = parseInt(status);
+    if (!isNaN(statusNum)) {
+      const emoji = getConservationEmoji(statusNum as ConservationStatus);
+      console.log(`${emoji} ${ConservationStatus[statusNum]}`);
+      console.log(`   📊 ${data.percentage}% of all species`);
+      console.log(`   🎴 ${data.packRarity}/1000 cards in packs`);
+      console.log(`   📝 ${data.description}`);
+      console.log('');
+    }
   });
   
   console.log('💡 Educational Note:');

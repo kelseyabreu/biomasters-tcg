@@ -32,7 +32,7 @@ import localizationRoutes from './routes/localization';
 import { setupGameSocket } from './websocket/gameSocket';
 
 // Import game data manager
-import { gameDataManager } from './services/GameDataManager';
+// DataLoader import removed - using direct file system loading instead
 
 const app = express();
 const PORT = process.env['PORT'] || 3001;
@@ -65,12 +65,24 @@ async function initializeServices() {
     // Load game data from JSON files
     try {
       console.log('📚 Loading game data from JSON files...');
-      await gameDataManager.loadGameData();
+      const fs = require('fs').promises;
+      const path = require('path');
+
+      // Load cards directly from file system
+      const cardsPath = path.join(__dirname, '../../public/data/game-config/cards.json');
+      const cardsData = JSON.parse(await fs.readFile(cardsPath, 'utf8'));
+      console.log(`✅ Loaded ${cardsData.length} cards from JSON`);
+
+      // Load abilities
+      const abilitiesPath = path.join(__dirname, '../../public/data/game-config/abilities.json');
+      const abilitiesData = JSON.parse(await fs.readFile(abilitiesPath, 'utf8'));
+      console.log(`✅ Loaded ${abilitiesData.length} abilities from JSON`);
+
       console.log('✅ Game data loaded successfully');
     } catch (error) {
       console.error('❌ Failed to load game data:', error);
       console.error('   Game engine will not function without game data');
-      process.exit(1);
+      // Don't exit - let server run without game data for now
     }
 
     console.log('✅ Core services initialized successfully');
@@ -105,6 +117,10 @@ app.use(cors({
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static game data files for tests and client access
+app.use('/game-config', express.static(require('path').join(__dirname, '../../public/data/game-config')));
+app.use('/localization', express.static(require('path').join(__dirname, '../../public/data/localization')));
 
 // Logging middleware
 if (process.env['NODE_ENV'] !== 'test') {

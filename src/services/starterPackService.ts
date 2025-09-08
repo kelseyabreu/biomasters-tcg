@@ -5,9 +5,11 @@
 
 import { loadAllSpeciesCards } from '../utils/speciesDataProcessor';
 import { Card } from '../types';
+import { CardId } from '@shared/enums';
+// No longer need legacy species name conversions
 
 export interface StarterPackCard {
-  species_name: string;
+  cardId: number;
   educational_purpose: string;
   unlock_order: number;
 }
@@ -18,28 +20,28 @@ export interface StarterPackCard {
  */
 export const STARTER_PACK_SPECIES: StarterPackCard[] = [
   {
-    species_name: 'grass',
-    educational_purpose: '',
+    cardId: CardId.REED_CANARY_GRASS, // CardId 3 - represents "grass"
+    educational_purpose: 'Learn about primary producers and photosynthesis',
     unlock_order: 1
   },
   {
-    species_name: 'rabbit',
-    educational_purpose: '',
+    cardId: CardId.EUROPEAN_RABBIT, // CardId 4 - represents "rabbit"
+    educational_purpose: 'Understand primary consumers and herbivory',
     unlock_order: 2
   },
   {
-    species_name: 'fox',
-    educational_purpose: '',
+    cardId: 53, // RED_FOX - represents "fox"
+    educational_purpose: 'Explore secondary consumers and predation',
     unlock_order: 3
   },
   {
-    species_name: 'oak-tree',
-    educational_purpose: '',
+    cardId: CardId.OAK_TREE, // CardId 1 - represents "oak-tree"
+    educational_purpose: 'Discover tree ecosystems and habitat creation',
     unlock_order: 4
   },
   {
-    species_name: 'butterfly',
-    educational_purpose: '',
+    cardId: 34, // MONARCH_BUTTERFLY - represents "butterfly"
+    educational_purpose: 'Learn about pollinators and metamorphosis',
     unlock_order: 5
   }
 ];
@@ -66,14 +68,13 @@ class StarterPackService {
 
       for (const starterCard of STARTER_PACK_SPECIES) {
         const foundCard = allCards.find(card =>
-          card.speciesName === starterCard.species_name ||
-          card.commonName.toLowerCase() === starterCard.species_name.toLowerCase()
+          card.cardId === starterCard.cardId
         );
 
         if (foundCard) {
           starterCards.push(foundCard);
         } else {
-          console.warn(`Starter species not found: ${starterCard.species_name}`);
+          console.warn(`Starter card not found: CardId ${starterCard.cardId}`);
         }
       }
 
@@ -89,24 +90,24 @@ class StarterPackService {
   }
 
   /**
-   * Get starter pack species names only
+   * Get starter pack CardIds
    */
-  getStarterSpeciesNames(): string[] {
-    return STARTER_PACK_SPECIES.map(card => card.species_name);
+  getStarterCardIds(): number[] {
+    return STARTER_PACK_SPECIES.map(card => card.cardId);
   }
 
   /**
-   * Check if a species is part of the starter pack
+   * Check if a CardId is part of the starter pack
    */
-  isStarterSpecies(speciesName: string): boolean {
-    return STARTER_PACK_SPECIES.some(card => card.species_name === speciesName);
+  isStarterCard(cardId: number): boolean {
+    return STARTER_PACK_SPECIES.some(card => card.cardId === cardId);
   }
 
   /**
-   * Get educational information for a starter species
+   * Get educational information for a starter card
    */
-  getEducationalInfo(speciesName: string): string | null {
-    const starterCard = STARTER_PACK_SPECIES.find(card => card.species_name === speciesName);
+  getEducationalInfo(cardId: number): string | null {
+    const starterCard = STARTER_PACK_SPECIES.find(card => card.cardId === cardId);
     const purpose = starterCard?.educational_purpose;
     return (purpose && purpose.trim() !== '') ? purpose : null;
   }
@@ -114,8 +115,8 @@ class StarterPackService {
   /**
    * Get unlock order for tutorial progression
    */
-  getUnlockOrder(speciesName: string): number | null {
-    const starterCard = STARTER_PACK_SPECIES.find(card => card.species_name === speciesName);
+  getUnlockOrder(cardId: number): number | null {
+    const starterCard = STARTER_PACK_SPECIES.find(card => card.cardId === cardId);
     return starterCard?.unlock_order || null;
   }
 
@@ -127,13 +128,13 @@ class StarterPackService {
   }
 
   /**
-   * Create starter collection data structure
+   * Create starter collection data structure using CardIds
    */
-  createStarterCollection(): Record<string, any> {
-    const collection: Record<string, any> = {};
-    
+  createStarterCollection(): Record<number, any> {
+    const collection: Record<number, any> = {};
+
     STARTER_PACK_SPECIES.forEach(starterCard => {
-      collection[starterCard.species_name] = {
+      collection[starterCard.cardId] = {
         quantity: 1,
         acquired_via: 'starter',
         first_acquired: Date.now(),
@@ -147,21 +148,21 @@ class StarterPackService {
   }
 
   /**
-   * Validate that user has complete starter pack
+   * Validate that user has complete starter pack using CardIds
    */
-  validateStarterPack(userCollection: Record<string, any>): {
+  validateStarterPack(userCollection: Record<number, any>): {
     isComplete: boolean;
-    missing: string[];
-    extra: string[];
+    missing: number[];
+    extra: number[];
   } {
-    const userStarterSpecies = Object.keys(userCollection).filter(species => 
-      userCollection[species].acquired_via === 'starter'
+    const userStarterCards = Object.keys(userCollection).map(id => parseInt(id)).filter(cardId =>
+      userCollection[cardId].acquired_via === 'starter'
     );
 
-    const expectedSpecies = this.getStarterSpeciesNames();
-    
-    const missing = expectedSpecies.filter(species => !userStarterSpecies.includes(species));
-    const extra = userStarterSpecies.filter(species => !expectedSpecies.includes(species));
+    const expectedCards = this.getStarterCardIds();
+
+    const missing = expectedCards.filter(cardId => !userStarterCards.includes(cardId));
+    const extra = userStarterCards.filter(cardId => !expectedCards.includes(cardId));
 
     return {
       isComplete: missing.length === 0,
@@ -175,7 +176,7 @@ class StarterPackService {
    */
   getTutorialProgression(): Array<{
     step: number;
-    species: string;
+    cardId: number;
     title: string;
     description: string;
     objective: string;
@@ -183,35 +184,35 @@ class StarterPackService {
     return [
       {
         step: 1,
-        species: 'grass',
+        cardId: CardId.REED_CANARY_GRASS,
         title: 'Meet the Producers',
         description: 'Grass is the foundation of most ecosystems. It converts sunlight into energy that feeds the entire food web.',
         objective: 'Learn how producers create energy from sunlight'
       },
       {
         step: 2,
-        species: 'rabbit',
+        cardId: CardId.EUROPEAN_RABBIT,
         title: 'Primary Consumers',
         description: 'Rabbits are herbivores that eat plants like grass. They convert plant energy into animal energy.',
         objective: 'Practice feeding your rabbit with grass'
       },
       {
         step: 3,
-        species: 'fox',
+        cardId: 53, // RED_FOX
         title: 'Secondary Consumers',
         description: 'Foxes are predators that hunt smaller animals. They help control herbivore populations.',
         objective: 'Learn hunting mechanics with your fox'
       },
       {
         step: 4,
-        species: 'oak-tree',
+        cardId: CardId.OAK_TREE,
         title: 'Ecosystem Engineers',
         description: 'Oak trees create habitats for many species. They provide shelter, food, and nesting sites.',
         objective: 'Build your first ecosystem with the oak tree'
       },
       {
         step: 5,
-        species: 'butterfly',
+        cardId: 34, // MONARCH_BUTTERFLY
         title: 'Pollinators & Symbiosis',
         description: 'Butterflies pollinate flowers while feeding on nectar. This is a win-win relationship called mutualism.',
         objective: 'Create pollination chains with your butterfly'
@@ -225,13 +226,13 @@ class StarterPackService {
   getStarterDeck(): {
     name: string;
     description: string;
-    cards: string[];
+    cards: number[];
     strategy: string;
   } {
     return {
       name: 'Balanced Ecosystem',
       description: 'A well-balanced deck showcasing the basic food web relationships',
-      cards: this.getStarterSpeciesNames(),
+      cards: this.getStarterCardIds(),
       strategy: 'Start with grass and oak tree as your foundation, then add rabbit for herbivore energy, fox for population control, and butterfly for pollination bonuses.'
     };
   }

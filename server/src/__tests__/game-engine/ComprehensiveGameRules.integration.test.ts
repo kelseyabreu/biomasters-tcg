@@ -6,21 +6,51 @@
  */
 
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
 import {
   GameActionType,
-  GamePhase
+  GamePhase,
+  CardId
 } from '@biomasters/shared';
 
 describe('Comprehensive Game Rules - Integration Tests', () => {
+  let gameData: any;
   let engine: BioMastersEngine;
   // Game settings will be initialized by the engine
 
   beforeAll(async () => {
     console.log('🎮 Loading real game data for comprehensive rule testing...');
-    await gameDataManager.loadGameData();
+    
+    gameData = await loadTestGameData();
     console.log('✅ Game data loaded for integration tests');
+  });
+
+  afterEach(async () => {
+    // Clean up engine instance
+    if (engine) {
+      // Clear any internal timers or intervals
+      if (typeof (engine as any).cleanup === 'function') {
+        await (engine as any).cleanup();
+      }
+      engine = null as any;
+    }
+  });
+
+  afterAll(async () => {
+    // Clean up game data resources
+    if (gameData) {
+      // Dispose of any resources
+      if (typeof (gameData as any).dispose === 'function') {
+        await (gameData as any).dispose();
+      }
+      gameData = null as any;
+    }
+
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
   });
 
   beforeEach(() => {
@@ -162,33 +192,39 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     // ]); */
 
     // Use real game data loaded in beforeAll
-    const rawCards = gameDataManager.getCards();
-    const rawAbilities = gameDataManager.getAbilities();
-    const rawKeywords = gameDataManager.getKeywords();
+    const rawCards = gameData.cards;
+    const rawAbilities = gameData.abilities;
+    const rawKeywords = gameData.keywords;
 
-    // Convert data to engine-expected format
+    // Convert data to engine-expected format (same as working BasicCardPlaying test)
     const cardDatabase = new Map<number, any>();
-    rawCards.forEach((card, cardId) => {
-      cardDatabase.set(Number(cardId), {
+    rawCards.forEach((card: any, cardId: number) => {
+      cardDatabase.set(cardId, {
         ...card,
-        cardId: Number(cardId),
+        id: cardId,
         victoryPoints: card.victoryPoints || 1 // Ensure required field
       });
     });
 
     const abilityDatabase = new Map<number, any>();
-    rawAbilities.forEach((ability, abilityId) => {
-      abilityDatabase.set(abilityId, ability);
+    rawAbilities.forEach((ability: any, abilityId: number) => {
+      // Transform ability data to match expected format
+      const transformedAbility = {
+        ...ability,
+        id: abilityId,
+        abilityID: ability.abilityId || abilityId,
+        triggerID: ability.triggerId || ability.triggerID
+      };
+      abilityDatabase.set(abilityId, transformedAbility);
     });
 
     const keywordDatabase = new Map<number, string>();
-    rawKeywords.forEach((keyword, keywordId) => {
-      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    rawKeywords.forEach((keyword: any, keywordId: number) => {
+      keywordDatabase.set(keywordId, keyword.name);
     });
 
     // Create engine with real data using production constructor
-    const mockLocalizationManager = createMockLocalizationManager();
-    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, gameData.localizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('comprehensive-test', [
@@ -221,12 +257,11 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { 
-          cardId: '1', // Oak Tree
+        payload: {
+          cardId: CardId.OAK_TREE, // Oak Tree
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
-
       expect(result.isValid).toBe(true);
       expect(result.newState?.grid.size).toBe(3); // 2 HOME + 1 Oak Tree
     });
@@ -241,7 +276,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: oakPos }
+        payload: { cardId: CardId.OAK_TREE, position: oakPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -254,7 +289,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '4', position: rabbitPos }
+        payload: { cardId: CardId.EUROPEAN_RABBIT, position: rabbitPos }
       });
       expect(result2.isValid).toBe(true);
 
@@ -271,7 +306,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result3 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '4', position: rabbit2Pos }
+        payload: { cardId: CardId.EUROPEAN_RABBIT, position: rabbit2Pos }
       });
       if (!result3.isValid) {
         console.log(`❌ Second rabbit placement failed: ${result3.errorMessage}`);
@@ -287,7 +322,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result4 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '6', position: bearPos }
+        payload: { cardId: CardId.AMERICAN_BLACK_BEAR, position: bearPos }
       });
       expect(result4.isValid).toBe(true);
 
@@ -305,7 +340,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '1', // Oak Tree
+          cardId: CardId.OAK_TREE, // Oak Tree
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
@@ -320,7 +355,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '4', // Field Rabbit (herbivore)
+          cardId: CardId.EUROPEAN_RABBIT, // Field Rabbit (herbivore)
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y - 1 }
         }
       });
@@ -344,11 +379,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: { 
-          cardId: '1', // Oak Tree
+          cardId: CardId.OAK_TREE, // Oak Tree
           position: { x: aliceHome!.position.x + 3, y: aliceHome!.position.y + 3 }
         }
       });
-
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('adjacent');
     });
@@ -363,7 +397,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: oakPos }
+        payload: { cardId: CardId.OAK_TREE, position: oakPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -372,7 +406,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const newState = engine.getGameState();
       const rabbit1 = {
         instanceId: 'rabbit1',
-        cardId: 4,
+        cardId: CardId.EUROPEAN_RABBIT,
         ownerId: 'Alice',
         position: { x: oakPos.x, y: oakPos.y - 1 },
         isExhausted: false,
@@ -383,7 +417,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       };
       const rabbit2 = {
         instanceId: 'rabbit2',
-        cardId: 4,
+        cardId: CardId.EUROPEAN_RABBIT,
         ownerId: 'Alice',
         position: { x: oakPos.x - 1, y: oakPos.y },
         isExhausted: false,
@@ -400,7 +434,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '6', // Grizzly Bear (+3)
+          cardId: CardId.AMERICAN_BLACK_BEAR, // American Black Bear (+3)
           position: { x: oakPos.x, y: oakPos.y + 1 }
         }
       });
@@ -419,7 +453,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: oakPos }
+        payload: { cardId: CardId.OAK_TREE, position: oakPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -432,7 +466,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '4', position: rabbitPos }
+        payload: { cardId: CardId.EUROPEAN_RABBIT, position: rabbitPos }
       });
       expect(result2.isValid).toBe(true);
 
@@ -445,7 +479,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '5', // Sockeye Salmon (Aquatic)
+          cardId: CardId.SOCKEYE_SALMON, // Sockeye Salmon (Aquatic)
           position: { x: rabbitPos.x, y: rabbitPos.y - 1 }
         }
       });
@@ -464,7 +498,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '1', // Oak Tree (producer)
+          cardId: CardId.OAK_TREE, // Oak Tree (producer)
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
@@ -477,11 +511,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '4', // European Rabbit (requires 1 producer cost)
+          cardId: CardId.EUROPEAN_RABBIT, // European Rabbit (requires 1 producer cost)
           position: { x: aliceHome!.position.x - 2, y: aliceHome!.position.y } // Adjacent to Oak Tree
         }
       });
-
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('resources');
     });
@@ -490,9 +523,9 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
   describe('♻️ Decomposition Loop Rules', () => {
     test('should validate saprotroph card data exists', () => {
       // Verify saprotroph cards exist in database
-      const mycenaMushroom = gameDataManager.getCard(8);
+      const mycenaMushroom = gameData.cards.get(8);
       expect(mycenaMushroom).toBeDefined();
-      expect(mycenaMushroom?.commonName).toBe('Mycena Mushroom');
+      expect(mycenaMushroom?.nameId).toBe('CARD_MYCENA_MUSHROOM');
 
       // Verify it has correct trophic properties for decomposition
       expect(mycenaMushroom?.trophicLevel).toBe(-1);
@@ -527,14 +560,14 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const oakResult1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: oakPos1 }
+        payload: { cardId: CardId.OAK_TREE, position: oakPos1 }
       });
       expect(oakResult1.isValid).toBe(true);
 
       const oakResult2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: oakPos2 }
+        payload: { cardId: CardId.OAK_TREE, position: oakPos2 }
       });
       expect(oakResult2.isValid).toBe(true);
 
@@ -571,7 +604,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       console.log('🍄 Current grid state:', Array.from(stateAfterOak.grid.values()).map(c => ({ cardId: c.cardId, position: c.position, isExhausted: c.isExhausted, isDetritus: c.isDetritus })));
 
       // Check if mushroom card data exists
-      const mushroomCardData = gameDataManager.getCard(8);
+      const mushroomCardData = gameData.cards.get(8);
       console.log('🍄 Mushroom card data:', mushroomCardData);
 
       // Check Alice's current hand
@@ -583,7 +616,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '8', // Mycena Mushroom (Saprotroph)
+          cardId: CardId.MYCENA_MUSHROOM, // Mycena Mushroom (Saprotroph)
           position: oakPos1 // Same position as detritus
         }
       });
@@ -630,11 +663,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '8', // Mycena Mushroom (Saprotroph)
+          cardId: CardId.MYCENA_MUSHROOM, // Mycena Mushroom (Saprotroph)
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
-
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('detritus');
     });
@@ -653,7 +685,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y } }
+        payload: { cardId: CardId.OAK_TREE, position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y } }
       });
       expect(result1.isValid).toBe(true);
       expect(result1.newState!.actionsRemaining).toBe(2);
@@ -662,7 +694,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: { x: aliceHome!.position.x - 2, y: aliceHome!.position.y } }
+        payload: { cardId: CardId.OAK_TREE, position: { x: aliceHome!.position.x - 2, y: aliceHome!.position.y } }
       });
       expect(result2.isValid).toBe(true);
       expect(result2.newState!.actionsRemaining).toBe(1);
@@ -672,7 +704,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const result3 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
-        payload: { cardId: '1', position: { x: aliceHome!.position.x - 3, y: aliceHome!.position.y } }
+        payload: { cardId: CardId.OAK_TREE, position: { x: aliceHome!.position.x - 3, y: aliceHome!.position.y } }
       });
       expect(result3.isValid).toBe(true);
 
@@ -685,7 +717,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '1',
+          cardId: CardId.OAK_TREE,
           position: { x: aliceHome!.position.x - 4, y: aliceHome!.position.y }
         }
       });
@@ -705,7 +737,6 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         playerId: 'Alice',
         payload: {}
       });
-
       expect(result.isValid).toBe(true);
       expect(result.newState?.currentPlayerIndex).toBe(1); // Bob's turn
       expect(result.newState?.actionsRemaining).toBe(3); // Bob gets 3 actions
@@ -721,11 +752,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Bob',
         payload: {
-          cardId: '1',
+          cardId: CardId.OAK_TREE,
           position: { x: bobHome!.position.x - 1, y: bobHome!.position.y }
         }
       });
-
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('turn');
     });
@@ -739,7 +769,6 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       // Both players ready
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'Alice', payload: {} });
       const result = engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'Bob', payload: {} });
-
       expect(result.newState?.gamePhase).toBe(GamePhase.PLAYING);
     });
 
@@ -752,11 +781,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '1',
+          cardId: CardId.OAK_TREE,
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
-
       expect(result.isValid).toBe(false);
       expect(result.errorMessage).toContain('phase');
     });
@@ -773,11 +801,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '1', // Oak Tree (1 VP)
+          cardId: CardId.OAK_TREE, // Oak Tree (1 VP)
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
-
       expect(result.isValid).toBe(true);
 
       // Verify card is on grid (contributes to VP)
@@ -798,7 +825,6 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         playerId: 'Alice',
         payload: {}
       });
-
       // Game should still be valid but approaching end
       expect(result.isValid).toBe(true);
     });
@@ -815,11 +841,10 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '2', // Kelp Forest (has abilities)
+          cardId: CardId.GIANT_KELP, // Giant Kelp (has abilities)
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
-
       expect(result.isValid).toBe(true);
 
       // Verify card was placed with abilities processed
@@ -842,7 +867,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '1',
+          cardId: CardId.OAK_TREE,
           position: { x: aliceHome!.position.x - 1, y: aliceHome!.position.y }
         }
       });
@@ -852,7 +877,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'Alice',
         payload: {
-          cardId: '2',
+          cardId: CardId.GIANT_KELP,
           position: { x: aliceHome!.position.x, y: aliceHome!.position.y - 1 }
         }
       });
@@ -867,19 +892,19 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     });
 
     test('should validate all real card data is accessible', () => {
-      const cards = gameDataManager.getCards();
-      const abilities = gameDataManager.getAbilities();
-      const keywords = gameDataManager.getKeywords();
+      const cards = gameData.cards;
+      const abilities = gameData.abilities;
+      const keywords = gameData.keywords;
 
       expect(cards.size).toBeGreaterThan(0);
       expect(abilities.size).toBeGreaterThan(0);
       expect(keywords.size).toBeGreaterThan(0);
 
       // Verify specific cards exist
-      expect(gameDataManager.getCard(1)).toBeDefined(); // Oak Tree
-      expect(gameDataManager.getCard(2)).toBeDefined(); // Kelp Forest
-      expect(gameDataManager.getCard(4)).toBeDefined(); // Field Rabbit
-      expect(gameDataManager.getCard(6)).toBeDefined(); // Grizzly Bear
+      expect(gameData.cards.get(1)).toBeDefined(); // Oak Tree
+      expect(gameData.cards.get(2)).toBeDefined(); // Kelp Forest
+      expect(gameData.cards.get(4)).toBeDefined(); // Field Rabbit
+      expect(gameData.cards.get(6)).toBeDefined(); // Grizzly Bear
     });
   });
 });

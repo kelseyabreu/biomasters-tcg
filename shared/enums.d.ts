@@ -263,7 +263,80 @@ export declare enum CardId {
     EUROPEAN_HONEY_BEE = 22,
     VOLCANIC_HYDROGEN_BACTERIA = 25,
     NITRIFYING_SOIL_BACTERIA = 26,
-    SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 27
+    SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 27,
+    ANT = 28,
+    CRICKET = 29,
+    SCORPION = 30,
+    SPIDER = 31,
+    APPLE_TREE = 32,
+    BUSH_CHERRY = 33,
+    CACTUS = 34,
+    CHERRY_BLOSSOM = 35,
+    DAISY = 36,
+    DECIDUOUS_TREE = 37,
+    EELGRASS = 38,
+    EVERGREEN_TREE = 39,
+    GRAPES = 40,
+    HERB = 41,
+    HIBISCUS = 42,
+    PALM_TREE = 43,
+    PRICKLY_PEAR = 44,
+    RICE = 45,
+    ROSE = 46,
+    STRAWBERRY = 47,
+    SUNFLOWER = 48,
+    TULIP = 49,
+    WHITE_CLOVER = 50,
+    BEAVER = 51,
+    BISON = 52,
+    BOAR = 53,
+    CAMEL = 54,
+    CAT = 55,
+    CHIPMUNK = 56,
+    COW = 57,
+    DOG = 58,
+    ELEPHANT = 59,
+    GIRAFFE = 60,
+    GOAT = 61,
+    GORILLA = 62,
+    HAMSTER = 63,
+    HEDGEHOG = 64,
+    HIPPOPOTAMUS = 65,
+    HORSE = 66,
+    KOALA = 67,
+    LEOPARD = 68,
+    LION = 69,
+    LLAMA = 70,
+    MAMMOTH = 71,
+    MONKEY = 72,
+    ORANGUTAN = 73,
+    OX = 74,
+    PANDA = 75,
+    PIG = 76,
+    RAM = 77,
+    RHINOCEROS = 78,
+    TIGER = 79,
+    WATER_BUFFALO = 80,
+    ZEBRA = 81,
+    FROG = 82,
+    SNAKE = 83,
+    TURTLE = 84,
+    CATERPILLAR = 85,
+    CATERPILLAR_EGG = 86,
+    EARTHWORM = 87,
+    SNAIL = 88,
+    MUSHROOM = 89,
+    GRIZZLY_BEAR = 90,// Larger, more aggressive bear variant
+    COTTONTAIL_RABBIT = 91,// North American cottontail variant
+    RED_FOX = 92,// Cunning predator
+    HOUSE_MOUSE = 93,// Small urban adapter
+    COMMON_RACCOON = 94,// Intelligent omnivore
+    GRAY_WOLF = 95,// Pack hunter
+    WHITE_TAILED_DEER = 96,// Graceful herbivore
+    DESERT_LIZARD = 97,// Heat-adapted reptile
+    CORN_MAIZE = 98,// Agricultural crop
+    PERENNIAL_RYEGRASS = 99,// Common grass species
+    MONARCH_BUTTERFLY = 100
 }
 /**
  * Ability IDs - Based on BioMasterEngine.txt examples
@@ -287,7 +360,8 @@ export declare enum ConservationStatus {
     VULNERABLE = 5,// VU - High extinction risk (13.19%)
     NEAR_THREATENED = 6,// NT - Close to threatened status (5.73%)
     LEAST_CONCERN = 7,// LC - Widespread and abundant (50.51%)
-    DATA_DEFICIENT = 8
+    DATA_DEFICIENT = 8,// DD - Inadequate information (12.97%)
+    NOT_EVALUATED = 9
 }
 /**
  * Card Names - All card names with their IDs
@@ -398,75 +472,6 @@ export declare enum ApiStatus {
     NOT_FOUND = "not_found"
 }
 /**
- * CommonName Enum - Maps species common names to their file identifiers
- * Used to connect public/species/ JSON files with OrganismRenderer.tsx
- * Based on the manifest.json and individual species files
- */
-export declare enum CommonName {
-    OAK_TREE = "oak-tree",
-    GIANT_KELP = "giant-kelp",// Replaced "Kelp Forest"
-    REED_CANARY_GRASS = "reed-canary-grass",// Replaced "Riverbank Grass"
-    EUROPEAN_RABBIT = "european-rabbit",
-    SOCKEYE_SALMON = "sockeye-salmon",
-    AMERICAN_BLACK_BEAR = "american-black-bear",
-    GREAT_WHITE_SHARK = "great-white-shark",
-    MYCENA_MUSHROOM = "mycena-mushroom",
-    TURKEY_VULTURE = "turkey-vulture",
-    DEER_TICK = "deer-tick",
-    COMMON_EARTHWORM = "common-earthworm",
-    DUNG_BEETLE = "dung-beetle",
-    SOIL_BACTERIA = "soil-bacteria",
-    DECOMPOSER_MUSHROOM = "decomposer-mushroom",
-    DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA = "deep-sea-hydrothermal-vent-bacteria",
-    IRON_SPRING_BACTERIA = "iron-spring-bacteria",
-    MYCORRHIZAL_FUNGI = "mycorrhizal-fungi",
-    NITROGEN_FIXING_BACTERIA = "nitrogen-fixing-bacteria",
-    PACIFIC_KRILL = "pacific-krill",
-    PHYTOPLANKTON = "phytoplankton",
-    ZOOPLANKTON = "zooplankton",
-    EUROPEAN_HONEY_BEE = "european-honey-bee",
-    VOLCANIC_HYDROGEN_BACTERIA = "volcanic-hydrogen-bacteria",
-    NITRIFYING_SOIL_BACTERIA = "nitrifying-soil-bacteria",
-    SEDIMENT_CHEMOSYNTHETIC_BACTERIA = "sediment-chemosynthetic-bacteria",
-    RABBIT = "rabbit",
-    BEAR = "bear",
-    MOUSE = "mouse"
-}
-/**
- * Species Display Names - Maps CommonName enum to human-readable display names
- * Based on the commonName field from species JSON files
- */
-export declare const SPECIES_DISPLAY_NAMES: {
-    readonly "oak-tree": "Oak Tree";
-    readonly "giant-kelp": "Giant Kelp";
-    readonly "reed-canary-grass": "Reed Canary Grass";
-    readonly "european-rabbit": "European Rabbit";
-    readonly "sockeye-salmon": "Sockeye Salmon";
-    readonly "american-black-bear": "American Black Bear";
-    readonly "great-white-shark": "Great White Shark";
-    readonly "mycena-mushroom": "Mycena Mushroom";
-    readonly "turkey-vulture": "Turkey Vulture";
-    readonly "deer-tick": "Deer Tick";
-    readonly "common-earthworm": "Common Earthworm";
-    readonly "dung-beetle": "Dung Beetle";
-    readonly "soil-bacteria": "Soil Bacteria";
-    readonly "decomposer-mushroom": "Decomposer Mushroom";
-    readonly "deep-sea-hydrothermal-vent-bacteria": "Deep Sea Hydrothermal Vent Bacteria";
-    readonly "iron-spring-bacteria": "Iron Spring Bacteria";
-    readonly "mycorrhizal-fungi": "Mycorrhizal Fungi";
-    readonly "nitrogen-fixing-bacteria": "Nitrogen Fixing Bacteria";
-    readonly "pacific-krill": "Pacific Krill";
-    readonly phytoplankton: "Phytoplankton";
-    readonly zooplankton: "Zooplankton";
-    readonly "european-honey-bee": "European Honey Bee";
-    readonly "volcanic-hydrogen-bacteria": "Volcanic Hydrogen Bacteria";
-    readonly "nitrifying-soil-bacteria": "Nitrifying Soil Bacteria";
-    readonly "sediment-chemosynthetic-bacteria": "Sediment Chemosynthetic Bacteria";
-    readonly rabbit: "European Rabbit";
-    readonly bear: "American Black Bear";
-    readonly mouse: "Mouse";
-};
-/**
  * Domain compatibility matrix
  * Defines which domains can connect to each other
  * HOME cards are compatible with all domains (per official rules)
@@ -565,7 +570,7 @@ export declare const IUCN_CONSERVATION_DATA: {
     };
     readonly 7: {
         readonly percentage: 50.51;
-        readonly packRarity: 50646;
+        readonly packRarity: 50396;
         readonly description: "Widespread and abundant";
         readonly color: "#008000";
         readonly emoji: "💚";
@@ -577,6 +582,14 @@ export declare const IUCN_CONSERVATION_DATA: {
         readonly description: "Inadequate information for assessment";
         readonly color: "#808080";
         readonly emoji: "🩶";
+        readonly rarityName: "Special";
+    };
+    readonly 9: {
+        readonly percentage: 0.25;
+        readonly packRarity: 250;
+        readonly description: "Not yet evaluated against the criteria";
+        readonly color: "#C0C0C0";
+        readonly emoji: "🤍";
         readonly rarityName: "Special";
     };
 };

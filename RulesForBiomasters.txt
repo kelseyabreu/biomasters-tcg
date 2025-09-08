@@ -8,7 +8,7 @@
 
 The world is your canvas. In your hands, you hold the power to cultivate a thriving ecosystem, from the smallest microbe to the mightiest apex predator.
 
-**BioMasters TCG** is a living card game of strategy and synergy for **2 or 4 players**. You will compete on a shared, ever-growing map, building intricate food chains and mastering the infinite cycle of life. Your goal is not to conquer, but to create the most resilient, efficient, and scientifically fascinating web of life.
+**BioMasters TCG** is a living card game of strategy and synergy for **2 or 4 players**. You will compete on a shared, ever-growing map, building intricate food chains and mastering the infinite cycle of life. Your goal is to beat your opponent by creating the most resilient, efficient, and scientifically fascinating web of life while sabotaging theirs.
 
 You will command two fundamental forces:
 *   **The Production Loop:** The explosive growth of life, where energy flows from producers outwards into a complex network of consumers.
@@ -23,23 +23,23 @@ Balance these forces, outsmart your rivals by leveraging real ecological strateg
 **(A large, clean diagram of the two core loops originating from a central point and home.)**
 
 ```
-          +-------------------------------------------------------------------------+
-          |                             ENERGY PRODUCTION (Production Loop)         |
-          |       ,------------------------------------------------------------.    |
-          |      /                                                                \   |
+          +----------------------------------------------------------------------------+
+          |                             ENERGY PRODUCTION (Production Loop)            |
+          |       ,------------------------------------------------------------.       |
+          |      /                                                                \    |
           |     |    [+1] --------> [+2] --------> [+3] --------> [+4]             |   |
           |     |  (Producers)    (Herbivores)   (Carnivores)   (Apex Predators)   |   |
-          |      \      ^                                                         /   |
-          |       `-----|---------------------HOME------------------------------'    |
-          |             |                                                             |
-          |       .-----|-------------------------------------------------------.    |
-          |      /  [Level 0]                                                         \   |
-          |     |   DETRITUS  <------ [-1S] <-------- [-2D]                         |   |
-          |     | TILE (On Grid)    (Saprotrophs)   (Detritivores)                  |   |
-          |      \                                                                /   |
-          |       `------------------------------------------------------------'    |
-          |                              MATTER CYCLING (Decomposition Loop)          |
-          +-------------------------------------------------------------------------+
+          |      \      ^                                                         /    |
+          |       `----HOME------------------------------------------------------'     |
+          |             |                                                              |
+          |       .-----|---------------------------------------------------------.    |
+          |      /  [Level 0]                                                      \   |
+          |     |   DETRITUS  <------ [-1S] <-------- [-2D]                        |   |
+          |     | TILE (On Grid)    (Saprotrophs)   (Detritivores)                 |   |
+          |      \                                                               /     |
+          |       `------------------------------------------------------------'       |
+          |                              MATTER CYCLING (Decomposition Loop)           |
+          +----------------------------------------------------------------------------+
 ```### Objective of the Game
 The game ends when a player cannot draw a card from their deck at the start of their turn. After the other player(s) have taken one final turn, the game concludes. **The player or team with the most Victory Points (VP) in their Score Pile is the winner.**
 
@@ -72,7 +72,7 @@ The game ends when a player cannot draw a card from their deck at the start of t
 
 ### The Living Grid
 
-There is no pre-set board! The grid is built organically by the players' actions.
+The grid is 9 Rows x 10 Columns with 2 players and 10x10 with 4 players. The grid is built organically by the players' actions.
 *   **Orthogonal Placement:** All cards must be placed sharing a flat edge with an already-played card (no diagonals).
 *   **Shared World:** You can connect your cards to any valid card on the grid, even those controlled by opponents.
 

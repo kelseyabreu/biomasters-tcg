@@ -14,6 +14,11 @@ export * from './enums';
 // Export all types
 export * from './types';
 
+// Export shared utilities
+export * from './utils/cardIdHelpers';
+export * from './data/DataLoader';
+export * from './data/DataCache';
+
 // Re-export commonly used combinations for convenience
 export type {
   CardData,

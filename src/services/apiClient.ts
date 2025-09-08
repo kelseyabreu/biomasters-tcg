@@ -280,8 +280,18 @@ export const gameApi = {
     return api.get<ApiResponse>(`/api/cards/collection?${params}`);
   },
 
-  // Check if user owns a specific species
-  checkCardOwnership: async (speciesName: string): Promise<boolean> => {
+  // Check if user owns a specific card by CardId
+  checkCardOwnership: async (cardId: number): Promise<boolean> => {
+    try {
+      const response = await gameApi.getUserCollection(1, 1000);
+      return response.data.data?.collection?.some((card: any) => card.card_id === cardId) || false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  // Check if user owns a specific species (legacy compatibility)
+  checkSpeciesOwnership: async (speciesName: string): Promise<boolean> => {
     try {
       const response = await gameApi.getUserCollection(1, 1000);
       return response.data.data?.collection?.some((card: any) => card.species_name === speciesName) || false;
@@ -290,8 +300,19 @@ export const gameApi = {
     }
   },
 
-  // Get quantity of a specific species owned
-  getCardQuantity: async (speciesName: string): Promise<number> => {
+  // Get quantity of a specific card owned by CardId
+  getCardQuantity: async (cardId: number): Promise<number> => {
+    try {
+      const response = await gameApi.getUserCollection(1, 1000);
+      const card = response.data.data?.collection?.find((card: any) => card.card_id === cardId);
+      return card?.quantity || 0;
+    } catch (error) {
+      return 0;
+    }
+  },
+
+  // Get quantity of a specific species owned (legacy compatibility)
+  getSpeciesQuantity: async (speciesName: string): Promise<number> => {
     try {
       const response = await gameApi.getUserCollection(1, 1000);
       const card = response.data.data?.collection?.find((card: any) => card.species_name === speciesName);

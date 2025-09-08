@@ -1,16 +1,18 @@
 import { BioMastersEngine, GameSettings, CardData } from '../../../../shared/game-engine/BioMastersEngine';
+import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
 import { Domain } from '@biomasters/shared';
 import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../../../../shared/text-ids';
 
 describe('Domain System Tests', () => {
+  let gameData: any;
   let engine: BioMastersEngine;
   let _gameSettings: GameSettings;
 
   beforeAll(async () => {
     console.log('🧪 Loading game data for domain tests...');
-    await gameDataManager.loadGameData();
+    
+    gameData = await loadTestGameData();
     console.log('✅ Game data loaded for domain tests');
   });
 
@@ -44,19 +46,19 @@ describe('Domain System Tests', () => {
     console.log('🧪 Testing domain system...');
     
     // Get some cards with different domains
-    const cards = Array.from(gameDataManager.getCards().values());
+    const cards = gameData.cards;
     
     // Find cards with different domains
-    const terrestrialCard = cards.find(card => card.domain === Domain.TERRESTRIAL);
-    const freshwaterCard = cards.find(card => card.domain === Domain.FRESHWATER);
-    const marineCard = cards.find(card => card.domain === Domain.MARINE);
-    const amphibiousFreshwaterCard = cards.find(card => card.domain === Domain.AMPHIBIOUS_FRESHWATER);
+    const terrestrialCard = Array.from(cards.values()).find((card: any) => card.domain === Domain.TERRESTRIAL) as any;
+    const freshwaterCard = Array.from(cards.values()).find((card: any) => card.domain === Domain.FRESHWATER) as any;
+    const marineCard = Array.from(cards.values()).find((card: any) => card.domain === Domain.MARINE) as any;
+    const amphibiousFreshwaterCard = Array.from(cards.values()).find((card: any) => card.domain === Domain.AMPHIBIOUS_FRESHWATER) as any;
     
     console.log('🌍 Found cards:');
-    console.log(`  Terrestrial: ${terrestrialCard?.commonName} (Domain: ${terrestrialCard?.domain})`);
-    console.log(`  Freshwater: ${freshwaterCard?.commonName} (Domain: ${freshwaterCard?.domain})`);
-    console.log(`  Marine: ${marineCard?.commonName} (Domain: ${marineCard?.domain})`);
-    console.log(`  Amphibious-Freshwater: ${amphibiousFreshwaterCard?.commonName} (Domain: ${amphibiousFreshwaterCard?.domain})`);
+    console.log(`  Terrestrial: ${terrestrialCard?.nameId} (Domain: ${terrestrialCard?.domain})`);
+    console.log(`  Freshwater: ${freshwaterCard?.nameId} (Domain: ${freshwaterCard?.domain})`);
+    console.log(`  Marine: ${marineCard?.nameId} (Domain: ${marineCard?.domain})`);
+    console.log(`  Amphibious-Freshwater: ${amphibiousFreshwaterCard?.nameId} (Domain: ${amphibiousFreshwaterCard?.domain})`);
 
     // Test that cards have the correct Domain property
     expect(terrestrialCard).toBeDefined();
@@ -80,21 +82,21 @@ describe('Domain System Tests', () => {
   test('should detect chemoautotrophs correctly', () => {
     console.log('🧪 Testing chemoautotroph detection...');
     
-    const cards = Array.from(gameDataManager.getCards().values());
+    const cards = gameData.cards;
     
     // Find chemoautotroph cards (TrophicLevel: 1, TrophicCategory: 2)
-    const chemoautotrophs = cards.filter(card => 
+    const chemoautotrophs = Array.from(cards.values()).filter((card: any) =>
       card.trophicLevel === 1 && card.trophicCategory === 2
     );
     
     console.log(`🦠 Found ${chemoautotrophs.length} chemoautotroph cards:`);
-    chemoautotrophs.forEach(card => {
-      console.log(`  ${card.commonName} (TL: ${card.trophicLevel}, TC: ${card.trophicCategory})`);
+    chemoautotrophs.forEach((card: any) => {
+      console.log(`  ${card.nameId} (TL: ${card.trophicLevel}, TC: ${card.trophicCategory})`);
       
       // Test that the engine correctly identifies them as chemoautotrophs
       // Convert to engine-compatible format
       const engineCard: CardData = {
-        cardId: Number(card.cardId),
+        id: card.id,
         nameId: CardNameId.CARD_OAK_TREE, // Using placeholder since we don't have real mapping
         scientificNameId: ScientificNameId.SCIENTIFIC_QUERCUS_ROBUR, // Using placeholder
         descriptionId: CardDescriptionId.DESC_OAK_TREE, // Using placeholder
@@ -106,7 +108,10 @@ describe('Domain System Tests', () => {
         keywords: card.keywords || [],
         abilities: card.abilities || [],
         victoryPoints: card.victoryPoints || 0,
-        conservationStatus: card.conservationStatus || 0,
+        conservation_status: card.conservation_status || 0,
+        artwork_url: null,
+        iucn_id: null,
+        population_trend: null,
         mass_kg: card.mass_kg || 0,
         lifespan_max_days: card.lifespan_max_days || 0,
         vision_range_m: card.vision_range_m || 0,

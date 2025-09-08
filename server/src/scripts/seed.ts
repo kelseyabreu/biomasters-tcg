@@ -22,13 +22,26 @@ function loadSpeciesManifest(): string[] {
 }
 
 /**
- * Sample redemption codes using actual species names
+ * Sample redemption codes using card IDs
  */
-function createSampleRedemptionCodes(speciesList: string[]): NewRedemptionCode[] {
-  // Create codes for first 10 species
-  return speciesList.slice(0, 10).map((species, index) => ({
+function createSampleRedemptionCodes(): NewRedemptionCode[] {
+  // Create codes for first 10 cards
+  const sampleCards = [
+    { cardId: 1, name: 'Oak Tree' },
+    { cardId: 2, name: 'Giant Kelp' },
+    { cardId: 3, name: 'Grass' },
+    { cardId: 4, name: 'Rabbit' },
+    { cardId: 5, name: 'Deer' },
+    { cardId: 6, name: 'Wolf' },
+    { cardId: 7, name: 'Bear' },
+    { cardId: 8, name: 'Eagle' },
+    { cardId: 9, name: 'Salmon' },
+    { cardId: 10, name: 'Butterfly' }
+  ];
+
+  return sampleCards.map((card, index) => ({
     code: `DEMO${String(index + 1).padStart(3, '0')}`,
-    species_name: species,
+    card_id: card.cardId,
     is_redeemed: false
   }));
 }
@@ -55,8 +68,8 @@ async function seedDatabase() {
     } else {
       console.log('🎫 Creating sample redemption codes...');
       
-      // Create redemption codes for first 10 species
-      const redemptionCodes = createSampleRedemptionCodes(speciesList);
+      // Create redemption codes for first 10 cards
+      const redemptionCodes = createSampleRedemptionCodes();
 
       await db
         .insertInto('redemption_codes')
@@ -65,7 +78,7 @@ async function seedDatabase() {
 
       console.log(`✅ Created ${redemptionCodes.length} redemption codes`);
       console.log('🎫 Demo codes: DEMO001 through DEMO010');
-      console.log('🎫 Species codes for:', redemptionCodes.slice(0, 5).map(c => c.species_name).join(', '), '...');
+      console.log('🎫 Card codes for:', redemptionCodes.slice(0, 5).map(c => `Card ${c.card_id}`).join(', '), '...');
     }
 
     console.log('✅ Database seeding completed successfully!');

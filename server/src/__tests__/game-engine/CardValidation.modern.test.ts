@@ -23,9 +23,11 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
     mockCardDatabase = new Map([
       // Primary Producer (Trophic Level 1) - Kelp Forest
       [1, {
-        cardId: 1,
-        commonName: 'Giant Kelp',
-        scientificName: 'Macrocystis pyrifera',
+        id: 1,
+        nameId: 'CARD_GIANT_KELP',
+        scientificNameId: 'SCIENTIFIC_MACROCYSTIS_PYRIFERA',
+        descriptionId: 'DESC_GIANT_KELP',
+        taxonomyId: 'TAXONOMY_GIANT_KELP',
         trophicLevel: TrophicLevel.PRODUCER,
         trophicCategory: TrophicCategoryId.PHOTOAUTOTROPH,
         cost: null, // Producers are free
@@ -47,9 +49,11 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       }],
       // Primary Consumer (Trophic Level 2) - Sea Urchin
       [2, {
-        cardId: 2,
-        commonName: 'Purple Sea Urchin',
-        scientificName: 'Strongylocentrotus purpuratus',
+        id: 2,
+        nameId: 'CARD_PURPLE_SEA_URCHIN',
+        scientificNameId: 'SCIENTIFIC_STRONGYLOCENTROTUS_PURPURATUS',
+        descriptionId: 'DESC_PURPLE_SEA_URCHIN',
+        taxonomyId: 'TAXONOMY_PURPLE_SEA_URCHIN',
         trophicLevel: TrophicLevel.PRIMARY_CONSUMER,
         trophicCategory: TrophicCategoryId.HERBIVORE,
         cost: { Requires: [{ Category: TrophicCategoryId.PHOTOAUTOTROPH, Count: 1 }] },
@@ -71,9 +75,11 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       }],
       // Secondary Consumer (Trophic Level 3) - Sea Otter
       [3, {
-        cardId: 3,
-        commonName: 'Sea Otter',
-        scientificName: 'Enhydra lutris',
+        id: 3,
+        nameId: 'CARD_SEA_OTTER',
+        scientificNameId: 'SCIENTIFIC_ENHYDRA_LUTRIS',
+        descriptionId: 'DESC_SEA_OTTER',
+        taxonomyId: 'TAXONOMY_SEA_OTTER',
         trophicLevel: TrophicLevel.SECONDARY_CONSUMER,
         trophicCategory: TrophicCategoryId.CARNIVORE,
         cost: { Requires: [{ Category: TrophicCategoryId.HERBIVORE, Count: 1 }] },
@@ -95,7 +101,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       }],
       // Terrestrial Primary Producer - Oak Tree
       [4, {
-        cardId: 4,
+        id: 4,
         commonName: 'Coast Live Oak',
         scientificName: 'Quercus agrifolia',
         trophicLevel: TrophicLevel.PRODUCER,
@@ -119,7 +125,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       }],
       // Cross-domain species (Amphibious) - Penguin
       [5, {
-        cardId: 5,
+        id: 5,
         commonName: 'Emperor Penguin',
         scientificName: 'Aptenodytes forsteri',
         trophicLevel: TrophicLevel.SECONDARY_CONSUMER,
@@ -227,7 +233,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '1', // Kelp
+          cardId: 1, // Kelp
           position: { x: -1, y: 5 } // Outside bounds
         }
       };
@@ -245,7 +251,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '1', // Kelp
+          cardId: 1, // Kelp
           position: player1Home!.position // Try to place on HOME
         }
       };
@@ -261,7 +267,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '1', // Kelp
+          cardId: 1, // Kelp
           position: { x: 0, y: 0 } // Far from HOME
         }
       };
@@ -274,20 +280,30 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
   describe('Trophic Level Validation', () => {
     test('should allow producers adjacent to HOME', () => {
+      console.log('🚀 Starting CardValidation test: should allow producers adjacent to HOME');
       const gameState = engine.getGameState();
+      console.log('🏠 All HOME cards in grid:', Array.from(gameState.grid.values()).filter(card => card.isHOME).map(c => ({ ownerId: c.ownerId, position: c.position })));
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      console.log('🎯 Player1 HOME found:', player1Home);
+      if (!player1Home) {
+        console.log('❌ No player1 HOME found! Available HOME cards:', Array.from(gameState.grid.values()).filter(card => card.isHOME));
+        throw new Error('No player1 HOME found');
+      }
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
+      console.log('🎯 Adjacent position:', adjacentPosition);
 
       const playCardAction = {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '1', // Kelp (producer)
+          cardId: 1, // Kelp (producer)
           position: adjacentPosition
         }
       };
 
+      console.log('🎮 About to process action:', playCardAction);
       const result = engine.processAction(playCardAction);
+      console.log('🎮 Action result:', { isValid: result.isValid, errorMessage: result.errorMessage });
       expect(result.isValid).toBe(true);
     });
 
@@ -300,7 +316,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: producerPos }
+        payload: { cardId: 1, position: producerPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -313,7 +329,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '2', position: consumerPos }
+        payload: { cardId: 2, position: consumerPos }
       });
       expect(result2.isValid).toBe(true);
     });
@@ -328,7 +344,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '3', // Sea Otter (secondary consumer)
+          cardId: 3, // Sea Otter (secondary consumer)
           position: adjacentPosition
         }
       };
@@ -349,7 +365,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: aquaticPos } // Kelp (aquatic)
+        payload: { cardId: 1, position: aquaticPos } // Kelp (aquatic)
       });
       expect(result1.isValid).toBe(true);
 
@@ -358,7 +374,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '4', position: terrestrialPos } // Oak (terrestrial)
+        payload: { cardId: 4, position: terrestrialPos } // Oak (terrestrial)
       });
       expect(result2.isValid).toBe(true);
     });
@@ -372,7 +388,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: producerPos }
+        payload: { cardId: 1, position: producerPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -385,7 +401,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '2', position: herbivorePos }
+        payload: { cardId: 2, position: herbivorePos }
       });
       expect(result2.isValid).toBe(true);
 
@@ -398,7 +414,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result3 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '5', position: amphibiousPos } // Penguin (amphibious)
+        payload: { cardId: 5, position: amphibiousPos } // Penguin (amphibious)
       });
       expect(result3.isValid).toBe(true);
     });
@@ -414,7 +430,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: kelpPos }
+        payload: { cardId: 1, position: kelpPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -427,7 +443,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '2', position: urchinPos }
+        payload: { cardId: 2, position: urchinPos }
       });
       expect(result2.isValid).toBe(true);
 
@@ -440,7 +456,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result3 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '3', position: otterPos }
+        payload: { cardId: 3, position: otterPos }
       });
       expect(result3.isValid).toBe(true);
     });
@@ -458,7 +474,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: adjacentPosition }
+        payload: { cardId: 1, position: adjacentPosition }
       });
 
       expect(result.isValid).toBe(true);
@@ -479,7 +495,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '1', // Kelp
+          cardId: 1, // Kelp
           position: adjacentPosition
         }
       };
@@ -497,7 +513,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const result = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: adjacentPosition }
+        payload: { cardId: 1, position: adjacentPosition }
       });
 
       expect(result.isValid).toBe(true);
@@ -524,7 +540,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player2', // Wrong player
         payload: {
-          cardId: '1', // Kelp
+          cardId: 1, // Kelp
           position: adjacentPosition
         }
       };

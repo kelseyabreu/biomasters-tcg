@@ -38,9 +38,11 @@ export function convertBackendCardToFrontend(backendCard: BackendCard): Frontend
   
   return {
     id: backendCard.id, // Keep as string to match frontend type
-    speciesName: backendCard.archetype_name,
-    commonName: backendCard.common_name,
-    scientificName: backendCard.scientific_name,
+    cardId: parseInt(backendCard.id) || 0, // Convert to number for cardId
+    nameId: backendCard.archetype_name || 'UNKNOWN_CARD',
+    scientificNameId: backendCard.scientific_name || 'UNKNOWN_SCIENTIFIC',
+    descriptionId: 'DESC_UNKNOWN',
+    taxonomyId: 'TAXONOMY_UNKNOWN',
     trophicRole: card_data.type as any,
     habitat: mapHabitatToClimate(card_data.habitat),
     power: card_data.attack,

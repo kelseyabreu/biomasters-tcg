@@ -97,7 +97,7 @@ export function calculateCombatModifiers(
   }
   
   // Pack hunting for wolves
-  if (attacker.speciesName === 'wolf') {
+  if (attacker.nameId === 'wolf') {
     const otherCarnivores = friendlyCards.filter(card => 
       card.trophicRole === TrophicRole.CARNIVORE && card.id !== attacker.id
     );

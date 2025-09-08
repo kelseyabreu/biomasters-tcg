@@ -2,13 +2,24 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
 import { flash, leaf, paw, skull, heart, eye, speedometer, library, thermometer, trash, close } from 'ionicons/icons';
-import { Card as CardType, TrophicRole, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
+import { Card as CardType, TrophicRole, CONSERVATION_RARITY_DATA } from '../types';
+import { ConservationStatus } from '@shared/enums';
 import { useTheme } from '../theme/ThemeProvider';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
+
 import CardDetailsModal from './CardDetailsModal';
 import OrganismRenderer from './OrganismRenderer';
 import './Card.css';
+
+// Configuration constants for data-driven rendering
+const CARD_SIZE_CONFIG = {
+  small: { organismSize: 60, focusTimeout: 100 },
+  medium: { organismSize: 80, focusTimeout: 100 },
+  large: { organismSize: 120, focusTimeout: 100 }
+} as const;
+
+const SPEED_CONVERSION_FACTOR = 1000; // Convert m/hr to km/h
+const LIFESPAN_CONVERSION_FACTOR = 365; // Convert days to years
 
 interface CardProps {
   card: CardType;
@@ -49,8 +60,14 @@ const Card: React.FC<CardProps> = ({
   const { currentTheme, organismRenderMode } = useTheme();
   const localization = useLocalization();
 
-  // Get localized card data
-  const localizedCard = getLocalizedCardData(card, localization);
+  // Get localized card data using enum-based localization system
+  const localizedCard = {
+    displayName: localization.getCardName(card.nameId as any),
+    displayScientificName: localization.getScientificName(card.scientificNameId as any),
+    nameId: card.nameId,
+    scientificNameId: card.scientificNameId,
+    descriptionId: card.descriptionId
+  };
 
   const getConservationRarity = (status: ConservationStatus) => {
     return CONSERVATION_RARITY_DATA[status] || CONSERVATION_RARITY_DATA[ConservationStatus.NOT_EVALUATED];
@@ -203,7 +220,18 @@ const Card: React.FC<CardProps> = ({
   };
 
   const getConservationCSSClass = (status: ConservationStatus) => {
-    return status.toLowerCase().replace(/\s+/g, '-');
+    switch (status) {
+      case ConservationStatus.LEAST_CONCERN: return 'least-concern';
+      case ConservationStatus.NEAR_THREATENED: return 'near-threatened';
+      case ConservationStatus.VULNERABLE: return 'vulnerable';
+      case ConservationStatus.ENDANGERED: return 'endangered';
+      case ConservationStatus.CRITICALLY_ENDANGERED: return 'critically-endangered';
+      case ConservationStatus.EXTINCT: return 'extinct';
+      case ConservationStatus.EXTINCT_IN_WILD: return 'extinct-in-wild';
+      case ConservationStatus.DATA_DEFICIENT: return 'data-deficient';
+      case ConservationStatus.NOT_EVALUATED: return 'not-evaluated';
+      default: return 'unknown';
+    }
   };
 
   return (
@@ -226,7 +254,7 @@ const Card: React.FC<CardProps> = ({
                 firstFocusable.focus();
               }
             }
-          }, 100);
+          }, CARD_SIZE_CONFIG[size].focusTimeout);
         }
       }}
       style={{
@@ -289,7 +317,7 @@ const Card: React.FC<CardProps> = ({
               // 2D DOM Rendering - Interactive organism
               <OrganismRenderer
                 card={card}
-                size={size === 'large' ? 120 : size === 'medium' ? 100 : 80}
+                size={CARD_SIZE_CONFIG[size].organismSize}
                 showControls={false}
                 className="card-organism"
               />
@@ -298,8 +326,8 @@ const Card: React.FC<CardProps> = ({
               <div className="species-image-container">
                 {/* Try to load real species image, fallback to icon */}
                 <img
-                  src={`/images/species/${card.speciesName.toLowerCase().replace(/\s+/g, '-')}.png`}
-                  alt={card.commonName}
+                  src={`/images/species/${card.nameId.toLowerCase().replace(/\s+/g, '-')}.png`}
+                  alt={localizedCard.displayName}
                   className="species-image"
                   onError={(e) => {
                     // Fallback to SVG icon if image not found
@@ -395,7 +423,7 @@ const Card: React.FC<CardProps> = ({
                 {card.realData.run_Speed_m_per_hr && card.realData.run_Speed_m_per_hr > 0 && (
                   <div className="real-stat">
                     <span className="label">Max Speed:</span>
-                    <span className="value">{(card.realData.run_Speed_m_per_hr / 1000).toFixed(1)}km/h</span>
+                    <span className="value">{(card.realData.run_Speed_m_per_hr / SPEED_CONVERSION_FACTOR).toFixed(1)}km/h</span>
                   </div>
                 )}
                 {card.realData.vision_range_m && card.realData.vision_range_m > 0 && (

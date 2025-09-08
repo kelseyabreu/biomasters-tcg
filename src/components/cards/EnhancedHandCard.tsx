@@ -2,8 +2,9 @@ import React, { useState, useRef, memo } from 'react';
 import { IonCard, IonCardContent, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonIcon, IonChip, IonLabel } from '@ionic/react';
 import { close, leaf, water, sunny, snow, shield, flash, heart } from 'ionicons/icons';
 import { motion } from 'framer-motion';
-import { Card } from '../../types';
+import { Card, ConservationStatus } from '../../types';
 import { useMobileGestures } from '../../hooks/useMobileGestures';
+import { useLocalization } from '../../contexts/LocalizationContext';
 import OrganismRenderer from '../OrganismRenderer';
 import './EnhancedHandCard.css';
 
@@ -26,9 +27,11 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
   isPlayerTurn,
   size = 'medium'
 }) => {
+  const localization = useLocalization();
+
   console.log('🃏 EnhancedHandCard rendered:', {
     cardId: card.id,
-    cardName: card.commonName,
+    cardName: localization.getCardName(card.nameId as any),
     isSelected,
     isPlayerTurn,
     hasOnSelect: !!onSelect
@@ -43,7 +46,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
     onTap: () => {
       console.log('🖱️ EnhancedHandCard onTap triggered:', {
         cardId: card.id,
-        cardName: card.commonName,
+        cardName: localization.getCardName(card.nameId as any),
         isPlayerTurn,
         isSelected,
         gestureState
@@ -59,7 +62,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
     onLongPress: () => {
       console.log('🖱️ EnhancedHandCard onLongPress triggered:', {
         cardId: card.id,
-        cardName: card.commonName,
+        cardName: localization.getCardName(card.nameId as any),
         isPlayerTurn
       });
       if (isPlayerTurn) {
@@ -73,7 +76,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
     onDragStart: (position) => {
       console.log('🖱️ EnhancedHandCard onDragStart triggered:', {
         cardId: card.id,
-        cardName: card.commonName,
+        cardName: localization.getCardName(card.nameId as any),
         isPlayerTurn,
         isSelected,
         position
@@ -107,26 +110,39 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
 
   // Remove getCardImage function - we'll use OrganismRenderer instead
 
-  const getConservationColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'critically_endangered': return 'danger';
-      case 'endangered': return 'warning';
-      case 'vulnerable': return 'medium';
-      case 'near_threatened': return 'primary';
-      case 'least_concern': return 'success';
+  const getConservationColor = (status: ConservationStatus) => {
+    switch (status) {
+      case ConservationStatus.CRITICALLY_ENDANGERED: return 'danger';
+      case ConservationStatus.ENDANGERED: return 'warning';
+      case ConservationStatus.VULNERABLE: return 'medium';
+      case ConservationStatus.NEAR_THREATENED: return 'primary';
+      case ConservationStatus.LEAST_CONCERN: return 'success';
+      case ConservationStatus.EXTINCT: return 'dark';
+      case ConservationStatus.EXTINCT_IN_WILD: return 'dark';
+      case ConservationStatus.DATA_DEFICIENT: return 'medium';
+      case ConservationStatus.NOT_EVALUATED: return 'medium';
       default: return 'medium';
     }
   };
 
-  const getConservationLabel = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'critically_endangered': return 'CR';
-      case 'endangered': return 'EN';
-      case 'vulnerable': return 'VU';
-      case 'near_threatened': return 'NT';
-      case 'least_concern': return 'LC';
+  const getConservationLabel = (status: ConservationStatus) => {
+    switch (status) {
+      case ConservationStatus.CRITICALLY_ENDANGERED: return 'CR';
+      case ConservationStatus.ENDANGERED: return 'EN';
+      case ConservationStatus.VULNERABLE: return 'VU';
+      case ConservationStatus.NEAR_THREATENED: return 'NT';
+      case ConservationStatus.LEAST_CONCERN: return 'LC';
+      case ConservationStatus.EXTINCT: return 'EX';
+      case ConservationStatus.EXTINCT_IN_WILD: return 'EW';
+      case ConservationStatus.DATA_DEFICIENT: return 'DD';
+      case ConservationStatus.NOT_EVALUATED: return 'NE';
       default: return 'LC';
     }
+  };
+
+  const getCardConservationStatus = (card: Card): ConservationStatus => {
+    // Always use the main conservationStatus field which should be a ConservationStatus enum
+    return card.conservationStatus;
   };
 
   return (
@@ -143,7 +159,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
         onClick={() => {
           console.log('🖱️ EnhancedHandCard direct onClick triggered:', {
             cardId: card.id,
-            cardName: card.commonName,
+            cardName: localization.getCardName(card.nameId as any),
             isPlayerTurn,
             isSelected
           });
@@ -162,17 +178,17 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
             />
             
             {/* Conservation Status Badge */}
-            <IonChip 
+            <IonChip
               className="conservation-badge"
-              color={getConservationColor(card.phyloAttributes?.conservationStatus || card.conservationStatus)}
+              color={getConservationColor(getCardConservationStatus(card))}
             >
-              <IonLabel>{getConservationLabel(card.phyloAttributes?.conservationStatus || card.conservationStatus)}</IonLabel>
+              <IonLabel>{getConservationLabel(getCardConservationStatus(card))}</IonLabel>
             </IonChip>
           </div>
           
           <IonCardContent className="card-content">
-            <div className="card-name">{card.commonName}</div>
-            <div className="card-scientific">{card.scientificName}</div>
+            <div className="card-name">{card.nameId}</div>
+            <div className="card-scientific">{card.scientificNameId}</div>
             
             <div className="card-stats">
               <div className="stat">
@@ -221,7 +237,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
       <IonModal isOpen={showSpeciesInfo} onDidDismiss={() => setShowSpeciesInfo(false)}>
         <IonHeader>
           <IonToolbar>
-            <IonTitle>{card.commonName}</IonTitle>
+            <IonTitle>{localization.getCardName(card.nameId as any)}</IonTitle>
             <IonButton fill="clear" slot="end" onClick={() => setShowSpeciesInfo(false)}>
               <IonIcon icon={close} />
             </IonButton>
@@ -239,8 +255,8 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
             </div>
             
             <div className="species-details">
-              <h2>{card.commonName}</h2>
-              <h3>{card.scientificName}</h3>
+              <h2>{card.nameId}</h2>
+              <h3>{card.scientificNameId}</h3>
               <p className="species-description">{card.description}</p>
               
               <div className="species-stats-grid">
@@ -298,10 +314,10 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
               
               <div className="conservation-info">
                 <h4>Conservation Status</h4>
-                <IonChip 
-                  color={getConservationColor(card.phyloAttributes?.conservationStatus || card.conservationStatus)}
+                <IonChip
+                  color={getConservationColor(getCardConservationStatus(card))}
                 >
-                  <IonLabel>{card.phyloAttributes?.conservationStatus || card.conservationStatus}</IonLabel>
+                  <IonLabel>{ConservationStatus[getCardConservationStatus(card)]}</IonLabel>
                 </IonChip>
               </div>
               

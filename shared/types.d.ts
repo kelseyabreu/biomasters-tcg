@@ -13,18 +13,19 @@ export interface Position {
     y: number;
 }
 /**
- * Card data structure - matches database schema
+ * Card data structure - uses enum-based localization IDs
+ * Field names match JSON format (camelCase) for optimal performance
  */
 export interface CardData {
     id: CardId;
-    card_name: string;
-    trophic_level: TrophicLevel | null;
-    trophic_category_id: TrophicCategoryId | null;
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId: string;
+    trophicLevel: TrophicLevel | null;
+    trophicCategory: TrophicCategoryId | null;
     cost: string | null;
-    victory_points: number;
-    common_name: string | null;
-    scientific_name: string | null;
-    taxonomy: string | null;
+    victoryPoints: number;
     mass_kg: number | null;
     lifespan_max_days: number | null;
     vision_range_m: number | null;
@@ -36,6 +37,7 @@ export interface CardData {
     fly_speed_m_per_hr: number | null;
     offspring_count: number | null;
     gestation_days: number | null;
+    domain: number;
     keywords: KeywordId[];
     abilities: AbilityId[];
     artwork_url: string | null;
@@ -44,14 +46,14 @@ export interface CardData {
     population_trend: string | null;
 }
 /**
- * Ability data structure
+ * Ability data structure - field names match JSON format (camelCase)
  */
 export interface AbilityData {
     id: AbilityId;
-    ability_name: string;
-    trigger_id: TriggerId;
+    nameId: string;
+    descriptionId: string;
+    triggerId: TriggerId;
     effects: AbilityEffect[];
-    description: string | null;
 }
 /**
  * Individual ability effect

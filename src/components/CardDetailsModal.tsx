@@ -28,7 +28,7 @@ import {
 } from 'ionicons/icons';
 import { Card as CardType, TrophicRole } from '../types';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
+
 import OrganismRenderer from './OrganismRenderer';
 import './CardDetailsModal.css';
 
@@ -53,8 +53,14 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
 
   if (!card) return null;
 
-  // Get localized card data
-  const localizedCard = getLocalizedCardData(card, localization);
+  // Get localized card data using enum-based localization system
+  const localizedCard = {
+    displayName: localization.getCardName(card.nameId as any),
+    displayScientificName: localization.getScientificName(card.scientificNameId as any),
+    nameId: card.nameId,
+    scientificNameId: card.scientificNameId,
+    descriptionId: card.descriptionId
+  };
 
 
 

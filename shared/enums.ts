@@ -286,13 +286,20 @@ export enum CardId {
   EUROPEAN_RABBIT = 4,               // Updated from "Field Rabbit"
   SOCKEYE_SALMON = 5,
 
+  // Marine ecosystem cards
+  ZOOPLANKTON = 21,                  // Marine primary consumer
+
   // Secondary/Tertiary Consumers (Trophic Level 3-4)
-  AMERICAN_BLACK_BEAR = 6,           // Updated from "Grizzly Bear"
-  GREAT_WHITE_SHARK = 7,
+  AMERICAN_BLACK_BEAR = 6,           // Trophic level 3, terrestrial, requires 2 herbivores
+  GREAT_WHITE_SHARK = 7,             // Trophic level 4, marine, requires 2 trophic level 3 carnivores
 
   // Decomposers (Trophic Level -1)
   MYCENA_MUSHROOM = 8,
-  TURKEY_VULTURE = 9,                // Updated from "Vulture"
+  TURKEY_VULTURE = 9,                // Trophic level 3, terrestrial, requires 1 herbivore
+
+  // Additional Trophic Level 3 Carnivores (cost: null - no requirements)
+  DOMESTIC_CAT = 37,                 // Trophic level 3, terrestrial, cost: null
+  DOMESTIC_DOG = 48,                 // Trophic level 3, terrestrial, cost: null
 
   // Parasites
   DEER_TICK = 10,
@@ -316,13 +323,106 @@ export enum CardId {
   // Marine organisms
   PACIFIC_KRILL = 19,
   PHYTOPLANKTON = 20,
-  ZOOPLANKTON = 21,
   EUROPEAN_HONEY_BEE = 22,
 
   // Additional chemoautotrophs
   VOLCANIC_HYDROGEN_BACTERIA = 25,
   NITRIFYING_SOIL_BACTERIA = 26,
-  SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 27
+  SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 27,
+
+  // Additional species (migrated from legacy files)
+  // Insects and Arthropods
+  ANT = 28,
+  CRICKET = 29,
+  SCORPION = 30,
+  SPIDER = 31,
+
+  // Plants and Trees
+  APPLE_TREE = 32,
+  BUSH_CHERRY = 33,
+  CACTUS = 34,
+  CHERRY_BLOSSOM = 35,
+  DAISY = 36,
+  DECIDUOUS_TREE = 37,
+  EELGRASS = 38,
+  EVERGREEN_TREE = 39,
+  GRAPES = 40,
+  HERB = 41,
+  HIBISCUS = 42,
+  PALM_TREE = 43,
+  PRICKLY_PEAR = 44,
+  RICE = 45,
+  ROSE = 46,
+  STRAWBERRY = 47,
+  SUNFLOWER = 48,
+  TULIP = 49,
+  WHITE_CLOVER = 50,
+
+  // Mammals
+  BEAVER = 51,
+  BISON = 52,
+  RED_FOX = 53,                         // Trophic level 3, terrestrial, cost: null
+  CAMEL = 54,
+  CAT = 55,
+  CHIPMUNK = 56,
+  COW = 57,
+  DOG = 58,
+  ELEPHANT = 59,
+  GIRAFFE = 60,
+  GOAT = 61,
+  GORILLA = 62,
+  HAMSTER = 63,
+  HEDGEHOG = 64,
+  HIPPOPOTAMUS = 65,
+  HORSE = 66,
+  LEOPARD = 67,                         // Trophic level 3, terrestrial, cost: null (CardId 67)
+  AFRICAN_LION = 68,                    // Trophic level 3, terrestrial, cost: null (CardId 68)
+  LLAMA = 70,
+  MAMMOTH = 71,
+  MONKEY = 72,
+  HOUSE_MOUSE = 73,                     // Small urban adapter (CardId 73)
+  OX = 74,
+  PANDA = 75,
+  PIG = 76,
+  RAM = 77,
+  GIANT_PANDA = 78,                     // Trophic level 3, terrestrial, cost: null (CardId 78)
+  TIGER = 91,                           // Trophic level 3, terrestrial, cost: null (CardId 91)
+  WATER_BUFFALO = 80,
+  ZEBRA = 81,
+
+  // Amphibians and Reptiles
+  FROG = 82,
+  SNAKE = 83,
+  TURTLE = 84,
+
+  // Invertebrates
+  CATERPILLAR = 85,
+  CATERPILLAR_EGG = 86,
+  EARTHWORM = 87,
+  SNAIL = 88,
+
+  // Fungi
+  MUSHROOM = 89,
+
+  // Additional specific species (formerly legacy files)
+  // Alternative bear species with different abilities
+  GRIZZLY_BEAR = 90,                    // Larger, more aggressive bear variant
+
+  // Alternative rabbit species
+  COTTONTAIL_RABBIT = 91,               // North American cottontail variant
+
+  // Additional mammals (avoiding duplicates)
+  COMMON_RACCOON = 94,                  // Intelligent omnivore
+  WHITE_TAILED_DEER = 95,               // Graceful herbivore
+  GRAY_WOLF = 96,                       // Pack hunter (corrected from JSON data)
+  DESERT_LIZARD = 97,                   // Heat-adapted reptile
+
+  // Additional plants
+  CORN_MAIZE = 98,                      // Agricultural crop
+  PERENNIAL_RYEGRASS = 99,              // Common grass species
+
+  // Additional insects
+  MONARCH_BUTTERFLY = 100               // Migratory pollinator
 }
 
 /**
@@ -352,7 +452,8 @@ export enum ConservationStatus {
   VULNERABLE = 5,                // VU - High extinction risk (13.19%)
   NEAR_THREATENED = 6,           // NT - Close to threatened status (5.73%)
   LEAST_CONCERN = 7,             // LC - Widespread and abundant (50.51%)
-  DATA_DEFICIENT = 8             // DD - Inadequate information (12.97%)
+  DATA_DEFICIENT = 8,            // DD - Inadequate information (12.97%)
+  NOT_EVALUATED = 9              // NE - Not yet evaluated against the criteria
 }
 
 
@@ -486,264 +587,11 @@ export enum ApiStatus {
 // SPECIES RENDERING ENUMS
 // ============================================================================
 
-/**
- * CommonName Enum - Maps species common names to their file identifiers
- * Used to connect public/species/ JSON files with OrganismRenderer.tsx
- * Based on the manifest.json and individual species files
- */
-export enum CommonName {
-  // Cards from cards.json - Producers (Trophic Level 1)
-  OAK_TREE = 'oak-tree',
-  GIANT_KELP = 'giant-kelp',                    // Replaced "Kelp Forest"
-  REED_CANARY_GRASS = 'reed-canary-grass',      // Replaced "Riverbank Grass"
-
-  // Primary Consumers (Trophic Level 2)
-  EUROPEAN_RABBIT = 'european-rabbit',
-  SOCKEYE_SALMON = 'sockeye-salmon',
-
-  // Secondary/Tertiary Consumers (Trophic Level 3-4)
-  AMERICAN_BLACK_BEAR = 'american-black-bear',
-  GREAT_WHITE_SHARK = 'great-white-shark',
-
-  // Decomposers (Trophic Level -1)
-  MYCENA_MUSHROOM = 'mycena-mushroom',
-  TURKEY_VULTURE = 'turkey-vulture',
-
-  // Parasites
-  DEER_TICK = 'deer-tick',
-
-  // Detritivores (Trophic Level -2)
-  COMMON_EARTHWORM = 'common-earthworm',
-  DUNG_BEETLE = 'dung-beetle',
-
-  // Saprotrophs (Trophic Level -1)
-  SOIL_BACTERIA = 'soil-bacteria',
-  DECOMPOSER_MUSHROOM = 'decomposer-mushroom',
-
-  // Chemoautotrophs (Trophic Level 1)
-  DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA = 'deep-sea-hydrothermal-vent-bacteria',
-  IRON_SPRING_BACTERIA = 'iron-spring-bacteria',
-
-  // Mutualists (Variable trophic level)
-  MYCORRHIZAL_FUNGI = 'mycorrhizal-fungi',
-  NITROGEN_FIXING_BACTERIA = 'nitrogen-fixing-bacteria',
-
-  // Marine organisms
-  PACIFIC_KRILL = 'pacific-krill',
-  PHYTOPLANKTON = 'phytoplankton',
-  ZOOPLANKTON = 'zooplankton',
-  EUROPEAN_HONEY_BEE = 'european-honey-bee',
-
-  // Additional chemoautotrophs
-  VOLCANIC_HYDROGEN_BACTERIA = 'volcanic-hydrogen-bacteria',
-  NITRIFYING_SOIL_BACTERIA = 'nitrifying-soil-bacteria',
-  SEDIMENT_CHEMOSYNTHETIC_BACTERIA = 'sediment-chemosynthetic-bacteria',
-
-  // Additional Producers (Trees and Plants)
-  APPLE_TREE = 'apple-tree',
-  ENGLISH_OAK = 'deciduous-tree',
-  SCOTS_PINE = 'evergreen-tree',
-  COCONUT_PALM = 'palm-tree',
-  CHERRY_BLOSSOM = 'cherry-blossom',
-  BUSH_CHERRY = 'bush-cherry',
-  PRICKLY_PEAR_CACTUS = 'prickly-pear',
-  COMMON_GRAPE_VINE = 'grapes',
-  PERENNIAL_RYEGRASS = 'grass',
-  COMMON_DAISY = 'daisy',
-  SPEARMINT = 'herb',
-  HIBISCUS = 'hibiscus',
-  SWEET_BRIAR = 'rose',
-  GARDEN_STRAWBERRY = 'strawberry',
-  COMMON_SUNFLOWER = 'sunflower',
-  GARDEN_TULIP = 'tulip',
-  WHITE_CLOVER = 'white-clover',
-  EELGRASS = 'eelgrass',
-  CORN_MAIZE = 'corn',
-  RICE = 'rice',
-
-  // Additional Primary Consumers (Herbivores)
-  NORTH_AMERICAN_BEAVER = 'beaver',
-  AMERICAN_BISON = 'bison',
-  WHITE_TAILED_DEER = 'deer',
-  EASTERN_CHIPMUNK = 'chipmunk',
-  DOMESTIC_CATTLE = 'cow',
-  DOMESTIC_GOAT = 'goat',
-  GOLDEN_HAMSTER = 'hamster',
-  EUROPEAN_HEDGEHOG = 'hedgehog',
-  DOMESTIC_HORSE = 'horse',
-  KOALA = 'koala',
-  LLAMA = 'llama',
-  HOUSE_MOUSE = 'mouse',
-  OX = 'ox',
-  GIANT_PANDA = 'panda',
-  DOMESTIC_PIG = 'pig',
-  COMMON_RACCOON = 'raccoon',
-  BIGHORN_SHEEP = 'ram',
-  WHITE_RHINOCEROS = 'rhinoceros',
-  ASIAN_WATER_BUFFALO = 'water-buffalo',
-  PLAINS_ZEBRA = 'zebra',
-  GIRAFFE = 'giraffe',
-  AFRICAN_BUSH_ELEPHANT = 'elephant',
-  DROMEDARY_CAMEL = 'camel',
-  WOOLLY_MAMMOTH = 'mammoth',
-
-  // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
-  WILD_BOAR = 'boar',
-  DOMESTIC_CAT = 'cat',
-  DOMESTIC_DOG = 'dog',
-  RED_FOX = 'fox',
-  LEOPARD = 'leopard',
-  AFRICAN_LION = 'lion',
-  MOUNTAIN_GORILLA = 'gorilla',
-  COMMON_CHIMPANZEE = 'monkey',
-  BORNEAN_ORANGUTAN = 'orangutan',
-  TIGER = 'tiger',
-  GRAY_WOLF = 'wolf',
-  COMMON_HIPPOPOTAMUS = 'hippopotamus',
-
-  // Additional Invertebrates and Small Animals
-  RED_WOOD_ANT = 'ant',
-  MONARCH_BUTTERFLY = 'butterfly',
-  MONARCH_CATERPILLAR = 'caterpillar',
-  BUTTERFLY_EGG = 'caterpillar_egg',
-  HOUSE_CRICKET = 'cricket',
-  SACRED_DUNG_BEETLE = 'sacred-dung-beetle',
-  DESERT_HAIRY_SCORPION = 'scorpion',
-  ROMAN_SNAIL = 'snail',
-  GARDEN_SPIDER = 'spider',
-
-  // Additional Decomposers
-  COMMON_DECOMPOSER = 'mushroom',
-
-  // Reptiles and Amphibians
-  DESERT_LIZARD = 'lizard',
-  BALL_PYTHON = 'snake',
-  COMMON_FROG = 'frog',
-  GREEN_SEA_TURTLE = 'turtle',
-
-  // Legacy species from existing files (keep for backward compatibility)
-  RABBIT = 'rabbit',
-  BEAR = 'bear'
-}
-
-/**
- * Species Display Names - Maps CommonName enum to human-readable display names
- * Based on the commonName field from species JSON files
- */
-export const SPECIES_DISPLAY_NAMES = {
-  // Cards from cards.json - match the CommonName field exactly
-  [CommonName.OAK_TREE]: 'Oak Tree',
-  [CommonName.GIANT_KELP]: 'Giant Kelp',
-  [CommonName.REED_CANARY_GRASS]: 'Reed Canary Grass',
-  [CommonName.EUROPEAN_RABBIT]: 'European Rabbit',
-  [CommonName.SOCKEYE_SALMON]: 'Sockeye Salmon',
-  [CommonName.AMERICAN_BLACK_BEAR]: 'American Black Bear',
-  [CommonName.GREAT_WHITE_SHARK]: 'Great White Shark',
-  [CommonName.MYCENA_MUSHROOM]: 'Mycena Mushroom',
-  [CommonName.TURKEY_VULTURE]: 'Turkey Vulture',
-  [CommonName.DEER_TICK]: 'Deer Tick',
-  [CommonName.COMMON_EARTHWORM]: 'Common Earthworm',
-  [CommonName.DUNG_BEETLE]: 'Dung Beetle',
-  [CommonName.SOIL_BACTERIA]: 'Soil Bacteria',
-  [CommonName.DECOMPOSER_MUSHROOM]: 'Decomposer Mushroom',
-  [CommonName.DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA]: 'Deep Sea Hydrothermal Vent Bacteria',
-  [CommonName.IRON_SPRING_BACTERIA]: 'Iron Spring Bacteria',
-  [CommonName.MYCORRHIZAL_FUNGI]: 'Mycorrhizal Fungi',
-  [CommonName.NITROGEN_FIXING_BACTERIA]: 'Nitrogen Fixing Bacteria',
-  [CommonName.PACIFIC_KRILL]: 'Pacific Krill',
-  [CommonName.PHYTOPLANKTON]: 'Phytoplankton',
-  [CommonName.ZOOPLANKTON]: 'Zooplankton',
-  [CommonName.EUROPEAN_HONEY_BEE]: 'European Honey Bee',
-  [CommonName.VOLCANIC_HYDROGEN_BACTERIA]: 'Volcanic Hydrogen Bacteria',
-  [CommonName.NITRIFYING_SOIL_BACTERIA]: 'Nitrifying Soil Bacteria',
-  [CommonName.SEDIMENT_CHEMOSYNTHETIC_BACTERIA]: 'Sediment Chemosynthetic Bacteria',
-
-  // Additional Producers (Trees and Plants)
-  [CommonName.APPLE_TREE]: 'Apple Tree',
-  [CommonName.ENGLISH_OAK]: 'English Oak',
-  [CommonName.SCOTS_PINE]: 'Scots Pine',
-  [CommonName.COCONUT_PALM]: 'Coconut Palm',
-  [CommonName.CHERRY_BLOSSOM]: 'Cherry Blossom',
-  [CommonName.BUSH_CHERRY]: 'Bush Cherry',
-  [CommonName.PRICKLY_PEAR_CACTUS]: 'Prickly Pear Cactus',
-  [CommonName.COMMON_GRAPE_VINE]: 'Common Grape Vine',
-  [CommonName.PERENNIAL_RYEGRASS]: 'Perennial Ryegrass',
-  [CommonName.COMMON_DAISY]: 'Common Daisy',
-  [CommonName.SPEARMINT]: 'Spearmint',
-  [CommonName.HIBISCUS]: 'Hibiscus',
-  [CommonName.SWEET_BRIAR]: 'Sweet Briar',
-  [CommonName.GARDEN_STRAWBERRY]: 'Garden Strawberry',
-  [CommonName.COMMON_SUNFLOWER]: 'Common Sunflower',
-  [CommonName.GARDEN_TULIP]: 'Garden Tulip',
-  [CommonName.WHITE_CLOVER]: 'White Clover',
-  [CommonName.EELGRASS]: 'Eelgrass',
-  [CommonName.CORN_MAIZE]: 'Corn/Maize',
-  [CommonName.RICE]: 'Rice',
-
-  // Additional Primary Consumers (Herbivores)
-  [CommonName.NORTH_AMERICAN_BEAVER]: 'North American Beaver',
-  [CommonName.AMERICAN_BISON]: 'American Bison',
-  [CommonName.WHITE_TAILED_DEER]: 'White-tailed Deer',
-  [CommonName.EASTERN_CHIPMUNK]: 'Eastern Chipmunk',
-  [CommonName.DOMESTIC_CATTLE]: 'Domestic Cattle',
-  [CommonName.DOMESTIC_GOAT]: 'Domestic Goat',
-  [CommonName.GOLDEN_HAMSTER]: 'Golden Hamster',
-  [CommonName.EUROPEAN_HEDGEHOG]: 'European Hedgehog',
-  [CommonName.DOMESTIC_HORSE]: 'Domestic Horse',
-  [CommonName.KOALA]: 'Koala',
-  [CommonName.LLAMA]: 'Llama',
-  [CommonName.HOUSE_MOUSE]: 'House Mouse',
-  [CommonName.OX]: 'Ox',
-  [CommonName.GIANT_PANDA]: 'Giant Panda',
-  [CommonName.DOMESTIC_PIG]: 'Domestic Pig',
-  [CommonName.COMMON_RACCOON]: 'Common Raccoon',
-  [CommonName.BIGHORN_SHEEP]: 'Bighorn Sheep',
-  [CommonName.WHITE_RHINOCEROS]: 'White Rhinoceros',
-  [CommonName.ASIAN_WATER_BUFFALO]: 'Asian Water Buffalo',
-  [CommonName.PLAINS_ZEBRA]: 'Plains Zebra',
-  [CommonName.GIRAFFE]: 'Giraffe',
-  [CommonName.AFRICAN_BUSH_ELEPHANT]: 'African Bush Elephant',
-  [CommonName.DROMEDARY_CAMEL]: 'Dromedary Camel',
-  [CommonName.WOOLLY_MAMMOTH]: 'Woolly Mammoth',
-
-  // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
-  [CommonName.WILD_BOAR]: 'Wild Boar',
-  [CommonName.DOMESTIC_CAT]: 'Domestic Cat',
-  [CommonName.DOMESTIC_DOG]: 'Domestic Dog',
-  [CommonName.RED_FOX]: 'Red Fox',
-  [CommonName.LEOPARD]: 'Leopard',
-  [CommonName.AFRICAN_LION]: 'African Lion',
-  [CommonName.MOUNTAIN_GORILLA]: 'Mountain Gorilla',
-  [CommonName.COMMON_CHIMPANZEE]: 'Common Chimpanzee',
-  [CommonName.BORNEAN_ORANGUTAN]: 'Bornean Orangutan',
-  [CommonName.TIGER]: 'Tiger',
-  [CommonName.GRAY_WOLF]: 'Gray Wolf',
-  [CommonName.COMMON_HIPPOPOTAMUS]: 'Common Hippopotamus',
-
-  // Additional Invertebrates and Small Animals
-  [CommonName.RED_WOOD_ANT]: 'Red Wood Ant',
-  [CommonName.MONARCH_BUTTERFLY]: 'Monarch Butterfly',
-  [CommonName.MONARCH_CATERPILLAR]: 'Monarch Caterpillar',
-  [CommonName.BUTTERFLY_EGG]: 'Butterfly Egg',
-  [CommonName.HOUSE_CRICKET]: 'House Cricket',
-  [CommonName.SACRED_DUNG_BEETLE]: 'Sacred Dung Beetle',
-  [CommonName.DESERT_HAIRY_SCORPION]: 'Desert Hairy Scorpion',
-  [CommonName.ROMAN_SNAIL]: 'Roman Snail',
-  [CommonName.GARDEN_SPIDER]: 'Garden Spider',
-
-  // Additional Decomposers
-  [CommonName.COMMON_DECOMPOSER]: 'Common Decomposer',
-
-  // Reptiles and Amphibians
-  [CommonName.DESERT_LIZARD]: 'Desert Lizard',
-  [CommonName.BALL_PYTHON]: 'Ball Python',
-  [CommonName.COMMON_FROG]: 'Common Frog',
-  [CommonName.GREEN_SEA_TURTLE]: 'Green Sea Turtle',
-
-  // Legacy species (backward compatibility)
-  [CommonName.RABBIT]: 'European Rabbit',
-  [CommonName.BEAR]: 'American Black Bear'
-} as const;
+// ============================================================================
+// NOTE: SpeciesFileId enum has been removed as files now use enum names directly
+// Files are now loaded using nameId directly (e.g., CARD_OAK_TREE.json)
+// This eliminates the need for conversion between naming systems
+// ============================================================================
 
 // ============================================================================
 // UTILITY TYPES & CONSTANTS
@@ -851,7 +699,7 @@ export const IUCN_CONSERVATION_DATA = {
   },
   [ConservationStatus.LEAST_CONCERN]: {
     percentage: 50.51,
-    packRarity: 50646, // per 100,000 packs (adjusted to make total = 100,000)
+    packRarity: 50396, // per 100,000 packs (adjusted to make total = 100,000 including NOT_EVALUATED)
     description: 'Widespread and abundant',
     color: '#008000', // 💚 Green - Common
     emoji: '💚',
@@ -863,6 +711,14 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Inadequate information for assessment',
     color: '#808080', // 🩶 Gray - Special
     emoji: '🩶',
+    rarityName: 'Special'
+  },
+  [ConservationStatus.NOT_EVALUATED]: {
+    percentage: 0.25,
+    packRarity: 250, // per 100,000 packs
+    description: 'Not yet evaluated against the criteria',
+    color: '#C0C0C0', // 🤍 Silver - Special
+    emoji: '🤍',
     rarityName: 'Special'
   }
 } as const;

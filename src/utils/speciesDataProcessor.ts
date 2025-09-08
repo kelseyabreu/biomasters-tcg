@@ -1,4 +1,5 @@
 import { SpeciesData, Card, TrophicRole, Habitat, ConservationStatus, CardAbility } from '../types';
+import { CardId } from '@shared/enums';
 import { v4 as uuidv4 } from 'uuid';
 
 // Import all species data
@@ -436,7 +437,7 @@ export function determineEnergyCost(trophicRole: TrophicRole, power: number): nu
 /**
  * Converts species JSON data to TCG card
  */
-export function convertSpeciesToCard(speciesData: any): Card {
+export function convertSpeciesToCard(speciesData: any, cardId?: number): Card {
   // Handle the real JSON structure
   const identity = speciesData.identity;
   const body = speciesData.body;
@@ -454,9 +455,11 @@ export function convertSpeciesToCard(speciesData: any): Card {
 
   return {
     id: uuidv4(),
-    speciesName: speciesData.archetypeName || identity?.commonName || 'Unknown',
-    commonName: identity?.commonName || 'Unknown Species',
-    scientificName: identity?.scientificName || 'Unknown',
+    cardId: cardId || 0, // Use provided cardId or default to 0
+    nameId: identity?.commonName || 'UNKNOWN_CARD',
+    scientificNameId: identity?.scientificName || 'UNKNOWN_SCIENTIFIC',
+    descriptionId: 'DESC_UNKNOWN',
+    taxonomyId: 'TAXONOMY_UNKNOWN',
     trophicRole,
     habitat,
     power: stats.power,
@@ -650,7 +653,7 @@ export async function loadAllSpeciesCards(): Promise<Card[]> {
 
         const card = convertSpeciesToCard(speciesData as any);
         cards.push(card);
-        console.log(`✅ Successfully created card for ${speciesName}: ${card.commonName}`);
+        console.log(`✅ Successfully created card for ${speciesName}: ${card.nameId}`);
       } else {
         console.warn(`Species data not found for: ${speciesName}`);
       }
@@ -694,9 +697,11 @@ function createFallbackCards(): Card[] {
 
   return fallbackSpecies.map((species, index) => ({
     id: `fallback-${index}`,
-    speciesName: species.name,
-    commonName: species.common,
-    scientificName: `Fallback ${species.common.toLowerCase()}`,
+    cardId: index + 1000, // Use high numbers for fallback cards
+    nameId: species.common || 'FALLBACK_CARD',
+    scientificNameId: `FALLBACK_${species.common.toLowerCase()}`,
+    descriptionId: 'DESC_FALLBACK',
+    taxonomyId: 'TAXONOMY_FALLBACK',
     type: species.type,
     rarity: 'Common',
     cost: Math.floor(Math.random() * 5) + 1,

@@ -8,7 +8,7 @@ import CryptoJS from 'crypto-js';
 export interface OfflineAction {
   id: string;
   action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened';
-  species_name?: string;
+  cardId?: number;
   quantity?: number;
   pack_type?: string;
   deck_id?: string;
@@ -19,7 +19,7 @@ export interface OfflineAction {
 }
 
 export interface DeckCard {
-  speciesName: string;
+  cardId: number;
   quantity: number;
 }
 
@@ -34,8 +34,8 @@ export interface SavedDeck {
 export interface OfflineCollection {
   user_id: string | null; // null for guest mode
   device_id: string;
-  species_owned: {
-    [species_name: string]: {
+  cards_owned: {
+    [cardId: number]: {
       quantity: number;
       acquired_via: 'starter' | 'pack' | 'redeem' | 'reward';
       first_acquired: number;
@@ -69,7 +69,7 @@ export interface SyncResponse {
   }>;
   discarded_actions?: string[];
   new_server_state: {
-    species_owned: Record<string, any>;
+    cards_owned: Record<number, any>;
     eco_credits: number;
     xp_points: number;
   };
@@ -224,7 +224,7 @@ class OfflineSecurityService {
     const payload = JSON.stringify({
       id: action.id,
       action: action.action,
-      species_name: action.species_name,
+      cardId: action.cardId,
       quantity: action.quantity,
       pack_type: action.pack_type,
       deck_id: action.deck_id,
@@ -265,7 +265,7 @@ class OfflineSecurityService {
    */
   calculateCollectionHash(collection: Omit<OfflineCollection, 'collection_hash'>): string {
     const hashData = {
-      species_owned: collection.species_owned,
+      cards_owned: collection.cards_owned,
       eco_credits: collection.eco_credits,
       xp_points: collection.xp_points,
       device_id: collection.device_id,
@@ -299,7 +299,7 @@ class OfflineSecurityService {
       }
 
       console.log(`📦 Loaded collection for user: ${userIdToUse}`, {
-        species_count: Object.keys(collection.species_owned).length,
+        cards_count: Object.keys(collection.cards_owned).length,
         credits: collection.eco_credits,
         pending_actions: collection.action_queue.length
       });
@@ -326,7 +326,7 @@ class OfflineSecurityService {
     localStorage.setItem(storageKey, JSON.stringify(collectionWithHash));
 
     console.log(`💾 Saved collection for user: ${userIdToUse}`, {
-      species_count: Object.keys(collection.species_owned).length,
+      cards_count: Object.keys(collection.cards_owned).length,
       credits: collection.eco_credits,
       pending_actions: collection.action_queue.length,
       storageKey
@@ -340,7 +340,7 @@ class OfflineSecurityService {
     const collection: Omit<OfflineCollection, 'collection_hash'> = {
       user_id: userId,
       device_id: this.deviceId,
-      species_owned: {},
+      cards_owned: {},
       eco_credits: 100, // Starting credits
       xp_points: 0,
       action_queue: [],

@@ -40,7 +40,7 @@ describe('IUCN Conservation System Tests', () => {
 
     const leastConcernData = IUCN_CONSERVATION_DATA[ConservationStatus.LEAST_CONCERN];
     expect(leastConcernData.percentage).toBe(50.51);
-    expect(leastConcernData.packRarity).toBe(50646); // per 100,000 packs (adjusted to make total = 100,000)
+    expect(leastConcernData.packRarity).toBe(50396); // per 100,000 packs (adjusted to make total = 100,000)
     expect(leastConcernData.rarityName).toBe('Common');
 
     const dataDeficientData = IUCN_CONSERVATION_DATA[ConservationStatus.DATA_DEFICIENT];
@@ -88,7 +88,7 @@ describe('IUCN Conservation System Tests', () => {
       ConservationStatus.ENDANGERED,          // 10920 per 100,000
       ConservationStatus.DATA_DEFICIENT,      // 12970 per 100,000
       ConservationStatus.VULNERABLE,          // 13190 per 100,000
-      ConservationStatus.LEAST_CONCERN        // 50646 per 100,000 (most common)
+      ConservationStatus.LEAST_CONCERN        // 50396 per 100,000 (most common)
     ];
     
     for (let i = 0; i < rarityOrder.length - 1; i++) {

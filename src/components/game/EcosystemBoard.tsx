@@ -439,7 +439,7 @@ const EcosystemCardContent: React.FC<{ card: Card | undefined }> = ({ card }) =>
         />
       </div>
       <div className="card-info">
-        <h4>{card.commonName}</h4>
+        <h4>{card.nameId}</h4>
         <div className="card-stats">
           <span className="foodchain">FC: {card.phyloAttributes?.foodchainLevel}</span>
           <span className="scale">Scale: {card.phyloAttributes?.scale}</span>

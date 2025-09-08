@@ -34,7 +34,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         'decks.name',
         'decks.created_at',
         'decks.updated_at',
-        db.fn.count('deck_cards.species_name').as('card_count')
+        db.fn.count('deck_cards.card_id').as('card_count')
       ])
       .where('decks.user_id', '=', req.user.id)
       .groupBy(['decks.id', 'decks.name', 'decks.created_at', 'decks.updated_at'])
@@ -97,7 +97,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       .selectFrom('deck_cards')
       .select([
         'deck_cards.id as deck_card_id',
-        'deck_cards.species_name',
+        'deck_cards.card_id',
         'deck_cards.position_in_deck'
       ])
       .where('deck_cards.deck_id', '=', id)
@@ -159,16 +159,16 @@ router.post('/',
       const { name, cards } = req.body;
 
       // Validate that user owns all cards
-      const speciesNames = cards.map((c: any) => c.species_name);
+      const cardIds = cards.map((c: any) => c.card_id);
       const ownedCards = await db
         .selectFrom('user_cards')
-        .select(['species_name', 'quantity'])
+        .select(['card_id', 'quantity'])
         .where('user_id', '=', req.user.id)
-        .where('species_name', 'in', speciesNames)
+        .where('card_id', 'in', cardIds)
         .execute();
 
-      const ownedSpeciesNames = ownedCards.map(c => c.species_name);
-      const missingCards = speciesNames.filter((name: string) => !ownedSpeciesNames.includes(name));
+      const ownedCardIds = ownedCards.map(c => c.card_id);
+      const missingCards = cardIds.filter((id: number) => !ownedCardIds.includes(id));
 
       if (missingCards.length > 0) {
         res.status(400).json({
@@ -198,7 +198,7 @@ router.post('/',
           const card = cards[i];
           const deckCardData: NewDeckCard = {
             deck_id: deck?.id?.toString() || '0',
-            species_name: card.species_name,
+            card_id: card.card_id,
             position_in_deck: i + 1
           };
 

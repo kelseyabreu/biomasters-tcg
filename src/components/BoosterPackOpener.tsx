@@ -25,9 +25,10 @@ import {
   sparkles
 } from 'ionicons/icons';
 import { BoosterPackSystem, PackOpeningResult, displayConservationEducation } from '../utils/boosterPackSystem';
-import { Card as CardType, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
+import { Card as CardType, CONSERVATION_RARITY_DATA } from '../types';
+import { ConservationStatus } from '@shared/enums';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
+
 import Card from './Card';
 import './BoosterPackOpener.css';
 
@@ -57,7 +58,14 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
     // Log educational information
     console.log('🎴 Booster Pack Opened!');
     console.log('Cards received:', result.pack.cards.map(c => {
-      const localizedCard = getLocalizedCardData(c, localization);
+      // Get localized card data using enum-based localization system
+      const localizedCard = {
+        displayName: localization.getCardName(c.nameId as any),
+        displayScientificName: localization.getScientificName(c.scientificNameId as any),
+        nameId: c.nameId,
+        scientificNameId: c.scientificNameId,
+        descriptionId: c.descriptionId
+      };
       return `${localizedCard.displayName} (${c.conservationStatus})`;
     }));
     console.log('Pack value:', result.totalValue);
@@ -70,13 +78,16 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
   };
 
   const getRarityColor = (status: ConservationStatus) => {
-    const statusString = status.replace(/_/g, ' ');
-    switch (statusString) {
-      case 'Least Concern': return 'success';
-      case 'Near Threatened': return 'warning';
-      case 'Vulnerable': return 'warning';
-      case 'Endangered': return 'danger';
-      case 'Critically Endangered': return 'danger';
+    switch (status) {
+      case ConservationStatus.LEAST_CONCERN: return 'success';
+      case ConservationStatus.NEAR_THREATENED: return 'warning';
+      case ConservationStatus.VULNERABLE: return 'warning';
+      case ConservationStatus.ENDANGERED: return 'danger';
+      case ConservationStatus.CRITICALLY_ENDANGERED: return 'danger';
+      case ConservationStatus.EXTINCT: return 'dark';
+      case ConservationStatus.EXTINCT_IN_WILD: return 'dark';
+      case ConservationStatus.DATA_DEFICIENT: return 'medium';
+      case ConservationStatus.NOT_EVALUATED: return 'medium';
       default: return 'medium';
     }
   };
@@ -205,13 +216,16 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
                 <h4>Conservation Status Breakdown:</h4>
                 {Object.entries(lastOpenedPack.pack.rarityBreakdown)
                   .filter(([_, count]) => count > 0)
-                  .map(([status, count]) => (
-                    <div key={status} className="rarity-item">
-                      <IonBadge color={getRarityColor(status as ConservationStatus)}>
-                        {status.replace(/_/g, ' ')}: {count}
-                      </IonBadge>
-                    </div>
-                  ))}
+                  .map(([status, count]) => {
+                    const statusNum = parseInt(status) as ConservationStatus;
+                    return (
+                      <div key={status} className="rarity-item">
+                        <IonBadge color={getRarityColor(statusNum)}>
+                          {ConservationStatus[statusNum]}: {count}
+                        </IonBadge>
+                      </div>
+                    );
+                  })}
               </div>
             </IonCardContent>
           </IonCard>
@@ -240,18 +254,21 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
                   <IonLabel>Conservation Status Distribution</IonLabel>
                 </IonListHeader>
                 
-                {Object.entries(CONSERVATION_RARITY_DATA).map(([status, data]) => (
-                  <IonItem key={status}>
-                    <IonBadge color={getRarityColor(status as ConservationStatus)} slot="start">
-                      {status.replace(/_/g, ' ')}
-                    </IonBadge>
-                    <IonLabel>
-                      <h3>{data.percentage}% of all species</h3>
-                      <p>{data.description}</p>
-                      <p><strong>Pack rarity:</strong> {data.packRarity}/1000 cards</p>
-                    </IonLabel>
-                  </IonItem>
-                ))}
+                {Object.entries(CONSERVATION_RARITY_DATA).map(([status, data]) => {
+                  const statusNum = parseInt(status) as ConservationStatus;
+                  return (
+                    <IonItem key={status}>
+                      <IonBadge color={getRarityColor(statusNum)} slot="start">
+                        {ConservationStatus[statusNum]}
+                      </IonBadge>
+                      <IonLabel>
+                        <h3>{data.percentage}% of all species</h3>
+                        <p>{data.description}</p>
+                        <p><strong>Pack rarity:</strong> {data.packRarity}/1000 cards</p>
+                      </IonLabel>
+                    </IonItem>
+                  );
+                })}
               </IonList>
               
               <div className="educational-note">

@@ -7,8 +7,14 @@ module.exports = {
     '**/?(*.)+(spec|test).ts'
   ],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json'
+    }],
   },
+  moduleNameMapper: {
+    '^@biomasters/shared/(.*)$': '<rootDir>/../shared/$1'
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

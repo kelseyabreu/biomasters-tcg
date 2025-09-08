@@ -23,6 +23,7 @@ import {
 import { close, shield, trophy, leaf, star } from 'ionicons/icons';
 import { AuthForm } from './AuthForm';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -44,9 +45,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   } = useHybridGameStore();
 
   // Calculate collection stats for guest conversion messaging
-  const ownedSpecies = offlineCollection ? Object.keys(offlineCollection.species_owned).length : 0;
-  const totalCards = offlineCollection ?
-    Object.values(offlineCollection.species_owned).reduce((sum, species) => sum + species.quantity, 0) : 0;
+  const { ownedSpecies, totalCards } = offlineCollection ?
+    getCollectionStats(offlineCollection.cards_owned) :
+    { ownedSpecies: 0, totalCards: 0 };
   const credits = offlineCollection?.eco_credits || 0;
   const xpPoints = offlineCollection?.xp_points || 0;
 

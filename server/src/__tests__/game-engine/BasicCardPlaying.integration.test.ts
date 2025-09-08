@@ -5,8 +5,7 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
-import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
+import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
   KeywordId,
@@ -16,6 +15,7 @@ import {
 } from '@biomasters/shared';
 
 describe('Basic Card Playing - Integration Tests', () => {
+  let gameData: any;
   let engine: BioMastersEngine;
   let gameSettings: GameSettings;
 
@@ -46,9 +46,21 @@ describe('Basic Card Playing - Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    // Load game data directly from JSON (skip database seeding for now)
+    // Load game data directly from JSON files (no server required)
     console.log('📚 Loading game data from JSON files...');
-    await gameDataManager.loadGameData();
+    try {
+      gameData = await loadTestGameData();
+      console.log('✅ Game data loaded successfully');
+
+      // Debug: Check what was loaded
+      const cards = gameData.cards;
+      const abilities = gameData.abilities;
+      const keywords = gameData.keywords;
+      console.log(`📊 Loaded: ${cards.size} cards, ${abilities.size} abilities, ${keywords.size} keywords`);
+    } catch (error) {
+      console.error('❌ Failed to load game data:', error);
+      throw error;
+    }
 
     console.log('✅ Integration test setup complete');
   }, 30000); // 30 second timeout for data loading
@@ -70,33 +82,32 @@ describe('Basic Card Playing - Integration Tests', () => {
 
 
     // Use real game data loaded in beforeAll
-    const rawCards = gameDataManager.getCards();
-    const rawAbilities = gameDataManager.getAbilities();
-    const rawKeywords = gameDataManager.getKeywords();
+    const rawCards = gameData.cards;
+    const rawAbilities = gameData.abilities;
+    const rawKeywords = gameData.keywords;
 
     // Convert data to engine-expected format
     const cardDatabase = new Map<number, any>();
-    rawCards.forEach((card, cardId) => {
-      cardDatabase.set(Number(cardId), {
+    rawCards.forEach((card: any, cardId: number) => {
+      cardDatabase.set(cardId, {
         ...card,
-        cardId: Number(cardId),
+        id: cardId,
         victoryPoints: card.victoryPoints || 1 // Ensure required field
       });
     });
 
     const abilityDatabase = new Map<number, any>();
-    rawAbilities.forEach((ability, abilityId) => {
+    rawAbilities.forEach((ability: any, abilityId: number) => {
       abilityDatabase.set(abilityId, ability);
     });
 
     const keywordDatabase = new Map<number, string>();
-    rawKeywords.forEach((keyword, keywordId) => {
-      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    rawKeywords.forEach((keywordName: string, keywordId: number) => {
+      keywordDatabase.set(keywordId, keywordName);
     });
 
     // Create engine with real data using production constructor
-    const mockLocalizationManager = createMockLocalizationManager();
-    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, gameData.localizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('integration-test', [
@@ -119,11 +130,11 @@ describe('Basic Card Playing - Integration Tests', () => {
     const oakTreeId = CardId.OAK_TREE;
 
     // Verify card exists in loaded data
-    const cards = gameDataManager.getCards();
+    const cards = gameData.cards;
     const oakTree = cards.get(oakTreeId);
 
     expect(oakTree).toBeDefined();
-    expect(oakTree!.commonName).toBe('Oak Tree');
+    expect(oakTree!.nameId).toBe('CARD_OAK_TREE');
     expect(oakTree!.trophicLevel).toBe(TrophicLevel.PRODUCER);
     expect(oakTree!.keywords).toContain(KeywordId.TERRESTRIAL);
     expect(oakTree!.cost).toBeNull(); // Producers have no cost
@@ -139,14 +150,23 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: oakTreeId.toString(),
+        cardId: oakTreeId,
         position: adjacentPosition
       }
     };
 
     const result = engine.processAction(playCardAction);
-
     // Should succeed
+    if (!result.isValid) {
+      console.log('❌ Card placement failed:', result.errorMessage);
+      console.log('🎯 Action details:', JSON.stringify(playCardAction, null, 2));
+      console.log('🎮 Game state:', {
+        gamePhase: gameState.gamePhase,
+        turnPhase: gameState.turnPhase,
+        actionsRemaining: gameState.actionsRemaining,
+        handSize: gameState.players[0]?.hand.length
+      });
+    }
     expect(result.isValid).toBe(true);
     expect(result.errorMessage).toBeUndefined();
 
@@ -177,13 +197,12 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: oakTreeId.toString(),
+        cardId: oakTreeId,
         position: { x: 15, y: 15 } // Invalid - outside 10x10 grid
       }
     };
 
     const result = engine.processAction(playCardAction);
-
     // Should fail with specific validation error
     expect(result.isValid).toBe(false);
     expect(result.errorMessage).toContain('position');
@@ -198,7 +217,7 @@ describe('Basic Card Playing - Integration Tests', () => {
     const rabbitId = CardId.EUROPEAN_RABBIT;
 
     // Verify both cards exist and have compatible domains and trophic levels
-    const cards = gameDataManager.getCards();
+    const cards = gameData.cards;
     const oakTree = cards.get(oakTreeId);
     const rabbit = cards.get(rabbitId);
 
@@ -222,7 +241,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: oakTreeId.toString(),
+        cardId: oakTreeId,
         position: oakPosition
       }
     };
@@ -267,7 +286,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: rabbitId.toString(),
+        cardId: rabbitId,
         position: rabbitPosition!
       }
     };
@@ -302,7 +321,7 @@ describe('Basic Card Playing - Integration Tests', () => {
     const kelpId = CardId.GIANT_KELP; // Aquatic Producer
 
     // Verify domain incompatibility (both are producers, so trophic level is same)
-    const cards = gameDataManager.getCards();
+    const cards = gameData.cards;
     const oakTree = cards.get(oakTreeId);
     const kelp = cards.get(kelpId);
 
@@ -323,7 +342,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: oakTreeId.toString(),
+        cardId: oakTreeId,
         position: oakPosition
       }
     };
@@ -361,7 +380,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: kelpId.toString(),
+        cardId: kelpId,
         position: kelpPosition!
       }
     };
@@ -381,11 +400,11 @@ describe('Basic Card Playing - Integration Tests', () => {
     const oakTreeId = CardId.OAK_TREE;
 
     // Get CommonName from database
-    const cards = gameDataManager.getCards();
+    const cards = gameData.cards;
     const oakTree = cards.get(oakTreeId);
-    const commonName = oakTree!.commonName;
+    const commonName = oakTree!.nameId;
     
-    expect(commonName).toBe('Oak Tree');
+    expect(commonName).toBe('CARD_OAK_TREE');
 
     // Add card to hand using proper ID (engine expects numeric IDs)
     const gameState = engine.getGameState();
@@ -398,7 +417,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'player1',
       payload: {
-        cardId: oakTreeId.toString(), // Use proper numeric ID
+        cardId: oakTreeId, // Use proper numeric ID
         position: adjacentPosition
       }
     };
@@ -408,9 +427,9 @@ describe('Basic Card Playing - Integration Tests', () => {
   });
 
   test('should verify all real card data is properly loaded', async () => {
-    const cards = gameDataManager.getCards();
-    const abilities = gameDataManager.getAbilities();
-    const keywords = gameDataManager.getKeywords();
+    const cards = gameData.cards;
+    const abilities = gameData.abilities;
+    const keywords = gameData.keywords;
     
     // Verify we have real data (not empty)
     expect(cards.size).toBeGreaterThan(0);
@@ -420,18 +439,18 @@ describe('Basic Card Playing - Integration Tests', () => {
     // Verify specific cards exist with correct properties
     const oakTree = cards.get(CardId.OAK_TREE);
     expect(oakTree).toBeDefined();
-    expect(oakTree!.commonName).toBe('Oak Tree');
+    expect(oakTree!.nameId).toBe('CARD_OAK_TREE');
     expect(oakTree!.trophicLevel).toBe(TrophicLevel.PRODUCER);
     
     const rabbit = cards.get(CardId.EUROPEAN_RABBIT);
     expect(rabbit).toBeDefined();
-    expect(rabbit!.commonName).toBe('European Rabbit');
+    expect(rabbit!.nameId).toBe('CARD_EUROPEAN_RABBIT');
     expect(rabbit!.trophicLevel).toBe(TrophicLevel.PRIMARY_CONSUMER);
     
     // Verify keywords are properly loaded
     const terrestrialKeyword = keywords.get(KeywordId.TERRESTRIAL);
     expect(terrestrialKeyword).toBeDefined();
-    expect(terrestrialKeyword!.keyword_name).toBe('Terrestrial');
+    expect(terrestrialKeyword).toBe('TERRESTRIAL');
     
     console.log(`✅ Verified ${cards.size} cards, ${abilities.size} abilities, ${keywords.size} keywords loaded from database`);
   });

@@ -293,7 +293,7 @@ export class ClientGameEngine {
 
       // Use the enum IDs directly - no need to derive them!
       const card: ServerCardData = {
-        cardId: enumCard.cardId,
+        id: enumCard.cardId,
         nameId: enumCard.nameId,
         scientificNameId: enumCard.scientificNameId,
         descriptionId: enumCard.descriptionId,
@@ -305,7 +305,7 @@ export class ClientGameEngine {
         keywords: enumCard.keywords,
         abilities: enumCard.abilities,
         victoryPoints: enumCard.victoryPoints,
-        conservationStatus: enumCard.conservationStatus,
+        conservation_status: enumCard.conservationStatus,
         mass_kg: enumCard.mass_kg,
         lifespan_max_days: enumCard.lifespan_max_days,
         vision_range_m: enumCard.vision_range_m,
@@ -316,9 +316,12 @@ export class ClientGameEngine {
         swim_speed_m_per_hr: enumCard.swim_speed_m_per_hr,
         fly_speed_m_per_hr: enumCard.fly_speed_m_per_hr,
         offspring_count: enumCard.offspring_count,
-        gestation_days: enumCard.gestation_days
+        gestation_days: enumCard.gestation_days,
+        artwork_url: null,
+        iucn_id: null,
+        population_trend: null
       };
-      cardDatabase.set(card.cardId, card);
+      cardDatabase.set(card.id, card);
     });
 
     // For now, use empty ability and keyword databases

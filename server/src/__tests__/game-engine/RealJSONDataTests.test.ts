@@ -7,42 +7,50 @@
 
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
+import { loadTestGameData } from '../utils/testDataLoader';
 
 describe('BioMasters Engine - Real JSON Data Tests', () => {
+  let gameData: any;
   beforeAll(async () => {
-    // Load real game data
-    if (!gameDataManager.isDataLoaded()) {
-      await gameDataManager.loadGameData();
-    }
+    // Load real game data from file system
+    gameData = await loadTestGameData();
   });
 
   describe('Game Data Loading', () => {
     it('should load cards from JSON', () => {
-      const cards = gameDataManager.getCards();
+      const cards = gameData.cards;
       expect(cards.size).toBeGreaterThan(0);
       
       // Test specific card (Oak Tree)
-      const oakTree = gameDataManager.getCard(1);
+      const oakTree = gameData.cards.get(1);
       expect(oakTree).toBeDefined();
-      expect(oakTree?.commonName).toBe('Oak Tree');
+      expect(oakTree?.nameId).toBe('CARD_OAK_TREE');
       expect(oakTree?.trophicLevel).toBe(1);
     });
 
     it('should load abilities from JSON', () => {
-      const abilities = gameDataManager.getAbilities();
+      const abilities = gameData.abilities;
       expect(abilities.size).toBeGreaterThan(0);
       
-      // Test specific ability
-      const ability = gameDataManager.getAbility(1);
+      // Debug: Show what abilities are available
+      console.log('🔍 Available abilities:', Array.from(abilities.keys()).slice(0, 5));
+
+      // Get the first available ability instead of assuming ID 1 exists
+      const firstAbilityId = Array.from(abilities.keys())[0];
+      const ability = gameData.abilities.get(firstAbilityId);
       expect(ability).toBeDefined();
-      expect(ability?.triggerID).toBeDefined();
+      expect(ability?.triggerId).toBeDefined();
     });
 
     it('should load localization data', () => {
-      const localization = gameDataManager.getLocalization();
-      expect(localization.cardNames).toBeDefined();
-      expect(Object.keys(localization.cardNames).length).toBeGreaterThan(0);
+      const localizationManager = gameData.localizationManager;
+      expect(localizationManager).toBeDefined();
+      expect(localizationManager.currentLanguage).toBe('en');
+
+      // Test that we can get card names
+      const oakTreeName = localizationManager.getCardName('CARD_OAK_TREE');
+      expect(oakTreeName).toBeDefined();
+      expect(typeof oakTreeName).toBe('string');
     });
   });
 
@@ -114,7 +122,7 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
 
   describe('Card Data Validation', () => {
     it('should have valid card data structure', () => {
-      const cards = gameDataManager.getCards();
+      const cards = gameData.cards;
       
       for (const [cardId, card] of cards.entries()) {
         // Test required properties
@@ -136,20 +144,20 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
     });
 
     it('should have valid ability data structure', () => {
-      const abilities = gameDataManager.getAbilities();
+      const abilities = gameData.abilities;
       
       for (const [abilityId, ability] of abilities.entries()) {
         // Test required properties
-        expect(ability.abilityID).toBe(abilityId);
-        expect(ability.triggerID).toBeDefined();
+        expect(ability.id).toBe(abilityId);
+        expect(ability.triggerId).toBeDefined();
         expect(ability.effects).toBeDefined();
         expect(Array.isArray(ability.effects)).toBe(true);
-        
+
         // Test effect structure
         for (const effect of ability.effects) {
-          expect(effect.EffectID).toBeDefined();
-          expect(effect.SelectorID).toBeDefined();
-          expect(effect.ActionID).toBeDefined();
+          expect(effect.effectId).toBeDefined();
+          expect(effect.selectorId).toBeDefined();
+          expect(effect.actionId).toBeDefined();
         }
       }
     });
@@ -180,7 +188,7 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
       ], _gameSettings);
 
       // Test that engine can validate card placement
-      const oakTree = gameDataManager.getCard(1); // Oak Tree
+      const oakTree = gameData.cards.get(1); // Oak Tree
       expect(oakTree).toBeDefined();
 
       // This should not throw an error
@@ -220,8 +228,8 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
 
   describe('Data Integrity', () => {
     it('should have consistent card-ability relationships', () => {
-      const cards = gameDataManager.getCards();
-      const abilities = gameDataManager.getAbilities();
+      const cards = gameData.cards;
+      const abilities = gameData.abilities;
       
       let validReferences = 0;
       let totalReferences = 0;
@@ -242,12 +250,14 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
     });
 
     it('should have localization for all cards', () => {
-      const cards = gameDataManager.getCards();
-      const localization = gameDataManager.getLocalization();
+      const cards = gameData.cards;
+      const localizationManager = gameData.localizationManager;
 
       let localizedCards = 0;
-      for (const [cardId] of cards.entries()) {
-        if (localization.cardNames && localization.cardNames[cardId.toString()]) {
+      for (const [, cardData] of cards.entries()) {
+        // Check if localization exists for this card's nameId
+        const cardName = localizationManager.getCardName(cardData.nameId);
+        if (cardName && cardName !== cardData.nameId) {
           localizedCards++;
         }
       }

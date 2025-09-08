@@ -45,6 +45,7 @@ import {
   eyeOff
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
+import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 import { Avatar } from '../components/Avatar';
 import { updateProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
@@ -185,9 +186,9 @@ const Profile: React.FC = () => {
   };
 
   // Calculate profile stats
-  const ownedSpecies = offlineCollection ? Object.keys(offlineCollection.species_owned).length : 0;
-  const totalCards = offlineCollection ?
-    Object.values(offlineCollection.species_owned).reduce((sum, species) => sum + species.quantity, 0) : 0;
+  const { ownedSpecies, totalCards } = offlineCollection ?
+    getCollectionStats(offlineCollection.cards_owned) :
+    { ownedSpecies: 0, totalCards: 0 };
   const credits = offlineCollection?.eco_credits || 0;
   const xpPoints = offlineCollection?.xp_points || 0;
 

@@ -1,0 +1,592 @@
+"use strict";
+/**
+ * BioMasters TCG - Text ID Enums
+ *
+ * This file contains all text identifiers used for localization.
+ * These IDs are used to reference text content in localization files.
+ *
+ * IMPORTANT: These are the single source of truth for all localizable text.
+ * When adding new content, add the ID here first, then add translations.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TaxonomyId = exports.UITextId = exports.KeywordNameId = exports.AbilityDescriptionId = exports.AbilityNameId = exports.CardDescriptionId = exports.ScientificNameId = exports.CardNameId = exports.LANGUAGE_CONFIG = exports.SupportedLanguage = void 0;
+// ============================================================================
+// LANGUAGE AND LOCALIZATION ENUMS
+// ============================================================================
+/**
+ * Supported languages for localization
+ */
+var SupportedLanguage;
+(function (SupportedLanguage) {
+    SupportedLanguage["ENGLISH"] = "en";
+    SupportedLanguage["SPANISH"] = "es";
+})(SupportedLanguage || (exports.SupportedLanguage = SupportedLanguage = {}));
+/**
+ * Language configuration mapping
+ */
+exports.LANGUAGE_CONFIG = {
+    [SupportedLanguage.ENGLISH]: {
+        code: SupportedLanguage.ENGLISH,
+        name: 'English',
+        nativeName: 'English',
+        flag: '🇺🇸'
+    },
+    [SupportedLanguage.SPANISH]: {
+        code: SupportedLanguage.SPANISH,
+        name: 'Spanish',
+        nativeName: 'Español',
+        flag: '🇪🇸'
+    }
+};
+// ============================================================================
+// CARD TEXT IDS
+// ============================================================================
+/**
+ * Card Name IDs - Used for card display names
+ */
+var CardNameId;
+(function (CardNameId) {
+    // Producers (Trophic Level 1)
+    CardNameId["CARD_OAK_TREE"] = "CARD_OAK_TREE";
+    CardNameId["CARD_GIANT_KELP"] = "CARD_GIANT_KELP";
+    CardNameId["CARD_REED_CANARY_GRASS"] = "CARD_REED_CANARY_GRASS";
+    CardNameId["CARD_PHYTOPLANKTON"] = "CARD_PHYTOPLANKTON";
+    // Chemoautotrophs (Trophic Level 1)
+    CardNameId["CARD_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA"] = "CARD_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA";
+    CardNameId["CARD_IRON_SPRING_BACTERIA"] = "CARD_IRON_SPRING_BACTERIA";
+    CardNameId["CARD_VOLCANIC_HYDROGEN_BACTERIA"] = "CARD_VOLCANIC_HYDROGEN_BACTERIA";
+    CardNameId["CARD_NITRIFYING_SOIL_BACTERIA"] = "CARD_NITRIFYING_SOIL_BACTERIA";
+    CardNameId["CARD_SEDIMENT_CHEMOSYNTHETIC_BACTERIA"] = "CARD_SEDIMENT_CHEMOSYNTHETIC_BACTERIA";
+    // Primary Consumers (Trophic Level 2)
+    CardNameId["CARD_EUROPEAN_RABBIT"] = "CARD_EUROPEAN_RABBIT";
+    CardNameId["CARD_SOCKEYE_SALMON"] = "CARD_SOCKEYE_SALMON";
+    CardNameId["CARD_PACIFIC_KRILL"] = "CARD_PACIFIC_KRILL";
+    CardNameId["CARD_ZOOPLANKTON"] = "CARD_ZOOPLANKTON";
+    CardNameId["CARD_EUROPEAN_HONEY_BEE"] = "CARD_EUROPEAN_HONEY_BEE";
+    // Secondary/Tertiary Consumers (Trophic Level 3-4)
+    CardNameId["CARD_AMERICAN_BLACK_BEAR"] = "CARD_AMERICAN_BLACK_BEAR";
+    CardNameId["CARD_GREAT_WHITE_SHARK"] = "CARD_GREAT_WHITE_SHARK";
+    // Decomposers (Trophic Level -1)
+    CardNameId["CARD_MYCENA_MUSHROOM"] = "CARD_MYCENA_MUSHROOM";
+    CardNameId["CARD_TURKEY_VULTURE"] = "CARD_TURKEY_VULTURE";
+    CardNameId["CARD_SOIL_BACTERIA"] = "CARD_SOIL_BACTERIA";
+    CardNameId["CARD_DECOMPOSER_MUSHROOM"] = "CARD_DECOMPOSER_MUSHROOM";
+    // Detritivores (Trophic Level -2)
+    CardNameId["CARD_COMMON_EARTHWORM"] = "CARD_COMMON_EARTHWORM";
+    CardNameId["CARD_DUNG_BEETLE"] = "CARD_DUNG_BEETLE";
+    // Parasites
+    CardNameId["CARD_DEER_TICK"] = "CARD_DEER_TICK";
+    // Mutualists
+    CardNameId["CARD_MYCORRHIZAL_FUNGI"] = "CARD_MYCORRHIZAL_FUNGI";
+    CardNameId["CARD_NITROGEN_FIXING_BACTERIA"] = "CARD_NITROGEN_FIXING_BACTERIA";
+    // Additional Producers (Trees and Plants)
+    CardNameId["CARD_APPLE_TREE"] = "CARD_APPLE_TREE";
+    CardNameId["CARD_ENGLISH_OAK"] = "CARD_ENGLISH_OAK";
+    CardNameId["CARD_SCOTS_PINE"] = "CARD_SCOTS_PINE";
+    CardNameId["CARD_COCONUT_PALM"] = "CARD_COCONUT_PALM";
+    CardNameId["CARD_CHERRY_BLOSSOM"] = "CARD_CHERRY_BLOSSOM";
+    CardNameId["CARD_BUSH_CHERRY"] = "CARD_BUSH_CHERRY";
+    CardNameId["CARD_PRICKLY_PEAR_CACTUS"] = "CARD_PRICKLY_PEAR_CACTUS";
+    CardNameId["CARD_COMMON_GRAPE_VINE"] = "CARD_COMMON_GRAPE_VINE";
+    CardNameId["CARD_PERENNIAL_RYEGRASS"] = "CARD_PERENNIAL_RYEGRASS";
+    CardNameId["CARD_COMMON_DAISY"] = "CARD_COMMON_DAISY";
+    CardNameId["CARD_SPEARMINT"] = "CARD_SPEARMINT";
+    CardNameId["CARD_HIBISCUS"] = "CARD_HIBISCUS";
+    CardNameId["CARD_SWEET_BRIAR"] = "CARD_SWEET_BRIAR";
+    CardNameId["CARD_GARDEN_STRAWBERRY"] = "CARD_GARDEN_STRAWBERRY";
+    CardNameId["CARD_COMMON_SUNFLOWER"] = "CARD_COMMON_SUNFLOWER";
+    CardNameId["CARD_GARDEN_TULIP"] = "CARD_GARDEN_TULIP";
+    CardNameId["CARD_WHITE_CLOVER"] = "CARD_WHITE_CLOVER";
+    CardNameId["CARD_EELGRASS"] = "CARD_EELGRASS";
+    CardNameId["CARD_CORN_MAIZE"] = "CARD_CORN_MAIZE";
+    CardNameId["CARD_RICE"] = "CARD_RICE";
+    // Additional Primary Consumers (Herbivores)
+    CardNameId["CARD_NORTH_AMERICAN_BEAVER"] = "CARD_NORTH_AMERICAN_BEAVER";
+    CardNameId["CARD_AMERICAN_BISON"] = "CARD_AMERICAN_BISON";
+    CardNameId["CARD_WHITE_TAILED_DEER"] = "CARD_WHITE_TAILED_DEER";
+    CardNameId["CARD_EASTERN_CHIPMUNK"] = "CARD_EASTERN_CHIPMUNK";
+    CardNameId["CARD_DOMESTIC_CATTLE"] = "CARD_DOMESTIC_CATTLE";
+    CardNameId["CARD_DOMESTIC_GOAT"] = "CARD_DOMESTIC_GOAT";
+    CardNameId["CARD_GOLDEN_HAMSTER"] = "CARD_GOLDEN_HAMSTER";
+    CardNameId["CARD_EUROPEAN_HEDGEHOG"] = "CARD_EUROPEAN_HEDGEHOG";
+    CardNameId["CARD_DOMESTIC_HORSE"] = "CARD_DOMESTIC_HORSE";
+    CardNameId["CARD_KOALA"] = "CARD_KOALA";
+    CardNameId["CARD_LLAMA"] = "CARD_LLAMA";
+    CardNameId["CARD_HOUSE_MOUSE"] = "CARD_HOUSE_MOUSE";
+    CardNameId["CARD_OX"] = "CARD_OX";
+    CardNameId["CARD_GIANT_PANDA"] = "CARD_GIANT_PANDA";
+    CardNameId["CARD_DOMESTIC_PIG"] = "CARD_DOMESTIC_PIG";
+    CardNameId["CARD_COMMON_RACCOON"] = "CARD_COMMON_RACCOON";
+    CardNameId["CARD_BIGHORN_SHEEP"] = "CARD_BIGHORN_SHEEP";
+    CardNameId["CARD_WHITE_RHINOCEROS"] = "CARD_WHITE_RHINOCEROS";
+    CardNameId["CARD_ASIAN_WATER_BUFFALO"] = "CARD_ASIAN_WATER_BUFFALO";
+    CardNameId["CARD_PLAINS_ZEBRA"] = "CARD_PLAINS_ZEBRA";
+    CardNameId["CARD_GIRAFFE"] = "CARD_GIRAFFE";
+    CardNameId["CARD_AFRICAN_BUSH_ELEPHANT"] = "CARD_AFRICAN_BUSH_ELEPHANT";
+    CardNameId["CARD_DROMEDARY_CAMEL"] = "CARD_DROMEDARY_CAMEL";
+    CardNameId["CARD_WOOLLY_MAMMOTH"] = "CARD_WOOLLY_MAMMOTH";
+    // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
+    CardNameId["CARD_WILD_BOAR"] = "CARD_WILD_BOAR";
+    CardNameId["CARD_DOMESTIC_CAT"] = "CARD_DOMESTIC_CAT";
+    CardNameId["CARD_DOMESTIC_DOG"] = "CARD_DOMESTIC_DOG";
+    CardNameId["CARD_RED_FOX"] = "CARD_RED_FOX";
+    CardNameId["CARD_LEOPARD"] = "CARD_LEOPARD";
+    CardNameId["CARD_AFRICAN_LION"] = "CARD_AFRICAN_LION";
+    CardNameId["CARD_MOUNTAIN_GORILLA"] = "CARD_MOUNTAIN_GORILLA";
+    CardNameId["CARD_COMMON_CHIMPANZEE"] = "CARD_COMMON_CHIMPANZEE";
+    CardNameId["CARD_BORNEAN_ORANGUTAN"] = "CARD_BORNEAN_ORANGUTAN";
+    CardNameId["CARD_TIGER"] = "CARD_TIGER";
+    CardNameId["CARD_GRAY_WOLF"] = "CARD_GRAY_WOLF";
+    CardNameId["CARD_COMMON_HIPPOPOTAMUS"] = "CARD_COMMON_HIPPOPOTAMUS";
+    // Additional Invertebrates and Small Animals
+    CardNameId["CARD_RED_WOOD_ANT"] = "CARD_RED_WOOD_ANT";
+    CardNameId["CARD_MONARCH_BUTTERFLY"] = "CARD_MONARCH_BUTTERFLY";
+    CardNameId["CARD_MONARCH_CATERPILLAR"] = "CARD_MONARCH_CATERPILLAR";
+    CardNameId["CARD_BUTTERFLY_EGG"] = "CARD_BUTTERFLY_EGG";
+    CardNameId["CARD_HOUSE_CRICKET"] = "CARD_HOUSE_CRICKET";
+    CardNameId["CARD_SACRED_DUNG_BEETLE"] = "CARD_SACRED_DUNG_BEETLE";
+    CardNameId["CARD_DESERT_HAIRY_SCORPION"] = "CARD_DESERT_HAIRY_SCORPION";
+    CardNameId["CARD_ROMAN_SNAIL"] = "CARD_ROMAN_SNAIL";
+    CardNameId["CARD_GARDEN_SPIDER"] = "CARD_GARDEN_SPIDER";
+    // Additional Decomposers
+    CardNameId["CARD_COMMON_DECOMPOSER"] = "CARD_COMMON_DECOMPOSER";
+    // Reptiles and Amphibians
+    CardNameId["CARD_DESERT_LIZARD"] = "CARD_DESERT_LIZARD";
+    CardNameId["CARD_BALL_PYTHON"] = "CARD_BALL_PYTHON";
+    CardNameId["CARD_COMMON_FROG"] = "CARD_COMMON_FROG";
+    CardNameId["CARD_GREEN_SEA_TURTLE"] = "CARD_GREEN_SEA_TURTLE";
+})(CardNameId || (exports.CardNameId = CardNameId = {}));
+/**
+ * Scientific Name IDs - Used for scientific names (universal but may need alphabet conversion)
+ */
+var ScientificNameId;
+(function (ScientificNameId) {
+    // Producers
+    ScientificNameId["SCIENTIFIC_QUERCUS_ROBUR"] = "SCIENTIFIC_QUERCUS_ROBUR";
+    ScientificNameId["SCIENTIFIC_MACROCYSTIS_PYRIFERA"] = "SCIENTIFIC_MACROCYSTIS_PYRIFERA";
+    ScientificNameId["SCIENTIFIC_PHALARIS_ARUNDINACEA"] = "SCIENTIFIC_PHALARIS_ARUNDINACEA";
+    ScientificNameId["SCIENTIFIC_PHYTOPLANKTON_MIXED"] = "SCIENTIFIC_PHYTOPLANKTON_MIXED";
+    // Chemoautotrophs
+    ScientificNameId["SCIENTIFIC_THERMOTOGA_MARITIMA"] = "SCIENTIFIC_THERMOTOGA_MARITIMA";
+    ScientificNameId["SCIENTIFIC_ACIDITHIOBACILLUS_FERROOXIDANS"] = "SCIENTIFIC_ACIDITHIOBACILLUS_FERROOXIDANS";
+    ScientificNameId["SCIENTIFIC_PYROCOCCUS_FURIOSUS"] = "SCIENTIFIC_PYROCOCCUS_FURIOSUS";
+    ScientificNameId["SCIENTIFIC_NITROSOMONAS_EUROPAEA"] = "SCIENTIFIC_NITROSOMONAS_EUROPAEA";
+    ScientificNameId["SCIENTIFIC_BEGGIATOA_ALBA"] = "SCIENTIFIC_BEGGIATOA_ALBA";
+    // Primary Consumers
+    ScientificNameId["SCIENTIFIC_ORYCTOLAGUS_CUNICULUS"] = "SCIENTIFIC_ORYCTOLAGUS_CUNICULUS";
+    ScientificNameId["SCIENTIFIC_ONCORHYNCHUS_NERKA"] = "SCIENTIFIC_ONCORHYNCHUS_NERKA";
+    ScientificNameId["SCIENTIFIC_EUPHAUSIA_PACIFICA"] = "SCIENTIFIC_EUPHAUSIA_PACIFICA";
+    ScientificNameId["SCIENTIFIC_ZOOPLANKTON_MIXED"] = "SCIENTIFIC_ZOOPLANKTON_MIXED";
+    ScientificNameId["SCIENTIFIC_APIS_MELLIFERA"] = "SCIENTIFIC_APIS_MELLIFERA";
+    // Secondary/Tertiary Consumers
+    ScientificNameId["SCIENTIFIC_URSUS_AMERICANUS"] = "SCIENTIFIC_URSUS_AMERICANUS";
+    ScientificNameId["SCIENTIFIC_CARCHARODON_CARCHARIAS"] = "SCIENTIFIC_CARCHARODON_CARCHARIAS";
+    // Decomposers
+    ScientificNameId["SCIENTIFIC_MYCENA_GALERICULATA"] = "SCIENTIFIC_MYCENA_GALERICULATA";
+    ScientificNameId["SCIENTIFIC_CATHARTES_AURA"] = "SCIENTIFIC_CATHARTES_AURA";
+    ScientificNameId["SCIENTIFIC_BACILLUS_SUBTILIS"] = "SCIENTIFIC_BACILLUS_SUBTILIS";
+    ScientificNameId["SCIENTIFIC_AGARICUS_BISPORUS"] = "SCIENTIFIC_AGARICUS_BISPORUS";
+    // Detritivores
+    ScientificNameId["SCIENTIFIC_LUMBRICUS_TERRESTRIS"] = "SCIENTIFIC_LUMBRICUS_TERRESTRIS";
+    ScientificNameId["SCIENTIFIC_SCARABAEUS_LATICOLLIS"] = "SCIENTIFIC_SCARABAEUS_LATICOLLIS";
+    // Parasites
+    ScientificNameId["SCIENTIFIC_IXODES_SCAPULARIS"] = "SCIENTIFIC_IXODES_SCAPULARIS";
+    // Mutualists
+    ScientificNameId["SCIENTIFIC_GLOMUS_INTRARADICES"] = "SCIENTIFIC_GLOMUS_INTRARADICES";
+    ScientificNameId["SCIENTIFIC_RHIZOBIUM_LEGUMINOSARUM"] = "SCIENTIFIC_RHIZOBIUM_LEGUMINOSARUM";
+    // Additional Producers (Trees and Plants)
+    ScientificNameId["SCIENTIFIC_MALUS_PUMILA"] = "SCIENTIFIC_MALUS_PUMILA";
+    ScientificNameId["SCIENTIFIC_QUERCUS_ROBUR_ENGLISH"] = "SCIENTIFIC_QUERCUS_ROBUR_ENGLISH";
+    ScientificNameId["SCIENTIFIC_PINUS_SYLVESTRIS"] = "SCIENTIFIC_PINUS_SYLVESTRIS";
+    ScientificNameId["SCIENTIFIC_COCOS_NUCIFERA"] = "SCIENTIFIC_COCOS_NUCIFERA";
+    ScientificNameId["SCIENTIFIC_PRUNUS_SERRULATA"] = "SCIENTIFIC_PRUNUS_SERRULATA";
+    ScientificNameId["SCIENTIFIC_PRUNUS_PUMILA"] = "SCIENTIFIC_PRUNUS_PUMILA";
+    ScientificNameId["SCIENTIFIC_OPUNTIA_FICUS_INDICA"] = "SCIENTIFIC_OPUNTIA_FICUS_INDICA";
+    ScientificNameId["SCIENTIFIC_VITIS_VINIFERA"] = "SCIENTIFIC_VITIS_VINIFERA";
+    ScientificNameId["SCIENTIFIC_LOLIUM_PERENNE"] = "SCIENTIFIC_LOLIUM_PERENNE";
+    ScientificNameId["SCIENTIFIC_BELLIS_PERENNIS"] = "SCIENTIFIC_BELLIS_PERENNIS";
+    ScientificNameId["SCIENTIFIC_MENTHA_SPICATA"] = "SCIENTIFIC_MENTHA_SPICATA";
+    ScientificNameId["SCIENTIFIC_HIBISCUS_ROSA_SINENSIS"] = "SCIENTIFIC_HIBISCUS_ROSA_SINENSIS";
+    ScientificNameId["SCIENTIFIC_ROSA_RUBIGINOSA"] = "SCIENTIFIC_ROSA_RUBIGINOSA";
+    ScientificNameId["SCIENTIFIC_FRAGARIA_ANANASSA"] = "SCIENTIFIC_FRAGARIA_ANANASSA";
+    ScientificNameId["SCIENTIFIC_HELIANTHUS_ANNUUS"] = "SCIENTIFIC_HELIANTHUS_ANNUUS";
+    ScientificNameId["SCIENTIFIC_TULIPA_GESNERIANA"] = "SCIENTIFIC_TULIPA_GESNERIANA";
+    ScientificNameId["SCIENTIFIC_TRIFOLIUM_REPENS"] = "SCIENTIFIC_TRIFOLIUM_REPENS";
+    ScientificNameId["SCIENTIFIC_ZOSTERA_MARINA"] = "SCIENTIFIC_ZOSTERA_MARINA";
+    ScientificNameId["SCIENTIFIC_ZEA_MAYS"] = "SCIENTIFIC_ZEA_MAYS";
+    ScientificNameId["SCIENTIFIC_ORYZA_SATIVA"] = "SCIENTIFIC_ORYZA_SATIVA";
+    // Additional Primary Consumers (Herbivores)
+    ScientificNameId["SCIENTIFIC_CASTOR_CANADENSIS"] = "SCIENTIFIC_CASTOR_CANADENSIS";
+    ScientificNameId["SCIENTIFIC_BISON_BISON"] = "SCIENTIFIC_BISON_BISON";
+    ScientificNameId["SCIENTIFIC_ODOCOILEUS_VIRGINIANUS"] = "SCIENTIFIC_ODOCOILEUS_VIRGINIANUS";
+    ScientificNameId["SCIENTIFIC_TAMIAS_STRIATUS"] = "SCIENTIFIC_TAMIAS_STRIATUS";
+    ScientificNameId["SCIENTIFIC_BOS_TAURUS"] = "SCIENTIFIC_BOS_TAURUS";
+    ScientificNameId["SCIENTIFIC_CAPRA_AEGAGRUS_HIRCUS"] = "SCIENTIFIC_CAPRA_AEGAGRUS_HIRCUS";
+    ScientificNameId["SCIENTIFIC_MESOCRICETUS_AURATUS"] = "SCIENTIFIC_MESOCRICETUS_AURATUS";
+    ScientificNameId["SCIENTIFIC_ERINACEUS_EUROPAEUS"] = "SCIENTIFIC_ERINACEUS_EUROPAEUS";
+    ScientificNameId["SCIENTIFIC_EQUUS_CABALLUS"] = "SCIENTIFIC_EQUUS_CABALLUS";
+    ScientificNameId["SCIENTIFIC_PHASCOLARCTOS_CINEREUS"] = "SCIENTIFIC_PHASCOLARCTOS_CINEREUS";
+    ScientificNameId["SCIENTIFIC_LAMA_GLAMA"] = "SCIENTIFIC_LAMA_GLAMA";
+    ScientificNameId["SCIENTIFIC_MUS_MUSCULUS"] = "SCIENTIFIC_MUS_MUSCULUS";
+    ScientificNameId["SCIENTIFIC_BOS_TAURUS_OX"] = "SCIENTIFIC_BOS_TAURUS_OX";
+    ScientificNameId["SCIENTIFIC_AILUROPODA_MELANOLEUCA"] = "SCIENTIFIC_AILUROPODA_MELANOLEUCA";
+    ScientificNameId["SCIENTIFIC_SUS_SCROFA_DOMESTICUS"] = "SCIENTIFIC_SUS_SCROFA_DOMESTICUS";
+    ScientificNameId["SCIENTIFIC_PROCYON_LOTOR"] = "SCIENTIFIC_PROCYON_LOTOR";
+    ScientificNameId["SCIENTIFIC_OVIS_CANADENSIS"] = "SCIENTIFIC_OVIS_CANADENSIS";
+    ScientificNameId["SCIENTIFIC_CERATOTHERIUM_SIMUM"] = "SCIENTIFIC_CERATOTHERIUM_SIMUM";
+    ScientificNameId["SCIENTIFIC_BUBALUS_BUBALIS"] = "SCIENTIFIC_BUBALUS_BUBALIS";
+    ScientificNameId["SCIENTIFIC_EQUUS_QUAGGA"] = "SCIENTIFIC_EQUUS_QUAGGA";
+    ScientificNameId["SCIENTIFIC_GIRAFFA_CAMELOPARDALIS"] = "SCIENTIFIC_GIRAFFA_CAMELOPARDALIS";
+    ScientificNameId["SCIENTIFIC_LOXODONTA_AFRICANA"] = "SCIENTIFIC_LOXODONTA_AFRICANA";
+    ScientificNameId["SCIENTIFIC_CAMELUS_DROMEDARIUS"] = "SCIENTIFIC_CAMELUS_DROMEDARIUS";
+    ScientificNameId["SCIENTIFIC_MAMMUTHUS_PRIMIGENIUS"] = "SCIENTIFIC_MAMMUTHUS_PRIMIGENIUS";
+    // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
+    ScientificNameId["SCIENTIFIC_SUS_SCROFA"] = "SCIENTIFIC_SUS_SCROFA";
+    ScientificNameId["SCIENTIFIC_FELIS_CATUS"] = "SCIENTIFIC_FELIS_CATUS";
+    ScientificNameId["SCIENTIFIC_CANIS_LUPUS_FAMILIARIS"] = "SCIENTIFIC_CANIS_LUPUS_FAMILIARIS";
+    ScientificNameId["SCIENTIFIC_VULPES_VULPES"] = "SCIENTIFIC_VULPES_VULPES";
+    ScientificNameId["SCIENTIFIC_PANTHERA_PARDUS"] = "SCIENTIFIC_PANTHERA_PARDUS";
+    ScientificNameId["SCIENTIFIC_PANTHERA_LEO"] = "SCIENTIFIC_PANTHERA_LEO";
+    ScientificNameId["SCIENTIFIC_GORILLA_BERINGEI_BERINGEI"] = "SCIENTIFIC_GORILLA_BERINGEI_BERINGEI";
+    ScientificNameId["SCIENTIFIC_PAN_TROGLODYTES"] = "SCIENTIFIC_PAN_TROGLODYTES";
+    ScientificNameId["SCIENTIFIC_PONGO_PYGMAEUS"] = "SCIENTIFIC_PONGO_PYGMAEUS";
+    ScientificNameId["SCIENTIFIC_PANTHERA_TIGRIS"] = "SCIENTIFIC_PANTHERA_TIGRIS";
+    ScientificNameId["SCIENTIFIC_CANIS_LUPUS"] = "SCIENTIFIC_CANIS_LUPUS";
+    ScientificNameId["SCIENTIFIC_HIPPOPOTAMUS_AMPHIBIUS"] = "SCIENTIFIC_HIPPOPOTAMUS_AMPHIBIUS";
+    // Additional Invertebrates and Small Animals
+    ScientificNameId["SCIENTIFIC_FORMICA_RUFA"] = "SCIENTIFIC_FORMICA_RUFA";
+    ScientificNameId["SCIENTIFIC_DANAUS_PLEXIPPUS_ADULT"] = "SCIENTIFIC_DANAUS_PLEXIPPUS_ADULT";
+    ScientificNameId["SCIENTIFIC_DANAUS_PLEXIPPUS_LARVA"] = "SCIENTIFIC_DANAUS_PLEXIPPUS_LARVA";
+    ScientificNameId["SCIENTIFIC_DANAUS_PLEXIPPUS_OVUM"] = "SCIENTIFIC_DANAUS_PLEXIPPUS_OVUM";
+    ScientificNameId["SCIENTIFIC_ACHETA_DOMESTICUS"] = "SCIENTIFIC_ACHETA_DOMESTICUS";
+    ScientificNameId["SCIENTIFIC_SCARABAEUS_SACER"] = "SCIENTIFIC_SCARABAEUS_SACER";
+    ScientificNameId["SCIENTIFIC_HADRURUS_ARIZONENSIS"] = "SCIENTIFIC_HADRURUS_ARIZONENSIS";
+    ScientificNameId["SCIENTIFIC_HELIX_POMATIA"] = "SCIENTIFIC_HELIX_POMATIA";
+    ScientificNameId["SCIENTIFIC_ARANEUS_DIADEMATUS"] = "SCIENTIFIC_ARANEUS_DIADEMATUS";
+    // Additional Decomposers
+    ScientificNameId["SCIENTIFIC_AGARICUS_BISPORUS_DECOMPOSER"] = "SCIENTIFIC_AGARICUS_BISPORUS_DECOMPOSER";
+    // Reptiles and Amphibians
+    ScientificNameId["SCIENTIFIC_LACERTA_DESERTI"] = "SCIENTIFIC_LACERTA_DESERTI";
+    ScientificNameId["SCIENTIFIC_PYTHON_REGIUS"] = "SCIENTIFIC_PYTHON_REGIUS";
+    ScientificNameId["SCIENTIFIC_RANA_TEMPORARIA"] = "SCIENTIFIC_RANA_TEMPORARIA";
+    ScientificNameId["SCIENTIFIC_CHELONIA_MYDAS"] = "SCIENTIFIC_CHELONIA_MYDAS";
+})(ScientificNameId || (exports.ScientificNameId = ScientificNameId = {}));
+/**
+ * Card Description IDs - Used for card flavor text and descriptions
+ */
+var CardDescriptionId;
+(function (CardDescriptionId) {
+    // Producers
+    CardDescriptionId["DESC_OAK_TREE"] = "DESC_OAK_TREE";
+    CardDescriptionId["DESC_GIANT_KELP"] = "DESC_GIANT_KELP";
+    CardDescriptionId["DESC_REED_CANARY_GRASS"] = "DESC_REED_CANARY_GRASS";
+    CardDescriptionId["DESC_PHYTOPLANKTON"] = "DESC_PHYTOPLANKTON";
+    // Chemoautotrophs
+    CardDescriptionId["DESC_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA"] = "DESC_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA";
+    CardDescriptionId["DESC_IRON_SPRING_BACTERIA"] = "DESC_IRON_SPRING_BACTERIA";
+    CardDescriptionId["DESC_VOLCANIC_HYDROGEN_BACTERIA"] = "DESC_VOLCANIC_HYDROGEN_BACTERIA";
+    CardDescriptionId["DESC_NITRIFYING_SOIL_BACTERIA"] = "DESC_NITRIFYING_SOIL_BACTERIA";
+    CardDescriptionId["DESC_SEDIMENT_CHEMOSYNTHETIC_BACTERIA"] = "DESC_SEDIMENT_CHEMOSYNTHETIC_BACTERIA";
+    // Primary Consumers
+    CardDescriptionId["DESC_EUROPEAN_RABBIT"] = "DESC_EUROPEAN_RABBIT";
+    CardDescriptionId["DESC_SOCKEYE_SALMON"] = "DESC_SOCKEYE_SALMON";
+    CardDescriptionId["DESC_PACIFIC_KRILL"] = "DESC_PACIFIC_KRILL";
+    CardDescriptionId["DESC_ZOOPLANKTON"] = "DESC_ZOOPLANKTON";
+    CardDescriptionId["DESC_EUROPEAN_HONEY_BEE"] = "DESC_EUROPEAN_HONEY_BEE";
+    // Secondary/Tertiary Consumers
+    CardDescriptionId["DESC_AMERICAN_BLACK_BEAR"] = "DESC_AMERICAN_BLACK_BEAR";
+    CardDescriptionId["DESC_GREAT_WHITE_SHARK"] = "DESC_GREAT_WHITE_SHARK";
+    // Decomposers
+    CardDescriptionId["DESC_MYCENA_MUSHROOM"] = "DESC_MYCENA_MUSHROOM";
+    CardDescriptionId["DESC_TURKEY_VULTURE"] = "DESC_TURKEY_VULTURE";
+    CardDescriptionId["DESC_SOIL_BACTERIA"] = "DESC_SOIL_BACTERIA";
+    CardDescriptionId["DESC_DECOMPOSER_MUSHROOM"] = "DESC_DECOMPOSER_MUSHROOM";
+    // Detritivores
+    CardDescriptionId["DESC_COMMON_EARTHWORM"] = "DESC_COMMON_EARTHWORM";
+    CardDescriptionId["DESC_DUNG_BEETLE"] = "DESC_DUNG_BEETLE";
+    // Parasites
+    CardDescriptionId["DESC_DEER_TICK"] = "DESC_DEER_TICK";
+    // Mutualists
+    CardDescriptionId["DESC_MYCORRHIZAL_FUNGI"] = "DESC_MYCORRHIZAL_FUNGI";
+    CardDescriptionId["DESC_NITROGEN_FIXING_BACTERIA"] = "DESC_NITROGEN_FIXING_BACTERIA";
+    // Additional Producers (Trees and Plants)
+    CardDescriptionId["DESC_APPLE_TREE"] = "DESC_APPLE_TREE";
+    CardDescriptionId["DESC_ENGLISH_OAK"] = "DESC_ENGLISH_OAK";
+    CardDescriptionId["DESC_SCOTS_PINE"] = "DESC_SCOTS_PINE";
+    CardDescriptionId["DESC_COCONUT_PALM"] = "DESC_COCONUT_PALM";
+    CardDescriptionId["DESC_CHERRY_BLOSSOM"] = "DESC_CHERRY_BLOSSOM";
+    CardDescriptionId["DESC_BUSH_CHERRY"] = "DESC_BUSH_CHERRY";
+    CardDescriptionId["DESC_PRICKLY_PEAR_CACTUS"] = "DESC_PRICKLY_PEAR_CACTUS";
+    CardDescriptionId["DESC_COMMON_GRAPE_VINE"] = "DESC_COMMON_GRAPE_VINE";
+    CardDescriptionId["DESC_PERENNIAL_RYEGRASS"] = "DESC_PERENNIAL_RYEGRASS";
+    CardDescriptionId["DESC_COMMON_DAISY"] = "DESC_COMMON_DAISY";
+    CardDescriptionId["DESC_SPEARMINT"] = "DESC_SPEARMINT";
+    CardDescriptionId["DESC_HIBISCUS"] = "DESC_HIBISCUS";
+    CardDescriptionId["DESC_SWEET_BRIAR"] = "DESC_SWEET_BRIAR";
+    CardDescriptionId["DESC_GARDEN_STRAWBERRY"] = "DESC_GARDEN_STRAWBERRY";
+    CardDescriptionId["DESC_COMMON_SUNFLOWER"] = "DESC_COMMON_SUNFLOWER";
+    CardDescriptionId["DESC_GARDEN_TULIP"] = "DESC_GARDEN_TULIP";
+    CardDescriptionId["DESC_WHITE_CLOVER"] = "DESC_WHITE_CLOVER";
+    CardDescriptionId["DESC_EELGRASS"] = "DESC_EELGRASS";
+    CardDescriptionId["DESC_CORN_MAIZE"] = "DESC_CORN_MAIZE";
+    CardDescriptionId["DESC_RICE"] = "DESC_RICE";
+    // Additional Primary Consumers (Herbivores)
+    CardDescriptionId["DESC_NORTH_AMERICAN_BEAVER"] = "DESC_NORTH_AMERICAN_BEAVER";
+    CardDescriptionId["DESC_AMERICAN_BISON"] = "DESC_AMERICAN_BISON";
+    CardDescriptionId["DESC_WHITE_TAILED_DEER"] = "DESC_WHITE_TAILED_DEER";
+    CardDescriptionId["DESC_EASTERN_CHIPMUNK"] = "DESC_EASTERN_CHIPMUNK";
+    CardDescriptionId["DESC_DOMESTIC_CATTLE"] = "DESC_DOMESTIC_CATTLE";
+    CardDescriptionId["DESC_DOMESTIC_GOAT"] = "DESC_DOMESTIC_GOAT";
+    CardDescriptionId["DESC_GOLDEN_HAMSTER"] = "DESC_GOLDEN_HAMSTER";
+    CardDescriptionId["DESC_EUROPEAN_HEDGEHOG"] = "DESC_EUROPEAN_HEDGEHOG";
+    CardDescriptionId["DESC_DOMESTIC_HORSE"] = "DESC_DOMESTIC_HORSE";
+    CardDescriptionId["DESC_KOALA"] = "DESC_KOALA";
+    CardDescriptionId["DESC_LLAMA"] = "DESC_LLAMA";
+    CardDescriptionId["DESC_HOUSE_MOUSE"] = "DESC_HOUSE_MOUSE";
+    CardDescriptionId["DESC_OX"] = "DESC_OX";
+    CardDescriptionId["DESC_GIANT_PANDA"] = "DESC_GIANT_PANDA";
+    CardDescriptionId["DESC_DOMESTIC_PIG"] = "DESC_DOMESTIC_PIG";
+    CardDescriptionId["DESC_COMMON_RACCOON"] = "DESC_COMMON_RACCOON";
+    CardDescriptionId["DESC_BIGHORN_SHEEP"] = "DESC_BIGHORN_SHEEP";
+    CardDescriptionId["DESC_WHITE_RHINOCEROS"] = "DESC_WHITE_RHINOCEROS";
+    CardDescriptionId["DESC_ASIAN_WATER_BUFFALO"] = "DESC_ASIAN_WATER_BUFFALO";
+    CardDescriptionId["DESC_PLAINS_ZEBRA"] = "DESC_PLAINS_ZEBRA";
+    CardDescriptionId["DESC_GIRAFFE"] = "DESC_GIRAFFE";
+    CardDescriptionId["DESC_AFRICAN_BUSH_ELEPHANT"] = "DESC_AFRICAN_BUSH_ELEPHANT";
+    CardDescriptionId["DESC_DROMEDARY_CAMEL"] = "DESC_DROMEDARY_CAMEL";
+    CardDescriptionId["DESC_WOOLLY_MAMMOTH"] = "DESC_WOOLLY_MAMMOTH";
+    // Additional Secondary/Tertiary Consumers (Carnivores and Omnivores)
+    CardDescriptionId["DESC_WILD_BOAR"] = "DESC_WILD_BOAR";
+    CardDescriptionId["DESC_DOMESTIC_CAT"] = "DESC_DOMESTIC_CAT";
+    CardDescriptionId["DESC_DOMESTIC_DOG"] = "DESC_DOMESTIC_DOG";
+    CardDescriptionId["DESC_RED_FOX"] = "DESC_RED_FOX";
+    CardDescriptionId["DESC_LEOPARD"] = "DESC_LEOPARD";
+    CardDescriptionId["DESC_AFRICAN_LION"] = "DESC_AFRICAN_LION";
+    CardDescriptionId["DESC_MOUNTAIN_GORILLA"] = "DESC_MOUNTAIN_GORILLA";
+    CardDescriptionId["DESC_COMMON_CHIMPANZEE"] = "DESC_COMMON_CHIMPANZEE";
+    CardDescriptionId["DESC_BORNEAN_ORANGUTAN"] = "DESC_BORNEAN_ORANGUTAN";
+    CardDescriptionId["DESC_TIGER"] = "DESC_TIGER";
+    CardDescriptionId["DESC_GRAY_WOLF"] = "DESC_GRAY_WOLF";
+    CardDescriptionId["DESC_COMMON_HIPPOPOTAMUS"] = "DESC_COMMON_HIPPOPOTAMUS";
+    // Additional Invertebrates and Small Animals
+    CardDescriptionId["DESC_RED_WOOD_ANT"] = "DESC_RED_WOOD_ANT";
+    CardDescriptionId["DESC_MONARCH_BUTTERFLY"] = "DESC_MONARCH_BUTTERFLY";
+    CardDescriptionId["DESC_MONARCH_CATERPILLAR"] = "DESC_MONARCH_CATERPILLAR";
+    CardDescriptionId["DESC_BUTTERFLY_EGG"] = "DESC_BUTTERFLY_EGG";
+    CardDescriptionId["DESC_HOUSE_CRICKET"] = "DESC_HOUSE_CRICKET";
+    CardDescriptionId["DESC_SACRED_DUNG_BEETLE"] = "DESC_SACRED_DUNG_BEETLE";
+    CardDescriptionId["DESC_DESERT_HAIRY_SCORPION"] = "DESC_DESERT_HAIRY_SCORPION";
+    CardDescriptionId["DESC_ROMAN_SNAIL"] = "DESC_ROMAN_SNAIL";
+    CardDescriptionId["DESC_GARDEN_SPIDER"] = "DESC_GARDEN_SPIDER";
+    // Additional Decomposers
+    CardDescriptionId["DESC_COMMON_DECOMPOSER"] = "DESC_COMMON_DECOMPOSER";
+    // Reptiles and Amphibians
+    CardDescriptionId["DESC_DESERT_LIZARD"] = "DESC_DESERT_LIZARD";
+    CardDescriptionId["DESC_BALL_PYTHON"] = "DESC_BALL_PYTHON";
+    CardDescriptionId["DESC_COMMON_FROG"] = "DESC_COMMON_FROG";
+    CardDescriptionId["DESC_GREEN_SEA_TURTLE"] = "DESC_GREEN_SEA_TURTLE";
+})(CardDescriptionId || (exports.CardDescriptionId = CardDescriptionId = {}));
+// ============================================================================
+// ABILITY TEXT IDS
+// ============================================================================
+/**
+ * Ability Name IDs - Used for ability names
+ */
+var AbilityNameId;
+(function (AbilityNameId) {
+    AbilityNameId["ABILITY_WATERSHED_PREDATOR"] = "ABILITY_WATERSHED_PREDATOR";
+    AbilityNameId["ABILITY_APEX_PREDATOR"] = "ABILITY_APEX_PREDATOR";
+    AbilityNameId["ABILITY_SCAVENGE"] = "ABILITY_SCAVENGE";
+    AbilityNameId["ABILITY_PARASITIC_DRAIN"] = "ABILITY_PARASITIC_DRAIN";
+    AbilityNameId["ABILITY_RECYCLER"] = "ABILITY_RECYCLER";
+    AbilityNameId["ABILITY_PHOTOSYNTHESIS"] = "ABILITY_PHOTOSYNTHESIS";
+    AbilityNameId["ABILITY_PACK_HUNTER"] = "ABILITY_PACK_HUNTER";
+    AbilityNameId["ABILITY_FILTER_FEEDER"] = "ABILITY_FILTER_FEEDER";
+    AbilityNameId["ABILITY_METAMORPHOSIS"] = "ABILITY_METAMORPHOSIS";
+    AbilityNameId["ABILITY_DECOMPOSER"] = "ABILITY_DECOMPOSER";
+    AbilityNameId["ABILITY_VENOMOUS"] = "ABILITY_VENOMOUS";
+    AbilityNameId["ABILITY_FRUGIVORE"] = "ABILITY_FRUGIVORE";
+    AbilityNameId["ABILITY_INSECTIVORE"] = "ABILITY_INSECTIVORE";
+    AbilityNameId["ABILITY_HYPERCARNIVORE"] = "ABILITY_HYPERCARNIVORE";
+    AbilityNameId["ABILITY_MIGRATORY"] = "ABILITY_MIGRATORY";
+    AbilityNameId["ABILITY_CHEMICAL_OPPORTUNIST"] = "ABILITY_CHEMICAL_OPPORTUNIST";
+    AbilityNameId["ABILITY_DETRITAL_PROCESSOR"] = "ABILITY_DETRITAL_PROCESSOR";
+})(AbilityNameId || (exports.AbilityNameId = AbilityNameId = {}));
+/**
+ * Ability Description IDs - Used for ability descriptions and rules text
+ */
+var AbilityDescriptionId;
+(function (AbilityDescriptionId) {
+    AbilityDescriptionId["DESC_WATERSHED_PREDATOR"] = "DESC_WATERSHED_PREDATOR";
+    AbilityDescriptionId["DESC_APEX_PREDATOR"] = "DESC_APEX_PREDATOR";
+    AbilityDescriptionId["DESC_SCAVENGE"] = "DESC_SCAVENGE";
+    AbilityDescriptionId["DESC_PARASITIC_DRAIN"] = "DESC_PARASITIC_DRAIN";
+    AbilityDescriptionId["DESC_RECYCLER"] = "DESC_RECYCLER";
+    AbilityDescriptionId["DESC_PHOTOSYNTHESIS"] = "DESC_PHOTOSYNTHESIS";
+    AbilityDescriptionId["DESC_PACK_HUNTER"] = "DESC_PACK_HUNTER";
+    AbilityDescriptionId["DESC_FILTER_FEEDER"] = "DESC_FILTER_FEEDER";
+    AbilityDescriptionId["DESC_METAMORPHOSIS"] = "DESC_METAMORPHOSIS";
+    AbilityDescriptionId["DESC_DECOMPOSER"] = "DESC_DECOMPOSER";
+    AbilityDescriptionId["DESC_VENOMOUS"] = "DESC_VENOMOUS";
+    AbilityDescriptionId["DESC_FRUGIVORE"] = "DESC_FRUGIVORE";
+    AbilityDescriptionId["DESC_INSECTIVORE"] = "DESC_INSECTIVORE";
+    AbilityDescriptionId["DESC_HYPERCARNIVORE"] = "DESC_HYPERCARNIVORE";
+    AbilityDescriptionId["DESC_MIGRATORY"] = "DESC_MIGRATORY";
+    AbilityDescriptionId["DESC_CHEMICAL_OPPORTUNIST"] = "DESC_CHEMICAL_OPPORTUNIST";
+    AbilityDescriptionId["DESC_DETRITAL_PROCESSOR"] = "DESC_DETRITAL_PROCESSOR";
+})(AbilityDescriptionId || (exports.AbilityDescriptionId = AbilityDescriptionId = {}));
+// ============================================================================
+// KEYWORD TEXT IDS
+// ============================================================================
+/**
+ * Keyword Name IDs - Used for keyword names
+ */
+var KeywordNameId;
+(function (KeywordNameId) {
+    // Domain Keywords
+    KeywordNameId["KEYWORD_TERRESTRIAL"] = "KEYWORD_TERRESTRIAL";
+    KeywordNameId["KEYWORD_AQUATIC"] = "KEYWORD_AQUATIC";
+    KeywordNameId["KEYWORD_AMPHIBIOUS"] = "KEYWORD_AMPHIBIOUS";
+    KeywordNameId["KEYWORD_FRESHWATER"] = "KEYWORD_FRESHWATER";
+    KeywordNameId["KEYWORD_MARINE"] = "KEYWORD_MARINE";
+    KeywordNameId["KEYWORD_EURYHALINE"] = "KEYWORD_EURYHALINE";
+    // Habitat Keywords
+    KeywordNameId["KEYWORD_FOREST"] = "KEYWORD_FOREST";
+    KeywordNameId["KEYWORD_RIVER"] = "KEYWORD_RIVER";
+    KeywordNameId["KEYWORD_OCEAN"] = "KEYWORD_OCEAN";
+    KeywordNameId["KEYWORD_DESERT"] = "KEYWORD_DESERT";
+    KeywordNameId["KEYWORD_GRASSLAND"] = "KEYWORD_GRASSLAND";
+    KeywordNameId["KEYWORD_WETLAND"] = "KEYWORD_WETLAND";
+    KeywordNameId["KEYWORD_MOUNTAIN"] = "KEYWORD_MOUNTAIN";
+    KeywordNameId["KEYWORD_ARCTIC"] = "KEYWORD_ARCTIC";
+    KeywordNameId["KEYWORD_TROPICAL"] = "KEYWORD_TROPICAL";
+    KeywordNameId["KEYWORD_TEMPERATE"] = "KEYWORD_TEMPERATE";
+    // Taxonomic Keywords
+    KeywordNameId["KEYWORD_FISH"] = "KEYWORD_FISH";
+    KeywordNameId["KEYWORD_MAMMAL"] = "KEYWORD_MAMMAL";
+    KeywordNameId["KEYWORD_BIRD"] = "KEYWORD_BIRD";
+    KeywordNameId["KEYWORD_REPTILE"] = "KEYWORD_REPTILE";
+    KeywordNameId["KEYWORD_AMPHIBIAN"] = "KEYWORD_AMPHIBIAN";
+    KeywordNameId["KEYWORD_INSECT"] = "KEYWORD_INSECT";
+    KeywordNameId["KEYWORD_ARACHNID"] = "KEYWORD_ARACHNID";
+    KeywordNameId["KEYWORD_CRUSTACEAN"] = "KEYWORD_CRUSTACEAN";
+    KeywordNameId["KEYWORD_MOLLUSK"] = "KEYWORD_MOLLUSK";
+    KeywordNameId["KEYWORD_PLANT"] = "KEYWORD_PLANT";
+    KeywordNameId["KEYWORD_FUNGI"] = "KEYWORD_FUNGI";
+    KeywordNameId["KEYWORD_BACTERIA"] = "KEYWORD_BACTERIA";
+    KeywordNameId["KEYWORD_PROTIST"] = "KEYWORD_PROTIST";
+    KeywordNameId["KEYWORD_ARTHROPOD"] = "KEYWORD_ARTHROPOD";
+    // Behavioral Keywords
+    KeywordNameId["KEYWORD_PACK_HUNTER"] = "KEYWORD_PACK_HUNTER";
+    KeywordNameId["KEYWORD_SOLITARY"] = "KEYWORD_SOLITARY";
+    KeywordNameId["KEYWORD_SOCIAL"] = "KEYWORD_SOCIAL";
+    KeywordNameId["KEYWORD_MIGRATORY"] = "KEYWORD_MIGRATORY";
+    KeywordNameId["KEYWORD_TERRITORIAL"] = "KEYWORD_TERRITORIAL";
+    KeywordNameId["KEYWORD_NOCTURNAL"] = "KEYWORD_NOCTURNAL";
+    KeywordNameId["KEYWORD_DIURNAL"] = "KEYWORD_DIURNAL";
+    KeywordNameId["KEYWORD_CREPUSCULAR"] = "KEYWORD_CREPUSCULAR";
+    // Special Abilities
+    KeywordNameId["KEYWORD_VENOMOUS"] = "KEYWORD_VENOMOUS";
+    KeywordNameId["KEYWORD_POISONOUS"] = "KEYWORD_POISONOUS";
+    KeywordNameId["KEYWORD_SCAVENGE"] = "KEYWORD_SCAVENGE";
+    KeywordNameId["KEYWORD_HYPERCARNIVORE"] = "KEYWORD_HYPERCARNIVORE";
+    KeywordNameId["KEYWORD_WATERSHED_PREDATOR"] = "KEYWORD_WATERSHED_PREDATOR";
+    KeywordNameId["KEYWORD_PARASITIC_DRAIN"] = "KEYWORD_PARASITIC_DRAIN";
+    KeywordNameId["KEYWORD_RECYCLER"] = "KEYWORD_RECYCLER";
+    KeywordNameId["KEYWORD_APEX_PREDATOR"] = "KEYWORD_APEX_PREDATOR";
+    // Size Categories
+    KeywordNameId["KEYWORD_MICROSCOPIC"] = "KEYWORD_MICROSCOPIC";
+    KeywordNameId["KEYWORD_TINY"] = "KEYWORD_TINY";
+    KeywordNameId["KEYWORD_SMALL"] = "KEYWORD_SMALL";
+    KeywordNameId["KEYWORD_MEDIUM"] = "KEYWORD_MEDIUM";
+    KeywordNameId["KEYWORD_LARGE"] = "KEYWORD_LARGE";
+    KeywordNameId["KEYWORD_HUGE"] = "KEYWORD_HUGE";
+    KeywordNameId["KEYWORD_GIGANTIC"] = "KEYWORD_GIGANTIC";
+})(KeywordNameId || (exports.KeywordNameId = KeywordNameId = {}));
+// ============================================================================
+// UI TEXT IDS
+// ============================================================================
+/**
+ * UI Text IDs - Used for user interface elements
+ */
+var UITextId;
+(function (UITextId) {
+    // Game Actions
+    UITextId["UI_PLACE_CARD"] = "UI_PLACE_CARD";
+    UITextId["UI_ACTIVATE_ABILITY"] = "UI_ACTIVATE_ABILITY";
+    UITextId["UI_PASS_TURN"] = "UI_PASS_TURN";
+    UITextId["UI_END_TURN"] = "UI_END_TURN";
+    // Game Phases
+    UITextId["UI_READY_PHASE"] = "UI_READY_PHASE";
+    UITextId["UI_DRAW_PHASE"] = "UI_DRAW_PHASE";
+    UITextId["UI_ACTION_PHASE"] = "UI_ACTION_PHASE";
+    // Game States
+    UITextId["UI_GAME_OVER"] = "UI_GAME_OVER";
+    UITextId["UI_YOU_WIN"] = "UI_YOU_WIN";
+    UITextId["UI_YOU_LOSE"] = "UI_YOU_LOSE";
+    UITextId["UI_DRAW_GAME"] = "UI_DRAW_GAME";
+    // Error Messages
+    UITextId["UI_INVALID_ACTION"] = "UI_INVALID_ACTION";
+    UITextId["UI_NOT_ENOUGH_ENERGY"] = "UI_NOT_ENOUGH_ENERGY";
+    UITextId["UI_INVALID_TARGET"] = "UI_INVALID_TARGET";
+    UITextId["UI_CARD_EXHAUSTED"] = "UI_CARD_EXHAUSTED";
+    UITextId["UI_NO_VALID_TARGETS"] = "UI_NO_VALID_TARGETS";
+    UITextId["UI_POSITION_OCCUPIED"] = "UI_POSITION_OCCUPIED";
+    UITextId["UI_INVALID_PLACEMENT"] = "UI_INVALID_PLACEMENT";
+    // Game Terms
+    UITextId["UI_READY"] = "UI_READY";
+    UITextId["UI_EXHAUSTED"] = "UI_EXHAUSTED";
+    UITextId["UI_DETRITUS_ZONE"] = "UI_DETRITUS_ZONE";
+    UITextId["UI_SCORE_PILE"] = "UI_SCORE_PILE";
+    UITextId["UI_HAND"] = "UI_HAND";
+    UITextId["UI_DECK"] = "UI_DECK";
+    UITextId["UI_TROPHIC_LEVEL"] = "UI_TROPHIC_LEVEL";
+    UITextId["UI_VICTORY_POINTS"] = "UI_VICTORY_POINTS";
+    UITextId["UI_ENERGY_COST"] = "UI_ENERGY_COST";
+    UITextId["UI_HOME_CARD"] = "UI_HOME_CARD";
+    UITextId["UI_PRODUCTION_LOOP"] = "UI_PRODUCTION_LOOP";
+    UITextId["UI_DECOMPOSITION_LOOP"] = "UI_DECOMPOSITION_LOOP";
+})(UITextId || (exports.UITextId = UITextId = {}));
+// ============================================================================
+// TAXONOMY TEXT IDS
+// ============================================================================
+/**
+ * Taxonomy IDs - Used for taxonomic information
+ */
+var TaxonomyId;
+(function (TaxonomyId) {
+    // Oak Tree
+    TaxonomyId["TAXONOMY_OAK_TREE"] = "TAXONOMY_OAK_TREE";
+    // Giant Kelp
+    TaxonomyId["TAXONOMY_GIANT_KELP"] = "TAXONOMY_GIANT_KELP";
+    // Reed Canary Grass
+    TaxonomyId["TAXONOMY_REED_CANARY_GRASS"] = "TAXONOMY_REED_CANARY_GRASS";
+    // European Rabbit
+    TaxonomyId["TAXONOMY_EUROPEAN_RABBIT"] = "TAXONOMY_EUROPEAN_RABBIT";
+    // Sockeye Salmon
+    TaxonomyId["TAXONOMY_SOCKEYE_SALMON"] = "TAXONOMY_SOCKEYE_SALMON";
+    // American Black Bear
+    TaxonomyId["TAXONOMY_AMERICAN_BLACK_BEAR"] = "TAXONOMY_AMERICAN_BLACK_BEAR";
+    // Great White Shark
+    TaxonomyId["TAXONOMY_GREAT_WHITE_SHARK"] = "TAXONOMY_GREAT_WHITE_SHARK";
+    // Continue for all species...
+    TaxonomyId["TAXONOMY_MYCENA_MUSHROOM"] = "TAXONOMY_MYCENA_MUSHROOM";
+    TaxonomyId["TAXONOMY_TURKEY_VULTURE"] = "TAXONOMY_TURKEY_VULTURE";
+    TaxonomyId["TAXONOMY_DEER_TICK"] = "TAXONOMY_DEER_TICK";
+    TaxonomyId["TAXONOMY_COMMON_EARTHWORM"] = "TAXONOMY_COMMON_EARTHWORM";
+    TaxonomyId["TAXONOMY_DUNG_BEETLE"] = "TAXONOMY_DUNG_BEETLE";
+    TaxonomyId["TAXONOMY_SOIL_BACTERIA"] = "TAXONOMY_SOIL_BACTERIA";
+    TaxonomyId["TAXONOMY_DECOMPOSER_MUSHROOM"] = "TAXONOMY_DECOMPOSER_MUSHROOM";
+    TaxonomyId["TAXONOMY_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA"] = "TAXONOMY_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA";
+    TaxonomyId["TAXONOMY_IRON_SPRING_BACTERIA"] = "TAXONOMY_IRON_SPRING_BACTERIA";
+    TaxonomyId["TAXONOMY_MYCORRHIZAL_FUNGI"] = "TAXONOMY_MYCORRHIZAL_FUNGI";
+    TaxonomyId["TAXONOMY_NITROGEN_FIXING_BACTERIA"] = "TAXONOMY_NITROGEN_FIXING_BACTERIA";
+    TaxonomyId["TAXONOMY_PACIFIC_KRILL"] = "TAXONOMY_PACIFIC_KRILL";
+    TaxonomyId["TAXONOMY_PHYTOPLANKTON"] = "TAXONOMY_PHYTOPLANKTON";
+    TaxonomyId["TAXONOMY_ZOOPLANKTON"] = "TAXONOMY_ZOOPLANKTON";
+    TaxonomyId["TAXONOMY_EUROPEAN_HONEY_BEE"] = "TAXONOMY_EUROPEAN_HONEY_BEE";
+    TaxonomyId["TAXONOMY_VOLCANIC_HYDROGEN_BACTERIA"] = "TAXONOMY_VOLCANIC_HYDROGEN_BACTERIA";
+    TaxonomyId["TAXONOMY_NITRIFYING_SOIL_BACTERIA"] = "TAXONOMY_NITRIFYING_SOIL_BACTERIA";
+    TaxonomyId["TAXONOMY_SEDIMENT_CHEMOSYNTHETIC_BACTERIA"] = "TAXONOMY_SEDIMENT_CHEMOSYNTHETIC_BACTERIA";
+})(TaxonomyId || (exports.TaxonomyId = TaxonomyId = {}));
+//# sourceMappingURL=text-ids.js.map

@@ -1,5 +1,27 @@
-// Core game types and interfaces for Species Combat TCG
+// Frontend-specific types and re-exports from shared module
+import { ConservationStatus } from '@shared/enums';
 
+// Re-export shared types for backward compatibility
+export type {
+  CardData,
+  AbilityData,
+  GameState as SharedGameState,
+  Player as SharedPlayer,
+  Position,
+  CardInstance,
+  GameAction,
+  ActionResult
+} from '@shared/types';
+
+export {
+  CardId,
+  AbilityId,
+  TrophicLevel,
+  TurnPhase,
+  ConservationStatus
+} from '@shared/enums';
+
+// Frontend-specific enums that don't exist in shared
 export enum TrophicRole {
   PRODUCER = 'Producer',
   HERBIVORE = 'Herbivore',
@@ -148,9 +170,12 @@ export interface SpeciesData {
 
 export interface Card {
   id: string;
-  speciesName: string;
-  commonName: string;
-  scientificName: string;
+  cardId: number; // Numeric ID for database operations
+  // Enum-based localization IDs (required)
+  nameId: string;
+  scientificNameId: string;
+  descriptionId: string;
+  taxonomyId: string;
   trophicRole: TrophicRole;
   habitat: Habitat;
   power: number;
@@ -230,18 +255,6 @@ export interface AbilityEffect {
   target: 'self' | 'opponent' | 'all_friendly' | 'all_enemy';
   value: number;
   duration?: number;
-}
-
-export enum ConservationStatus {
-  LEAST_CONCERN = 'Least Concern',
-  NEAR_THREATENED = 'Near Threatened',
-  VULNERABLE = 'Vulnerable',
-  ENDANGERED = 'Endangered',
-  CRITICALLY_ENDANGERED = 'Critically Endangered',
-  EXTINCT_IN_WILD = 'Extinct in Wild',
-  EXTINCT = 'Extinct',
-  DATA_DEFICIENT = 'Data Deficient',
-  NOT_EVALUATED = 'Not Evaluated'
 }
 
 // IUCN Red List rarity system for booster packs

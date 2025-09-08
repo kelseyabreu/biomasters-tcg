@@ -46,7 +46,7 @@ export function checkEcosystemBalance(player: Player): WinConditionProgress {
  * End turn with 6 or more unique species cards in play
  */
 export function checkConservationVictory(player: Player): WinConditionProgress {
-  const uniqueSpecies = new Set(player.field.map(card => card.speciesName));
+  const uniqueSpecies = new Set(player.field.map(card => card.nameId));
   const progress = uniqueSpecies.size;
   
   return {

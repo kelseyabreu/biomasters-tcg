@@ -39,41 +39,41 @@ export interface Position {
 }
 
 /**
- * Card data structure - matches database schema
+ * Card data structure - uses enum-based localization IDs
+ * Field names match JSON format (camelCase) for optimal performance
  */
 export interface CardData {
   id: CardId;
-  card_name: string;
-  trophic_level: TrophicLevel | null;
-  trophic_category_id: TrophicCategoryId | null;
+  nameId: string; // Enum-based card name ID for localization
+  scientificNameId: string; // Enum-based scientific name ID for localization
+  descriptionId: string; // Enum-based description ID for localization
+  taxonomyId: string; // Enum-based taxonomy ID for localization
+  trophicLevel: TrophicLevel | null;
+  trophicCategory: TrophicCategoryId | null;
   cost: string | null; // JSON string of cost requirements
-  victory_points: number;
+  victoryPoints: number;
   
-  // Biological data
-  common_name: string | null;
-  scientific_name: string | null;
-  taxonomy: string | null; // JSON string
-  
-  // Physical characteristics
+  // Physical characteristics (keeping snake_case as they match JSON)
   mass_kg: number | null;
   lifespan_max_days: number | null;
-  
-  // Sensory capabilities
+
+  // Sensory capabilities (keeping snake_case as they match JSON)
   vision_range_m: number | null;
   smell_range_m: number | null;
   hearing_range_m: number | null;
-  
-  // Movement capabilities
+
+  // Movement capabilities (keeping snake_case as they match JSON)
   walk_speed_m_per_hr: number | null;
   run_speed_m_per_hr: number | null;
   swim_speed_m_per_hr: number | null;
   fly_speed_m_per_hr: number | null;
-  
-  // Reproduction
+
+  // Reproduction (keeping snake_case as they match JSON)
   offspring_count: number | null;
   gestation_days: number | null;
   
   // Game metadata
+  domain: number; // Domain for ecosystem compatibility (0 = HOME/universal)
   keywords: KeywordId[];
   abilities: AbilityId[];
   artwork_url: string | null;
@@ -85,14 +85,14 @@ export interface CardData {
 }
 
 /**
- * Ability data structure
+ * Ability data structure - field names match JSON format (camelCase)
  */
 export interface AbilityData {
   id: AbilityId;
-  ability_name: string;
-  trigger_id: TriggerId;
+  nameId: string;
+  descriptionId: string;
+  triggerId: TriggerId;
   effects: AbilityEffect[];
-  description: string | null;
 }
 
 /**

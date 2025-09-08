@@ -1,46 +1,29 @@
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
 import { GameActionType } from '@biomasters/shared';
 
 describe('Saprotroph Logic Tests', () => {
+  let gameData: any;
   let engine: BioMastersEngine;
   // Game settings will be initialized by the engine
 
   beforeAll(async () => {
     console.log('🧪 Loading game data for saprotroph tests...');
-    await gameDataManager.loadGameData();
+    gameData = await loadTestGameData();
     console.log('✅ Game data loaded for saprotroph tests');
   });
 
   beforeEach(() => {
-    // Use real game data loaded in beforeAll
-    const rawCards = gameDataManager.getCards();
-    const rawAbilities = gameDataManager.getAbilities();
-    const rawKeywords = gameDataManager.getKeywords();
+    // Use real game data loaded in beforeAll - these are already Maps
+    const cardDatabase = gameData.cards;
+    const abilityDatabase = gameData.abilities;
+    const keywordDatabase = gameData.keywords;
 
-    // Convert data to engine-expected format
-    const cardDatabase = new Map<number, any>();
-    rawCards.forEach((card, cardId) => {
-      cardDatabase.set(Number(cardId), {
-        ...card,
-        cardId: Number(cardId),
-        victoryPoints: card.victoryPoints || 1 // Ensure required field
-      });
-    });
+    // Create mock localization manager
+    const mockLocalizationManager = gameData.localizationManager;
 
-    const abilityDatabase = new Map<number, any>();
-    rawAbilities.forEach((ability, abilityId) => {
-      abilityDatabase.set(abilityId, ability);
-    });
-
-    const keywordDatabase = new Map<number, string>();
-    rawKeywords.forEach((keyword, keywordId) => {
-      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
-    });
-
-    // Create engine with real data using production constructor
-    const mockLocalizationManager = createMockLocalizationManager();
+    // Initialize engine with real data
     engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
 
     // Initialize the game properly
@@ -68,21 +51,24 @@ describe('Saprotroph Logic Tests', () => {
     console.log('🧪 Testing saprotroph detection...');
 
     // Find the Mycena Mushroom card
-    const cards = gameDataManager.getCards();
-    const mushroomCard = Array.from(cards.values()).find((card: any) => card.commonName === 'Mycena Mushroom');
+    const cards = gameData.cards;
+    const mushroomCard = Array.from(cards.values()).find((card: any) => {
+      const cardName = gameData.localizationManager.getCardName(card.nameId);
+      return cardName && cardName.toLowerCase().includes('mushroom');
+    });
     expect(mushroomCard).toBeDefined();
 
     console.log('🍄 Mushroom card data:', {
-      CardID: mushroomCard!.cardId,
-      CommonName: mushroomCard!.commonName,
-      TrophicLevel: mushroomCard!.trophicLevel,
-      TrophicCategory: mushroomCard!.trophicCategory,
-      Cost: mushroomCard!.cost
+      CardID: (mushroomCard as any)!.id,
+      CommonName: (mushroomCard as any)!.nameId,
+      TrophicLevel: (mushroomCard as any)!.trophicLevel,
+      TrophicCategory: (mushroomCard as any)!.trophicCategory,
+      Cost: (mushroomCard as any)!.cost
     });
 
     // Check if it's detected as a saprotroph
-    expect(mushroomCard!.trophicLevel).toBe(-1); // SAPROTROPH
-    expect(mushroomCard!.trophicCategory).toBe(6); // SAPROTROPH category
+    expect((mushroomCard as any)!.trophicLevel).toBe(-1); // SAPROTROPH
+    expect((mushroomCard as any)!.trophicCategory).toBe(6); // SAPROTROPH category
   });
 
   test('should allow saprotroph placement on detritus', () => {
@@ -108,7 +94,7 @@ describe('Saprotroph Logic Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'Alice',
       payload: {
-        cardId: '1', // Oak Tree
+        cardId: 1, // Oak Tree
         position: oakPos
       }
     });
@@ -154,7 +140,7 @@ describe('Saprotroph Logic Tests', () => {
       type: GameActionType.PLAY_CARD,
       playerId: 'Alice',
       payload: {
-        cardId: '8', // Mycena Mushroom
+        cardId: 8, // Mycena Mushroom
         position: oakPos // Same position as detritus
       }
     });

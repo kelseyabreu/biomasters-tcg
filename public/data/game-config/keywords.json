@@ -1,0 +1,350 @@
+[
+  {
+    "id": 63,
+    "name": "BIOLUMINESCENT"
+  },
+  {
+    "id": 66,
+    "name": "CAMOUFLAGE"
+  },
+  {
+    "id": 71,
+    "name": "CHEMOSYNTHESIS"
+  },
+  {
+    "id": 75,
+    "name": "DECOMPOSER"
+  },
+  {
+    "id": 64,
+    "name": "ECHOLOCATION"
+  },
+  {
+    "id": 65,
+    "name": "ELECTRIC"
+  },
+  {
+    "id": 80,
+    "name": "INVASIVE"
+  },
+  {
+    "id": 79,
+    "name": "KEYSTONE_SPECIES"
+  },
+  {
+    "id": 69,
+    "name": "METAMORPHOSIS"
+  },
+  {
+    "id": 67,
+    "name": "MIMICRY"
+  },
+  {
+    "id": 74,
+    "name": "MUTUALISTIC"
+  },
+  {
+    "id": 76,
+    "name": "NITROGEN_FIXING"
+  },
+  {
+    "id": 73,
+    "name": "PARASITIC"
+  },
+  {
+    "id": 70,
+    "name": "PHOTOSYNTHESIS"
+  },
+  {
+    "id": 62,
+    "name": "POISONOUS"
+  },
+  {
+    "id": 77,
+    "name": "POLLINATOR"
+  },
+  {
+    "id": 68,
+    "name": "REGENERATION"
+  },
+  {
+    "id": 78,
+    "name": "SEED_DISPERSER"
+  },
+  {
+    "id": 72,
+    "name": "SYMBIOTIC"
+  },
+  {
+    "id": 61,
+    "name": "VENOMOUS"
+  },
+  {
+    "id": 51,
+    "name": "AMBUSH_PREDATOR"
+  },
+  {
+    "id": 56,
+    "name": "BROWSER"
+  },
+  {
+    "id": 47,
+    "name": "CREPUSCULAR"
+  },
+  {
+    "id": 46,
+    "name": "DIURNAL"
+  },
+  {
+    "id": 54,
+    "name": "FILTER_FEEDER"
+  },
+  {
+    "id": 57,
+    "name": "FRUGIVORE"
+  },
+  {
+    "id": 55,
+    "name": "GRAZER"
+  },
+  {
+    "id": 49,
+    "name": "HIBERNATING"
+  },
+  {
+    "id": 58,
+    "name": "INSECTIVORE"
+  },
+  {
+    "id": 48,
+    "name": "MIGRATORY"
+  },
+  {
+    "id": 59,
+    "name": "NECTARIVORE"
+  },
+  {
+    "id": 45,
+    "name": "NOCTURNAL"
+  },
+  {
+    "id": 44,
+    "name": "NOMADIC"
+  },
+  {
+    "id": 50,
+    "name": "PACK_HUNTER"
+  },
+  {
+    "id": 60,
+    "name": "PISCIVORE"
+  },
+  {
+    "id": 52,
+    "name": "PURSUIT_PREDATOR"
+  },
+  {
+    "id": 53,
+    "name": "SCAVENGER"
+  },
+  {
+    "id": 41,
+    "name": "SOCIAL"
+  },
+  {
+    "id": 42,
+    "name": "SOLITARY"
+  },
+  {
+    "id": 43,
+    "name": "TERRITORIAL"
+  },
+  {
+    "id": 3,
+    "name": "AMPHIBIOUS"
+  },
+  {
+    "id": 2,
+    "name": "AQUATIC"
+  },
+  {
+    "id": 6,
+    "name": "EURYHALINE"
+  },
+  {
+    "id": 4,
+    "name": "FRESHWATER"
+  },
+  {
+    "id": 5,
+    "name": "MARINE"
+  },
+  {
+    "id": 1,
+    "name": "TERRESTRIAL"
+  },
+  {
+    "id": 20,
+    "name": "CAVE"
+  },
+  {
+    "id": 11,
+    "name": "CORAL_REEF"
+  },
+  {
+    "id": 9,
+    "name": "DESERT"
+  },
+  {
+    "id": 18,
+    "name": "ESTUARY"
+  },
+  {
+    "id": 7,
+    "name": "FOREST"
+  },
+  {
+    "id": 8,
+    "name": "GRASSLAND"
+  },
+  {
+    "id": 16,
+    "name": "LAKE"
+  },
+  {
+    "id": 19,
+    "name": "MANGROVE"
+  },
+  {
+    "id": 10,
+    "name": "MOUNTAIN"
+  },
+  {
+    "id": 17,
+    "name": "OCEAN"
+  },
+  {
+    "id": 15,
+    "name": "RIVER"
+  },
+  {
+    "id": 14,
+    "name": "SAVANNA"
+  },
+  {
+    "id": 13,
+    "name": "TUNDRA"
+  },
+  {
+    "id": 12,
+    "name": "WETLAND"
+  },
+  {
+    "id": 86,
+    "name": "HUGE"
+  },
+  {
+    "id": 85,
+    "name": "LARGE"
+  },
+  {
+    "id": 84,
+    "name": "MEDIUM"
+  },
+  {
+    "id": 87,
+    "name": "MEGAFAUNA"
+  },
+  {
+    "id": 81,
+    "name": "MICROSCOPIC"
+  },
+  {
+    "id": 83,
+    "name": "SMALL"
+  },
+  {
+    "id": 82,
+    "name": "TINY"
+  },
+  {
+    "id": 30,
+    "name": "AMPHIBIAN"
+  },
+  {
+    "id": 22,
+    "name": "ANIMAL"
+  },
+  {
+    "id": 38,
+    "name": "ANNELID"
+  },
+  {
+    "id": 33,
+    "name": "ARACHNID"
+  },
+  {
+    "id": 25,
+    "name": "ARCHAEA"
+  },
+  {
+    "id": 40,
+    "name": "ARTHROPOD"
+  },
+  {
+    "id": 24,
+    "name": "BACTERIA"
+  },
+  {
+    "id": 28,
+    "name": "BIRD"
+  },
+  {
+    "id": 36,
+    "name": "CNIDARIAN"
+  },
+  {
+    "id": 34,
+    "name": "CRUSTACEAN"
+  },
+  {
+    "id": 37,
+    "name": "ECHINODERM"
+  },
+  {
+    "id": 31,
+    "name": "FISH"
+  },
+  {
+    "id": 23,
+    "name": "FUNGI"
+  },
+  {
+    "id": 32,
+    "name": "INSECT"
+  },
+  {
+    "id": 27,
+    "name": "MAMMAL"
+  },
+  {
+    "id": 35,
+    "name": "MOLLUSK"
+  },
+  {
+    "id": 39,
+    "name": "NEMATODE"
+  },
+  {
+    "id": 21,
+    "name": "PLANT"
+  },
+  {
+    "id": 26,
+    "name": "PROTIST"
+  },
+  {
+    "id": 29,
+    "name": "REPTILE"
+  }
+]

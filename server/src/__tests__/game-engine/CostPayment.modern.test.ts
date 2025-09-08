@@ -4,18 +4,30 @@
  */
 
 import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
 import {
-  GameActionType
+  GameActionType,
+  CardId
 } from '@biomasters/shared';
 
 describe('Cost Payment System - Modern', () => {
+  let gameData: any;
   let engine: BioMastersEngine;
+
+  // Helper function to add cards to player hands
+  const addCardsToHand = (playerId: string, cardIds: number[]) => {
+    const gameState = engine.getGameState();
+    const player = gameState.players.find(p => p.id === playerId);
+    if (player) {
+      player.hand.push(...cardIds.map(id => id.toString()));
+    }
+  };
 
   beforeAll(async () => {
     // Load real game data for cost payment testing
-    await gameDataManager.loadGameData();
+    
+    gameData = await loadTestGameData();
   });
   let gameSettings: GameSettings;
   // let mockCardDatabase: Map<number, any>; // Unused - using real data now
@@ -200,33 +212,32 @@ describe('Cost Payment System - Modern', () => {
     // Game state will be initialized by the engine
 
     // Use real game data loaded in beforeAll
-    const rawCards = gameDataManager.getCards();
-    const rawAbilities = gameDataManager.getAbilities();
-    const rawKeywords = gameDataManager.getKeywords();
+    const rawCards = gameData.cards;
+    const rawAbilities = gameData.abilities;
+    const rawKeywords = gameData.keywords;
 
-    // Convert data to engine-expected format
+    // Convert data to engine-expected format (same as working BasicCardPlaying test)
     const cardDatabase = new Map<number, any>();
-    rawCards.forEach((card, cardId) => {
-      cardDatabase.set(Number(cardId), {
+    rawCards.forEach((card: any, cardId: number) => {
+      cardDatabase.set(cardId, {
         ...card,
-        cardId: Number(cardId),
+        id: cardId,
         victoryPoints: card.victoryPoints || 1 // Ensure required field
       });
     });
 
     const abilityDatabase = new Map<number, any>();
-    rawAbilities.forEach((ability, abilityId) => {
+    rawAbilities.forEach((ability: any, abilityId: number) => {
       abilityDatabase.set(abilityId, ability);
     });
 
     const keywordDatabase = new Map<number, string>();
-    rawKeywords.forEach((keyword, keywordId) => {
-      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    rawKeywords.forEach((keywordName: string, keywordId: number) => {
+      keywordDatabase.set(keywordId, keywordName);
     });
 
-    // Initialize engine with real data
-    const mockLocalizationManager = createMockLocalizationManager();
-    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
+    // Initialize engine with real data (same as working BasicCardPlaying test)
+    engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, gameData.localizationManager);
 
     // Initialize the game properly
     engine.initializeNewGame('cost-test', [
@@ -241,6 +252,9 @@ describe('Cost Payment System - Modern', () => {
 
   describe('Free Producer Cards', () => {
     test('should allow playing free producer cards without cost', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [CardId.OAK_TREE]); // Oak Tree
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -249,7 +263,7 @@ describe('Cost Payment System - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '1', // Green Algae (free producer)
+          cardId: CardId.OAK_TREE, // Oak Tree (free producer)
           position: adjacentPosition
         }
       };
@@ -260,15 +274,18 @@ describe('Cost Payment System - Modern', () => {
     });
 
     test('should allow playing multiple free producers', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [CardId.OAK_TREE, CardId.GIANT_KELP]); // Oak Tree, Giant Kelp
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
-      
+
       // Play first producer (Oak Tree - CardId.OAK_TREE = 1)
       const position1 = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: position1 }
+        payload: { cardId: CardId.OAK_TREE, position: position1 }
       });
       expect(result1.isValid).toBe(true);
 
@@ -277,7 +294,7 @@ describe('Cost Payment System - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '2', position: position2 }
+        payload: { cardId: CardId.GIANT_KELP, position: position2 }
       });
       expect(result2.isValid).toBe(true);
     });
@@ -285,6 +302,9 @@ describe('Cost Payment System - Modern', () => {
 
   describe('Trophic Cost Requirements', () => {
     test('should reject consumer cards without required trophic connections', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [CardId.EUROPEAN_RABBIT]); // European Rabbit
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -293,7 +313,7 @@ describe('Cost Payment System - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '4', // European Rabbit (Primary Consumer - requires producer)
+          cardId: CardId.EUROPEAN_RABBIT, // European Rabbit (Primary Consumer - requires producer)
           position: adjacentPosition
         }
       };
@@ -304,6 +324,9 @@ describe('Cost Payment System - Modern', () => {
     });
 
     test('should allow consumer cards with proper trophic connections after producer is ready', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [1, 4]); // Oak Tree, European Rabbit
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
 
@@ -312,7 +335,7 @@ describe('Cost Payment System - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: producerPosition }
+        payload: { cardId: 1, position: producerPosition }
       });
       expect(result1.isValid).toBe(true);
 
@@ -327,13 +350,16 @@ describe('Cost Payment System - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '4', position: consumerPosition }
+        payload: { cardId: 4, position: consumerPosition }
       });
 
       expect(result2.isValid).toBe(true);
     });
 
     test('should reject apex predator without required herbivore', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [7]); // Great White Shark
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -342,7 +368,7 @@ describe('Cost Payment System - Modern', () => {
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
         payload: {
-          cardId: '7', // Great White Shark (requires carnivore)
+          cardId: 7, // Great White Shark (requires carnivore)
           position: adjacentPosition
         }
       };
@@ -355,8 +381,11 @@ describe('Cost Payment System - Modern', () => {
 
   describe('Cost Payment Integration', () => {
     test('should maintain energy levels during free card play', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [1]); // Oak Tree
+
       const initialEnergy = engine.getGameState().players[0]?.energy || 0;
-      
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -364,15 +393,17 @@ describe('Cost Payment System - Modern', () => {
       const result = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: adjacentPosition }
+        payload: { cardId: 1, position: adjacentPosition }
       });
-
       expect(result.isValid).toBe(true);
       // Energy should remain the same for free cards
       expect(result.newState?.players[0]?.energy).toBe(initialEnergy);
     });
 
     test('should exhaust cards when played', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [1]); // Oak Tree
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -380,9 +411,8 @@ describe('Cost Payment System - Modern', () => {
       const result = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: adjacentPosition }
+        payload: { cardId: 1, position: adjacentPosition }
       });
-
       expect(result.isValid).toBe(true);
       
       // Find the played card on the grid
@@ -392,32 +422,15 @@ describe('Cost Payment System - Modern', () => {
     });
 
     test('should remove cards from hand when played', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [1]); // Oak Tree
+
       const gameState = engine.getGameState();
       const player1 = gameState.players[0];
-      const initialHandSize = player1?.hand.length || 0;
+      const cardToPlay = 1; // Oak Tree
 
-      // Find any producer card (trophic level 1) in the player's hand that can be played adjacent to HOME
-      // Get all cards from the database and filter for producers
-      const cardDatabase = gameDataManager.getCards();
-      const producerCardIds: string[] = [];
-
-      cardDatabase.forEach((card, cardId) => {
-        if (card.trophicLevel === 1) { // Producer cards
-          producerCardIds.push(String(cardId));
-        }
-      });
-
-      let cardToPlay = player1?.hand.find(cardId => producerCardIds.includes(cardId));
-
-      // If no producer card in hand, manually add one for testing
-      if (!cardToPlay && producerCardIds.length > 0) {
-        cardToPlay = producerCardIds[0]; // Use the first producer card
-        if (player1 && cardToPlay) {
-          player1.hand.push(cardToPlay); // Add it to the hand
-        }
-      }
-
-      expect(cardToPlay).toBeDefined();
+      // Capture hand size before play
+      const handSizeBeforePlay = player1?.hand.length || 0;
 
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -427,15 +440,17 @@ describe('Cost Payment System - Modern', () => {
         playerId: 'player1',
         payload: { cardId: cardToPlay, position: adjacentPosition }
       });
-
       expect(result.isValid).toBe(true);
-      expect(result.newState?.players[0]?.hand.length).toBe(initialHandSize - 1);
+      expect(result.newState?.players[0]?.hand.length).toBe(handSizeBeforePlay - 1);
       expect(result.newState?.players[0]?.hand).not.toContain(cardToPlay);
     });
   });
 
   describe('Complex Cost Scenarios', () => {
     test('should handle food chain building with proper ready states', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [1, 4]); // Oak Tree, European Rabbit
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
 
@@ -446,7 +461,7 @@ describe('Cost Payment System - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: producerPos }
+        payload: { cardId: 1, position: producerPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -459,7 +474,7 @@ describe('Cost Payment System - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '4', position: primaryPos }
+        payload: { cardId: 4, position: primaryPos }
       });
       expect(result2.isValid).toBe(true);
 
@@ -475,6 +490,9 @@ describe('Cost Payment System - Modern', () => {
     });
 
     test('should validate trophic level requirements strictly', () => {
+      // Add required cards to player's hand
+      addCardsToHand('player1', [1, 7]); // Oak Tree, Great White Shark
+
       const gameState = engine.getGameState();
       const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
       
@@ -483,7 +501,7 @@ describe('Cost Payment System - Modern', () => {
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '1', position: producerPos }
+        payload: { cardId: 1, position: producerPos }
       });
       expect(result1.isValid).toBe(true);
 
@@ -492,7 +510,7 @@ describe('Cost Payment System - Modern', () => {
       const result2 = engine.processAction({
         type: GameActionType.PLAY_CARD,
         playerId: 'player1',
-        payload: { cardId: '7', position: predatorPos }
+        payload: { cardId: 7, position: predatorPos }
       });
       expect(result2.isValid).toBe(false);
       expect(result2.errorMessage).toContain('trophic level');

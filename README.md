@@ -185,7 +185,7 @@ biomasters-tcg/
 ```
 
 ### Game Engine Architecture
-- **🎯 TCG Mode**: Uses `server/src/game-engine/BioMastersEngine.ts` as authoritative source
+- **🎯 TCG Mode**: Uses `shared/game-engine/BioMastersEngine.ts` as authoritative source
 - **🌱 Phylo Mode**: Uses `src/game-logic/gameStateManager.ts` for educational gameplay
 - **🔄 Client Engine**: `src/services/ClientGameEngine.ts` wraps BioMastersEngine for offline TCG
 - **🌐 Hybrid Store**: `src/state/hybridGameStore.ts` manages both modes with seamless switching
@@ -205,8 +205,10 @@ The game engine is **completely data-driven** using three core files:
   "Keywords": [1, 6, 70],
   "Abilities": [9],
   "VictoryPoints": 1,
-  "CommonName": "Oak Tree",
-  "ScientificName": "Quercus robur"
+  "NameId": "CARD_OAK_TREE",
+  "ScientificNameId": "SCIENTIFIC_QUERCUS_ROBUR",
+  "DescriptionId": "DESC_OAK_TREE",
+  "TaxonomyId": "TAXONOMY_OAK_TREE"
 }
 ```
 
@@ -227,9 +229,11 @@ The game engine is **completely data-driven** using three core files:
 #### **en.json** - Localization
 ```json
 {
-  "CardNames": {"1": "Oak Tree"},
-  "CardAbilitiesText": {"1": "Photosynthesis ability"},
-  "Keywords": {"1": "TERRESTRIAL"}
+  "cardNames": {"CARD_OAK_TREE": "Oak Tree"},
+  "scientificNames": {"SCIENTIFIC_QUERCUS_ROBUR": "Quercus robur"},
+  "descriptions": {"DESC_OAK_TREE": "A mighty oak tree"},
+  "abilities": {"ABILITY_PHOTOSYNTHESIS": "Photosynthesis ability"},
+  "keywords": {"KEYWORD_TERRESTRIAL": "TERRESTRIAL"}
 }
 ```
 

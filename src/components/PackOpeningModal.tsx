@@ -37,9 +37,10 @@ import {
 } from 'ionicons/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { Card as CardType, ConservationStatus, CONSERVATION_RARITY_DATA } from '../types';
+import { Card as CardType, CONSERVATION_RARITY_DATA } from '../types';
+import { ConservationStatus } from '@shared/enums';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../utils/cardLocalizationMapping';
+
 import Card from './Card';
 import OrganismRenderer from './OrganismRenderer';
 import './PackOpeningModal.css';
@@ -53,7 +54,7 @@ interface PackOpeningModalProps {
 
 interface PackResult {
   cards: CardType[];
-  newCards: string[];
+  newCards: number[];
   totalValue: number;
   rareCards: CardType[];
   rarityBreakdown: Record<ConservationStatus, number>;
@@ -78,13 +79,16 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
   // Helper function to get rarity colors (matches collection view)
   const getRarityColor = (status: ConservationStatus) => {
-    const statusString = status.replace(/_/g, ' ');
-    switch (statusString) {
-      case 'Least Concern': return 'success';
-      case 'Near Threatened': return 'warning';
-      case 'Vulnerable': return 'warning';
-      case 'Endangered': return 'danger';
-      case 'Critically Endangered': return 'danger';
+    switch (status) {
+      case ConservationStatus.LEAST_CONCERN: return 'success';
+      case ConservationStatus.NEAR_THREATENED: return 'warning';
+      case ConservationStatus.VULNERABLE: return 'warning';
+      case ConservationStatus.ENDANGERED: return 'danger';
+      case ConservationStatus.CRITICALLY_ENDANGERED: return 'danger';
+      case ConservationStatus.EXTINCT: return 'dark';
+      case ConservationStatus.EXTINCT_IN_WILD: return 'dark';
+      case ConservationStatus.DATA_DEFICIENT: return 'medium';
+      case ConservationStatus.NOT_EVALUATED: return 'medium';
       default: return 'medium';
     }
   };
@@ -105,19 +109,19 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       // Simulate pack opening animation delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      let newCardNames: string[] = [];
+      let newCardIds: number[] = [];
 
       if (packType === 'starter') {
         console.log('🎁 Opening starter pack...');
-        newCardNames = await openStarterPack();
+        newCardIds = await openStarterPack();
       } else {
         console.log(`🎁 Opening ${packType} pack...`);
-        newCardNames = await openPack(packType);
+        newCardIds = await openPack(packType);
       }
       
-      // Convert card names to Card objects
-      const cards = newCardNames.map(cardName => 
-        allSpeciesCards.find(card => card.speciesName === cardName)
+      // Convert card IDs to Card objects
+      const cards = newCardIds.map(cardId =>
+        allSpeciesCards.find(card => card.cardId === cardId)
       ).filter(Boolean) as CardType[];
       
       // Calculate pack statistics
@@ -129,7 +133,9 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       // Calculate rarity breakdown
       const rarityBreakdown: Record<ConservationStatus, number> = {} as Record<ConservationStatus, number>;
       Object.values(ConservationStatus).forEach(status => {
-        rarityBreakdown[status] = 0;
+        if (typeof status === 'number') {
+          rarityBreakdown[status] = 0;
+        }
       });
 
       cards.forEach(card => {
@@ -148,7 +154,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
       const result: PackResult = {
         cards,
-        newCards: newCardNames,
+        newCards: newCardIds,
         totalValue,
         rareCards,
         rarityBreakdown
@@ -342,16 +348,16 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
 
                               {/* Card Info */}
                               <div className="card-title">
-                                {getLocalizedCardData(card, localization).displayName}
+                                {localization.getCardName(card.nameId as any)}
                               </div>
                               <div className="card-subtitle">
-                                {getLocalizedCardData(card, localization).displayScientificName}
+                                {localization.getScientificName(card.scientificNameId as any)}
                               </div>
 
                               {/* Conservation Status Badge */}
                               <div className="card-badges">
-                                <IonBadge color={getRarityColor(card.conservationStatus as ConservationStatus)}>
-                                  {card.conservationStatus.replace(/_/g, ' ')}
+                                <IonBadge color={getRarityColor(card.conservationStatus)}>
+                                  {ConservationStatus[card.conservationStatus]}
                                 </IonBadge>
                                 <IonBadge color="medium">
                                   {card.habitat}
@@ -372,13 +378,16 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                     <div className="rarity-list">
                       {Object.entries(packResult.rarityBreakdown)
                         .filter(([_, count]) => count > 0)
-                        .map(([status, count]) => (
-                          <div key={status} className="rarity-item">
-                            <IonBadge color={getRarityColor(status as ConservationStatus)}>
-                              {`${status.replace(/_/g, ' ')}: ${count}`}
-                            </IonBadge>
-                          </div>
-                        ))}
+                        .map(([status, count]) => {
+                          const statusNum = parseInt(status) as ConservationStatus;
+                          return (
+                            <div key={status} className="rarity-item">
+                              <IonBadge color={getRarityColor(statusNum)}>
+                                {`${ConservationStatus[statusNum]}: ${count}`}
+                              </IonBadge>
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
@@ -430,22 +439,25 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                     <IonLabel>Conservation Status Distribution</IonLabel>
                   </IonListHeader>
 
-                  {Object.entries(CONSERVATION_RARITY_DATA).map(([status, data]) => (
-                    <IonItem key={status} className="conservation-status-item">
-                      <div className="status-info">
-                        <div className="status-header">
-                          <IonBadge color={getRarityColor(status as ConservationStatus)}>
-                            {status.replace(/_/g, ' ')}
-                          </IonBadge>
-                          <span className="percentage">{data.percentage}% of all species</span>
+                  {Object.entries(CONSERVATION_RARITY_DATA).map(([status, data]) => {
+                    const statusNum = parseInt(status) as ConservationStatus;
+                    return (
+                      <IonItem key={status} className="conservation-status-item">
+                        <div className="status-info">
+                          <div className="status-header">
+                            <IonBadge color={getRarityColor(statusNum)}>
+                              {ConservationStatus[statusNum]}
+                            </IonBadge>
+                            <span className="percentage">{data.percentage}% of all species</span>
+                          </div>
+                          <div className="status-details">
+                            <div className="description">{data.description}</div>
+                            <div className="pack-rarity"><strong>Pack rarity:</strong> {data.packRarity}/1000 cards</div>
+                          </div>
                         </div>
-                        <div className="status-details">
-                          <div className="description">{data.description}</div>
-                          <div className="pack-rarity"><strong>Pack rarity:</strong> {data.packRarity}/1000 cards</div>
-                        </div>
-                      </div>
-                    </IonItem>
-                  ))}
+                      </IonItem>
+                    );
+                  })}
                 </IonList>
 
                 <div className="educational-note">

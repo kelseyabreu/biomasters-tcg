@@ -139,29 +139,29 @@ class SyncService {
     }
 
     // Merge local and server state intelligently
-    const mergedSpecies = { ...localCollection.species_owned };
+    const mergedCards = { ...localCollection.cards_owned };
 
-    // For each species in server state, use the higher quantity (server is authoritative after sync)
-    for (const [species, serverCard] of Object.entries(response.new_server_state.species_owned)) {
-      mergedSpecies[species] = serverCard;
+    // For each card in server state, use the higher quantity (server is authoritative after sync)
+    for (const [cardId, serverCard] of Object.entries(response.new_server_state.cards_owned)) {
+      mergedCards[parseInt(cardId)] = serverCard;
     }
 
     // For first-time sync, if server is empty but local has data, preserve local data
-    const hasServerData = Object.keys(response.new_server_state.species_owned).length > 0;
-    const hasLocalData = Object.keys(localCollection.species_owned).length > 0;
+    const hasServerData = Object.keys(response.new_server_state.cards_owned).length > 0;
+    const hasLocalData = Object.keys(localCollection.cards_owned).length > 0;
 
     console.log('🔄 Sync merge logic:', {
       hasServerData,
       hasLocalData,
-      serverSpeciesCount: Object.keys(response.new_server_state.species_owned).length,
-      localSpeciesCount: Object.keys(localCollection.species_owned).length,
+      serverCardsCount: Object.keys(response.new_server_state.cards_owned).length,
+      localCardsCount: Object.keys(localCollection.cards_owned).length,
       serverCredits: response.new_server_state.eco_credits,
       localCredits: localCollection.eco_credits
     });
 
-    const finalSpecies = hasServerData || !hasLocalData ?
-      mergedSpecies :
-      localCollection.species_owned;
+    const finalCards = hasServerData || !hasLocalData ?
+      mergedCards :
+      localCollection.cards_owned;
 
     console.log('💰 Credit sync details:', {
       local_credits: localCollection.eco_credits,
@@ -172,7 +172,7 @@ class SyncService {
 
     const updatedCollection: OfflineCollection = {
       ...localCollection,
-      species_owned: finalSpecies,
+      cards_owned: finalCards,
       eco_credits: response.new_server_state.eco_credits, // Use server credits as authoritative
       xp_points: response.new_server_state.xp_points, // Use server XP as authoritative
       action_queue: localCollection.action_queue.filter(

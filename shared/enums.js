@@ -7,7 +7,7 @@
  * All IDs are integers as specified in the BioMasters rules.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IUCN_CONSERVATION_DATA = exports.GAME_CONSTANTS = exports.TROPHIC_CONNECTIONS = exports.DOMAIN_COMPATIBILITY = exports.SPECIES_DISPLAY_NAMES = exports.CommonName = exports.ApiStatus = exports.ValidationError = exports.GameActionType = exports.SyncStatus = exports.CardCondition = exports.AcquisitionMethod = exports.UserType = exports.CardAbilitiesText = exports.CardNames = exports.ConservationStatus = exports.AbilityId = exports.CardId = exports.GameEndReason = exports.CardZone = exports.TurnPhase = exports.GamePhase = exports.ActionId = exports.SelectorId = exports.EffectId = exports.TriggerId = exports.KeywordId = exports.Domain = exports.TrophicLevel = exports.TrophicCategoryId = void 0;
+exports.IUCN_CONSERVATION_DATA = exports.GAME_CONSTANTS = exports.TROPHIC_CONNECTIONS = exports.DOMAIN_COMPATIBILITY = exports.ApiStatus = exports.ValidationError = exports.GameActionType = exports.SyncStatus = exports.CardCondition = exports.AcquisitionMethod = exports.UserType = exports.CardAbilitiesText = exports.CardNames = exports.ConservationStatus = exports.AbilityId = exports.CardId = exports.GameEndReason = exports.CardZone = exports.TurnPhase = exports.GamePhase = exports.ActionId = exports.SelectorId = exports.EffectId = exports.TriggerId = exports.KeywordId = exports.Domain = exports.TrophicLevel = exports.TrophicCategoryId = void 0;
 // ============================================================================
 // CORE GAME ENUMS
 // ============================================================================
@@ -306,6 +306,92 @@ var CardId;
     CardId[CardId["VOLCANIC_HYDROGEN_BACTERIA"] = 25] = "VOLCANIC_HYDROGEN_BACTERIA";
     CardId[CardId["NITRIFYING_SOIL_BACTERIA"] = 26] = "NITRIFYING_SOIL_BACTERIA";
     CardId[CardId["SEDIMENT_CHEMOSYNTHETIC_BACTERIA"] = 27] = "SEDIMENT_CHEMOSYNTHETIC_BACTERIA";
+    // Additional species (migrated from legacy files)
+    // Insects and Arthropods
+    CardId[CardId["ANT"] = 28] = "ANT";
+    CardId[CardId["CRICKET"] = 29] = "CRICKET";
+    CardId[CardId["SCORPION"] = 30] = "SCORPION";
+    CardId[CardId["SPIDER"] = 31] = "SPIDER";
+    // Plants and Trees
+    CardId[CardId["APPLE_TREE"] = 32] = "APPLE_TREE";
+    CardId[CardId["BUSH_CHERRY"] = 33] = "BUSH_CHERRY";
+    CardId[CardId["CACTUS"] = 34] = "CACTUS";
+    CardId[CardId["CHERRY_BLOSSOM"] = 35] = "CHERRY_BLOSSOM";
+    CardId[CardId["DAISY"] = 36] = "DAISY";
+    CardId[CardId["DECIDUOUS_TREE"] = 37] = "DECIDUOUS_TREE";
+    CardId[CardId["EELGRASS"] = 38] = "EELGRASS";
+    CardId[CardId["EVERGREEN_TREE"] = 39] = "EVERGREEN_TREE";
+    CardId[CardId["GRAPES"] = 40] = "GRAPES";
+    CardId[CardId["HERB"] = 41] = "HERB";
+    CardId[CardId["HIBISCUS"] = 42] = "HIBISCUS";
+    CardId[CardId["PALM_TREE"] = 43] = "PALM_TREE";
+    CardId[CardId["PRICKLY_PEAR"] = 44] = "PRICKLY_PEAR";
+    CardId[CardId["RICE"] = 45] = "RICE";
+    CardId[CardId["ROSE"] = 46] = "ROSE";
+    CardId[CardId["STRAWBERRY"] = 47] = "STRAWBERRY";
+    CardId[CardId["SUNFLOWER"] = 48] = "SUNFLOWER";
+    CardId[CardId["TULIP"] = 49] = "TULIP";
+    CardId[CardId["WHITE_CLOVER"] = 50] = "WHITE_CLOVER";
+    // Mammals
+    CardId[CardId["BEAVER"] = 51] = "BEAVER";
+    CardId[CardId["BISON"] = 52] = "BISON";
+    CardId[CardId["BOAR"] = 53] = "BOAR";
+    CardId[CardId["CAMEL"] = 54] = "CAMEL";
+    CardId[CardId["CAT"] = 55] = "CAT";
+    CardId[CardId["CHIPMUNK"] = 56] = "CHIPMUNK";
+    CardId[CardId["COW"] = 57] = "COW";
+    CardId[CardId["DOG"] = 58] = "DOG";
+    CardId[CardId["ELEPHANT"] = 59] = "ELEPHANT";
+    CardId[CardId["GIRAFFE"] = 60] = "GIRAFFE";
+    CardId[CardId["GOAT"] = 61] = "GOAT";
+    CardId[CardId["GORILLA"] = 62] = "GORILLA";
+    CardId[CardId["HAMSTER"] = 63] = "HAMSTER";
+    CardId[CardId["HEDGEHOG"] = 64] = "HEDGEHOG";
+    CardId[CardId["HIPPOPOTAMUS"] = 65] = "HIPPOPOTAMUS";
+    CardId[CardId["HORSE"] = 66] = "HORSE";
+    CardId[CardId["KOALA"] = 67] = "KOALA";
+    CardId[CardId["LEOPARD"] = 68] = "LEOPARD";
+    CardId[CardId["LION"] = 69] = "LION";
+    CardId[CardId["LLAMA"] = 70] = "LLAMA";
+    CardId[CardId["MAMMOTH"] = 71] = "MAMMOTH";
+    CardId[CardId["MONKEY"] = 72] = "MONKEY";
+    CardId[CardId["ORANGUTAN"] = 73] = "ORANGUTAN";
+    CardId[CardId["OX"] = 74] = "OX";
+    CardId[CardId["PANDA"] = 75] = "PANDA";
+    CardId[CardId["PIG"] = 76] = "PIG";
+    CardId[CardId["RAM"] = 77] = "RAM";
+    CardId[CardId["RHINOCEROS"] = 78] = "RHINOCEROS";
+    CardId[CardId["TIGER"] = 79] = "TIGER";
+    CardId[CardId["WATER_BUFFALO"] = 80] = "WATER_BUFFALO";
+    CardId[CardId["ZEBRA"] = 81] = "ZEBRA";
+    // Amphibians and Reptiles
+    CardId[CardId["FROG"] = 82] = "FROG";
+    CardId[CardId["SNAKE"] = 83] = "SNAKE";
+    CardId[CardId["TURTLE"] = 84] = "TURTLE";
+    // Invertebrates
+    CardId[CardId["CATERPILLAR"] = 85] = "CATERPILLAR";
+    CardId[CardId["CATERPILLAR_EGG"] = 86] = "CATERPILLAR_EGG";
+    CardId[CardId["EARTHWORM"] = 87] = "EARTHWORM";
+    CardId[CardId["SNAIL"] = 88] = "SNAIL";
+    // Fungi
+    CardId[CardId["MUSHROOM"] = 89] = "MUSHROOM";
+    // Additional specific species (formerly legacy files)
+    // Alternative bear species with different abilities
+    CardId[CardId["GRIZZLY_BEAR"] = 90] = "GRIZZLY_BEAR";
+    // Alternative rabbit species
+    CardId[CardId["COTTONTAIL_RABBIT"] = 91] = "COTTONTAIL_RABBIT";
+    // Additional mammals
+    CardId[CardId["RED_FOX"] = 92] = "RED_FOX";
+    CardId[CardId["HOUSE_MOUSE"] = 93] = "HOUSE_MOUSE";
+    CardId[CardId["COMMON_RACCOON"] = 94] = "COMMON_RACCOON";
+    CardId[CardId["GRAY_WOLF"] = 95] = "GRAY_WOLF";
+    CardId[CardId["WHITE_TAILED_DEER"] = 96] = "WHITE_TAILED_DEER";
+    CardId[CardId["DESERT_LIZARD"] = 97] = "DESERT_LIZARD";
+    // Additional plants
+    CardId[CardId["CORN_MAIZE"] = 98] = "CORN_MAIZE";
+    CardId[CardId["PERENNIAL_RYEGRASS"] = 99] = "PERENNIAL_RYEGRASS";
+    // Additional insects
+    CardId[CardId["MONARCH_BUTTERFLY"] = 100] = "MONARCH_BUTTERFLY"; // Migratory pollinator
 })(CardId || (exports.CardId = CardId = {}));
 /**
  * Ability IDs - Based on BioMasterEngine.txt examples
@@ -334,7 +420,8 @@ var ConservationStatus;
     ConservationStatus[ConservationStatus["VULNERABLE"] = 5] = "VULNERABLE";
     ConservationStatus[ConservationStatus["NEAR_THREATENED"] = 6] = "NEAR_THREATENED";
     ConservationStatus[ConservationStatus["LEAST_CONCERN"] = 7] = "LEAST_CONCERN";
-    ConservationStatus[ConservationStatus["DATA_DEFICIENT"] = 8] = "DATA_DEFICIENT"; // DD - Inadequate information (12.97%)
+    ConservationStatus[ConservationStatus["DATA_DEFICIENT"] = 8] = "DATA_DEFICIENT";
+    ConservationStatus[ConservationStatus["NOT_EVALUATED"] = 9] = "NOT_EVALUATED"; // NE - Not yet evaluated against the criteria
 })(ConservationStatus || (exports.ConservationStatus = ConservationStatus = {}));
 /**
  * Card Names - All card names with their IDs
@@ -462,90 +549,11 @@ var ApiStatus;
 // ============================================================================
 // SPECIES RENDERING ENUMS
 // ============================================================================
-/**
- * CommonName Enum - Maps species common names to their file identifiers
- * Used to connect public/species/ JSON files with OrganismRenderer.tsx
- * Based on the manifest.json and individual species files
- */
-var CommonName;
-(function (CommonName) {
-    // Cards from cards.json - Producers (Trophic Level 1)
-    CommonName["OAK_TREE"] = "oak-tree";
-    CommonName["GIANT_KELP"] = "giant-kelp";
-    CommonName["REED_CANARY_GRASS"] = "reed-canary-grass";
-    // Primary Consumers (Trophic Level 2)
-    CommonName["EUROPEAN_RABBIT"] = "european-rabbit";
-    CommonName["SOCKEYE_SALMON"] = "sockeye-salmon";
-    // Secondary/Tertiary Consumers (Trophic Level 3-4)
-    CommonName["AMERICAN_BLACK_BEAR"] = "american-black-bear";
-    CommonName["GREAT_WHITE_SHARK"] = "great-white-shark";
-    // Decomposers (Trophic Level -1)
-    CommonName["MYCENA_MUSHROOM"] = "mycena-mushroom";
-    CommonName["TURKEY_VULTURE"] = "turkey-vulture";
-    // Parasites
-    CommonName["DEER_TICK"] = "deer-tick";
-    // Detritivores (Trophic Level -2)
-    CommonName["COMMON_EARTHWORM"] = "common-earthworm";
-    CommonName["DUNG_BEETLE"] = "dung-beetle";
-    // Saprotrophs (Trophic Level -1)
-    CommonName["SOIL_BACTERIA"] = "soil-bacteria";
-    CommonName["DECOMPOSER_MUSHROOM"] = "decomposer-mushroom";
-    // Chemoautotrophs (Trophic Level 1)
-    CommonName["DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA"] = "deep-sea-hydrothermal-vent-bacteria";
-    CommonName["IRON_SPRING_BACTERIA"] = "iron-spring-bacteria";
-    // Mutualists (Variable trophic level)
-    CommonName["MYCORRHIZAL_FUNGI"] = "mycorrhizal-fungi";
-    CommonName["NITROGEN_FIXING_BACTERIA"] = "nitrogen-fixing-bacteria";
-    // Marine organisms
-    CommonName["PACIFIC_KRILL"] = "pacific-krill";
-    CommonName["PHYTOPLANKTON"] = "phytoplankton";
-    CommonName["ZOOPLANKTON"] = "zooplankton";
-    CommonName["EUROPEAN_HONEY_BEE"] = "european-honey-bee";
-    // Additional chemoautotrophs
-    CommonName["VOLCANIC_HYDROGEN_BACTERIA"] = "volcanic-hydrogen-bacteria";
-    CommonName["NITRIFYING_SOIL_BACTERIA"] = "nitrifying-soil-bacteria";
-    CommonName["SEDIMENT_CHEMOSYNTHETIC_BACTERIA"] = "sediment-chemosynthetic-bacteria";
-    // Legacy species from existing files (keep for backward compatibility)
-    CommonName["RABBIT"] = "rabbit";
-    CommonName["BEAR"] = "bear";
-    CommonName["MOUSE"] = "mouse";
-})(CommonName || (exports.CommonName = CommonName = {}));
-/**
- * Species Display Names - Maps CommonName enum to human-readable display names
- * Based on the commonName field from species JSON files
- */
-exports.SPECIES_DISPLAY_NAMES = {
-    // Cards from cards.json - match the CommonName field exactly
-    [CommonName.OAK_TREE]: 'Oak Tree',
-    [CommonName.GIANT_KELP]: 'Giant Kelp',
-    [CommonName.REED_CANARY_GRASS]: 'Reed Canary Grass',
-    [CommonName.EUROPEAN_RABBIT]: 'European Rabbit',
-    [CommonName.SOCKEYE_SALMON]: 'Sockeye Salmon',
-    [CommonName.AMERICAN_BLACK_BEAR]: 'American Black Bear',
-    [CommonName.GREAT_WHITE_SHARK]: 'Great White Shark',
-    [CommonName.MYCENA_MUSHROOM]: 'Mycena Mushroom',
-    [CommonName.TURKEY_VULTURE]: 'Turkey Vulture',
-    [CommonName.DEER_TICK]: 'Deer Tick',
-    [CommonName.COMMON_EARTHWORM]: 'Common Earthworm',
-    [CommonName.DUNG_BEETLE]: 'Dung Beetle',
-    [CommonName.SOIL_BACTERIA]: 'Soil Bacteria',
-    [CommonName.DECOMPOSER_MUSHROOM]: 'Decomposer Mushroom',
-    [CommonName.DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA]: 'Deep Sea Hydrothermal Vent Bacteria',
-    [CommonName.IRON_SPRING_BACTERIA]: 'Iron Spring Bacteria',
-    [CommonName.MYCORRHIZAL_FUNGI]: 'Mycorrhizal Fungi',
-    [CommonName.NITROGEN_FIXING_BACTERIA]: 'Nitrogen Fixing Bacteria',
-    [CommonName.PACIFIC_KRILL]: 'Pacific Krill',
-    [CommonName.PHYTOPLANKTON]: 'Phytoplankton',
-    [CommonName.ZOOPLANKTON]: 'Zooplankton',
-    [CommonName.EUROPEAN_HONEY_BEE]: 'European Honey Bee',
-    [CommonName.VOLCANIC_HYDROGEN_BACTERIA]: 'Volcanic Hydrogen Bacteria',
-    [CommonName.NITRIFYING_SOIL_BACTERIA]: 'Nitrifying Soil Bacteria',
-    [CommonName.SEDIMENT_CHEMOSYNTHETIC_BACTERIA]: 'Sediment Chemosynthetic Bacteria',
-    // Legacy species (backward compatibility)
-    [CommonName.RABBIT]: 'European Rabbit',
-    [CommonName.BEAR]: 'American Black Bear',
-    [CommonName.MOUSE]: 'Mouse'
-};
+// ============================================================================
+// NOTE: SpeciesFileId enum has been removed as files now use enum names directly
+// Files are now loaded using nameId directly (e.g., CARD_OAK_TREE.json)
+// This eliminates the need for conversion between naming systems
+// ============================================================================
 // ============================================================================
 // UTILITY TYPES & CONSTANTS
 // ============================================================================
@@ -648,7 +656,7 @@ exports.IUCN_CONSERVATION_DATA = {
     },
     [ConservationStatus.LEAST_CONCERN]: {
         percentage: 50.51,
-        packRarity: 50646, // per 100,000 packs (adjusted to make total = 100,000)
+        packRarity: 50396, // per 100,000 packs (adjusted to make total = 100,000 including NOT_EVALUATED)
         description: 'Widespread and abundant',
         color: '#008000', // 💚 Green - Common
         emoji: '💚',
@@ -660,6 +668,14 @@ exports.IUCN_CONSERVATION_DATA = {
         description: 'Inadequate information for assessment',
         color: '#808080', // 🩶 Gray - Special
         emoji: '🩶',
+        rarityName: 'Special'
+    },
+    [ConservationStatus.NOT_EVALUATED]: {
+        percentage: 0.25,
+        packRarity: 250, // per 100,000 packs
+        description: 'Not yet evaluated against the criteria',
+        color: '#C0C0C0', // 🤍 Silver - Special
+        emoji: '🤍',
         rarityName: 'Special'
     }
 };

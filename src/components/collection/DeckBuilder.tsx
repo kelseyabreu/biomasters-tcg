@@ -38,10 +38,11 @@ import {
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import CollectionCard, { CardPropertyFilter } from './CollectionCard';
 import PropertyFilterModal from './PropertyFilterModal';
+import { nameIdToCardId, cardIdToNameId } from '@shared/utils/cardIdHelpers';
 import './DeckBuilder.css';
 
 interface DeckCard {
-  speciesName: string;
+  cardId: number;
   quantity: number;
 }
 
@@ -93,31 +94,51 @@ const DeckBuilder: React.FC = () => {
   // Auto-scroll to selected card in collection
   useEffect(() => {
     if (selectedCardInDeck && collectionGridRef.current) {
-      const speciesName = selectedCardInDeck.split('-')[0];
-      const cardElement = collectionGridRef.current.querySelector(`[data-species="${speciesName}"]`);
-      if (cardElement) {
-        cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Extract cardId from the new key format: deck-card-{cardIndex}-{cardId}-{index}
+      const parts = selectedCardInDeck.split('-');
+      if (parts.length >= 4) {
+        const cardId = parts[3]; // cardId is the 4th part
+        const cardElement = collectionGridRef.current.querySelector(`[data-card-id="${cardId}"]`);
+        if (cardElement) {
+          cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }
   }, [selectedCardInDeck]);
   const [showOptionsPopover, setShowOptionsPopover] = useState(false);
 
-  // Memoized owned species calculation
-  const ownedSpecies = useMemo(() => {
-    console.log('🧮 Calculating owned species (memoized)');
-    return offlineCollection ? Object.keys(offlineCollection.species_owned) : [];
-  }, [offlineCollection?.species_owned]);
+  // Memoized ownership data map for faster lookups
+  const ownershipDataMap = useMemo(() => {
+    const map = new Map<number, any>();
+    if (offlineCollection?.cards_owned) {
+      Object.entries(offlineCollection.cards_owned).forEach(([cardIdStr, data]) => {
+        map.set(parseInt(cardIdStr), data);
+      });
+    }
+    return map;
+  }, [offlineCollection?.cards_owned]);
+
+  // Memoized deck cards map for faster lookups
+  const deckCardsMap = useMemo(() => {
+    const map = new Map<number, number>();
+    currentDeck.cards.forEach(deckCard => {
+      map.set(deckCard.cardId, deckCard.quantity);
+    });
+    return map;
+  }, [currentDeck.cards]);
 
   // Memoized filtered collection cards with ownership data
   const filteredCollectionCards = useMemo(() => {
-    console.log('🧮 Filtering collection cards (memoized)');
-
     return allSpeciesCards
-      .filter(card => ownedSpecies.includes(card.speciesName))
       .map((card) => {
-        const ownershipData = offlineCollection?.species_owned[card.speciesName];
-        const ownedCount = typeof ownershipData === 'object' ? ownershipData.quantity : (ownershipData || 0);
-        const inDeckCount = currentDeck.cards.find(c => c.speciesName === card.speciesName)?.quantity || 0;
+        const cardId = nameIdToCardId(card.nameId);
+        if (!cardId) return null;
+
+        const ownershipData = ownershipDataMap.get(cardId);
+        if (!ownershipData) return null; // Only include owned cards
+
+        const ownedCount = ownershipData.quantity || 0;
+        const inDeckCount = deckCardsMap.get(cardId) || 0;
 
         return {
           card,
@@ -125,49 +146,69 @@ const DeckBuilder: React.FC = () => {
           ownedCount,
           inDeckCount
         };
-      });
-  }, [allSpeciesCards, ownedSpecies, offlineCollection?.species_owned, currentDeck.cards]);
-
-  // Memoized card selection handler
-  const handleAddCardToDeck = useCallback((speciesName: string) => {
-    addCardToDeck(speciesName);
-  }, []);
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [allSpeciesCards, ownershipDataMap, deckCardsMap]);
 
   // Get saved decks
   const savedDecks = offlineCollection?.savedDecks || [];
   const activeDeck = offlineCollection?.activeDeck;
-  
+
   // Add card to deck
-  const addCardToDeck = (speciesName: string) => {
-    const existingCard = currentDeck.cards.find(card => card.speciesName === speciesName);
-    
-    if (existingCard) {
-      // Increase quantity (max 3 per species)
-      if (existingCard.quantity < 3) {
-        setCurrentDeck(prev => ({
+  const addCardToDeck = (cardId: number) => {
+    setCurrentDeck(prev => {
+      const existingCard = prev.cards.find(card => card.cardId === cardId);
+
+      if (existingCard) {
+        // Increase quantity (max 3 per species)
+        if (existingCard.quantity < 3) {
+          return {
+            ...prev,
+            cards: prev.cards.map(card =>
+              card.cardId === cardId
+                ? { ...card, quantity: card.quantity + 1 }
+                : card
+            )
+          };
+        } else {
+          return prev; // Return unchanged state - already at max
+        }
+      } else {
+        // Add new card
+        return {
           ...prev,
-          cards: prev.cards.map(card =>
-            card.speciesName === speciesName
-              ? { ...card, quantity: card.quantity + 1 }
-              : card
-          )
-        }));
+          cards: [...prev.cards, { cardId, quantity: 1 }]
+        };
       }
-    } else {
-      // Add new card
-      setCurrentDeck(prev => ({
-        ...prev,
-        cards: [...prev.cards, { speciesName, quantity: 1 }]
-      }));
-    }
+    });
   };
 
+  // Debounce mechanism to prevent rapid clicks
+  const [isAddingCard, setIsAddingCard] = useState(false);
+
+  // Memoized card selection handler
+  const handleAddCardToDeck = useCallback((nameId: string) => {
+    if (isAddingCard) {
+      return; // Prevent rapid clicks
+    }
+
+    const cardId = nameIdToCardId(nameId);
+    if (cardId) {
+      setIsAddingCard(true);
+      addCardToDeck(cardId);
+      // Reset the flag after a short delay
+      setTimeout(() => setIsAddingCard(false), 100);
+    } else {
+      console.error(`❌ Could not convert nameId ${nameId} to cardId`);
+    }
+  }, [addCardToDeck, isAddingCard]);
+
   // Remove card from deck
-  const removeCardFromDeck = (speciesName: string) => {
+  const removeCardFromDeck = (cardId: number) => {
     setCurrentDeck(prev => ({
       ...prev,
       cards: prev.cards.reduce((acc: DeckCard[], card) => {
-        if (card.speciesName === speciesName) {
+        if (card.cardId === cardId) {
           if (card.quantity > 1) {
             acc.push({ ...card, quantity: card.quantity - 1 });
           }
@@ -182,8 +223,6 @@ const DeckBuilder: React.FC = () => {
 
   // Memoized deck stats calculation
   const deckStats = useMemo(() => {
-    console.log('🧮 Calculating deck stats (memoized)');
-
     const totalCards = currentDeck.cards.reduce((sum, card) => sum + card.quantity, 0);
     const hasValidCardCount = totalCards >= 20 && totalCards <= 30;
     const hasValidName = currentDeck.name.trim() !== '';
@@ -641,18 +680,20 @@ const DeckBuilder: React.FC = () => {
                   padding: '8px'
                 }}
               >
-                {currentDeck.cards.flatMap(card =>
+                {currentDeck.cards.flatMap((card, cardIndex) =>
                   Array.from({ length: card.quantity }, (_, index) => {
-                    const species = allSpeciesCards.find(s => s.speciesName === card.speciesName);
+                    const nameId = cardIdToNameId(card.cardId);
+                    const species = nameId ? allSpeciesCards.find(s => s.nameId === nameId) : null;
+                    const uniqueKey = `deck-card-${cardIndex}-${card.cardId}-${index}`;
                     return species ? (
                       <div
-                        key={`${card.speciesName}-${index}`}
-                        className={`deck-card-slot ${selectedCardInDeck === `${card.speciesName}-${index}` ? 'selected' : ''}`}
-                        onClick={() => setSelectedCardInDeck(`${card.speciesName}-${index}`)}
+                        key={uniqueKey}
+                        className={`deck-card-slot ${selectedCardInDeck === uniqueKey ? 'selected' : ''}`}
+                        onClick={() => setSelectedCardInDeck(uniqueKey)}
                         style={{
                           position: 'relative',
                           cursor: 'pointer',
-                          border: selectedCardInDeck === `${card.speciesName}-${index}` ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-color-light)',
+                          border: selectedCardInDeck === uniqueKey ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-color-light)',
                           borderRadius: '8px',
                           overflow: 'hidden'
                         }}
@@ -664,7 +705,7 @@ const DeckBuilder: React.FC = () => {
                           onClick={() => {}}
                           propertyFilter={propertyFilter}
                         />
-                        {selectedCardInDeck === `${card.speciesName}-${index}` && (
+                        {selectedCardInDeck === uniqueKey && (
                           <div style={{
                             position: 'absolute',
                             top: '4px',
@@ -680,7 +721,7 @@ const DeckBuilder: React.FC = () => {
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            removeCardFromDeck(card.speciesName);
+                            removeCardFromDeck(card.cardId);
                             setSelectedCardInDeck(null);
                           }}
                           >
@@ -701,13 +742,15 @@ const DeckBuilder: React.FC = () => {
               <IonGrid className="plr-0" ref={collectionGridRef}>
                 <IonRow>
                   {filteredCollectionCards.map(({ card, ownershipData, ownedCount, inDeckCount }) => {
-                      const isSelected = selectedCardInDeck?.startsWith(card.speciesName);
+                      const cardId = nameIdToCardId(card.nameId);
+                      const isSelected = selectedCardInDeck?.includes(`-${cardId}-`);
 
                       return (
-                        <IonCol key={card.speciesName} size="6" sizeMd="4" sizeLg="3">
+                        <IonCol key={card.nameId} size="6" sizeMd="4" sizeLg="3">
                           <div
                             className={`collection-card-wrapper ${isSelected ? 'highlighted' : ''}`}
-                            data-species={card.speciesName}
+                            data-species={card.nameId}
+                            data-card-id={cardId}
                             style={{
                               position: 'relative',
                               border: isSelected ? '2px solid var(--ion-color-primary)' : 'none',
@@ -719,8 +762,8 @@ const DeckBuilder: React.FC = () => {
                               species={card}
                               isOwned={ownedCount > 0}
                               quantity={ownedCount}
-                              acquiredVia={typeof ownershipData === 'object' ? ownershipData.acquired_via : 'pack'}
-                              onClick={() => addCardToDeck(card.speciesName)}
+                              acquiredVia={ownershipData?.acquired_via || 'pack'}
+                              onClick={() => handleAddCardToDeck(card.nameId)}
                               propertyFilter={propertyFilter}
                               showBasicInfo={true}
                             />
@@ -762,7 +805,8 @@ const DeckBuilder: React.FC = () => {
                                   style={{ fontSize: '14px', cursor: 'pointer' }}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    removeCardFromDeck(card.speciesName);
+                                    const cardId = nameIdToCardId(card.nameId);
+                                    if (cardId) removeCardFromDeck(cardId);
                                   }}
                                 />
                               </div>

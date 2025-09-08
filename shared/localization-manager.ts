@@ -264,24 +264,55 @@ export class LocalizationManager implements ILocalizationManager {
     const data = this._languageData;
     if (!data) return `[${textId}]`;
 
-    // Search in all possible locations
-    const allTexts = {
-      ...data.cards.names,
-      ...data.cards.scientificNames,
-      ...data.cards.descriptions,
-      ...data.abilities.names,
-      ...data.abilities.descriptions,
-      ...data.abilities.flavorText,
-      ...data.ui.gameActions,
-      ...data.ui.gamePhases,
-      ...data.ui.gameStates,
-      ...data.ui.errorMessages,
-      ...data.ui.gameTerms,
-      ...data.ui.keywords,
-      ...data.ui.trophicCategories
-    };
+    // Optimized search: check each category directly instead of creating a merged object
+    // This avoids the overhead of object spreading and is much faster
 
-    return allTexts[textId as keyof typeof allTexts] ?? `[${textId}]`;
+    // Check cards first (most common)
+    if (data.cards.names[textId as keyof typeof data.cards.names]) {
+      return data.cards.names[textId as keyof typeof data.cards.names];
+    }
+    if (data.cards.scientificNames[textId as keyof typeof data.cards.scientificNames]) {
+      return data.cards.scientificNames[textId as keyof typeof data.cards.scientificNames];
+    }
+    if (data.cards.descriptions[textId as keyof typeof data.cards.descriptions]) {
+      return data.cards.descriptions[textId as keyof typeof data.cards.descriptions];
+    }
+
+    // Check abilities
+    if (data.abilities.names[textId as keyof typeof data.abilities.names]) {
+      return data.abilities.names[textId as keyof typeof data.abilities.names];
+    }
+    if (data.abilities.descriptions[textId as keyof typeof data.abilities.descriptions]) {
+      return data.abilities.descriptions[textId as keyof typeof data.abilities.descriptions];
+    }
+    if (data.abilities.flavorText && data.abilities.flavorText[textId as keyof typeof data.abilities.flavorText]) {
+      return data.abilities.flavorText[textId as keyof typeof data.abilities.flavorText];
+    }
+
+    // Check UI text
+    if (data.ui.gameActions[textId as keyof typeof data.ui.gameActions]) {
+      return data.ui.gameActions[textId as keyof typeof data.ui.gameActions]!;
+    }
+    if (data.ui.gamePhases[textId as keyof typeof data.ui.gamePhases]) {
+      return data.ui.gamePhases[textId as keyof typeof data.ui.gamePhases]!;
+    }
+    if (data.ui.gameStates[textId as keyof typeof data.ui.gameStates]) {
+      return data.ui.gameStates[textId as keyof typeof data.ui.gameStates]!;
+    }
+    if (data.ui.errorMessages[textId as keyof typeof data.ui.errorMessages]) {
+      return data.ui.errorMessages[textId as keyof typeof data.ui.errorMessages]!;
+    }
+    if (data.ui.gameTerms[textId as keyof typeof data.ui.gameTerms]) {
+      return data.ui.gameTerms[textId as keyof typeof data.ui.gameTerms]!;
+    }
+    if (data.ui.keywords[textId as keyof typeof data.ui.keywords]) {
+      return data.ui.keywords[textId as keyof typeof data.ui.keywords]!;
+    }
+    if (data.ui.trophicCategories[textId as keyof typeof data.ui.trophicCategories]) {
+      return data.ui.trophicCategories[textId as keyof typeof data.ui.trophicCategories]!;
+    }
+
+    return `[${textId}]`;
   }
 }
 

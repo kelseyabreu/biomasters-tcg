@@ -28,6 +28,10 @@ exports.TROPHIC_CONNECTIONS = exports.DOMAIN_COMPATIBILITY = exports.GAME_CONSTA
 __exportStar(require("./enums"), exports);
 // Export all types
 __exportStar(require("./types"), exports);
+// Export shared utilities
+__exportStar(require("./utils/cardIdHelpers"), exports);
+__exportStar(require("./data/DataLoader"), exports);
+__exportStar(require("./data/DataCache"), exports);
 var enums_1 = require("./enums");
 Object.defineProperty(exports, "CardId", { enumerable: true, get: function () { return enums_1.CardId; } });
 Object.defineProperty(exports, "AbilityId", { enumerable: true, get: function () { return enums_1.AbilityId; } });

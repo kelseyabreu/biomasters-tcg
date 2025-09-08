@@ -111,7 +111,7 @@ export class D100ProbabilitySystem {
     };
 
     // Try specific predator-prey combination first
-    const attackerName = attacker.speciesName.toLowerCase();
+    const attackerName = attacker.nameId.toLowerCase();
     const defenderCategory = this.categorizePreySize(defender);
     
     if (predatorPreyMatrix[attackerName]?.[defenderCategory]) {
@@ -344,10 +344,10 @@ export function testD100System(cards: Card[]): void {
   }
 
   // Find some interesting matchups
-  const wolf = cards.find(c => c.speciesName.includes('wolf'));
-  const rabbit = cards.find(c => c.speciesName.includes('rabbit'));
-  const bear = cards.find(c => c.speciesName.includes('bear'));
-  const mouse = cards.find(c => c.speciesName.includes('mouse'));
+  const wolf = cards.find(c => c.nameId.includes('wolf'));
+  const rabbit = cards.find(c => c.nameId.includes('rabbit'));
+  const bear = cards.find(c => c.nameId.includes('bear'));
+  const mouse = cards.find(c => c.nameId.includes('mouse'));
 
   const environment: EnvironmentalConditions = {
     temperature: 15,

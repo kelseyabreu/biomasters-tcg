@@ -39,6 +39,7 @@ import {
   rocket
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import { getCollectionStats, cardIdToNameId } from '@shared/utils/cardIdHelpers';
 import { EcosystemBoard } from '../game/EcosystemBoard';
 import { EventEffects } from '../game/EventEffects';
 import { TutorialSystem } from '../tutorial/TutorialSystem';
@@ -129,7 +130,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
 
     // Check if this is an event card
     const isEventCard = selectedCard.phyloAttributes?.specialKeywords?.includes('EVENT') ||
-                       selectedCard.commonName.toLowerCase().includes('event');
+                       selectedCard.nameId.toLowerCase().includes('event');
 
     if (isEventCard) {
       console.log('🎪 Processing event card highlighting (memoized)');
@@ -305,18 +306,23 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
     console.log('🎮 Initializing cards from collection:', offlineCollection);
     if (offlineCollection) {
       const cardMap = new Map<string, Card>();
-      console.log('🎮 Species owned:', Object.keys(offlineCollection.species_owned));
+      console.log('🎮 Cards owned:', Object.keys(offlineCollection.cards_owned));
       console.log('🎮 Active deck:', offlineCollection.activeDeck);
       console.log('🎮 Saved decks:', offlineCollection.savedDecks);
       // Convert collection to Card objects
-      Object.keys(offlineCollection.species_owned).forEach(speciesName => {
+      Object.keys(offlineCollection.cards_owned).forEach(cardIdStr => {
+        const cardId = parseInt(cardIdStr);
+        const nameId = cardIdToNameId(cardId);
+        if (!nameId) return;
         // perfect if things fail or are wrong make sure to correct the root cause or fix the test or ask questions if you are unsure. we want everything working correctly and as how the rules say
         // Create mock card data - in real implementation, load from JSON files
         const card: Card = {
-          id: speciesName,
-          speciesName,
-          commonName: speciesName.charAt(0).toUpperCase() + speciesName.slice(1),
-          scientificName: `${speciesName} scientificus`,
+          id: nameId,
+          cardId: cardId,
+          nameId: nameId,
+          scientificNameId: `SCIENTIFIC_${nameId.replace('CARD_', '')}`,
+          descriptionId: `DESC_${nameId.replace('CARD_', '')}`,
+          taxonomyId: `TAXONOMY_${nameId.replace('CARD_', '')}`,
           trophicRole: Math.random() > 0.5 ? 'herbivore' : 'carnivore' as any,
           habitat: 'temperate' as any,
           power: Math.floor(Math.random() * 10) + 1,
@@ -328,7 +334,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
           abilities: [],
           conservationStatus: 'least_concern' as any,
           artwork: '',
-          description: `A ${speciesName} species`,
+          description: `A ${nameId.replace('CARD_', '').toLowerCase().replace(/_/g, ' ')} species`,
           phyloAttributes: {
             terrains: ['Forest'],
             climates: ['Cool'],
@@ -344,10 +350,10 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
             specialKeywords: [],
             pointValue: Math.floor(Math.random() * 5) + 1,
             conservationStatus: 'Least Concern',
-            compatibilityNotes: `Compatible with similar ${speciesName} species`
+            compatibilityNotes: `Compatible with similar ${nameId.replace('CARD_', '').toLowerCase().replace(/_/g, ' ')} species`
           }
         };
-        cardMap.set(speciesName, card);
+        cardMap.set(nameId, card);
       });
       console.log('🎮 Created card map with', cardMap.size, 'cards');
       setAllCards(cardMap);
@@ -472,7 +478,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
       const selectedCard = allCards.get(baseSpeciesName);
 
       if (selectedCard) {
-        console.log('🚶 Processing movement highlighting for:', selectedCard.commonName);
+        console.log('🚶 Processing movement highlighting for:', selectedCard.nameId);
         const highlights = calculateMovementHighlights(
           selectedCard,
           position,
@@ -753,7 +759,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
             <IonCardContent>
               <p>Progress through increasingly challenging ecosystems to become a master ecologist!</p>
 
-              {offlineCollection && Object.keys(offlineCollection.species_owned).length < 5 ? (
+              {offlineCollection && getCollectionStats(offlineCollection.cards_owned).ownedSpecies < 5 ? (
                 <IonCard color="warning">
                   <IonCardContent>
                     <p>⚠️ You need at least 5 species to play campaign mode.</p>

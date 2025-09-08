@@ -4,42 +4,44 @@
  */
 
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { gameDataManager } from '../../services/GameDataManager';
 import { TurnPhase, GameActionType, GamePhase } from '../../../../shared/enums';
 
 describe('Final Turn System Integration Tests', () => {
+  let gameData: any;
   let engine: BioMastersEngine;
 
   beforeAll(async () => {
     // Load real game data for final turn testing
-    await gameDataManager.loadGameData();
+    
+    gameData = await loadTestGameData();
   });
 
   beforeEach(() => {
     // Use real game data loaded in beforeAll
-    const rawCards = gameDataManager.getCards();
-    const rawAbilities = gameDataManager.getAbilities();
-    const rawKeywords = gameDataManager.getKeywords();
+    const rawCards = gameData.cards;
+    const rawAbilities = gameData.abilities;
+    const rawKeywords = gameData.keywords;
 
     // Convert data to engine-expected format
     const cardDatabase = new Map<number, any>();
-    rawCards.forEach((card, cardId) => {
-      cardDatabase.set(Number(cardId), {
+    rawCards.forEach((card: any) => {
+      cardDatabase.set(card.id, {
         ...card,
-        cardId: Number(cardId),
+        id: card.id,
         victoryPoints: card.victoryPoints || 1 // Ensure required field
       });
     });
 
     const abilityDatabase = new Map<number, any>();
-    rawAbilities.forEach((ability, abilityId) => {
-      abilityDatabase.set(abilityId, ability);
+    rawAbilities.forEach((ability: any) => {
+      abilityDatabase.set(ability.id, ability);
     });
 
     const keywordDatabase = new Map<number, string>();
-    rawKeywords.forEach((keyword, keywordId) => {
-      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
+    rawKeywords.forEach((keyword: any) => {
+      keywordDatabase.set(keyword.id, keyword.keyword_name);
     });
 
     // Create engine with real data using production constructor

@@ -45,9 +45,9 @@ import {
 
 // Import the battle store instead of game engine
 import useHybridGameStore from '../../state/hybridGameStore';
-import { CommonName, SPECIES_DISPLAY_NAMES, GamePhase } from '../../../shared/enums';
+import { GamePhase } from '../../../shared/enums';
 import { useLocalization } from '../../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../../utils/cardLocalizationMapping';
+
 import OrganismRenderer from '../OrganismRenderer';
 import { TCGGameService } from '../../services/TCGGameService';
 
@@ -208,41 +208,48 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     return match ? match[1] : instanceId;
   };
 
-  // Helper function to get card data (simplified for now)
+  // Helper function to get card data from the store
   const getCardData = (instanceId: string): any => {
-    // TODO: Get card data from store or game state
-    // For now, return a placeholder object
+    // Extract card ID from instance ID (e.g., "1" from "1_0" or just "1")
+    const cardId = parseInt(instanceId.split('_')[0]);
+
+    // Get card data from the store
+    const allSpeciesCards = useHybridGameStore(state => state.allSpeciesCards);
+    const cardData = allSpeciesCards.find(card => card.cardId === cardId);
+
+    if (cardData) {
+      return {
+        nameId: cardData.nameId,
+        scientificNameId: cardData.scientificNameId,
+        victoryPoints: cardData.energyCost || 1, // Use energy cost as victory points for now
+        trophicLevel: cardData.trophicRole || 'Unknown',
+        power: cardData.power || 0,
+        health: cardData.health || 1
+      };
+    }
+
+    // Fallback for unknown cards
     return {
-      CommonName: 'Card',
-      ScientificName: 'Species name',
-      VictoryPoints: 1,
-      TrophicLevel: 1
+      nameId: 'CARD_UNKNOWN',
+      scientificNameId: 'SCIENTIFIC_UNKNOWN',
+      victoryPoints: 1,
+      trophicLevel: 'Unknown',
+      power: 0,
+      health: 1
     };
   };
 
   // Helper function to get localized card names for battle screen
   const getLocalizedCardName = (cardData: any): string => {
-    if (!cardData?.CommonName) return 'Unknown';
-
-    const mockCard = {
-      commonName: cardData.CommonName,
-      scientificName: cardData.ScientificName || ''
-    };
-
-    const localizedCard = getLocalizedCardData(mockCard, localization);
-    return localizedCard.displayName;
+    if (!cardData?.nameId) return 'Unknown';
+    // Use localization system to get proper card name
+    return localization.getCardName(cardData.nameId as any);
   };
 
   const getLocalizedScientificName = (cardData: any): string => {
-    if (!cardData?.ScientificName) return '';
-
-    const mockCard = {
-      commonName: cardData.CommonName || '',
-      scientificName: cardData.ScientificName
-    };
-
-    const localizedCard = getLocalizedCardData(mockCard, localization);
-    return localizedCard.displayScientificName;
+    if (!cardData?.scientificNameId) return '';
+    // Use localization system to get proper scientific name
+    return localization.getScientificName(cardData.scientificNameId as any);
   };
 
   // Handle forfeit/quit match
@@ -393,12 +400,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
               <div
                 className="ecosystem-board"
                 style={{
-                  position: 'relative',
-                  width: `${gameState.gameSettings.gridWidth * 60}px`,
-                  height: `${gameState.gameSettings.gridHeight * 60}px`,
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${gameState.gameSettings.gridWidth}, 60px)`,
+                  gridTemplateRows: `repeat(${gameState.gameSettings.gridHeight}, 60px)`,
+                  gap: '1px',
                   margin: '0 auto',
                   maxWidth: '90vw',
-                  maxHeight: '60vh'
+                  maxHeight: '60vh',
+                  justifyContent: 'center'
                 }}
               >
 
@@ -417,11 +426,8 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                         className={`grid-cell ${card ? 'occupied' : 'empty'} ${isValidPosition ? 'highlighted' : ''} ${isHomePosition ? 'home-position' : ''}`}
                         onClick={() => handleGridPositionClick(x, y)}
                         style={{
-                          position: 'absolute',
-                          left: x * 60,
-                          top: y * 60,
-                          width: 60,
-                          height: 60,
+                          width: '60px',
+                          height: '60px',
                           border: '1px solid rgba(255, 255, 255, 0.05)',
                           borderRadius: '8px',
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -430,7 +436,8 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           background: 'rgba(255, 255, 255, 0.02)',
-                          backdropFilter: 'blur(5px)'
+                          backdropFilter: 'blur(5px)',
+                          position: 'relative'
                         }}
                       >
                         {card && (

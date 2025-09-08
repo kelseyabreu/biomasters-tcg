@@ -15,6 +15,7 @@ import {
   CardId
 } from '@biomasters/shared';
 
+
 const router = Router();
 
 /**
@@ -255,21 +256,23 @@ router.get('/collection', requireAuth, asyncHandler(async (req, res) => {
   const { page = 1, limit = 50, search } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
-  // Get user's collection (species names only)
+  // Get user's collection with card data (using CardId system)
   let collectionQuery = db
     .selectFrom('user_cards')
+    .innerJoin('cards', 'user_cards.card_id', 'cards.id')
     .select([
-      'species_name',
-      'quantity',
-      'acquired_via',
-      'first_acquired_at'
+      'user_cards.card_id',
+      'cards.card_name',
+      'user_cards.quantity',
+      'user_cards.acquired_via',
+      'user_cards.first_acquired_at'
     ])
     .where('user_cards.user_id', '=', req.user.id)
     .orderBy('user_cards.first_acquired_at', 'desc');
 
-  // Add search filter if provided (basic species name search)
+  // Add search filter if provided (search by card name)
   if (search && typeof search === 'string') {
-    collectionQuery = collectionQuery.where('species_name', 'ilike', `%${search}%`);
+    collectionQuery = collectionQuery.where('cards.card_name', 'ilike', `%${search}%`);
   }
 
   // Apply pagination
@@ -281,11 +284,12 @@ router.get('/collection', requireAuth, asyncHandler(async (req, res) => {
   // Get total count for pagination
   let totalQuery = db
     .selectFrom('user_cards')
-    .select(db.fn.count('species_name').as('total'))
+    .innerJoin('cards', 'user_cards.card_id', 'cards.id')
+    .select(db.fn.count('user_cards.card_id').as('total'))
     .where('user_cards.user_id', '=', req.user.id);
 
   if (search && typeof search === 'string') {
-    totalQuery = totalQuery.where('species_name', 'ilike', `%${search}%`);
+    totalQuery = totalQuery.where('cards.card_name', 'ilike', `%${search}%`);
   }
 
   const totalResult = await totalQuery.execute();
@@ -432,10 +436,8 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
           .values({
             user_id: req.user!.id,
             card_id: card.id,
-            species_name: card.common_name || card.card_name, // Fallback for compatibility
             quantity: 1,
-            acquired_via: 'pack',
-            migrated_from_species: false
+            acquired_via: 'pack'
           })
           .execute();
       }
@@ -514,6 +516,13 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
     });
   }
 
+  // Get card name for logging
+  const card = await db
+    .selectFrom('cards')
+    .select('card_name')
+    .where('id', '=', redemption.card_id)
+    .executeTakeFirst();
+
   // Redeem the card
   await db.transaction().execute(async (trx) => {
     // Mark as redeemed
@@ -527,12 +536,12 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
       .where('id', '=', redemption.id)
       .execute();
 
-    // Add species to user collection
+    // Add card to user collection
     const existing = await trx
       .selectFrom('user_cards')
       .selectAll()
       .where('user_id', '=', req.user!.id)
-      .where('species_name', '=', redemption.species_name)
+      .where('card_id', '=', redemption.card_id)
       .executeTakeFirst();
 
     if (existing) {
@@ -544,18 +553,17 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
           last_acquired_at: new Date()
         })
         .where('user_id', '=', req.user!.id)
-        .where('species_name', '=', redemption.species_name)
+        .where('card_id', '=', redemption.card_id)
         .execute();
     } else {
-      // Add new species
+      // Add new card
       await trx
         .insertInto('user_cards')
         .values({
           user_id: req.user!.id,
-          species_name: redemption.species_name,
+          card_id: redemption.card_id,
           quantity: 1,
-          acquired_via: 'redeem',
-          migrated_from_species: false
+          acquired_via: 'redeem'
         })
         .execute();
     }
@@ -566,7 +574,7 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
       .values({
         user_id: req.user!.id,
         type: 'reward',
-        description: `Redeemed physical card: ${redemption.species_name}`,
+        description: `Redeemed physical card: ${card?.card_name || 'Unknown Card'}`,
         eco_credits_change: 0
       })
       .execute();
@@ -575,7 +583,7 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
   res.json({
     success: true,
     message: 'Physical card redeemed successfully',
-    species_name: redemption.species_name,
+    card_name: card?.card_name || 'Unknown Card',
     code: redemption.code
   });
   return;

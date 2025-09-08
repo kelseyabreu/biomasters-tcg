@@ -7,10 +7,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonSearchbar, IonGrid, IonRow, IonCol, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonButton, IonIcon, IonProgressBar, IonText, IonSelect, IonSelectOption, IonModal, IonButtons, IonCheckbox, IonItem, IonList, IonLabel } from '@ionic/react';
 import { search, filter, statsChart, sync, options, close } from 'ionicons/icons';
-import { Card } from '../../types';
+import { Card, ConservationStatus } from '../../types';
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import { useLocalization } from '../../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../../utils/cardLocalizationMapping';
+import { getCollectionStats, isCardOwnedByNameId, getCardOwnershipByNameId } from '@shared/utils/cardIdHelpers';
+
 import { CollectionCard, CardPropertyFilter } from './CollectionCard';
 import { CollectionStats } from './CollectionStats';
 import { SyncStatus } from './SyncStatus';
@@ -33,7 +34,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Advanced filtering states
-  const [rarityFilter, setRarityFilter] = useState<string>('all');
+  const [rarityFilter, setRarityFilter] = useState<string | ConservationStatus>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [trophicRoleFilter, setTrophicRoleFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'rarity' | 'attack' | 'health' | 'cost'>('name');
@@ -92,11 +93,11 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
     // Apply ownership filter
     if (selectedFilter === 'owned') {
       filtered = filtered.filter(species =>
-        offlineCollection?.species_owned[species.speciesName]
+        isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {})
       );
     } else if (selectedFilter === 'unowned') {
       filtered = filtered.filter(species =>
-        !offlineCollection?.species_owned[species.speciesName]
+        !isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {})
       );
     }
 
@@ -119,13 +120,13 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(species => {
-        const localizedCard = getLocalizedCardData(species, localization);
+        const localizedCard = {
+          displayName: localization.getCardName(species.nameId as any),
+          displayScientificName: localization.getScientificName(species.scientificNameId as any),
+        };
         return (
-          species.commonName.toLowerCase().includes(searchLower) ||
-          species.scientificName.toLowerCase().includes(searchLower) ||
           localizedCard.displayName.toLowerCase().includes(searchLower) ||
           localizedCard.displayScientificName.toLowerCase().includes(searchLower) ||
-          species.speciesName.toLowerCase().includes(searchLower) ||
           species.habitat.toString().toLowerCase().includes(searchLower) ||
           species.trophicRole.toString().toLowerCase().includes(searchLower)
         );
@@ -138,13 +139,17 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
 
       switch (sortBy) {
         case 'name':
-          const localizedA = getLocalizedCardData(a, localization);
-          const localizedB = getLocalizedCardData(b, localization);
+          const localizedA = {
+            displayName: localization.getCardName(a.nameId as any),
+          };
+          const localizedB = {
+            displayName: localization.getCardName(b.nameId as any),
+          };
           comparison = localizedA.displayName.localeCompare(localizedB.displayName);
           break;
         case 'rarity':
-          const rarityOrder = { 'Least Concern': 1, 'Near Threatened': 2, 'Vulnerable': 3, 'Endangered': 4, 'Critically Endangered': 5 };
-          comparison = (rarityOrder[a.conservationStatus as keyof typeof rarityOrder] || 0) - (rarityOrder[b.conservationStatus as keyof typeof rarityOrder] || 0);
+          // Use the enum values directly for sorting (higher numbers = rarer)
+          comparison = a.conservationStatus - b.conservationStatus;
           break;
         case 'attack':
           comparison = a.power - b.power;
@@ -162,14 +167,18 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
 
       // Secondary sort by ownership (owned first) if primary sort is equal
       if (comparison === 0) {
-        const aOwned = !!offlineCollection?.species_owned[a.speciesName];
-        const bOwned = !!offlineCollection?.species_owned[b.speciesName];
+        const aOwned = isCardOwnedByNameId(a.nameId, offlineCollection?.cards_owned || {});
+        const bOwned = isCardOwnedByNameId(b.nameId, offlineCollection?.cards_owned || {});
 
         if (aOwned && !bOwned) return -1;
         if (!aOwned && bOwned) return 1;
 
-        const localizedA = getLocalizedCardData(a, localization);
-        const localizedB = getLocalizedCardData(b, localization);
+        const localizedA = {
+          displayName: localization.getCardName(a.nameId as any),
+        };
+        const localizedB = {
+          displayName: localization.getCardName(b.nameId as any),
+        };
         return localizedA.displayName.localeCompare(localizedB.displayName);
       }
 
@@ -182,9 +191,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   // Collection statistics
   const collectionStats = useMemo(() => {
     const totalSpecies = allSpeciesCards.length;
-    const ownedSpecies = Object.keys(offlineCollection?.species_owned || {}).length;
-    const totalCards = Object.values(offlineCollection?.species_owned || {})
-      .reduce((sum, card) => sum + card.quantity, 0);
+    const { ownedSpecies, totalCards } = getCollectionStats(offlineCollection?.cards_owned || {});
 
     return {
       totalSpecies,
@@ -195,7 +202,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   }, [allSpeciesCards, offlineCollection]);
 
   const handleCardClick = (species: Card) => {
-    const isOwned = !!offlineCollection?.species_owned[species.speciesName];
+    const isOwned = isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {});
 
     // Always show card details modal for owned cards
     if (isOwned) {
@@ -342,11 +349,15 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
                     onIonChange={(e) => setRarityFilter(e.detail.value)}
                   >
                     <IonSelectOption value="all">All Status</IonSelectOption>
-                    <IonSelectOption value="Least Concern">Least Concern</IonSelectOption>
-                    <IonSelectOption value="Near Threatened">Near Threatened</IonSelectOption>
-                    <IonSelectOption value="Vulnerable">Vulnerable</IonSelectOption>
-                    <IonSelectOption value="Endangered">Endangered</IonSelectOption>
-                    <IonSelectOption value="Critically Endangered">Critically Endangered</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.LEAST_CONCERN}>Least Concern</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.NEAR_THREATENED}>Near Threatened</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.VULNERABLE}>Vulnerable</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.ENDANGERED}>Endangered</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.CRITICALLY_ENDANGERED}>Critically Endangered</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.EXTINCT}>Extinct</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.EXTINCT_IN_WILD}>Extinct in Wild</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.DATA_DEFICIENT}>Data Deficient</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.NOT_EVALUATED}>Not Evaluated</IonSelectOption>
                   </IonSelect>
                 </IonCol>
                 <IonCol size="6" sizeMd="3">
@@ -394,11 +405,11 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
         <IonGrid className="collection-grid collection-view">
           <IonRow>
             {filteredSpecies.map((species) => {
-              const ownershipData = offlineCollection?.species_owned[species.speciesName];
+              const ownershipData = getCardOwnershipByNameId(species.nameId, offlineCollection?.cards_owned || {});
               const isOwned = !!ownershipData;
 
               return (
-                <IonCol size="6" sizeMd="4" sizeLg="3" key={species.speciesName}>
+                <IonCol size="6" sizeMd="4" sizeLg="3" key={species.nameId}>
                   <CollectionCard
                     species={species}
                     isOwned={isOwned}

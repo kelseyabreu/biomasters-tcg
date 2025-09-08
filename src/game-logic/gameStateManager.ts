@@ -1,4 +1,5 @@
-import { Card, PhyloGameBoard, PhyloCardPosition, ConservationStatus, TrophicRole, Habitat } from '../types';
+import { Card, PhyloGameBoard, PhyloCardPosition, TrophicRole, Habitat } from '../types';
+import { ConservationStatus } from '@shared/enums';
 import { validateCardPlacement } from './phyloCompatibility';
 import { placeCardOnBoard, removeCardFromBoard } from './ecosystemBuilder';
 import { executeCardMovement, validateCardMovement } from './cardMovement';
@@ -90,9 +91,11 @@ export interface TurnResult {
 function createHomeCard(playerId: string, playerIndex: number): Card {
   return {
     id: `home_${playerId}`,
-    speciesName: 'HOME',
-    commonName: 'HOME',
-    scientificName: 'Base Camp',
+    cardId: 0, // HOME cards have special cardId 0
+    nameId: 'HOME',
+    scientificNameId: 'BASE_CAMP',
+    descriptionId: 'DESC_HOME',
+    taxonomyId: 'TAXONOMY_HOME',
     description: 'Starting position for each player',
     trophicRole: TrophicRole.PRODUCER,
     habitat: Habitat.TEMPERATE,

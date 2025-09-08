@@ -6,10 +6,10 @@
 import React from 'react';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonIcon, IonText, IonButton } from '@ionic/react';
 import { lockClosed, checkmarkCircle, star, add, remove } from 'ionicons/icons';
-import { Card } from '../../types';
+import { Card, ConservationStatus } from '../../types';
 import { starterPackService } from '../../services/starterPackService';
 import { useLocalization } from '../../contexts/LocalizationContext';
-import { getLocalizedCardData } from '../../utils/cardLocalizationMapping';
+
 import OrganismRenderer from '../OrganismRenderer';
 import './CollectionCard.css';
 
@@ -26,8 +26,8 @@ export interface DeckControlsConfig {
   maxQuantity?: number;
   maxTotalCards?: number;
   currentTotalCards?: number;
-  onAdd: (speciesName: string) => void;
-  onRemove: (speciesName: string) => void;
+  onAdd: (nameId: string) => void;
+  onRemove: (nameId: string) => void;
 }
 
 interface CollectionCardProps {
@@ -52,17 +52,28 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   deckControls
 }) => {
   const localization = useLocalization();
-  const localizedCard = getLocalizedCardData(species, localization);
-  const isStarter = starterPackService.isStarterSpecies(species.speciesName);
-  const educationalInfo = starterPackService.getEducationalInfo(species.speciesName);
+  // Get localized card data using enum-based localization system
+  const localizedCard = {
+    displayName: localization.getCardName(species.nameId as any),
+    displayScientificName: localization.getScientificName(species.scientificNameId as any),
+    nameId: species.nameId,
+    scientificNameId: species.scientificNameId,
+    descriptionId: species.descriptionId
+  };
+  const isStarter = starterPackService.isStarterCard(species.cardId);
+  const educationalInfo = starterPackService.getEducationalInfo(species.cardId);
 
-  const getRarityColor = (conservationStatus: string): string => {
+  const getRarityColor = (conservationStatus: ConservationStatus): string => {
     switch (conservationStatus) {
-      case 'Least Concern': return 'success';
-      case 'Near Threatened': return 'warning';
-      case 'Vulnerable': return 'warning';
-      case 'Endangered': return 'danger';
-      case 'Critically Endangered': return 'danger';
+      case ConservationStatus.LEAST_CONCERN: return 'success';
+      case ConservationStatus.NEAR_THREATENED: return 'warning';
+      case ConservationStatus.VULNERABLE: return 'warning';
+      case ConservationStatus.ENDANGERED: return 'danger';
+      case ConservationStatus.CRITICALLY_ENDANGERED: return 'danger';
+      case ConservationStatus.EXTINCT: return 'dark';
+      case ConservationStatus.EXTINCT_IN_WILD: return 'dark';
+      case ConservationStatus.DATA_DEFICIENT: return 'medium';
+      case ConservationStatus.NOT_EVALUATED: return 'medium';
       default: return 'medium';
     }
   };
@@ -195,7 +206,7 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
             <IonButton
               size="small"
               fill="clear"
-              onClick={() => deckControls.onRemove(species.speciesName)}
+              onClick={() => deckControls.onRemove(species.nameId)}
               disabled={deckControls.currentQuantity === 0}
               className="deck-control-btn remove-btn"
             >
@@ -209,7 +220,7 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
             <IonButton
               size="small"
               fill="clear"
-              onClick={() => deckControls.onAdd(species.speciesName)}
+              onClick={() => deckControls.onAdd(species.nameId)}
               disabled={
                 (deckControls.currentQuantity === 0 &&
                  deckControls.currentTotalCards !== undefined &&

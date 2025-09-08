@@ -9,6 +9,7 @@ import {
   IonRow,
   IonCol
 } from '@ionic/react';
+import { useLocalization } from '../contexts/LocalizationContext';
 import {
   flash,
   heart,
@@ -22,21 +23,40 @@ import {
   water
 } from 'ionicons/icons';
 import { motion } from 'framer-motion';
-import { Card as CardType } from '../types';
+import { Card as CardType, ConservationStatus } from '../types';
 import OrganismRenderer from './OrganismRenderer';
 import { getTrophicColor, getConservationColor } from '../utils/cardUtils';
 import './PhysicalCardPreview.css';
+
+// Configuration constants for data-driven rendering
+const PHYSICAL_CARD_CONFIG = {
+  organismSize: 200,
+  flipDuration: 0.6,
+  statColumns: 4,
+  speedConversionFactor: 1000, // Convert m/hr to km/h
+  lifespanConversionFactor: 365, // Convert days to years
+  cardIdDisplayLength: 4
+} as const;
+
+// Card stats configuration for dynamic rendering
+const CARD_STATS = [
+  { key: 'power', icon: flash, color: 'danger', label: 'PWR' },
+  { key: 'health', icon: heart, color: 'success', label: 'HP' },
+  { key: 'speed', icon: speedometer, color: 'primary', label: 'SPD' },
+  { key: 'senses', icon: eye, color: 'warning', label: 'SEN' }
+] as const;
 
 interface PhysicalCardPreviewProps {
   card: CardType;
   showBack?: boolean;
 }
 
-const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({ 
-  card, 
-  showBack = false 
+const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
+  card,
+  showBack = false
 }) => {
   const [isFlipped, setIsFlipped] = useState(showBack);
+  const localization = useLocalization();
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -47,7 +67,7 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
       <motion.div
         className="card-flipper"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6, type: "spring" }}
+        transition={{ duration: PHYSICAL_CARD_CONFIG.flipDuration, type: "spring" }}
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Front of Card */}
@@ -56,8 +76,8 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
             {/* Card Header */}
             <div className="card-header">
               <div className="card-title-section">
-                <h2 className="card-name">{card.commonName}</h2>
-                <p className="scientific-name">{card.scientificName}</p>
+                <h2 className="card-name">{localization.getCardName(card.nameId as any)}</h2>
+                <p className="scientific-name">{localization.getScientificName(card.scientificNameId as any)}</p>
               </div>
               <div className="energy-cost">
                 <IonBadge color="warning">{card.energyCost}</IonBadge>
@@ -66,10 +86,10 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
 
             {/* Organism Artwork */}
             <div className="card-artwork">
-              <OrganismRenderer 
-                card={card} 
+              <OrganismRenderer
+                card={card}
                 showControls={false}
-                size={200}
+                size={PHYSICAL_CARD_CONFIG.organismSize}
               />
             </div>
 
@@ -77,34 +97,15 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
             <div className="card-stats">
               <IonGrid>
                 <IonRow>
-                  <IonCol size="3">
-                    <div className="stat-item">
-                      <IonIcon icon={flash} color="danger" />
-                      <span className="stat-value">{card.power}</span>
-                      <span className="stat-label">PWR</span>
-                    </div>
-                  </IonCol>
-                  <IonCol size="3">
-                    <div className="stat-item">
-                      <IonIcon icon={heart} color="success" />
-                      <span className="stat-value">{card.health}</span>
-                      <span className="stat-label">HP</span>
-                    </div>
-                  </IonCol>
-                  <IonCol size="3">
-                    <div className="stat-item">
-                      <IonIcon icon={speedometer} color="primary" />
-                      <span className="stat-value">{card.speed}</span>
-                      <span className="stat-label">SPD</span>
-                    </div>
-                  </IonCol>
-                  <IonCol size="3">
-                    <div className="stat-item">
-                      <IonIcon icon={eye} color="warning" />
-                      <span className="stat-value">{card.senses}</span>
-                      <span className="stat-label">SEN</span>
-                    </div>
-                  </IonCol>
+                  {CARD_STATS.map((stat) => (
+                    <IonCol key={stat.key} size={`${12 / PHYSICAL_CARD_CONFIG.statColumns}`}>
+                      <div className="stat-item">
+                        <IonIcon icon={stat.icon} color={stat.color} />
+                        <span className="stat-value">{card[stat.key as keyof CardType] as number}</span>
+                        <span className="stat-label">{stat.label}</span>
+                      </div>
+                    </IonCol>
+                  ))}
                 </IonRow>
               </IonGrid>
             </div>
@@ -136,10 +137,10 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
 
             {/* Card Footer */}
             <div className="card-footer">
-              <div className="card-id">#{card.id.slice(-4)}</div>
+              <div className="card-id">#{card.id.slice(-PHYSICAL_CARD_CONFIG.cardIdDisplayLength)}</div>
               <div className="card-rarity">
-                <IonIcon 
-                  icon={getConservationIcon(card.conservationStatus)} 
+                <IonIcon
+                  icon={getConservationIcon(card.conservationStatus)}
                   color={getConservationColor(card.conservationStatus)}
                 />
               </div>
@@ -153,7 +154,7 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
             {/* Scientific Data */}
             <div className="card-back-header">
               <h3>Scientific Data</h3>
-              <p>{card.commonName}</p>
+              <p>{localization.getCardName(card.nameId as any)}</p>
             </div>
 
             <div className="scientific-data-grid">
@@ -165,7 +166,7 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
                 </div>
                 {card.realData?.lifespan_Max_Days && (
                   <div className="data-item">
-                    <span>Lifespan:</span> <strong>{Math.round(card.realData.lifespan_Max_Days / 365)}yr</strong>
+                    <span>Lifespan:</span> <strong>{Math.round(card.realData.lifespan_Max_Days / PHYSICAL_CARD_CONFIG.lifespanConversionFactor)}yr</strong>
                   </div>
                 )}
               </div>
@@ -175,12 +176,12 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
                 <h4>🏃 Movement</h4>
                 {card.realData?.run_Speed_m_per_hr && card.realData.run_Speed_m_per_hr > 0 && (
                   <div className="data-item">
-                    <span>Run:</span> <strong>{(card.realData.run_Speed_m_per_hr / 1000).toFixed(1)}km/h</strong>
+                    <span>Run:</span> <strong>{(card.realData.run_Speed_m_per_hr / PHYSICAL_CARD_CONFIG.speedConversionFactor).toFixed(1)}km/h</strong>
                   </div>
                 )}
                 {card.realData?.swim_Speed_m_per_hr && card.realData.swim_Speed_m_per_hr > 0 && (
                   <div className="data-item">
-                    <span>Swim:</span> <strong>{(card.realData.swim_Speed_m_per_hr / 1000).toFixed(1)}km/h</strong>
+                    <span>Swim:</span> <strong>{(card.realData.swim_Speed_m_per_hr / PHYSICAL_CARD_CONFIG.speedConversionFactor).toFixed(1)}km/h</strong>
                   </div>
                 )}
               </div>
@@ -221,7 +222,7 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
 
             {/* Educational Note */}
             <div className="educational-note">
-              <p><em>"All game mechanics are based on real scientific data. Learn more about {card.commonName} and support conservation efforts."</em></p>
+              <p><em>"All game mechanics are based on real scientific data. Learn more about {localization.getCardName(card.nameId as any)} and support conservation efforts."</em></p>
             </div>
 
             {/* Back Footer */}
@@ -249,16 +250,26 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
 };
 
 // Helper function for conservation status icons
-const getConservationIcon = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'critically endangered':
+const getConservationIcon = (status: ConservationStatus) => {
+  switch (status) {
+    case ConservationStatus.CRITICALLY_ENDANGERED:
       return skull;
-    case 'endangered':
+    case ConservationStatus.ENDANGERED:
       return skull;
-    case 'vulnerable':
+    case ConservationStatus.VULNERABLE:
       return heart;
-    case 'near threatened':
+    case ConservationStatus.NEAR_THREATENED:
       return leaf;
+    case ConservationStatus.EXTINCT:
+      return skull;
+    case ConservationStatus.EXTINCT_IN_WILD:
+      return skull;
+    case ConservationStatus.DATA_DEFICIENT:
+      return eye;
+    case ConservationStatus.NOT_EVALUATED:
+      return eye;
+    case ConservationStatus.LEAST_CONCERN:
+      return paw;
     default:
       return paw;
   }

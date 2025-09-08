@@ -221,7 +221,7 @@ export function makeAIDecision(
       return {
         type: 'play_card',
         cardId: bestCard.id,
-        reasoning: `Playing ${bestCard.commonName} for strategic value`
+        reasoning: `Playing ${bestCard.nameId} for strategic value`
       };
     }
   }
@@ -234,7 +234,7 @@ export function makeAIDecision(
         type: 'attack',
         cardId: bestAttack.attacker.id,
         targetCardId: bestAttack.target.id,
-        reasoning: `Attacking ${bestAttack.target.commonName} with ${bestAttack.attacker.commonName}`
+        reasoning: `Attacking ${bestAttack.target.nameId} with ${bestAttack.attacker.nameId}`
       };
     }
   }

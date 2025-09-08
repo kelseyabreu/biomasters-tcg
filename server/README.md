@@ -17,7 +17,7 @@ Backend API server for BioMasters TCG using the **FIRE stack** with JSON-driven 
 - **⚡ Real-time**: WebSocket support for multiplayer features
 - **✅ Production-Ready**: 100% test coverage with 19/19 integration tests passing
 - **🧬 Biologically Accurate**: Real ecosystem data with proper trophic relationships
-- **🎯 Authoritative Server**: `server/src/game-engine/BioMastersEngine.ts` for TCG online mode
+- **🎯 Authoritative Server**: `shared/game-engine/BioMastersEngine.ts` for TCG online mode
 - **🔄 Automatic Turn Management**: State machine handles Ready→Draw→Action phases with timeouts
 - **🏠 HOME Card System**: Domain 0 for universal compatibility, chemoautotrophs connect to geological entities
 

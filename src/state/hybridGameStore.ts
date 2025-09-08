@@ -9,9 +9,11 @@ import { persist, subscribeWithSelector, createJSONStorage } from 'zustand/middl
 import { offlineSecurityService, OfflineCollection, OfflineAction } from '../services/offlineSecurityService';
 import { starterPackService } from '../services/starterPackService';
 import { syncService, SyncResult } from '../services/syncService';
-import { loadAllSpeciesCards } from '../utils/speciesDataProcessor';
+import { dataLoader } from '@shared/data/DataLoader';
+import { cardIdToNameId, initializeCardMapping } from '@shared/utils/cardIdHelpers';
+import { ConservationStatus } from '@shared/enums';
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
-import { Card } from '../types';
+import { Card, TrophicRole, Habitat } from '../types';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, User, signInAnonymously, signOut } from 'firebase/auth';
 import { tokenManager } from '../services/tokenStorage';
@@ -21,6 +23,7 @@ import { tcgGameService, ServiceResult } from '../services/TCGGameService';
 import { phyloGameService } from '../services/PhyloGameService';
 import type { GameState } from '../game-logic/gameStateManager';
 import type { ClientGameState } from '../services/ClientGameEngine';
+import { nameIdToCardId, migrateCollectionToCardIds } from '@shared/utils/cardIdHelpers';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
@@ -188,15 +191,15 @@ export interface HybridGameState {
   recoverAuthenticationState: () => Promise<void>;
   
   // Starter Pack Actions
-  openStarterPack: () => Promise<string[]>;
+  openStarterPack: () => Promise<number[]>;
   
   // Card Actions
-  addCardToCollection: (speciesName: string, quantity: number, acquiredVia: string) => Promise<void>;
-  openPack: (packType: string) => Promise<string[]>;
+  addCardToCollection: (cardId: number, quantity: number, acquiredVia: string) => Promise<void>;
+  openPack: (packType: string) => Promise<number[]>;
   
   // Deck Actions
-  createDeck: (name: string, cards: { speciesName: string; quantity: number }[]) => Promise<string>;
-  updateDeck: (deckId: string, name: string, cards: { speciesName: string; quantity: number }[]) => Promise<void>;
+  createDeck: (name: string, cards: { cardId: number; quantity: number }[]) => Promise<string>;
+  updateDeck: (deckId: string, name: string, cards: { cardId: number; quantity: number }[]) => Promise<void>;
   deleteDeck: (deckId: string) => Promise<void>;
   setActiveDeck: (deckId: string) => void;
   loadDeck: (deckId: string) => any;
@@ -808,17 +811,41 @@ export const useHybridGameStore = create<HybridGameState>()(
         loadOfflineCollection: () => {
           const stored = offlineSecurityService.loadOfflineCollection();
           if (stored) {
-            const hasSpecies = Object.keys(stored.species_owned).length > 0;
+            // Handle migration from old species_owned to new cards_owned format
+            let migratedCollection = stored;
+            if ('species_owned' in stored && !('cards_owned' in stored)) {
+              console.log('🔄 Migrating collection from species_name to CardId format...');
+              const oldStoredCollection = stored as any;
+              const oldCollection = oldStoredCollection.species_owned;
+              const newCardsOwned = migrateCollectionToCardIds(oldCollection);
+              migratedCollection = {
+                user_id: oldStoredCollection.user_id,
+                device_id: oldStoredCollection.device_id,
+                eco_credits: oldStoredCollection.eco_credits,
+                xp_points: oldStoredCollection.xp_points,
+                action_queue: oldStoredCollection.action_queue,
+                collection_hash: oldStoredCollection.collection_hash,
+                last_sync: oldStoredCollection.last_sync,
+                signing_key_version: oldStoredCollection.signing_key_version,
+                activeDeck: oldStoredCollection.activeDeck,
+                savedDecks: oldStoredCollection.savedDecks,
+                cards_owned: newCardsOwned
+              };
+              // Save migrated collection
+              offlineSecurityService.saveOfflineCollection(migratedCollection);
+            }
+
+            const hasCards = Object.keys(migratedCollection.cards_owned || {}).length > 0;
             set({
-              offlineCollection: stored,
-              hasStarterPack: hasSpecies,
-              pendingActions: stored.action_queue.length
+              offlineCollection: migratedCollection,
+              hasStarterPack: hasCards,
+              pendingActions: migratedCollection.action_queue.length
             });
             console.log('📦 Collection loaded from storage:', {
-              species_count: Object.keys(stored.species_owned).length,
-              credits: stored.eco_credits,
-              pending_actions: stored.action_queue.length,
-              has_starter_pack: hasSpecies
+              cards_count: Object.keys(migratedCollection.cards_owned || {}).length,
+              credits: migratedCollection.eco_credits,
+              pending_actions: migratedCollection.action_queue.length,
+              has_starter_pack: hasCards
             });
           } else {
             console.log('📦 No stored collection found, initializing...');
@@ -842,8 +869,69 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           try {
             console.log('🔄 Loading species data...');
-            const allCards = await loadAllSpeciesCards();
+            const result = await dataLoader.loadAllCards();
+            if (!result.success || !result.data) {
+              throw new Error(result.error || 'Failed to load card data');
+            }
+
+            // Transform shared CardData to frontend Card format
+            const allCards: Card[] = result.data.map(cardData => {
+              // Map trophic level to TrophicRole enum
+              const getTrophicRole = (level: number | null) => {
+                switch (level) {
+                  case 1: return TrophicRole.PRODUCER;
+                  case 2: return TrophicRole.HERBIVORE;
+                  case 3: return TrophicRole.CARNIVORE;
+                  case 4: return TrophicRole.CARNIVORE;
+                  case 5: return TrophicRole.CARNIVORE;
+                  default: return TrophicRole.OMNIVORE;
+                }
+              };
+
+              // Map keywords to Habitat enum (simplified mapping)
+              const getHabitat = (keywords: number[] | undefined) => {
+                if (!keywords || keywords.length === 0) return Habitat.TEMPERATE;
+                // This is a simplified mapping - you may want to improve this
+                return Habitat.TEMPERATE; // Default for now
+              };
+
+              return {
+                id: cardData.id.toString(),
+                cardId: cardData.id,
+                nameId: cardData.nameId,
+                scientificNameId: cardData.scientificNameId,
+                descriptionId: cardData.descriptionId,
+                taxonomyId: cardData.taxonomyId,
+                trophicRole: getTrophicRole(cardData.trophicLevel),
+                habitat: getHabitat(cardData.keywords),
+                power: cardData.victoryPoints || 1,
+                health: cardData.mass_kg ? Math.ceil(cardData.mass_kg / 10) : 1,
+                maxHealth: cardData.mass_kg ? Math.ceil(cardData.mass_kg / 10) : 1,
+                speed: cardData.run_speed_m_per_hr ? Math.ceil(cardData.run_speed_m_per_hr / 100) : 1,
+                senses: cardData.vision_range_m ? Math.ceil(cardData.vision_range_m / 10) : 1,
+                energyCost: 1, // Default energy cost
+                abilities: [], // Will be populated from abilities data
+                conservationStatus: cardData.conservation_status || ConservationStatus.NOT_EVALUATED,
+                artwork: cardData.artwork_url || '',
+                description: cardData.descriptionId,
+                realData: {
+                  mass_kg: cardData.mass_kg || 0,
+                  walk_Speed_m_per_hr: cardData.walk_speed_m_per_hr || undefined,
+                  run_Speed_m_per_hr: cardData.run_speed_m_per_hr || undefined,
+                  swim_Speed_m_per_hr: cardData.swim_speed_m_per_hr || undefined,
+                  fly_Speed_m_per_hr: cardData.fly_speed_m_per_hr || undefined,
+                  vision_range_m: cardData.vision_range_m || undefined,
+                  hearing_range_m: cardData.hearing_range_m || undefined,
+                  smell_range_m: cardData.smell_range_m || undefined,
+                  lifespan_Max_Days: cardData.lifespan_max_days || undefined
+                }
+              };
+            });
+
             console.log(`✅ Loaded ${allCards.length} species cards`);
+
+            // Initialize card mapping for nameId <-> cardId conversions
+            initializeCardMapping(allCards.map(card => ({ cardId: card.cardId, nameId: card.nameId })));
 
             const packSystem = new BoosterPackSystem(allCards);
 
@@ -1156,7 +1244,7 @@ export const useHybridGameStore = create<HybridGameState>()(
               guestId: state.guestId,
               actionQueue: actionQueue.map(action => ({
                 action: action.action,
-                species_name: action.species_name,
+                cardId: action.cardId,
                 quantity: action.quantity,
                 pack_type: action.pack_type,
                 deck_id: action.deck_id,
@@ -1405,16 +1493,16 @@ export const useHybridGameStore = create<HybridGameState>()(
 
             // Check if user already has starter pack by looking at actual collection
             const currentState = get();
-            const hasAnySpecies = currentState.offlineCollection &&
-              Object.keys(currentState.offlineCollection.species_owned).length > 0;
+            const hasAnyCards = currentState.offlineCollection &&
+              Object.keys(currentState.offlineCollection.cards_owned).length > 0;
 
             console.log('🔍 Checking starter pack status:', {
               hasStarterPack: currentState.hasStarterPack,
-              hasAnySpecies,
-              speciesCount: currentState.offlineCollection ? Object.keys(currentState.offlineCollection.species_owned).length : 0
+              hasAnyCards,
+              cardsCount: currentState.offlineCollection ? Object.keys(currentState.offlineCollection.cards_owned).length : 0
             });
 
-            if (!hasAnySpecies) {
+            if (!hasAnyCards) {
               console.log('🎁 Opening starter pack for new user...');
               await get().openStarterPack();
               console.log('✅ Starter pack opened successfully');
@@ -1442,7 +1530,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Open starter pack
-        openStarterPack: async (): Promise<string[]> => {
+        openStarterPack: async (): Promise<number[]> => {
           const state = get();
 
           // Check if collection exists
@@ -1450,9 +1538,9 @@ export const useHybridGameStore = create<HybridGameState>()(
             throw new Error('No collection initialized');
           }
 
-          // Check if user already has any species (indicating starter pack was opened)
-          const hasAnySpecies = Object.keys(state.offlineCollection.species_owned).length > 0;
-          if (hasAnySpecies) {
+          // Check if user already has any cards (indicating starter pack was opened)
+          const hasAnyCards = Object.keys(state.offlineCollection.cards_owned).length > 0;
+          if (hasAnyCards) {
             throw new Error('Starter pack already opened');
           }
 
@@ -1468,15 +1556,15 @@ export const useHybridGameStore = create<HybridGameState>()(
               pack_type: 'starter'
             });
 
-            // Add starter species to collection
-            const starterSpecies = starterPackService.createStarterCollection();
-            const starterSpeciesNames = Object.keys(starterSpecies);
+            // Add starter cards to collection
+            const starterCards = starterPackService.createStarterCollection();
+            const starterCardIds = Object.keys(starterCards).map(id => parseInt(id));
 
             const updatedCollection: OfflineCollection = {
               ...state.offlineCollection,
-              species_owned: {
-                ...state.offlineCollection.species_owned,
-                ...starterSpecies
+              cards_owned: {
+                ...state.offlineCollection.cards_owned,
+                ...starterCards
               },
               action_queue: [...state.offlineCollection.action_queue, action]
             };
@@ -1487,7 +1575,8 @@ export const useHybridGameStore = create<HybridGameState>()(
             get().saveOfflineCollection(updatedCollection);
             set({ hasStarterPack: true });
 
-            return starterSpeciesNames;
+            // Return CardIds directly (no more backward compatibility needed)
+            return starterCardIds;
 
           } catch (error) {
             console.error('Failed to open starter pack:', error);
@@ -1495,27 +1584,32 @@ export const useHybridGameStore = create<HybridGameState>()(
           }
         },
 
-        // Add card to collection
-        addCardToCollection: async (speciesName: string, quantity: number, acquiredVia: string) => {
+        // Add card to collection using CardId
+        addCardToCollection: async (cardId: number, quantity: number, acquiredVia: string) => {
           const state = get();
           if (!state.offlineCollection) {
             throw new Error('No collection initialized');
           }
 
           try {
+            // Validate CardId
+            if (!cardId || cardId <= 0) {
+              throw new Error(`Invalid CardId: ${cardId}`);
+            }
+
             // Create card acquisition action
             const action = offlineSecurityService.createAction('card_acquired', {
-              species_name: speciesName,
+              cardId,
               quantity
             });
 
             // Update collection
-            const existingCard = state.offlineCollection.species_owned[speciesName];
+            const existingCard = state.offlineCollection.cards_owned[cardId];
             const updatedCollection: OfflineCollection = {
               ...state.offlineCollection,
-              species_owned: {
-                ...state.offlineCollection.species_owned,
-                [speciesName]: {
+              cards_owned: {
+                ...state.offlineCollection.cards_owned,
+                [cardId]: {
                   quantity: (existingCard?.quantity || 0) + quantity,
                   acquired_via: existingCard?.acquired_via || acquiredVia,
                   first_acquired: existingCard?.first_acquired || Date.now(),
@@ -1537,7 +1631,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Open pack with proper rarity system
-        openPack: async (packType: string): Promise<string[]> => {
+        openPack: async (packType: string): Promise<number[]> => {
           const state = get();
           if (!state.offlineCollection) {
             throw new Error('No collection initialized');
@@ -1597,26 +1691,35 @@ export const useHybridGameStore = create<HybridGameState>()(
               timestamp: action.timestamp
             });
 
-            // Open pack using proper rarity system
-            const pack = packSystem.generateBoosterPack(`${packType} pack`);
+            // Open pack using proper rarity system with correct card count
+            const pack = packSystem.generateBoosterPack(`${packType} pack`, config.cards);
             const packResult: PackOpeningResult = packSystem.generatePackStats(pack);
-            const newCards: string[] = packResult.pack.cards.map(card => card.speciesName);
+            const newNameIds: string[] = packResult.pack.cards.map(card => card.nameId);
 
-            // Update collection
-            const updatedSpecies = { ...state.offlineCollection.species_owned };
-            newCards.forEach(species => {
-              const existing = updatedSpecies[species];
-              updatedSpecies[species] = {
-                quantity: (existing?.quantity || 0) + 1,
-                acquired_via: existing?.acquired_via || 'pack',
-                first_acquired: existing?.first_acquired || Date.now(),
-                last_acquired: Date.now()
-              };
+            console.log(`🎁 Pack generated with ${pack.cards.length} cards:`, pack.cards.map(c => c.nameId));
+            // Convert nameIds to CardIds and update collection
+            const newCardIds: number[] = [];
+            const updatedCards = { ...state.offlineCollection.cards_owned };
+
+            newNameIds.forEach(nameId => {
+              const cardId = nameIdToCardId(nameId);
+              if (cardId !== null) {
+                newCardIds.push(cardId);
+                const existing = updatedCards[cardId];
+                updatedCards[cardId] = {
+                  quantity: (existing?.quantity || 0) + 1,
+                  acquired_via: existing?.acquired_via || 'pack',
+                  first_acquired: existing?.first_acquired || Date.now(),
+                  last_acquired: Date.now()
+                };
+              } else {
+                console.warn(`⚠️ Failed to convert nameId to cardId: ${nameId}`);
+              }
             });
 
             const updatedCollection: OfflineCollection = {
               ...state.offlineCollection,
-              species_owned: updatedSpecies,
+              cards_owned: updatedCards,
               eco_credits: state.offlineCollection.eco_credits - config.cost,
               action_queue: [...state.offlineCollection.action_queue, action]
             };
@@ -1625,7 +1728,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             updatedCollection.collection_hash = offlineSecurityService.calculateCollectionHash(updatedCollection);
 
             get().saveOfflineCollection(updatedCollection);
-            return newCards;
+            return newCardIds;
 
           } catch (error) {
             console.error('Failed to open pack:', error);
@@ -1634,7 +1737,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Create deck
-        createDeck: async (name: string, cards: { speciesName: string; quantity: number }[]): Promise<string> => {
+        createDeck: async (name: string, cards: { cardId: number; quantity: number }[]): Promise<string> => {
           const state = get();
           if (!state.offlineCollection) {
             throw new Error('No collection available');
@@ -1681,7 +1784,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Update deck
-        updateDeck: async (deckId: string, name: string, cards: { speciesName: string; quantity: number }[]): Promise<void> => {
+        updateDeck: async (deckId: string, name: string, cards: { cardId: number; quantity: number }[]): Promise<void> => {
           const action = offlineSecurityService.createAction('deck_updated', {
             deck_id: deckId,
             deck_data: { name, cards }
@@ -1913,14 +2016,14 @@ export const useHybridGameStore = create<HybridGameState>()(
         refreshCollectionState: () => {
           const stored = offlineSecurityService.loadOfflineCollection();
           if (stored) {
-            const hasSpecies = Object.keys(stored.species_owned).length > 0;
+            const hasCards = Object.keys(stored.cards_owned).length > 0;
             set({
               offlineCollection: stored,
-              hasStarterPack: hasSpecies,
+              hasStarterPack: hasCards,
               pendingActions: stored.action_queue.length
             });
             console.log('🔄 Collection state refreshed:', {
-              species_count: Object.keys(stored.species_owned).length,
+              cards_count: Object.keys(stored.cards_owned).length,
               credits: stored.eco_credits,
               pending_actions: stored.action_queue.length
             });

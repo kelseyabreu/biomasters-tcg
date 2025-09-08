@@ -6,11 +6,13 @@ import { db } from '../database/kysely';
 import { z } from 'zod';
 import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
-import { BioMastersEngine, GameSettings, PlayerAction, CardData as SharedCardData, AbilityData as SharedAbilityData } from '../../../shared/game-engine/BioMastersEngine';
-import { gameDataManager } from '../services/GameDataManager';
+import { BioMastersEngine, GameSettings, PlayerAction } from '../../../shared/game-engine/BioMastersEngine';
+import { DataLoader } from '@biomasters/shared/data/DataLoader';
 import { createMockLocalizationManager } from '../utils/mockLocalizationManager';
 
 const router = Router();
+
+
 
 // Game session schemas
 const createGameSessionSchema = z.object({
@@ -463,39 +465,14 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
   ];
 
   try {
-    // Ensure game data is loaded
-    if (!gameDataManager.isDataLoaded()) {
-      await gameDataManager.loadGameData();
-    }
+    // Load game data using DataLoader
+    const dataLoader = new DataLoader();
+    const gameData = await dataLoader.loadGameData();
 
-    // Use enum-based data directly (no conversion needed)
-    const cardDatabase = new Map<number, SharedCardData>();
-    gameDataManager.getCards().forEach((serverCard, id) => {
-      // Server card is already in enum-based format, just use it directly
-      cardDatabase.set(id, serverCard);
-    });
-
-    const abilityDatabase = new Map<number, SharedAbilityData>();
-    gameDataManager.getAbilities().forEach((serverAbility, id) => {
-      const sharedAbility: SharedAbilityData = {
-        abilityId: serverAbility.abilityID,
-        nameId: `ABILITY_${serverAbility.abilityID}` as any,
-        descriptionId: `DESC_ABILITY_${serverAbility.abilityID}` as any,
-        abilityID: serverAbility.abilityID, // Legacy support
-        name: `Ability ${serverAbility.abilityID}`, // Default name since server doesn't have it
-        description: `Ability with trigger ${serverAbility.triggerID}`, // Default description
-        cost: {}, // Default empty cost
-        effects: serverAbility.effects,
-        triggerId: serverAbility.triggerID,
-        triggerID: serverAbility.triggerID // Legacy support
-      };
-      abilityDatabase.set(id, sharedAbility);
-    });
-
-    const keywordMap = new Map<number, string>();
-    gameDataManager.getKeywords().forEach((keyword, id) => {
-      keywordMap.set(id, keyword.keyword_name);
-    });
+    // Use the shared data directly (engine now uses shared CardData interface)
+    const cardDatabase = gameData.cards;
+    const abilityDatabase = gameData.abilities;
+    const keywordMap = gameData.keywords;
 
     // Create new game engine instance with injected data
     const mockLocalizationManager = createMockLocalizationManager();
@@ -685,7 +662,7 @@ router.get('/biomasters/:gameId/valid-actions', requireAuth, asyncHandler(async 
             type: 'ACTIVATE_ABILITY',
             instanceId: card.instanceId,
             abilityId,
-            description: `Activate ability on ${cardData.commonName}`
+            description: `Activate ability on ${gameEngine.getCardName(cardData)}`
           });
         }
       }

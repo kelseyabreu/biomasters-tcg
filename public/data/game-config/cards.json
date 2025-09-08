@@ -52,7 +52,7 @@
       8
     ],
     "victoryPoints": 1,
-    "conservationStatus": 7,
+    "conservationStatus": 5,
     "mass_kg": 150,
     "lifespan_max_days": 2555,
     "vision_range_m": 0,
@@ -122,7 +122,7 @@
     ],
     "abilities": [],
     "victoryPoints": 2,
-    "conservationStatus": 7,
+    "conservationStatus": 6,
     "mass_kg": 1.5,
     "lifespan_max_days": 2190,
     "vision_range_m": 50,
@@ -162,7 +162,7 @@
       15
     ],
     "victoryPoints": 3,
-    "conservationStatus": 7,
+    "conservationStatus": 4,
     "mass_kg": 2.5,
     "lifespan_max_days": 1460,
     "vision_range_m": 25,
@@ -202,7 +202,7 @@
       1
     ],
     "victoryPoints": 4,
-    "conservationStatus": 7,
+    "conservationStatus": 5,
     "mass_kg": 180,
     "lifespan_max_days": 9125,
     "vision_range_m": 80,
@@ -244,7 +244,7 @@
       2
     ],
     "victoryPoints": 5,
-    "conservationStatus": 7,
+    "conservationStatus": 3,
     "mass_kg": 2000,
     "lifespan_max_days": 25550,
     "vision_range_m": 50,

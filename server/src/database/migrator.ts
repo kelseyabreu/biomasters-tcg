@@ -144,6 +144,11 @@ export class KyselyMigrator {
       const conservationStatusesSql = readFileSync(conservationStatusesPath, 'utf8');
       await this.executeMigration('009_add_conservation_statuses', conservationStatusesSql);
 
+      // 010: Migrate to CardId system (simple version)
+      const cardIdMigrationPath = join(__dirname, 'migrations/010_migrate_to_cardid_system_simple.sql');
+      const cardIdMigrationSql = readFileSync(cardIdMigrationPath, 'utf8');
+      await this.executeMigration('010_migrate_to_cardid_system_simple', cardIdMigrationSql);
+
       console.log('✅ All Kysely migrations completed successfully');
       
     } catch (error) {

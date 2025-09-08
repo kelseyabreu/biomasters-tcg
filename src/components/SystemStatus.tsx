@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonItem, IonLabel, IonList } from '@ionic/react';
 import { useHybridGameStore } from '../state/hybridGameStore';
+import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 import ConflictResolutionModal from './sync/ConflictResolutionModal';
 
 /**
@@ -114,8 +115,8 @@ export const SystemStatus: React.FC = () => {
                 <h3>Collection Details</h3>
                 {offlineCollection ? (
                   <>
-                    <p>Unique Species: {Object.keys(offlineCollection.species_owned).length}</p>
-                    <p>Total Cards: {Object.values(offlineCollection.species_owned).reduce((sum, species) => sum + species.quantity, 0)}</p>
+                    <p>Unique Species: {getCollectionStats(offlineCollection.cards_owned).ownedSpecies}</p>
+                    <p>Total Cards: {getCollectionStats(offlineCollection.cards_owned).totalCards}</p>
                     <p>Pending Actions: {offlineCollection.action_queue.length}</p>
                   </>
                 ) : (

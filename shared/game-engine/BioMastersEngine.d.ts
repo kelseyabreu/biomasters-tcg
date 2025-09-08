@@ -6,8 +6,19 @@
  * This engine is shared between client and server, with data injected via constructor
  */
 import { GamePhase, TurnPhase, GameActionType } from '../enums';
-export interface CardData {
+import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../text-ids';
+import { ILocalizationManager } from '../localization-manager';
+import { CardData as SharedCardData, AbilityData as SharedAbilityData } from '../types';
+export interface CardData extends SharedCardData {
+    attachments?: CardData[];
+    isDetritus?: boolean;
+}
+export interface LegacyEngineCardData {
     cardId: number;
+    nameId: CardNameId;
+    scientificNameId: ScientificNameId;
+    descriptionId: CardDescriptionId;
+    taxonomyId: TaxonomyId;
     trophicLevel: number | null;
     trophicCategory: number | null;
     domain: number;
@@ -15,17 +26,20 @@ export interface CardData {
     keywords: number[];
     abilities: number[];
     victoryPoints: number;
-    commonName: string;
-    scientificName: string;
+    conservationStatus: number;
+    mass_kg: number;
+    lifespan_max_days: number;
+    vision_range_m: number;
+    smell_range_m: number;
+    hearing_range_m: number;
+    walk_speed_m_per_hr: number;
+    run_speed_m_per_hr: number;
+    swim_speed_m_per_hr: number;
+    fly_speed_m_per_hr: number;
+    offspring_count: number;
+    gestation_days: number;
 }
-export interface AbilityData {
-    abilityId: number;
-    abilityID?: number;
-    name: string;
-    description: string;
-    cost: any;
-    effects: any[];
-    triggerID?: number;
+export interface AbilityData extends SharedAbilityData {
 }
 export interface GameState {
     gameId: string;
@@ -86,7 +100,7 @@ export interface PlayerAction {
     payload: any;
 }
 export interface PlayCardPayload {
-    cardId: string;
+    cardId: number;
     position: {
         x: number;
         y: number;
@@ -116,11 +130,32 @@ export declare class BioMastersEngine {
     readonly cardDatabase: Map<number, CardData>;
     readonly abilityDatabase: Map<number, AbilityData>;
     readonly keywordDatabase: Map<number, string>;
+    readonly localizationManager: ILocalizationManager;
     /**
      * Environment-agnostic constructor
      * Accepts all required data via dependency injection
      */
-    constructor(cardDatabase: Map<number, CardData>, abilityDatabase: Map<number, AbilityData>, keywordDatabase: Map<number, string>);
+    constructor(cardDatabase: Map<number, CardData>, abilityDatabase: Map<number, AbilityData>, keywordDatabase: Map<number, string>, localizationManager: ILocalizationManager);
+    /**
+     * Get localized card name
+     */
+    getCardName(cardData: CardData): string;
+    /**
+     * Get localized scientific name
+     */
+    getScientificName(cardData: CardData): string;
+    /**
+     * Get localized card description
+     */
+    getCardDescription(cardData: CardData): string;
+    /**
+     * Get localized ability name
+     */
+    getAbilityName(abilityData: AbilityData): string;
+    /**
+     * Get localized ability description
+     */
+    getAbilityDescription(abilityData: AbilityData): string;
     /**
      * Initialize a new game state
      * This method creates a new game and sets it as the current game state
@@ -227,7 +262,6 @@ export declare class BioMastersEngine {
      * Apply effects when a card attaches to a host
      */
     private applyAttachmentEffects;
-    private getCardDataByStringId;
     private isValidPosition;
     private getCurrentPlayer;
     private cloneGameState;

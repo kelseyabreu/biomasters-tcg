@@ -29,6 +29,7 @@ import {
   statsChart
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
+import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 import { UserProfile } from '../components/UserProfile';
 import { GuestRegistrationCTA } from '../components/GuestRegistrationCTA';
 
@@ -65,9 +66,9 @@ const MainMenu: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
 
   // Calculate collection stats
-  const ownedSpecies = offlineCollection ? Object.keys(offlineCollection.species_owned).length : 0;
-  const totalCards = offlineCollection ?
-    Object.values(offlineCollection.species_owned).reduce((sum, species) => sum + species.quantity, 0) : 0;
+  const { ownedSpecies, totalCards } = offlineCollection ?
+    getCollectionStats(offlineCollection.cards_owned) :
+    { ownedSpecies: 0, totalCards: 0 };
   const credits = offlineCollection?.eco_credits || 0;
   const pendingActions = offlineCollection?.action_queue.length || 0;
 
@@ -125,7 +126,7 @@ const MainMenu: React.FC = () => {
         <GuestRegistrationCTA variant="card" dismissible={true} />
 
         {/* Collection Initialization for authenticated users without collection */}
-        {isAuthenticated && (!offlineCollection || (offlineCollection && Object.keys(offlineCollection.species_owned).length === 0)) && (
+        {isAuthenticated && (!offlineCollection || (offlineCollection && getCollectionStats(offlineCollection.cards_owned).ownedSpecies === 0)) && (
           <IonCard>
             <IonCardHeader>
               <IonCardTitle>Initialize Your Collection</IonCardTitle>

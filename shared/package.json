@@ -7,7 +7,8 @@
   "exports": {
     ".": "./index.js",
     "./enums": "./enums.js",
-    "./game-engine/*": "./game-engine/*.js"
+    "./game-engine/*": "./game-engine/*.js",
+    "./data/*": "./data/*.js"
   },
   "scripts": {
     "build": "tsc",

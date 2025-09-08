@@ -279,7 +279,7 @@ export const PhyloGameBoardComponent: React.FC<PhyloGameBoardProps> = ({
           onDragEnd={() => setDraggedCard(null)}
         >
           <div className="card-mini">
-            <div className="card-name">{card.commonName}</div>
+            <div className="card-name">{card.nameId}</div>
             <div className="card-stats">
               <span className="foodchain-level">FC{card.phyloAttributes?.foodchainLevel}</span>
               <span className="scale">S{card.phyloAttributes?.scale}</span>

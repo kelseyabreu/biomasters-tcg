@@ -121,8 +121,7 @@ export function hasScaleCompatibility(predator: Card, prey: Card): boolean {
  * Checks if a card is a HOME card (represents all terrains and climates)
  */
 export function isHomeCard(card: Card): boolean {
-  return card.speciesName.toLowerCase().includes('home') ||
-         card.commonName.toLowerCase().includes('home');
+  return card.nameId.toLowerCase().includes('home');
 }
 
 /**

@@ -5,69 +5,37 @@
  */
 
 import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
-import { gameDataManager } from '../../services/GameDataManager';
+import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { GameActionType } from '@biomasters/shared';
 
 describe('🧬 Advanced Mechanics Integration Tests', () => {
   let engine: BioMastersEngine;
+  let gameData: any;
   // Game settings will be initialized by the engine
 
   beforeAll(async () => {
-    await gameDataManager.loadGameData();
+    gameData = await loadTestGameData();
   });
 
   beforeEach(() => {
-    // Create 1v1 game with proper grid size
-    // const playerCount = 2;
-    // const gridSize = BioMastersEngine.getGridSize(playerCount);
-    
-    // Game settings will be initialized by the engine
-    // const gameSettings = {
-    //   maxPlayers: playerCount,
-    //   gridWidth: gridSize.width,   // 9 for 1v1
-    //   gridHeight: gridSize.height, // 10 for 1v1
-    //   startingHandSize: 5,
-    //   maxHandSize: 7,
-    //   startingEnergy: 10,
-    //   turnTimeLimit: 300
-    // };
+    // Use real game data loaded in beforeAll - these are already Maps
+    const cardDatabase = gameData.cards;
+    const abilityDatabase = gameData.abilities;
+    const keywordDatabase = gameData.keywords;
 
-    // Use real game data loaded in beforeAll
-    const rawCards = gameDataManager.getCards();
-    const rawAbilities = gameDataManager.getAbilities();
-    const rawKeywords = gameDataManager.getKeywords();
+    // Create mock localization manager
+    const mockLocalizationManager = gameData.localizationManager;
 
-    // Convert data to engine-expected format
-    const cardDatabase = new Map<number, any>();
-    rawCards.forEach((card, cardId) => {
-      cardDatabase.set(Number(cardId), {
-        ...card,
-        cardId: Number(cardId),
-        victoryPoints: card.victoryPoints || 1 // Ensure required field
-      });
-    });
-
-    const abilityDatabase = new Map<number, any>();
-    rawAbilities.forEach((ability, abilityId) => {
-      abilityDatabase.set(abilityId, ability);
-    });
-
-    const keywordDatabase = new Map<number, string>();
-    rawKeywords.forEach((keyword, keywordId) => {
-      keywordDatabase.set(Number(keywordId), keyword.keyword_name || String(keywordId));
-    });
-
-    // Create engine with real data using production constructor
-    const mockLocalizationManager = createMockLocalizationManager();
+    // Initialize engine with real data
     engine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, mockLocalizationManager);
 
     // Initialize the game properly
-    engine.initializeNewGame('advanced-test', [
+    engine.initializeNewGame('advanced-mechanics-test', [
       { id: 'Alice', name: 'Alice' },
       { id: 'Bob', name: 'Bob' }
     ], {
-      gridWidth: 10,
+      gridWidth: 9,
       gridHeight: 10,
       maxHandSize: 7,
       startingEnergy: 10,
@@ -81,10 +49,23 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
     engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'Bob', payload: {} });
   });
 
+  // Helper function to add cards to a player's hand for testing
+  const addCardsToHand = (playerId: string, cardIds: number[]) => {
+    const gameState = engine.getGameState();
+    const player = gameState.players.find(p => p.id === playerId);
+    if (player) {
+      // Add the cards as strings (since hand contains string IDs)
+      player.hand.push(...cardIds.map(id => id.toString()));
+    }
+  };
+
   describe('🦠 Chemoautotroph Rules', () => {
     test('should allow chemoautotroph placement adjacent to HOME (good path)', () => {
       const gameState = engine.getGameState();
       const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+
+      // Add the required card to Alice's hand
+      addCardsToHand('Alice', [15]); // Deep Sea Hydrothermal Vent Bacteria
 
       // Place Deep Sea Hydrothermal Vent Bacteria (Chemoautotroph) adjacent to HOME (should succeed)
       const homeAdjacentPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -110,6 +91,9 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
     test('should allow opportunistic chemoautotroph with Chemical Opportunist ability (good path)', () => {
       const gameState = engine.getGameState();
       const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+
+      // Add the required card to Alice's hand
+      addCardsToHand('Alice', [26]); // Nitrifying Soil Bacteria
 
       // Place Nitrifying Soil Bacteria (Chemoautotroph with Chemical Opportunist) adjacent to HOME
       // This should work since chemoautotrophs can connect to HOME
@@ -146,9 +130,10 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
           position: isolatedPos
         }
       });
+      const resultMessage = result.errorMessage;
 
       expect(result.isValid).toBe(false);
-      expect(result.errorMessage).toContain('Cards must be placed adjacent to existing cards or HOME');
+      expect(resultMessage).toContain('Cards must be placed adjacent to existing cards or HOME');
     });
   });
 
@@ -156,6 +141,9 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
     test('should allow detritivore placement adjacent to saprotroph (good path)', () => {
       const gameState = engine.getGameState();
       const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+
+      // Add required cards to Alice's hand
+      addCardsToHand('Alice', [1, 13, 11]); // Oak Tree, Soil Bacteria, Common Earthworm
 
       // First, create detritus and place saprotroph
       const oakPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -220,9 +208,10 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
           position: isolatedPos
         }
       });
+      const resultMessage = result.errorMessage;
 
       expect(result.isValid).toBe(false);
-      expect(result.errorMessage).toContain('Cards must be placed adjacent to existing cards or HOME');
+      expect(resultMessage).toContain('Cards must be placed adjacent to existing cards or HOME');
     });
   });
 
@@ -230,6 +219,9 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
     test('should allow mutualist attachment to compatible host (good path)', () => {
       const gameState = engine.getGameState();
       const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+
+      // Add required cards to Alice's hand
+      addCardsToHand('Alice', [1, 17]); // Oak Tree, Mycorrhizal Fungi
 
       // First, place a plant host (Oak Tree)
       const hostPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -265,6 +257,9 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
     test('should reject mutualist attachment with domain mismatch (bad path)', () => {
       const gameState = engine.getGameState();
       const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+
+      // Add required cards to Alice's hand
+      addCardsToHand('Alice', [2, 17]); // Giant Kelp, Mycorrhizal Fungi
 
       // First, place a marine host (Kelp Forest)
       const hostPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };

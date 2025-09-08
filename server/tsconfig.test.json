@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "src/**/*",
+    "../shared/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

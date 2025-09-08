@@ -381,13 +381,13 @@ export function executeEventCard(
 
         case 'modify_stats':
           // This would modify card stats temporarily
-          cascadeEffects.push(`${target.card.commonName} gains protection for ${effect.duration} turns`);
+          cascadeEffects.push(`${target.card.nameId} gains protection for ${effect.duration} turns`);
           break;
       }
 
       // Check for cascade effects
       if (Math.random() < effect.cascadeChance) {
-        cascadeEffects.push(`Cascade effect triggered by ${effect.type} on ${target.card.commonName}`);
+        cascadeEffects.push(`Cascade effect triggered by ${effect.type} on ${target.card.nameId}`);
       }
     }
   }

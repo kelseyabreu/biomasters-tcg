@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { add, remove, refresh } from 'ionicons/icons';
 import { Card as CardType } from '../types';
-import { CommonName, SPECIES_DISPLAY_NAMES } from '@shared/enums';
+import { useLocalization } from '../contexts/LocalizationContext';
+import { getCardDisplayName } from '@shared/utils/cardIdHelpers';
 
 // Import the organism models
 import { organismModels } from '../ecosystem-organisms';
@@ -14,159 +15,14 @@ interface OrganismRendererProps {
   showControls?: boolean;
 }
 
-interface SpeciesData {
-  identity: {
-    commonName: string;
-    scientificName: string;
-    speciesName: string;
-  };
-  rendering: {
-    modelFile: string;
-    scale: number;
-  };
-}
+// Removed legacy SpeciesData interface and loadSpeciesData function
+// All rendering information should come from the centralized card data
 
-// Cache for loaded species data
-const speciesDataCache = new Map<string, SpeciesData>();
-
-// Function to load species data from public/species/ files
-const loadSpeciesData = async (speciesName: string): Promise<SpeciesData | null> => {
-  if (speciesDataCache.has(speciesName)) {
-    return speciesDataCache.get(speciesName)!;
-  }
-
-  try {
-    const response = await fetch(`/species/${speciesName}.json`);
-    if (response.ok) {
-      const data = await response.json();
-      speciesDataCache.set(speciesName, data);
-      return data;
-    }
-  } catch (error) {
-    console.warn(`Failed to load species data for ${speciesName}:`, error);
-  }
-
-  return null;
-};
-
-// Enhanced species mapping using CommonName enum
+// Get species key for organism model lookup
 const getSpeciesKey = (card: CardType): string => {
-  // Create a direct mapping from common names to species file names
-  const commonNameToSpeciesFile: Record<string, string> = {
-    'Oak Tree': 'oak-tree',
-    'Giant Kelp': 'giant-kelp',
-    'Reed Canary Grass': 'reed-canary-grass',
-    'European Rabbit': 'european-rabbit',
-    'Sockeye Salmon': 'sockeye-salmon',
-    'American Black Bear': 'american-black-bear',
-    'Great White Shark': 'great-white-shark',
-    'Mycena Mushroom': 'mycena-mushroom',
-    'Turkey Vulture': 'turkey-vulture',
-    'Deer Tick': 'deer-tick',
-    'Common Earthworm': 'common-earthworm',
-    'Dung Beetle': 'dung-beetle',
-    'Soil Bacteria': 'soil-bacteria',
-    'Decomposer Mushroom': 'decomposer-mushroom',
-    'Deep Sea Hydrothermal Vent Bacteria': 'deep-sea-hydrothermal-vent-bacteria',
-    'Iron Spring Bacteria': 'iron-spring-bacteria',
-    'Mycorrhizal Fungi': 'mycorrhizal-fungi',
-    'Nitrogen Fixing Bacteria': 'nitrogen-fixing-bacteria',
-    'Pacific Krill': 'pacific-krill',
-    'Phytoplankton': 'phytoplankton',
-    'Zooplankton': 'zooplankton',
-    'European Honey Bee': 'european-honey-bee',
-    'Volcanic Hydrogen Bacteria': 'volcanic-hydrogen-bacteria',
-    'Nitrifying Soil Bacteria': 'nitrifying-soil-bacteria',
-    'Sediment Chemosynthetic Bacteria': 'sediment-chemosynthetic-bacteria',
-
-    // New species
-    'Apple Tree': 'apple-tree',
-    'English Oak': 'deciduous-tree',
-    'Scots Pine': 'evergreen-tree',
-    'Coconut Palm': 'palm-tree',
-    'Cherry Blossom': 'cherry-blossom',
-    'Bush Cherry': 'bush-cherry',
-    'Prickly Pear Cactus': 'prickly-pear',
-    'Common Grape Vine': 'grapes',
-    'Perennial Ryegrass': 'grass',
-    'Common Daisy': 'daisy',
-    'Spearmint': 'herb',
-    'Hibiscus': 'hibiscus',
-    'Sweet Briar': 'rose',
-    'Garden Strawberry': 'strawberry',
-    'Common Sunflower': 'sunflower',
-    'Garden Tulip': 'tulip',
-    'White Clover': 'white-clover',
-    'Eelgrass': 'eelgrass',
-    'Corn/Maize': 'corn',
-    'Rice': 'rice',
-    'North American Beaver': 'beaver',
-    'American Bison': 'bison',
-    'White-tailed Deer': 'deer',
-    'Eastern Chipmunk': 'chipmunk',
-    'Domestic Cattle': 'cow',
-    'Domestic Goat': 'goat',
-    'Golden Hamster': 'hamster',
-    'European Hedgehog': 'hedgehog',
-    'Domestic Horse': 'horse',
-    'Koala': 'koala',
-    'Llama': 'llama',
-    'House Mouse': 'mouse',
-    'Ox': 'ox',
-    'Giant Panda': 'panda',
-    'Domestic Pig': 'pig',
-    'Common Raccoon': 'raccoon',
-    'Bighorn Sheep': 'ram',
-    'White Rhinoceros': 'rhinoceros',
-    'Asian Water Buffalo': 'water-buffalo',
-    'Plains Zebra': 'zebra',
-    'Giraffe': 'giraffe',
-    'African Bush Elephant': 'elephant',
-    'Dromedary Camel': 'camel',
-    'Woolly Mammoth': 'mammoth',
-    'Wild Boar': 'boar',
-    'Domestic Cat': 'cat',
-    'Domestic Dog': 'dog',
-    'Red Fox': 'fox',
-    'Leopard': 'leopard',
-    'African Lion': 'lion',
-    'Mountain Gorilla': 'gorilla',
-    'Common Chimpanzee': 'monkey',
-    'Bornean Orangutan': 'orangutan',
-    'Tiger': 'tiger',
-    'Gray Wolf': 'wolf',
-    'Common Hippopotamus': 'hippopotamus',
-    'Red Wood Ant': 'ant',
-    'Monarch Butterfly': 'butterfly',
-    'Monarch Caterpillar': 'caterpillar',
-    'Butterfly Egg': 'caterpillar_egg',
-    'House Cricket': 'cricket',
-    'Sacred Dung Beetle': 'dung-beetle',
-    'Desert Hairy Scorpion': 'scorpion',
-    'Roman Snail': 'snail',
-    'Garden Spider': 'spider',
-    'Common Decomposer': 'mushroom',
-    'Desert Lizard': 'lizard',
-    'Ball Python': 'snake',
-    'Common Frog': 'frog',
-    'Green Sea Turtle': 'turtle'
-  };
-
-  // First try direct mapping
-  if (commonNameToSpeciesFile[card.commonName]) {
-    return commonNameToSpeciesFile[card.commonName];
-  }
-
-  // If speciesName is available, use it
-  if (card.speciesName) {
-    return card.speciesName.toLowerCase().replace(/[^a-z-]/g, '');
-  }
-
-  // Fallback: convert common name to file format
-  return card.commonName.toLowerCase()
-    .replace(/[^a-z\s]/g, '') // Remove non-alphabetic characters except spaces
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  // Simple conversion: use nameId directly as the organism model key
+  // This assumes organism models use the same nameId format as cards
+  return card.nameId;
 };
 
 const OrganismRenderer: React.FC<OrganismRendererProps> = ({
@@ -175,6 +31,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
   className = '',
   showControls = false
 }) => {
+  const localization = useLocalization();
   const containerRef = useRef<HTMLDivElement>(null);
   const organismRef = useRef<HTMLDivElement>(null);
 
@@ -189,158 +46,98 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
 
     // Add a small delay to ensure DOM is fully rendered
     const renderOrganism = async () => {
+      // Get localized names
+      const localizedName = localization.getCardName(card.nameId as any);
+
       // Create organism data structure expected by the renderer
       const organism = {
         size: size,
         type: card.trophicRole.toLowerCase(),
-        species: card.speciesName.toLowerCase(),
-        commonName: card.commonName.toLowerCase(),
-        // Add some variation based on card properties
+        species: card.nameId.toLowerCase(),
+        displayName: localizedName.toLowerCase(),
+        // Add variation based on card properties
         health: card.health,
         power: card.power,
         speed: card.speed
       };
 
-    // Try to find the most specific renderer first
-    let renderer = null;
+      // Find the appropriate organism renderer
+      let renderer = null;
+      const speciesKey = getSpeciesKey(card);
 
-    // Use enhanced species mapping with CommonName enum
-    const speciesKey = getSpeciesKey(card);
-
-    // Try to load species data from public/species/ files
-    const speciesData = await loadSpeciesData(speciesKey).catch(() => null);
-
-    // Create mapping keys (fallback to original logic)
-    const speciesKeyFallback = card.speciesName.toLowerCase().replace(/[^a-z]/g, '');
-    const commonKey = card.commonName.toLowerCase().replace(/[^a-z]/g, '');
-
-    // 1. Try exact species name match using enum-based key
-    if (organismModels[speciesKey]) {
-      renderer = organismModels[speciesKey];
-    }
-
-    // 2. Try fallback species name match
-    if (!renderer && organismModels[speciesKeyFallback]) {
-      renderer = organismModels[speciesKeyFallback];
-    }
-
-    // 3. Try common name match
-    if (!renderer && organismModels[commonKey]) {
-      renderer = organismModels[commonKey];
-    }
-
-    // 4. Try specific mappings for known species
-    if (!renderer) {
-      const mappings: { [key: string]: string } = {
-        'bear': 'omnivore',
-        'americanblackbear': 'omnivore',
-        'fox': 'carnivore',
-        'redfox': 'carnivore',
-        'chipmunk': 'herbivore',
-        'easternchipmunk': 'herbivore',
-        'butterfly': 'herbivore',
-        'caterpillar': 'herbivore',
-        'dungbeetle': 'detritivore',
-        'earthworm': 'detritivore',
-        'soilbacteria': 'decomposer',
-        'mushroom': 'decomposer',
-        'appletree': 'producer',
-        'bushcherry': 'producer',
-        'eelgrass': 'producer',
-        'grass': 'producer',
-        'pricklypear': 'producer',
-        'strawberry': 'producer',
-        'sunflower': 'producer',
-        'whiteclover': 'producer',
-        'grapes': 'producer'
-      };
-
-      if (mappings[speciesKey]) {
-        renderer = organismModels[mappings[speciesKey]];
-      } else if (mappings[commonKey]) {
-        renderer = organismModels[mappings[commonKey]];
+      // 1. Try exact species name match using nameId
+      if (organismModels[speciesKey]) {
+        renderer = organismModels[speciesKey];
       }
-    }
 
-    // 5. Try partial matches for common names
-    if (!renderer) {
-      const commonWords = card.commonName.toLowerCase().split(' ');
-      for (const word of commonWords) {
-        const cleanWord = word.replace(/[^a-z]/g, '');
-        if (organismModels[cleanWord]) {
-          renderer = organismModels[cleanWord];
-          break;
+      // 2. Fall back to trophic role if no specific model exists
+      if (!renderer) {
+        const trophicKey = card.trophicRole.toLowerCase();
+        if (organismModels[trophicKey]) {
+          renderer = organismModels[trophicKey];
         }
       }
-    }
 
-    // 6. Fall back to trophic role
-    if (!renderer) {
-      const trophicKey = card.trophicRole.toLowerCase();
-      if (organismModels[trophicKey]) {
-        renderer = organismModels[trophicKey];
-      }
-    }
-
-    // 7. Final fallback
-    if (!renderer) {
-      renderer = organismModels.herbivore; // Default fallback
-    }
-
-    try {
-      // Get the organism content container - try multiple approaches
-      let organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
-
-      if (!organismContent && organismRef.current) {
-        organismContent = organismRef.current;
+      // 3. Final fallback
+      if (!renderer) {
+        renderer = organismModels.herbivore; // Default fallback
       }
 
-      if (!organismContent) {
-        // Create the organism-content div if it doesn't exist
-        organismContent = document.createElement('div');
-        organismContent.className = 'organism-content';
-        organismContent.style.width = '100%';
-        organismContent.style.height = '100%';
-        organismContent.style.position = 'relative';
-        containerRef.current?.appendChild(organismContent);
+      try {
+        // Get the organism content container
+        let organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
+
+        if (!organismContent && organismRef.current) {
+          organismContent = organismRef.current;
+        }
+
+        if (!organismContent) {
+          // Create the organism-content div if it doesn't exist
+          organismContent = document.createElement('div');
+          organismContent.className = 'organism-content';
+          organismContent.style.width = '100%';
+          organismContent.style.height = '100%';
+          organismContent.style.position = 'relative';
+          containerRef.current?.appendChild(organismContent);
+        }
+
+        // Clear previous content
+        organismContent.innerHTML = '';
+
+        // Render the organism
+        const renderedElement = renderer.render(organism, organismContent);
+
+        if (renderedElement) {
+          organismContent.appendChild(renderedElement);
+        } else {
+          createFallback(organismContent);
+        }
+      } catch (error) {
+        console.warn('Error rendering organism:', error);
+
+        // Fallback to simple representation
+        const organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
+        if (organismContent) {
+          createFallback(organismContent);
+        }
       }
 
-      // Clear previous content
-      organismContent.innerHTML = '';
-
-      // Render the organism
-      const renderedElement = renderer.render(organism, organismContent);
-
-      if (renderedElement) {
-        organismContent.appendChild(renderedElement);
-      } else {
-        createFallback(organismContent);
+      function createFallback(container: HTMLElement) {
+        const fallback = document.createElement('div');
+        fallback.style.width = '100%';
+        fallback.style.height = '100%';
+        fallback.style.backgroundColor = '#ccc';
+        fallback.style.borderRadius = '50%';
+        fallback.style.display = 'flex';
+        fallback.style.alignItems = 'center';
+        fallback.style.justifyContent = 'center';
+        fallback.style.fontSize = '24px';
+        fallback.style.fontWeight = 'bold';
+        fallback.style.color = '#666';
+        const localizedName = localization.getCardName(card.nameId as any);
+        fallback.textContent = localizedName.charAt(0).toUpperCase();
+        container.appendChild(fallback);
       }
-    } catch (error) {
-      console.warn('Error rendering organism:', error);
-
-      // Fallback to simple representation
-      const organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
-      if (organismContent) {
-        createFallback(organismContent);
-      }
-    }
-
-    function createFallback(container: HTMLElement) {
-      const fallback = document.createElement('div');
-      fallback.style.width = '100%';
-      fallback.style.height = '100%';
-      fallback.style.backgroundColor = '#ccc';
-      fallback.style.borderRadius = '50%';
-      fallback.style.display = 'flex';
-      fallback.style.alignItems = 'center';
-      fallback.style.justifyContent = 'center';
-      fallback.style.fontSize = '24px';
-      fallback.style.fontWeight = 'bold';
-      fallback.style.color = '#666';
-      fallback.textContent = card.commonName.charAt(0).toUpperCase();
-      container.appendChild(fallback);
-    }
     };
 
     // Call renderOrganism with a small delay to ensure DOM is ready

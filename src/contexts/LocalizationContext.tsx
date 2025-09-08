@@ -178,41 +178,8 @@ export const useLocalization = (): LocalizationContextType => {
   return context;
 };
 
-/**
- * Hook for card-specific localization
- */
-export const useCardLocalization = () => {
-  const { getCardName, currentLanguage, isLoading } = useLocalization();
-  
-  return {
-    getCardName,
-    currentLanguage,
-    isLoading,
-    // Helper for getting card display info
-    getCardDisplayInfo: (nameId: CardNameId) => ({
-      name: getCardName(nameId),
-      language: currentLanguage,
-      isLoading
-    })
-  };
-};
-
-/**
- * Hook for UI text localization
- */
-export const useUILocalization = () => {
-  const { getUIText, currentLanguage, isLoading } = useLocalization();
-  
-  return {
-    getUIText,
-    currentLanguage,
-    isLoading,
-    // Common UI text getters
-    getButtonText: (textId: UITextId) => getUIText(textId),
-    getMenuText: (textId: UITextId) => getUIText(textId),
-    getErrorText: (textId: UITextId) => getUIText(textId)
-  };
-};
+// Note: useCardLocalization and useUILocalization hooks have been moved to
+// src/hooks/useCardLocalization.ts for better organization and enhanced functionality
 
 /**
  * Higher-Order Component for class components

@@ -28,6 +28,7 @@ import {
   star
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
+import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 import { AuthModal } from './auth/AuthModal';
 import { Avatar } from './Avatar';
 import './UserProfile.css';
@@ -53,9 +54,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   } = useHybridGameStore();
 
   // Calculate collection stats
-  const ownedSpecies = offlineCollection ? Object.keys(offlineCollection.species_owned).length : 0;
-  const totalCards = offlineCollection ?
-    Object.values(offlineCollection.species_owned).reduce((sum, species) => sum + species.quantity, 0) : 0;
+  const { ownedSpecies, totalCards } = offlineCollection ?
+    getCollectionStats(offlineCollection.cards_owned) :
+    { ownedSpecies: 0, totalCards: 0 };
   const credits = offlineCollection?.eco_credits || 0;
   const xpPoints = offlineCollection?.xp_points || 0;
 

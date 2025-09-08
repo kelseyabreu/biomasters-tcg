@@ -11,6 +11,7 @@ import { requireAuth } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import CryptoJS from 'crypto-js';
 import crypto from 'crypto';
+import { speciesNameToCardId } from '../utils/cardIdMapping';
 
 const router = Router();
 
@@ -124,7 +125,7 @@ router.post('/',
 
       console.log('✅ Current collection fetched:', {
         collectionSize: currentCollection.length,
-        species: currentCollection.map(c => c.species_name)
+        species: currentCollection.map(c => c.card_id.toString())
       });
 
       const currentCredits = req.user.eco_credits;
@@ -149,7 +150,7 @@ router.post('/',
       let serverCredits = currentCredits;
       let serverXP = currentXP;
       const serverCollection = new Map(
-        currentCollection.map(card => [card.species_name, card])
+        currentCollection.map(card => [card.card_id.toString(), card])
       );
       console.log('✅ Server state initialized:', {
         serverCredits,
@@ -277,18 +278,22 @@ router.post('/',
               }
 
               // Add starter pack species
-              const starterSpecies = ['grass', 'rabbit', 'fox', 'oak-tree', 'butterfly'];
-              for (const species of starterSpecies) {
+              const starterSpecies = [
+                { species: 'grass', cardId: 3 },
+                { species: 'rabbit', cardId: 4 },
+                { species: 'fox', cardId: 53 },
+                { species: 'oak-tree', cardId: 1 },
+                { species: 'butterfly', cardId: 34 }
+              ];
+              for (const { species, cardId } of starterSpecies) {
                 serverCollection.set(species, {
                   id: `temp_${species}`,
                   user_id: req.user.id,
-                  species_name: species,
-                  card_id: null,
+                  card_id: cardId,
                   quantity: 1,
                   acquired_via: 'starter',
                   first_acquired_at: new Date(action.timestamp),
-                  last_acquired_at: new Date(action.timestamp),
-                  migrated_from_species: false
+                  last_acquired_at: new Date(action.timestamp)
                 });
               }
               break;
@@ -318,16 +323,15 @@ router.post('/',
                   existing.quantity += action.quantity;
                   existing.last_acquired_at = new Date(action.timestamp);
                 } else {
+                  const cardId = speciesNameToCardId(action.species_name) || 0;
                   serverCollection.set(action.species_name, {
                     id: `temp_${action.species_name}`,
                     user_id: req.user.id,
-                    species_name: action.species_name,
-                    card_id: null,
+                    card_id: cardId,
                     quantity: action.quantity,
                     acquired_via: 'pack',
                     first_acquired_at: new Date(action.timestamp),
-                    last_acquired_at: new Date(action.timestamp),
-                    migrated_from_species: false
+                    last_acquired_at: new Date(action.timestamp)
                   });
                 }
               }
@@ -348,28 +352,32 @@ router.post('/',
         }
       }
 
-      // Update database with final state
+      // Update database with final state using CardId system
       await db.transaction().execute(async (trx) => {
-        // Upsert each card individually (preserves first_acquired_at, updates quantity and last_acquired_at)
+
+        // Upsert each card individually using CardId system
         for (const [speciesName, card] of serverCollection) {
+          const cardId = speciesNameToCardId(speciesName);
+
+          if (!cardId) {
+            console.warn(`Unknown species in sync: ${speciesName} - skipping`);
+            continue;
+          }
+
           await trx
             .insertInto('user_cards')
             .values({
               user_id: req.user!.id,
-              species_name: speciesName,
-              card_id: null,
+              card_id: cardId,
               quantity: card.quantity,
               acquired_via: card.acquired_via,
-              first_acquired_at: card.first_acquired_at,
-              last_acquired_at: card.last_acquired_at,
-              migrated_from_species: false
+              first_acquired_at: card.first_acquired_at
             })
             .onConflict((oc) => oc
-              .columns(['user_id', 'species_name'])
+              .columns(['user_id', 'card_id'])
               .doUpdateSet({
                 quantity: card.quantity,
-                last_acquired_at: card.last_acquired_at
-                // Note: first_acquired_at and acquired_via are preserved from original
+                last_acquired_at: card.last_acquired_at || card.first_acquired_at
               })
             )
             .execute();
@@ -447,7 +455,7 @@ router.post('/',
         conflicts: conflicts.length > 0 ? conflicts : undefined,
         discarded_actions: discardedActions.length > 0 ? discardedActions : undefined,
         new_server_state: {
-          species_owned: Object.fromEntries(
+          cards_owned: Object.fromEntries(
             Array.from(serverCollection.entries()).map(([species, card]) => [
               species,
               {
@@ -514,7 +522,7 @@ router.get('/status', requireAuth, async (req: Request, res: Response) => {
     const collection = await db
       .selectFrom('user_cards')
       .select([
-        db.fn.count('species_name').as('species_count'),
+        db.fn.count('card_id').as('species_count'),
         db.fn.sum('quantity').as('total_cards')
       ])
       .where('user_id', '=', req.user.id)

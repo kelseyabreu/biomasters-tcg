@@ -295,7 +295,7 @@ export const PREDEFINED_EVENT_ACTIONS: Record<string, EventAction> = {
  */
 export function getEventAction(eventCard: Card): EventAction | null {
   // Check if card has predefined action
-  const predefinedAction = PREDEFINED_EVENT_ACTIONS[eventCard.commonName.toUpperCase().replace(/\s+/g, '_')];
+  const predefinedAction = PREDEFINED_EVENT_ACTIONS[eventCard.nameId.toUpperCase().replace(/\s+/g, '_')];
   if (predefinedAction) {
     return predefinedAction;
   }

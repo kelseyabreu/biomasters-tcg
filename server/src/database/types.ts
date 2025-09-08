@@ -101,13 +101,11 @@ export interface OfflineActionQueueTable {
 export interface UserCardsTable {
   id: Generated<string>; // UUID for fast retrieval
   user_id: string;
-  species_name: string; // Foreign key to JSON file (e.g., 'bear', 'tiger') - legacy
-  card_id: number | null; // New foreign key to cards table
+  card_id: number; // Foreign key to cards table
   quantity: number;
   acquired_via: AcquisitionMethod;
   first_acquired_at: Generated<Date>;
   last_acquired_at: Generated<Date>;
-  migrated_from_species: boolean; // Track migration from old system
 }
 
 export interface DecksTable {
@@ -121,14 +119,14 @@ export interface DecksTable {
 export interface DeckCardsTable {
   id: Generated<string>;
   deck_id: string;
-  species_name: string; // Foreign key to JSON file
+  card_id: number; // Foreign key to cards table
   position_in_deck: number;
 }
 
 export interface RedemptionCodesTable {
   id: Generated<string>;
   code: string;
-  species_name: string; // Foreign key to JSON file
+  card_id: number; // Foreign key to cards table
   is_redeemed: Generated<boolean>;
   redeemed_by_user_id: string | null;
   redeemed_at: Date | null;

@@ -260,7 +260,7 @@ export function placeCardOnBoard(
   const cardPosition: PhyloCardPosition = {
     x: position.x,
     y: position.y,
-    cardId: card.id,
+    cardId: card.cardId.toString(),
     playerId
   };
 
@@ -282,14 +282,14 @@ export function placeCardOnBoard(
           cardConnections.push(adjPosition.cardId);
 
           const adjConnections = newConnections.get(adjPosition.cardId) || [];
-          adjConnections.push(card.id);
+          adjConnections.push(card.cardId.toString());
           newConnections.set(adjPosition.cardId, adjConnections);
         }
       }
     }
   });
 
-  newConnections.set(card.id, cardConnections);
+  newConnections.set(card.cardId.toString(), cardConnections);
 
   return {
     success: true,

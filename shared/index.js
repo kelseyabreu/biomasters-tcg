@@ -23,7 +23,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TROPHIC_CONNECTIONS = exports.DOMAIN_COMPATIBILITY = exports.GAME_CONSTANTS = exports.ApiStatus = exports.ValidationError = exports.GameActionType = exports.TurnPhase = exports.GamePhase = exports.ActionId = exports.SelectorId = exports.EffectId = exports.TriggerId = exports.KeywordId = exports.Domain = exports.TrophicCategoryId = exports.TrophicLevel = exports.AbilityId = exports.CardId = void 0;
+exports.TaxoSpecies = exports.TaxoGenus = exports.TaxoFamily = exports.TaxoOrder = exports.TaxoClass = exports.TaxoPhylum = exports.TaxoKingdom = exports.TaxoDomain = exports.TROPHIC_CONNECTIONS = exports.DOMAIN_COMPATIBILITY = exports.GAME_CONSTANTS = exports.ApiStatus = exports.ValidationError = exports.GameActionType = exports.TurnPhase = exports.GamePhase = exports.ActionId = exports.SelectorId = exports.EffectId = exports.TriggerId = exports.KeywordId = exports.Domain = exports.TrophicCategoryId = exports.TrophicLevel = exports.AbilityId = exports.CardId = exports.TaxonomyMapper = exports.TaxonomyDisplayId = void 0;
 // Export all enums
 __exportStar(require("./enums"), exports);
 // Export all types
@@ -32,6 +32,15 @@ __exportStar(require("./types"), exports);
 __exportStar(require("./utils/cardIdHelpers"), exports);
 __exportStar(require("./data/DataLoader"), exports);
 __exportStar(require("./data/DataCache"), exports);
+__exportStar(require("./taxonomy-mapping"), exports);
+// Export services
+__exportStar(require("./services/TaxonomyFilter"), exports);
+__exportStar(require("./services/TaxonomyDisplay"), exports);
+// Export text IDs and taxonomy mapping
+var text_ids_1 = require("./text-ids");
+Object.defineProperty(exports, "TaxonomyDisplayId", { enumerable: true, get: function () { return text_ids_1.TaxonomyDisplayId; } });
+var taxonomy_mapping_1 = require("./taxonomy-mapping");
+Object.defineProperty(exports, "TaxonomyMapper", { enumerable: true, get: function () { return taxonomy_mapping_1.TaxonomyMapper; } });
 var enums_1 = require("./enums");
 Object.defineProperty(exports, "CardId", { enumerable: true, get: function () { return enums_1.CardId; } });
 Object.defineProperty(exports, "AbilityId", { enumerable: true, get: function () { return enums_1.AbilityId; } });
@@ -51,4 +60,12 @@ Object.defineProperty(exports, "ApiStatus", { enumerable: true, get: function ()
 Object.defineProperty(exports, "GAME_CONSTANTS", { enumerable: true, get: function () { return enums_1.GAME_CONSTANTS; } });
 Object.defineProperty(exports, "DOMAIN_COMPATIBILITY", { enumerable: true, get: function () { return enums_1.DOMAIN_COMPATIBILITY; } });
 Object.defineProperty(exports, "TROPHIC_CONNECTIONS", { enumerable: true, get: function () { return enums_1.TROPHIC_CONNECTIONS; } });
+Object.defineProperty(exports, "TaxoDomain", { enumerable: true, get: function () { return enums_1.TaxoDomain; } });
+Object.defineProperty(exports, "TaxoKingdom", { enumerable: true, get: function () { return enums_1.TaxoKingdom; } });
+Object.defineProperty(exports, "TaxoPhylum", { enumerable: true, get: function () { return enums_1.TaxoPhylum; } });
+Object.defineProperty(exports, "TaxoClass", { enumerable: true, get: function () { return enums_1.TaxoClass; } });
+Object.defineProperty(exports, "TaxoOrder", { enumerable: true, get: function () { return enums_1.TaxoOrder; } });
+Object.defineProperty(exports, "TaxoFamily", { enumerable: true, get: function () { return enums_1.TaxoFamily; } });
+Object.defineProperty(exports, "TaxoGenus", { enumerable: true, get: function () { return enums_1.TaxoGenus; } });
+Object.defineProperty(exports, "TaxoSpecies", { enumerable: true, get: function () { return enums_1.TaxoSpecies; } });
 //# sourceMappingURL=index.js.map

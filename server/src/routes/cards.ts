@@ -9,7 +9,9 @@ import {
   getCardWithRelations,
   getCardsByTrophicLevel,
   getCardsByKeyword,
-  getAllAbilitiesWithEffects
+  getAllAbilitiesWithEffects,
+  getCardsByTaxonomyLevel,
+  getTaxonomicDiversityStats
 } from '../database/queries/cardQueries';
 import {
   CardId
@@ -23,7 +25,23 @@ const router = Router();
  * Get all cards from the BioMasters database using optimized ARRAY_AGG queries
  */
 router.get('/database', asyncHandler(async (req, res) => {
-  const { page = 1, limit = 50, search, trophic_level, trophic_category, keyword } = req.query;
+  const {
+    page = 1,
+    limit = 50,
+    search,
+    trophic_level,
+    trophic_category,
+    keyword,
+    // Taxonomy filters
+    taxo_domain,
+    taxo_kingdom,
+    taxo_phylum,
+    taxo_class,
+    taxo_order,
+    taxo_family,
+    taxo_genus,
+    taxo_species
+  } = req.query;
 
   // Validate query parameters
   const pageNum = Number(page);
@@ -31,6 +49,16 @@ router.get('/database', asyncHandler(async (req, res) => {
   const trophicLevelNum = trophic_level ? Number(trophic_level) : null;
   const trophicCategoryNum = trophic_category ? Number(trophic_category) : null;
   const keywordNum = keyword ? Number(keyword) : null;
+
+  // Parse taxonomy parameters
+  const taxoDomainNum = taxo_domain ? Number(taxo_domain) : null;
+  const taxoKingdomNum = taxo_kingdom ? Number(taxo_kingdom) : null;
+  const taxoPhylumNum = taxo_phylum ? Number(taxo_phylum) : null;
+  const taxoClassNum = taxo_class ? Number(taxo_class) : null;
+  const taxoOrderNum = taxo_order ? Number(taxo_order) : null;
+  const taxoFamilyNum = taxo_family ? Number(taxo_family) : null;
+  const taxoGenusNum = taxo_genus ? Number(taxo_genus) : null;
+  const taxoSpeciesNum = taxo_species ? Number(taxo_species) : null;
 
   // Validate pagination parameters
   if (isNaN(pageNum) || pageNum < 1) {
@@ -76,6 +104,28 @@ router.get('/database', asyncHandler(async (req, res) => {
     return;
   }
 
+  // Validate taxonomy parameters
+  const taxonomyParams = [
+    { param: taxo_domain, value: taxoDomainNum, name: 'taxo_domain', min: 1, max: 3 },
+    { param: taxo_kingdom, value: taxoKingdomNum, name: 'taxo_kingdom', min: 1, max: 10 },
+    { param: taxo_phylum, value: taxoPhylumNum, name: 'taxo_phylum', min: 1, max: 20 },
+    { param: taxo_class, value: taxoClassNum, name: 'taxo_class', min: 1, max: 20 },
+    { param: taxo_order, value: taxoOrderNum, name: 'taxo_order', min: 1, max: 20 },
+    { param: taxo_family, value: taxoFamilyNum, name: 'taxo_family', min: 1, max: 20 },
+    { param: taxo_genus, value: taxoGenusNum, name: 'taxo_genus', min: 1, max: 20 },
+    { param: taxo_species, value: taxoSpeciesNum, name: 'taxo_species', min: 1, max: 20 }
+  ];
+
+  for (const { param, value, name, min, max } of taxonomyParams) {
+    if (param && (isNaN(value!) || value! < min || value! > max)) {
+      res.status(400).json({
+        error: 'INVALID_TAXONOMY_PARAMETER',
+        message: `${name} must be an integer between ${min} and ${max}`
+      });
+      return;
+    }
+  }
+
   try {
     let cards;
 
@@ -84,6 +134,22 @@ router.get('/database', asyncHandler(async (req, res) => {
       cards = await getCardsByTrophicLevel(trophicLevelNum);
     } else if (keywordNum !== null) {
       cards = await getCardsByKeyword(keywordNum);
+    } else if (taxoDomainNum !== null) {
+      cards = await getCardsByTaxonomyLevel('domain', taxoDomainNum);
+    } else if (taxoKingdomNum !== null) {
+      cards = await getCardsByTaxonomyLevel('kingdom', taxoKingdomNum);
+    } else if (taxoPhylumNum !== null) {
+      cards = await getCardsByTaxonomyLevel('phylum', taxoPhylumNum);
+    } else if (taxoClassNum !== null) {
+      cards = await getCardsByTaxonomyLevel('class', taxoClassNum);
+    } else if (taxoOrderNum !== null) {
+      cards = await getCardsByTaxonomyLevel('order', taxoOrderNum);
+    } else if (taxoFamilyNum !== null) {
+      cards = await getCardsByTaxonomyLevel('family', taxoFamilyNum);
+    } else if (taxoGenusNum !== null) {
+      cards = await getCardsByTaxonomyLevel('genus', taxoGenusNum);
+    } else if (taxoSpeciesNum !== null) {
+      cards = await getCardsByTaxonomyLevel('species', taxoSpeciesNum);
     } else {
       cards = await getAllCardsWithRelations();
     }
@@ -101,6 +167,32 @@ router.get('/database', asyncHandler(async (req, res) => {
     // Apply trophic category filter
     if (trophicCategoryNum !== null) {
       cards = cards.filter(card => card.trophic_category_id === trophicCategoryNum);
+    }
+
+    // Apply additional taxonomy filters (for cases where multiple levels are specified)
+    if (taxoDomainNum !== null && !cards.some(c => c.taxo_domain === taxoDomainNum)) {
+      cards = cards.filter(card => card.taxo_domain === taxoDomainNum);
+    }
+    if (taxoKingdomNum !== null && !cards.some(c => c.taxo_kingdom === taxoKingdomNum)) {
+      cards = cards.filter(card => card.taxo_kingdom === taxoKingdomNum);
+    }
+    if (taxoPhylumNum !== null && !cards.some(c => c.taxo_phylum === taxoPhylumNum)) {
+      cards = cards.filter(card => card.taxo_phylum === taxoPhylumNum);
+    }
+    if (taxoClassNum !== null && !cards.some(c => c.taxo_class === taxoClassNum)) {
+      cards = cards.filter(card => card.taxo_class === taxoClassNum);
+    }
+    if (taxoOrderNum !== null && !cards.some(c => c.taxo_order === taxoOrderNum)) {
+      cards = cards.filter(card => card.taxo_order === taxoOrderNum);
+    }
+    if (taxoFamilyNum !== null && !cards.some(c => c.taxo_family === taxoFamilyNum)) {
+      cards = cards.filter(card => card.taxo_family === taxoFamilyNum);
+    }
+    if (taxoGenusNum !== null && !cards.some(c => c.taxo_genus === taxoGenusNum)) {
+      cards = cards.filter(card => card.taxo_genus === taxoGenusNum);
+    }
+    if (taxoSpeciesNum !== null && !cards.some(c => c.taxo_species === taxoSpeciesNum)) {
+      cards = cards.filter(card => card.taxo_species === taxoSpeciesNum);
     }
 
     // Apply pagination
@@ -387,7 +479,7 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
       random -= item.weight;
       if (random <= 0) {
         newCards.push({
-          id: item.card.id,
+          id: item.card.cardId,
           card_name: item.card.card_name,
           common_name: item.card.common_name,
           conservation_status_id: item.card.conservation_status_id
@@ -415,7 +507,7 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
         .selectFrom('user_cards')
         .selectAll()
         .where('user_id', '=', req.user!.id)
-        .where('card_id', '=', card.id)
+        .where('card_id', '=', card.cardId)
         .executeTakeFirst();
 
       if (existing) {
@@ -427,7 +519,7 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
             last_acquired_at: new Date()
           })
           .where('user_id', '=', req.user!.id)
-          .where('card_id', '=', card.id)
+          .where('card_id', '=', card.cardId)
           .execute();
       } else {
         // Add new card
@@ -435,7 +527,7 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
           .insertInto('user_cards')
           .values({
             user_id: req.user!.id,
-            card_id: card.id,
+            card_id: card.cardId,
             quantity: 1,
             acquired_via: 'pack'
           })
@@ -878,6 +970,28 @@ router.post('/validate-placement', requireAuth, asyncHandler(async (req, res) =>
       keywords: cardKeywords
     } : null
   });
+}));
+
+/**
+ * GET /api/cards/diversity
+ * Get taxonomic diversity statistics
+ */
+router.get('/diversity', asyncHandler(async (_req, res) => {
+  try {
+    const stats = await getTaxonomicDiversityStats();
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error getting diversity stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to get taxonomic diversity statistics'
+    });
+  }
 }));
 
 export default router;

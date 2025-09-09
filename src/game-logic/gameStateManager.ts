@@ -1,4 +1,4 @@
-import { Card, PhyloGameBoard, PhyloCardPosition, TrophicRole, Habitat } from '../types';
+import { Card, PhyloGameBoard, PhyloCardPosition, TrophicRole, Habitat, createCardWithDefaults } from '../types';
 import { ConservationStatus } from '@shared/enums';
 import { validateCardPlacement } from './phyloCompatibility';
 import { placeCardOnBoard, removeCardFromBoard } from './ecosystemBuilder';
@@ -89,10 +89,10 @@ export interface TurnResult {
  * Creates HOME cards for each player
  */
 function createHomeCard(playerId: string, playerIndex: number): Card {
-  return {
-    id: `home_${playerId}`,
+  return createCardWithDefaults({
     cardId: 0, // HOME cards have special cardId 0
     nameId: 'HOME',
+    id: `home_${playerId}`,
     scientificNameId: 'BASE_CAMP',
     descriptionId: 'DESC_HOME',
     taxonomyId: 'TAXONOMY_HOME',
@@ -105,9 +105,7 @@ function createHomeCard(playerId: string, playerIndex: number): Card {
     speed: 0,
     senses: 0,
     energyCost: 0,
-    abilities: [],
     conservationStatus: ConservationStatus.NOT_EVALUATED,
-    artwork: '',
     phyloAttributes: {
       terrains: ['Forest', 'Grassland', 'Ocean', 'Desert', 'Arctic', 'Mountain'], // Compatible with all terrains
       climates: ['Cool', 'Warm', 'Hot', 'Cold'], // Compatible with all climates
@@ -125,7 +123,7 @@ function createHomeCard(playerId: string, playerIndex: number): Card {
       conservationStatus: 'Not Applicable',
       compatibilityNotes: 'HOME card - compatible with all FC#1 cards'
     }
-  };
+  });
 }
 
 /**

@@ -8,7 +8,7 @@
 import { GamePhase, TurnPhase, GameActionType } from '../enums';
 import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../text-ids';
 import { ILocalizationManager } from '../localization-manager';
-import { CardData as SharedCardData, AbilityData as SharedAbilityData } from '../types';
+import { CardData as SharedCardData, AbilityData as SharedAbilityData, GameState, CardInstance } from '../types';
 export interface CardData extends SharedCardData {
     attachments?: CardData[];
     isDetritus?: boolean;
@@ -41,9 +41,9 @@ export interface LegacyEngineCardData {
 }
 export interface AbilityData extends SharedAbilityData {
 }
-export interface GameState {
+export interface GameState_old {
     gameId: string;
-    players: Player[];
+    players: Player_old[];
     currentPlayerIndex: number;
     gamePhase: GamePhase;
     turnPhase: TurnPhase;
@@ -51,20 +51,22 @@ export interface GameState {
     turnNumber: number;
     finalTurnTriggeredBy?: string;
     finalTurnPlayersRemaining?: string[];
-    grid: Map<string, GridCard>;
+    grid: Map<string, GridCard_old>;
+    detritus: CardInstance[];
     gameSettings: GameSettings;
     metadata: Record<string, any>;
 }
-export interface Player {
+export interface Player_old {
     id: string;
     name: string;
     hand: string[];
     deck: string[];
-    scorePile: GridCard[];
+    scorePile: string[];
     energy: number;
     isReady: boolean;
+    actionsRemaining: number;
 }
-export interface GridCard {
+export interface GridCard_old {
     instanceId: string;
     cardId: number;
     ownerId: string;
@@ -73,7 +75,7 @@ export interface GridCard {
         y: number;
     };
     isExhausted: boolean;
-    attachments: GridCard[];
+    attachments: GridCard_old[];
     statusEffects: StatusEffect[];
     isDetritus: boolean;
     isHOME: boolean;
@@ -115,8 +117,8 @@ export interface ActivateAbilityPayload {
     additionalTargets?: string[];
 }
 export interface EffectContext {
-    actingCard: GridCard;
-    targetCard?: GridCard | undefined;
+    actingCard: CardInstance;
+    targetCard?: CardInstance | undefined;
     gameState: GameState;
     ability: AbilityData;
     additionalData?: Record<string, any>;

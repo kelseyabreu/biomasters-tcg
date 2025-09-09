@@ -21,6 +21,7 @@ import AuthPage from './pages/AuthPage';
 import { HybridCollectionView } from './components/collection/HybridCollectionView';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import TaxonomyDemo from './pages/TaxonomyDemo';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useHybridGameStore } from './state/hybridGameStore';
 import { ActiveBattleIndicator } from './components/navigation/ActiveBattleIndicator';
@@ -152,6 +153,9 @@ const App: React.FC = () => {
               </Route>
               <Route exact path="/profile">
                 <Profile />
+              </Route>
+              <Route exact path="/taxonomy">
+                <TaxonomyDemo />
               </Route>
               <Route exact path="/">
                 <Redirect to="/home" />

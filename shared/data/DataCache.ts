@@ -399,7 +399,7 @@ export class CardDataCache extends DataCache {
    * Set multiple cards
    */
   setCards(cards: CardData[]): void {
-    cards.forEach(card => this.setCard(card.id, card));
+    cards.forEach(card => this.setCard(card.cardId, card));
   }
 }
 

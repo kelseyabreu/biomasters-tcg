@@ -250,7 +250,17 @@ export interface CardsTable {
   // Biological data
   common_name: string | null;
   scientific_name: string | null;
-  taxonomy: string | null; // JSONB as string
+  taxonomy: string | null; // JSONB as string (legacy)
+
+  // New taxonomy enum fields (hybrid system)
+  taxo_domain: number | null;
+  taxo_kingdom: number | null;
+  taxo_phylum: number | null;
+  taxo_class: number | null;
+  taxo_order: number | null;
+  taxo_family: number | null;
+  taxo_genus: number | null;
+  taxo_species: number | null;
 
   // Physical characteristics
   mass_kg: number | null;

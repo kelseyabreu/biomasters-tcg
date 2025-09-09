@@ -23,7 +23,15 @@ import {
   GameActionType,
   ValidationError,
   ApiStatus,
-  ConservationStatus
+  ConservationStatus,
+  TaxoDomain,
+  TaxoKingdom,
+  TaxoPhylum,
+  TaxoClass,
+  TaxoOrder,
+  TaxoFamily,
+  TaxoGenus,
+  TaxoSpecies
 } from './enums';
 
 // ============================================================================
@@ -43,11 +51,23 @@ export interface Position {
  * Field names match JSON format (camelCase) for optimal performance
  */
 export interface CardData {
-  id: CardId;
-  nameId: string; // Enum-based card name ID for localization
-  scientificNameId: string; // Enum-based scientific name ID for localization
-  descriptionId: string; // Enum-based description ID for localization
-  taxonomyId: string; // Enum-based taxonomy ID for localization
+  cardId: number;                    // Database primary key (replacing 'id')
+  nameId: string;                    // Enum-based card name ID for localization
+  scientificNameId: string;          // Enum-based scientific name ID for localization
+  descriptionId: string;             // Enum-based description ID for localization
+  taxonomyId: string;                // Enum-based taxonomy ID for localization
+
+  // Taxonomy for filtering (numeric enums for performance)
+  taxoDomain: TaxoDomain;
+  taxoKingdom: TaxoKingdom;
+  taxoPhylum: TaxoPhylum;
+  taxoClass: TaxoClass;
+  taxoOrder: TaxoOrder;
+  taxoFamily: TaxoFamily;
+  taxoGenus: TaxoGenus;
+  taxoSpecies: TaxoSpecies;
+
+  // Game mechanics
   trophicLevel: TrophicLevel | null;
   trophicCategory: TrophicCategoryId | null;
   cost: string | null; // JSON string of cost requirements
@@ -128,14 +148,19 @@ export interface CostRequirement {
  */
 export interface CardInstance {
   id: string; // Unique instance ID (e.g., "1_algae1")
+  instanceId: string; // Legacy compatibility - same as id
   cardId: CardId;
   ownerId: string;
   position: Position;
   isExhausted: boolean;
   isReady: boolean;
   attachedCards: string[]; // IDs of cards attached to this one
+  attachments: CardInstance[]; // Legacy compatibility - attached card instances
   modifiers: CardModifier[];
+  statusEffects: StatusEffect[]; // Temporary effects on this card
   zone: CardZone;
+  isDetritus: boolean; // For detritus tiles
+  isHOME: boolean; // For HOME cards
 }
 
 /**
@@ -150,6 +175,17 @@ export interface CardModifier {
 }
 
 /**
+ * Status effects on cards
+ */
+export interface StatusEffect {
+  effectId: string;
+  type: string;
+  duration: number;
+  source: string;
+  metadata: Record<string, any>;
+}
+
+/**
  * Player data structure
  */
 export interface Player {
@@ -161,6 +197,9 @@ export interface Player {
   energy: number;
   isReady: boolean;
   actionsRemaining: number;
+  // Legacy compatibility properties
+  field: any[]; // Cards currently in play on the field
+  playedSpecies: Set<string>; // Set of species nameIds that have been played
 }
 
 /**
@@ -174,12 +213,17 @@ export interface GameState {
   turnPhase: TurnPhase;
   actionsRemaining: number;
   turnNumber: number;
+  finalTurnTriggeredBy?: string; // Player ID who triggered final turn (deck empty)
+  finalTurnPlayersRemaining?: string[]; // Players who still need their final turn
   grid: Map<string, CardInstance>; // Position key (x,y) -> CardInstance
   detritus: CardInstance[]; // Cards in the detritus zone
   gameSettings: GameSettings;
   metadata: GameMetadata;
   winner?: string;
   endReason?: GameEndReason;
+  // Legacy compatibility properties
+  currentPlayer?: number; // Alias for currentPlayerIndex
+  environment?: string; // Environment/habitat setting
 }
 
 /**
@@ -192,6 +236,7 @@ export interface GameSettings {
   startingHandSize: number;
   maxHandSize: number;
   turnTimeLimit: number; // seconds
+  startingEnergy: number; // Starting energy for players
 }
 
 /**

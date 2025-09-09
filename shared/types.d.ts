@@ -4,7 +4,7 @@
  * This file contains all the TypeScript types used throughout the BioMasters TCG system.
  * These types use the enums from enums.ts to ensure type safety and consistency.
  */
-import { TrophicCategoryId, TrophicLevel, KeywordId, TriggerId, GamePhase, TurnPhase, CardZone, GameEndReason, CardId, AbilityId, UserType, AcquisitionMethod, CardCondition, SyncStatus, GameActionType, ValidationError, ApiStatus, ConservationStatus } from './enums';
+import { TrophicCategoryId, TrophicLevel, KeywordId, TriggerId, GamePhase, TurnPhase, CardZone, GameEndReason, CardId, AbilityId, UserType, AcquisitionMethod, CardCondition, SyncStatus, GameActionType, ValidationError, ApiStatus, ConservationStatus, TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass, TaxoOrder, TaxoFamily, TaxoGenus, TaxoSpecies } from './enums';
 /**
  * Position on the game grid
  */
@@ -17,11 +17,19 @@ export interface Position {
  * Field names match JSON format (camelCase) for optimal performance
  */
 export interface CardData {
-    id: CardId;
+    cardId: number;
     nameId: string;
     scientificNameId: string;
     descriptionId: string;
     taxonomyId: string;
+    taxoDomain: TaxoDomain;
+    taxoKingdom: TaxoKingdom;
+    taxoPhylum: TaxoPhylum;
+    taxoClass: TaxoClass;
+    taxoOrder: TaxoOrder;
+    taxoFamily: TaxoFamily;
+    taxoGenus: TaxoGenus;
+    taxoSpecies: TaxoSpecies;
     trophicLevel: TrophicLevel | null;
     trophicCategory: TrophicCategoryId | null;
     cost: string | null;
@@ -86,14 +94,19 @@ export interface CostRequirement {
  */
 export interface CardInstance {
     id: string;
+    instanceId: string;
     cardId: CardId;
     ownerId: string;
     position: Position;
     isExhausted: boolean;
     isReady: boolean;
     attachedCards: string[];
+    attachments: CardInstance[];
     modifiers: CardModifier[];
+    statusEffects: StatusEffect[];
     zone: CardZone;
+    isDetritus: boolean;
+    isHOME: boolean;
 }
 /**
  * Temporary card modifiers
@@ -104,6 +117,16 @@ export interface CardModifier {
     value: number;
     duration: number;
     source: string;
+}
+/**
+ * Status effects on cards
+ */
+export interface StatusEffect {
+    effectId: string;
+    type: string;
+    duration: number;
+    source: string;
+    metadata: Record<string, any>;
 }
 /**
  * Player data structure
@@ -117,6 +140,8 @@ export interface Player {
     energy: number;
     isReady: boolean;
     actionsRemaining: number;
+    field: any[];
+    playedSpecies: Set<string>;
 }
 /**
  * Game state structure
@@ -129,12 +154,16 @@ export interface GameState {
     turnPhase: TurnPhase;
     actionsRemaining: number;
     turnNumber: number;
+    finalTurnTriggeredBy?: string;
+    finalTurnPlayersRemaining?: string[];
     grid: Map<string, CardInstance>;
     detritus: CardInstance[];
     gameSettings: GameSettings;
     metadata: GameMetadata;
     winner?: string;
     endReason?: GameEndReason;
+    currentPlayer?: number;
+    environment?: string;
 }
 /**
  * Game settings
@@ -146,6 +175,7 @@ export interface GameSettings {
     startingHandSize: number;
     maxHandSize: number;
     turnTimeLimit: number;
+    startingEnergy: number;
 }
 /**
  * Game metadata

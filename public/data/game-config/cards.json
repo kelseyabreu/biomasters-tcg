@@ -5,6 +5,14 @@
     "scientificNameId": "SCIENTIFIC_QUERCUS_ROBUR",
     "descriptionId": "DESC_OAK_TREE",
     "taxonomyId": "TAXONOMY_OAK_TREE",
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 22,
+    "taxoFamily": 25,
+    "taxoGenus": 68,
+    "taxoSpecies": 65,
     "trophicLevel": 1,
     "trophicCategory": 1,
     "domain": 1,
@@ -37,6 +45,14 @@
     "scientificNameId": "SCIENTIFIC_MACROCYSTIS_PYRIFERA",
     "descriptionId": "DESC_GIANT_KELP",
     "taxonomyId": "TAXONOMY_GIANT_KELP",
+    "taxoDomain": 3,
+    "taxoKingdom": 4,
+    "taxoPhylum": 9,
+    "taxoClass": 22,
+    "taxoOrder": 29,
+    "taxoFamily": 38,
+    "taxoGenus": 44,
+    "taxoSpecies": 61,
     "trophicLevel": 1,
     "trophicCategory": 1,
     "domain": 3,
@@ -96,7 +112,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 200,
-    "gestation_days": 90
+    "gestation_days": 90,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 38,
+    "taxoFamily": 50,
+    "taxoGenus": 60,
+    "taxoSpecies": 9
   },
   {
     "cardId": 4,
@@ -133,7 +157,15 @@
     "swim_speed_m_per_hr": 500,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 4,
-    "gestation_days": 31
+    "gestation_days": 31,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 27,
+    "taxoFamily": 40,
+    "taxoGenus": 55,
+    "taxoSpecies": 22
   },
   {
     "cardId": 5,
@@ -173,7 +205,15 @@
     "swim_speed_m_per_hr": 3000,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 3000,
-    "gestation_days": 120
+    "gestation_days": 120,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 2,
+    "taxoOrder": 43,
+    "taxoFamily": 57,
+    "taxoGenus": 53,
+    "taxoSpecies": 49
   },
   {
     "cardId": 6,
@@ -213,7 +253,15 @@
     "swim_speed_m_per_hr": 1200,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 2,
-    "gestation_days": 220
+    "gestation_days": 220,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 63,
+    "taxoGenus": 79,
+    "taxoSpecies": 4
   },
   {
     "cardId": 7,
@@ -255,7 +303,15 @@
     "swim_speed_m_per_hr": 15000,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 8,
-    "gestation_days": 365
+    "gestation_days": 365,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 12,
+    "taxoOrder": 30,
+    "taxoFamily": 39,
+    "taxoGenus": 17,
+    "taxoSpecies": 19
   },
   {
     "cardId": 8,
@@ -295,7 +351,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 7
+    "gestation_days": 7,
+    "taxoDomain": 3,
+    "taxoKingdom": 5,
+    "taxoPhylum": 5,
+    "taxoClass": 3,
+    "taxoOrder": 2,
+    "taxoFamily": 45,
+    "taxoGenus": 50,
+    "taxoSpecies": 34
   },
   {
     "cardId": 9,
@@ -334,7 +398,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 25000,
     "offspring_count": 2,
-    "gestation_days": 40
+    "gestation_days": 40,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 8,
+    "taxoOrder": 15,
+    "taxoFamily": 15,
+    "taxoGenus": 19,
+    "taxoSpecies": 10
   },
   {
     "cardId": 10,
@@ -372,7 +444,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 2000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 7,
+    "taxoOrder": 26,
+    "taxoFamily": 35,
+    "taxoGenus": 38,
+    "taxoSpecies": 71
   },
   {
     "cardId": 11,
@@ -406,7 +486,15 @@
     "swim_speed_m_per_hr": 2,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 8,
-    "gestation_days": 21
+    "gestation_days": 21,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 1,
+    "taxoClass": 13,
+    "taxoOrder": 17,
+    "taxoFamily": 42,
+    "taxoGenus": 43,
+    "taxoSpecies": 81
   },
   {
     "cardId": 12,
@@ -440,7 +528,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 200,
     "offspring_count": 20,
-    "gestation_days": 14
+    "gestation_days": 14,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 16,
+    "taxoFamily": 58,
+    "taxoGenus": 72,
+    "taxoSpecies": 38
   },
   {
     "cardId": 13,
@@ -474,7 +570,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 2,
+    "taxoKingdom": 3,
+    "taxoPhylum": 4,
+    "taxoClass": 10,
+    "taxoOrder": 10,
+    "taxoFamily": 8,
+    "taxoGenus": 8,
+    "taxoSpecies": 77
   },
   {
     "cardId": 14,
@@ -508,7 +612,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 7
+    "gestation_days": 7,
+    "taxoDomain": 3,
+    "taxoKingdom": 5,
+    "taxoPhylum": 5,
+    "taxoClass": 3,
+    "taxoOrder": 2,
+    "taxoFamily": 2,
+    "taxoGenus": 3,
+    "taxoSpecies": 14
   },
   {
     "cardId": 15,
@@ -540,7 +652,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 1,
+    "taxoKingdom": 2,
+    "taxoPhylum": 11,
+    "taxoClass": 25,
+    "taxoOrder": 49,
+    "taxoFamily": 62,
+    "taxoGenus": 66,
+    "taxoSpecies": 33
   },
   {
     "cardId": 16,
@@ -572,7 +692,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 2,
+    "taxoKingdom": 3,
+    "taxoPhylum": 10,
+    "taxoClass": 1,
+    "taxoOrder": 1,
+    "taxoFamily": 1,
+    "taxoGenus": 2,
+    "taxoSpecies": 30
   },
   {
     "cardId": 17,
@@ -604,7 +732,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 7
+    "gestation_days": 7,
+    "taxoDomain": 3,
+    "taxoKingdom": 5,
+    "taxoPhylum": 7,
+    "taxoClass": 16,
+    "taxoOrder": 23,
+    "taxoFamily": 29,
+    "taxoGenus": 31,
+    "taxoSpecies": 37
   },
   {
     "cardId": 18,
@@ -636,7 +772,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 2,
+    "taxoKingdom": 3,
+    "taxoPhylum": 10,
+    "taxoClass": 4,
+    "taxoOrder": 25,
+    "taxoFamily": 55,
+    "taxoGenus": 70,
+    "taxoSpecies": 39
   },
   {
     "cardId": 19,
@@ -674,7 +818,15 @@
     "swim_speed_m_per_hr": 1000,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 10000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 20,
+    "taxoOrder": 20,
+    "taxoFamily": 23,
+    "taxoGenus": 26,
+    "taxoSpecies": 51
   },
   {
     "cardId": 20,
@@ -706,7 +858,15 @@
     "swim_speed_m_per_hr": 10,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 1
+    "gestation_days": 1,
+    "taxoDomain": 3,
+    "taxoKingdom": 4,
+    "taxoPhylum": 9,
+    "taxoClass": 9,
+    "taxoOrder": 48,
+    "taxoFamily": 61,
+    "taxoGenus": 75,
+    "taxoSpecies": 58
   },
   {
     "cardId": 21,
@@ -744,7 +904,15 @@
     "swim_speed_m_per_hr": 100,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 100000,
-    "gestation_days": 7
+    "gestation_days": 7,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 14,
+    "taxoOrder": 12,
+    "taxoFamily": 11,
+    "taxoGenus": 13,
+    "taxoSpecies": 32
   },
   {
     "cardId": 22,
@@ -782,7 +950,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 24000,
     "offspring_count": 2000,
-    "gestation_days": 21
+    "gestation_days": 21,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 24,
+    "taxoFamily": 3,
+    "taxoGenus": 5,
+    "taxoSpecies": 46
   },
   {
     "cardId": 25,
@@ -814,7 +990,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 2,
+    "taxoKingdom": 3,
+    "taxoPhylum": 2,
+    "taxoClass": 6,
+    "taxoOrder": 5,
+    "taxoFamily": 4,
+    "taxoGenus": 6,
+    "taxoSpecies": 2
   },
   {
     "cardId": 26,
@@ -848,7 +1032,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 2,
+    "taxoKingdom": 3,
+    "taxoPhylum": 10,
+    "taxoClass": 11,
+    "taxoOrder": 34,
+    "taxoFamily": 46,
+    "taxoGenus": 51,
+    "taxoSpecies": 28
   },
   {
     "cardId": 27,
@@ -882,7 +1074,15 @@
     "swim_speed_m_per_hr": 0.1,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1000000,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 2,
+    "taxoKingdom": 3,
+    "taxoPhylum": 10,
+    "taxoClass": 11,
+    "taxoOrder": 11,
+    "taxoFamily": 18,
+    "taxoGenus": 76,
+    "taxoSpecies": 23
   },
   {
     "cardId": 28,
@@ -913,7 +1113,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 24,
+    "taxoFamily": 27,
+    "taxoGenus": 28,
+    "taxoSpecies": 68
   },
   {
     "cardId": 29,
@@ -946,7 +1154,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 42,
+    "taxoFamily": 56,
+    "taxoGenus": 45,
+    "taxoSpecies": 59
   },
   {
     "cardId": 30,
@@ -977,7 +1193,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 41,
+    "taxoFamily": 14,
+    "taxoGenus": 18,
+    "taxoSpecies": 18
   },
   {
     "cardId": 31,
@@ -1008,7 +1232,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 9,
+    "taxoGenus": 10,
+    "taxoSpecies": 13
   },
   {
     "cardId": 32,
@@ -1039,7 +1271,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 60,
+    "taxoGenus": 73,
+    "taxoSpecies": 72
   },
   {
     "cardId": 33,
@@ -1072,7 +1312,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 42,
+    "taxoFamily": 56,
+    "taxoGenus": 65,
+    "taxoSpecies": 59
   },
   {
     "cardId": 34,
@@ -1103,7 +1351,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 31,
+    "taxoFamily": 47,
+    "taxoGenus": 23,
+    "taxoSpecies": 55
   },
   {
     "cardId": 35,
@@ -1136,7 +1392,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 14,
+    "taxoFamily": 10,
+    "taxoGenus": 54,
+    "taxoSpecies": 31
   },
   {
     "cardId": 36,
@@ -1167,7 +1431,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 12,
+    "taxoGenus": 14,
+    "taxoSpecies": 27
   },
   {
     "cardId": 37,
@@ -1198,7 +1470,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 26,
+    "taxoGenus": 27,
+    "taxoSpecies": 20
   },
   {
     "cardId": 38,
@@ -1229,7 +1509,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 31,
+    "taxoFamily": 47,
+    "taxoGenus": 23,
+    "taxoSpecies": 55
   },
   {
     "cardId": 39,
@@ -1260,7 +1548,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 31,
+    "taxoFamily": 47,
+    "taxoGenus": 23,
+    "taxoSpecies": 55
   },
   {
     "cardId": 40,
@@ -1293,7 +1589,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 42,
+    "taxoFamily": 56,
+    "taxoGenus": 65,
+    "taxoSpecies": 73
   },
   {
     "cardId": 41,
@@ -1324,7 +1628,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 41,
+    "taxoFamily": 59,
+    "taxoGenus": 74,
+    "taxoSpecies": 76
   },
   {
     "cardId": 42,
@@ -1332,6 +1644,16 @@
     "scientificNameId": "SCIENTIFIC_ZEA_MAYS",
     "descriptionId": "DESC_CORNMAIZE",
     "taxonomyId": "TAXONOMY_CORNMAIZE",
+
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 38,
+    "taxoFamily": 50,
+    "taxoGenus": 82,
+    "taxoSpecies": 44,
+
     "trophicLevel": 1,
     "trophicCategory": 1,
     "domain": 1,
@@ -1388,7 +1710,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 9,
+    "taxoGenus": 11,
+    "taxoSpecies": 79
   },
   {
     "cardId": 44,
@@ -1419,7 +1749,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 35,
+    "taxoFamily": 30,
+    "taxoGenus": 1,
+    "taxoSpecies": 26
   },
   {
     "cardId": 45,
@@ -1452,7 +1790,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 9,
+    "taxoFamily": 7,
+    "taxoGenus": 9,
+    "taxoSpecies": 54
   },
   {
     "cardId": 46,
@@ -1485,7 +1831,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 22,
+    "taxoFamily": 25,
+    "taxoGenus": 68,
+    "taxoSpecies": 65
   },
   {
     "cardId": 47,
@@ -1493,6 +1847,16 @@
     "scientificNameId": "SCIENTIFIC_ODOCOILEUS_VIRGINIANUS",
     "descriptionId": "DESC_WHITETAILED_DEER",
     "taxonomyId": "TAXONOMY_WHITETAILED_DEER",
+
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 16,
+    "taxoGenus": 52,
+    "taxoSpecies": 85,
+
     "trophicLevel": 2,
     "trophicCategory": 4,
     "domain": 1,
@@ -1547,7 +1911,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 13,
+    "taxoGenus": 15,
+    "taxoSpecies": 42
   },
   {
     "cardId": 49,
@@ -1578,7 +1950,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 17,
+    "taxoOrder": 16,
+    "taxoFamily": 58,
+    "taxoGenus": 72,
+    "taxoSpecies": 69
   },
   {
     "cardId": 50,
@@ -1611,7 +1991,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 3,
+    "taxoFamily": 65,
+    "taxoGenus": 83,
+    "taxoSpecies": 43
   },
   {
     "cardId": 51,
@@ -1642,7 +2030,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 40,
+    "taxoFamily": 20,
+    "taxoGenus": 42,
+    "taxoSpecies": 3
   },
   {
     "cardId": 52,
@@ -1675,7 +2071,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 23,
+    "taxoOrder": 37,
+    "taxoFamily": 49,
+    "taxoGenus": 62,
+    "taxoSpecies": 78
   },
   {
     "cardId": 53,
@@ -1706,7 +2110,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 13,
+    "taxoGenus": 81,
+    "taxoSpecies": 86
   },
   {
     "cardId": 54,
@@ -1737,7 +2149,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 5,
+    "taxoOrder": 4,
+    "taxoFamily": 53,
+    "taxoGenus": 69,
+    "taxoSpecies": 80
   },
   {
     "cardId": 55,
@@ -1768,7 +2188,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 28,
+    "taxoGenus": 30,
+    "taxoSpecies": 17
   },
   {
     "cardId": 56,
@@ -1799,7 +2227,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 9,
+    "taxoGenus": 16,
+    "taxoSpecies": 1
   },
   {
     "cardId": 57,
@@ -1830,7 +2266,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 39,
+    "taxoFamily": 34,
+    "taxoGenus": 32,
+    "taxoSpecies": 12
   },
   {
     "cardId": 58,
@@ -1863,7 +2307,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 50,
+    "taxoFamily": 64,
+    "taxoGenus": 80,
+    "taxoSpecies": 84
   },
   {
     "cardId": 59,
@@ -1896,7 +2348,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 38,
+    "taxoFamily": 50,
+    "taxoGenus": 41,
+    "taxoSpecies": 53
   },
   {
     "cardId": 60,
@@ -1927,7 +2387,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 41,
+    "taxoFamily": 19,
+    "taxoGenus": 48,
+    "taxoSpecies": 11
   },
   {
     "cardId": 61,
@@ -1958,7 +2426,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 19,
+    "taxoFamily": 22,
+    "taxoGenus": 25,
+    "taxoSpecies": 29
   },
   {
     "cardId": 62,
@@ -1991,7 +2467,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 28,
+    "taxoFamily": 37,
+    "taxoGenus": 47,
+    "taxoSpecies": 75
   },
   {
     "cardId": 63,
@@ -2024,7 +2508,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 33,
+    "taxoFamily": 43,
+    "taxoGenus": 36,
+    "taxoSpecies": 66
   },
   {
     "cardId": 64,
@@ -2055,7 +2547,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 33,
+    "taxoGenus": 37,
+    "taxoSpecies": 5
   },
   {
     "cardId": 65,
@@ -2086,7 +2586,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 36,
+    "taxoFamily": 21,
+    "taxoGenus": 24,
+    "taxoSpecies": 16
   },
   {
     "cardId": 66,
@@ -2117,7 +2625,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 18,
+    "taxoFamily": 48,
+    "taxoGenus": 61,
+    "taxoSpecies": 21
   },
   {
     "cardId": 67,
@@ -2148,7 +2664,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 26,
+    "taxoGenus": 59,
+    "taxoSpecies": 52
   },
   {
     "cardId": 68,
@@ -2181,7 +2705,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 26,
+    "taxoGenus": 59,
+    "taxoSpecies": 40
   },
   {
     "cardId": 69,
@@ -2212,7 +2744,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 24,
+    "taxoOrder": 45,
+    "taxoFamily": 36,
+    "taxoGenus": 39,
+    "taxoSpecies": 24
   },
   {
     "cardId": 70,
@@ -2243,7 +2783,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 12,
+    "taxoGenus": 40,
+    "taxoSpecies": 36
   },
   {
     "cardId": 71,
@@ -2274,7 +2822,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 40,
+    "taxoFamily": 20,
+    "taxoGenus": 46,
+    "taxoSpecies": 57
   },
   {
     "cardId": 72,
@@ -2305,7 +2861,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 39,
+    "taxoFamily": 34,
+    "taxoGenus": 58,
+    "taxoSpecies": 83
   },
   {
     "cardId": 73,
@@ -2336,7 +2900,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 41,
+    "taxoFamily": 44,
+    "taxoGenus": 49,
+    "taxoSpecies": 47
   },
   {
     "cardId": 74,
@@ -2369,7 +2941,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 5,
+    "taxoPhylum": 5,
+    "taxoClass": 3,
+    "taxoOrder": 2,
+    "taxoFamily": 2,
+    "taxoGenus": 3,
+    "taxoSpecies": 14
   },
   {
     "cardId": 75,
@@ -2400,7 +2980,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 39,
+    "taxoFamily": 34,
+    "taxoGenus": 63,
+    "taxoSpecies": 60
   },
   {
     "cardId": 76,
@@ -2431,7 +3019,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 9,
+    "taxoGenus": 11,
+    "taxoSpecies": 79
   },
   {
     "cardId": 77,
@@ -2464,7 +3060,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 7,
+    "taxoFamily": 6,
+    "taxoGenus": 22,
+    "taxoSpecies": 50
   },
   {
     "cardId": 78,
@@ -2497,7 +3101,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 63,
+    "taxoGenus": 4,
+    "taxoSpecies": 45
   },
   {
     "cardId": 79,
@@ -2528,7 +3140,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 60,
+    "taxoGenus": 73,
+    "taxoSpecies": 72
   },
   {
     "cardId": 80,
@@ -2559,7 +3179,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 51,
+    "taxoGenus": 64,
+    "taxoSpecies": 41
   },
   {
     "cardId": 81,
@@ -2590,7 +3218,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 9,
+    "taxoGenus": 57,
+    "taxoSpecies": 18
   },
   {
     "cardId": 82,
@@ -2621,7 +3257,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 36,
+    "taxoFamily": 54,
+    "taxoGenus": 20,
+    "taxoSpecies": 74
   },
   {
     "cardId": 83,
@@ -2654,7 +3298,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 38,
+    "taxoFamily": 50,
+    "taxoGenus": 56,
+    "taxoSpecies": 70
   },
   {
     "cardId": 84,
@@ -2687,7 +3339,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 42,
+    "taxoFamily": 56,
+    "taxoGenus": 71,
+    "taxoSpecies": 67
   },
   {
     "cardId": 85,
@@ -2718,7 +3378,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 7,
+    "taxoOrder": 44,
+    "taxoFamily": 31,
+    "taxoGenus": 33,
+    "taxoSpecies": 8
   },
   {
     "cardId": 86,
@@ -2748,7 +3416,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 8,
+    "taxoClass": 15,
+    "taxoOrder": 46,
+    "taxoFamily": 32,
+    "taxoGenus": 35,
+    "taxoSpecies": 56
   },
   {
     "cardId": 87,
@@ -2779,7 +3455,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 24,
+    "taxoOrder": 45,
+    "taxoFamily": 52,
+    "taxoGenus": 67,
+    "taxoSpecies": 63
   },
   {
     "cardId": 88,
@@ -2810,7 +3494,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 3,
+    "taxoClass": 7,
+    "taxoOrder": 6,
+    "taxoFamily": 5,
+    "taxoGenus": 7,
+    "taxoSpecies": 25
   },
   {
     "cardId": 89,
@@ -2843,7 +3535,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 42,
+    "taxoFamily": 56,
+    "taxoGenus": 29,
+    "taxoSpecies": 6
   },
   {
     "cardId": 90,
@@ -2876,7 +3576,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 9,
+    "taxoFamily": 7,
+    "taxoGenus": 34,
+    "taxoSpecies": 7
   },
   {
     "cardId": 91,
@@ -2909,7 +3617,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 26,
+    "taxoGenus": 59,
+    "taxoSpecies": 82
   },
   {
     "cardId": 92,
@@ -2942,7 +3658,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 18,
+    "taxoOrder": 32,
+    "taxoFamily": 41,
+    "taxoGenus": 78,
+    "taxoSpecies": 35
   },
   {
     "cardId": 93,
@@ -2973,7 +3697,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 24,
+    "taxoOrder": 47,
+    "taxoFamily": 17,
+    "taxoGenus": 21,
+    "taxoSpecies": 48
   },
   {
     "cardId": 94,
@@ -3004,7 +3736,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 8,
+    "taxoFamily": 9,
+    "taxoGenus": 12,
+    "taxoSpecies": 15
   },
   {
     "cardId": 95,
@@ -3037,7 +3777,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 6,
+    "taxoPhylum": 12,
+    "taxoClass": 19,
+    "taxoOrder": 21,
+    "taxoFamily": 24,
+    "taxoGenus": 77,
+    "taxoSpecies": 64
   },
   {
     "cardId": 96,
@@ -3068,7 +3816,15 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 13,
+    "taxoFamily": 13,
+    "taxoGenus": 15,
+    "taxoSpecies": 42
   },
   {
     "cardId": 97,
@@ -3099,6 +3855,14 @@
     "swim_speed_m_per_hr": 0,
     "fly_speed_m_per_hr": 0,
     "offspring_count": 1,
-    "gestation_days": 30
+    "gestation_days": 30,
+    "taxoDomain": 3,
+    "taxoKingdom": 1,
+    "taxoPhylum": 6,
+    "taxoClass": 21,
+    "taxoOrder": 36,
+    "taxoFamily": 21,
+    "taxoGenus": 24,
+    "taxoSpecies": 62
   }
 ]

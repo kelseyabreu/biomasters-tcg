@@ -3,7 +3,8 @@
  * Tests: Producer, 2 Rabbits, Wolf ecosystem gameplay
  */
 
-import { BioMastersEngine, GameSettings, GridCard, AbilityData as EngineAbilityData } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, AbilityData as EngineAbilityData } from '../../../../shared/game-engine/BioMastersEngine';
+import { CardInstance } from '../../../../shared/types';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { CardId, GameActionType, GamePhase } from '../../../../shared/enums';
 import { Position, GameAction } from '../../../../shared/types';
@@ -197,7 +198,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Check HOME cards are on the grid
       let homeCardsFound = 0;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.isHOME) {
           homeCardsFound++;
           console.log(`🏠 HOME card found for ${card.ownerId} at (${card.position.x}, ${card.position.y})`);
@@ -235,7 +236,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Find Alice's HOME card position
       let aliceHome: Position | null = null;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.isHOME && card.ownerId === 'Alice') {
           aliceHome = card.position;
         }
@@ -309,7 +310,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Find the Oak Tree on the grid
       let oakTreeFound = false;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.cardId === CardId.OAK_TREE && card.ownerId === 'Alice') {
           oakTreeFound = true;
           console.log(`🌳 Oak Tree placed at (${card.position.x}, ${card.position.y})`);
@@ -325,7 +326,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Manually ready the Oak Tree so it can provide food for the European Rabbit
       // In a real game, this would happen at the start of Alice's next turn
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.cardId === CardId.OAK_TREE && card.ownerId === 'Alice') {
           card.isExhausted = false;
           console.log('🔄 Manually readied Oak Tree for testing purposes');
@@ -340,7 +341,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Find Alice's HOME position (Oak Tree should already be placed from previous test)
       let aliceHome: Position | null = null;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.isHOME && card.ownerId === 'Alice') {
           aliceHome = card.position;
         }
@@ -368,7 +369,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Verify European Rabbit was played
       let rabbitFound = false;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.cardId === CardId.EUROPEAN_RABBIT && card.ownerId === 'Alice') {
           rabbitFound = true;
           console.log(`🐰 European Rabbit placed at (${card.position.x}, ${card.position.y})`);
@@ -390,7 +391,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Find Alice's HOME position (Oak Tree and European Rabbit should already be placed)
       let aliceHome: Position | null = null;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.isHOME && card.ownerId === 'Alice') {
           aliceHome = card.position;
         }
@@ -414,7 +415,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Verify House Mouse was played
       let mouseFound = false;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.cardId === CardId.HOUSE_MOUSE && card.ownerId === 'Alice') {
           mouseFound = true;
           console.log(`🐭 House Mouse placed at (${card.position.x}, ${card.position.y})`);
@@ -443,7 +444,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Find Alice's HOME position (all other cards should already be placed)
       let aliceHome: Position | null = null;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.isHOME && card.ownerId === 'Alice') {
           aliceHome = card.position;
         }
@@ -469,7 +470,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
 
       // Verify Gray Wolf was played
       let wolfFound = false;
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (card.cardId === CardId.GRAY_WOLF && card.ownerId === 'Alice') {
           wolfFound = true;
           console.log(`🐺 Gray Wolf placed at (${card.position.x}, ${card.position.y})`);
@@ -495,7 +496,7 @@ describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
       };
 
       // Categorize cards by trophic level
-      gameState.grid.forEach((card: GridCard) => {
+      gameState.grid.forEach((card: CardInstance) => {
         if (!card.isHOME && card.ownerId === 'Alice') {
           switch (card.cardId) {
             case CardId.OAK_TREE:

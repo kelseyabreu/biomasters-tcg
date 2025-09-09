@@ -47,7 +47,7 @@ import EnhancedHandCard from '../cards/EnhancedHandCard';
 import { calculatePlacementHighlights, calculateMovementHighlights, convertHighlightsToPositions } from '../../game-logic/positionHighlighting';
 import { calculateEventTargets, convertEventHighlightsToPositions, getEventAction } from '../../game-logic/eventTargeting';
 import { AIDifficulty } from '../../game-logic/aiOpponent';
-import { Card } from '../../types';
+import { Card, createCardWithDefaults, TrophicRole, Habitat, ConservationStatus } from '../../types';
 
 type GameMode = 'campaign' | 'online' | 'scenarios' | 'tutorial';
 type BattlePhase = 'mode_selection' | 'lobby' | 'game_setup' | 'playing' | 'game_over';
@@ -316,24 +316,22 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
         if (!nameId) return;
         // perfect if things fail or are wrong make sure to correct the root cause or fix the test or ask questions if you are unsure. we want everything working correctly and as how the rules say
         // Create mock card data - in real implementation, load from JSON files
-        const card: Card = {
-          id: nameId,
+        const card: Card = createCardWithDefaults({
           cardId: cardId,
           nameId: nameId,
+          id: nameId,
           scientificNameId: `SCIENTIFIC_${nameId.replace('CARD_', '')}`,
           descriptionId: `DESC_${nameId.replace('CARD_', '')}`,
           taxonomyId: `TAXONOMY_${nameId.replace('CARD_', '')}`,
-          trophicRole: Math.random() > 0.5 ? 'herbivore' : 'carnivore' as any,
-          habitat: 'temperate' as any,
+          trophicRole: Math.random() > 0.5 ? TrophicRole.HERBIVORE : TrophicRole.CARNIVORE,
+          habitat: Habitat.TEMPERATE,
           power: Math.floor(Math.random() * 10) + 1,
           health: Math.floor(Math.random() * 20) + 10,
           maxHealth: Math.floor(Math.random() * 20) + 10,
           speed: Math.floor(Math.random() * 10) + 1,
           senses: Math.floor(Math.random() * 100) + 50,
           energyCost: Math.floor(Math.random() * 5) + 1,
-          abilities: [],
-          conservationStatus: 'least_concern' as any,
-          artwork: '',
+          conservationStatus: ConservationStatus.LEAST_CONCERN,
           description: `A ${nameId.replace('CARD_', '').toLowerCase().replace(/_/g, ' ')} species`,
           phyloAttributes: {
             terrains: ['Forest'],
@@ -352,7 +350,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
             conservationStatus: 'Least Concern',
             compatibilityNotes: `Compatible with similar ${nameId.replace('CARD_', '').toLowerCase().replace(/_/g, ' ')} species`
           }
-        };
+        });
         cardMap.set(nameId, card);
       });
       console.log('🎮 Created card map with', cardMap.size, 'cards');

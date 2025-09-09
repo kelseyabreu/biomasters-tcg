@@ -21,6 +21,17 @@ export interface CardWithRelations {
   scientific_name: string | null;
   mass_kg: number | null; // Will be converted from DECIMAL string
   lifespan_max_days: number | null;
+
+  // New taxonomy fields
+  taxo_domain: number | null;
+  taxo_kingdom: number | null;
+  taxo_phylum: number | null;
+  taxo_class: number | null;
+  taxo_order: number | null;
+  taxo_family: number | null;
+  taxo_genus: number | null;
+  taxo_species: number | null;
+
   created_at: Date;
   updated_at: Date;
 }
@@ -65,16 +76,27 @@ export async function getAllCardsWithRelations(): Promise<CardWithRelations[]> {
       'c.scientific_name',
       'c.mass_kg',
       'c.lifespan_max_days',
+
+      // Taxonomy fields
+      'c.taxo_domain',
+      'c.taxo_kingdom',
+      'c.taxo_phylum',
+      'c.taxo_class',
+      'c.taxo_order',
+      'c.taxo_family',
+      'c.taxo_genus',
+      'c.taxo_species',
+
       'c.created_at',
       'c.updated_at',
-      
+
       // Use PostgreSQL ARRAY_AGG to aggregate related IDs into arrays
       sql<number[]>`COALESCE(ARRAY_AGG(DISTINCT ck.keyword_id) FILTER (WHERE ck.keyword_id IS NOT NULL), '{}')`.as('keywords'),
       sql<number[]>`COALESCE(ARRAY_AGG(DISTINCT ca.ability_id) FILTER (WHERE ca.ability_id IS NOT NULL), '{}')`.as('abilities'),
     ])
     .groupBy([
       'c.id',
-      'c.card_name', 
+      'c.card_name',
       'c.trophic_level',
       'c.trophic_category_id',
       'c.conservation_status_id',
@@ -84,6 +106,14 @@ export async function getAllCardsWithRelations(): Promise<CardWithRelations[]> {
       'c.scientific_name',
       'c.mass_kg',
       'c.lifespan_max_days',
+      'c.taxo_domain',
+      'c.taxo_kingdom',
+      'c.taxo_phylum',
+      'c.taxo_class',
+      'c.taxo_order',
+      'c.taxo_family',
+      'c.taxo_genus',
+      'c.taxo_species',
       'c.created_at',
       'c.updated_at'
     ])
@@ -114,6 +144,17 @@ export async function getCardWithRelations(cardId: CardId): Promise<CardWithRela
         'c.scientific_name',
         'c.mass_kg',
         'c.lifespan_max_days',
+
+        // Taxonomy fields
+        'c.taxo_domain',
+        'c.taxo_kingdom',
+        'c.taxo_phylum',
+        'c.taxo_class',
+        'c.taxo_order',
+        'c.taxo_family',
+        'c.taxo_genus',
+        'c.taxo_species',
+
         'c.created_at',
         'c.updated_at',
 
@@ -133,6 +174,14 @@ export async function getCardWithRelations(cardId: CardId): Promise<CardWithRela
         'c.scientific_name',
         'c.mass_kg',
         'c.lifespan_max_days',
+        'c.taxo_domain',
+        'c.taxo_kingdom',
+        'c.taxo_phylum',
+        'c.taxo_class',
+        'c.taxo_order',
+        'c.taxo_family',
+        'c.taxo_genus',
+        'c.taxo_species',
         'c.created_at',
         'c.updated_at'
       ])
@@ -261,4 +310,155 @@ export async function getCardsByKeyword(keywordId: number): Promise<CardWithRela
     .execute();
 
   return result.map(processCardDecimalFields);
+}
+
+/**
+ * Fetch cards by taxonomy level using enum values
+ */
+export async function getCardsByTaxonomyLevel(
+  level: 'domain' | 'kingdom' | 'phylum' | 'class' | 'order' | 'family' | 'genus' | 'species',
+  value: number
+): Promise<CardWithRelations[]> {
+  const columnMap = {
+    domain: 'taxo_domain',
+    kingdom: 'taxo_kingdom',
+    phylum: 'taxo_phylum',
+    class: 'taxo_class',
+    order: 'taxo_order',
+    family: 'taxo_family',
+    genus: 'taxo_genus',
+    species: 'taxo_species'
+  };
+
+  const column = columnMap[level];
+  if (!column) {
+    throw new Error(`Invalid taxonomy level: ${level}`);
+  }
+
+  const result = await db
+    .selectFrom('cards as c')
+    .leftJoin('card_keywords as ck', 'c.id', 'ck.card_id')
+    .leftJoin('card_abilities as ca', 'c.id', 'ca.card_id')
+    .select([
+      'c.id',
+      'c.card_name',
+      'c.trophic_level',
+      'c.trophic_category_id',
+      'c.conservation_status_id',
+      'c.cost',
+      'c.victory_points',
+      'c.common_name',
+      'c.scientific_name',
+      'c.mass_kg',
+      'c.lifespan_max_days',
+      'c.taxo_domain',
+      'c.taxo_kingdom',
+      'c.taxo_phylum',
+      'c.taxo_class',
+      'c.taxo_order',
+      'c.taxo_family',
+      'c.taxo_genus',
+      'c.taxo_species',
+      'c.created_at',
+      'c.updated_at',
+
+      sql<number[]>`COALESCE(ARRAY_AGG(DISTINCT ck.keyword_id) FILTER (WHERE ck.keyword_id IS NOT NULL), '{}')`.as('keywords'),
+      sql<number[]>`COALESCE(ARRAY_AGG(DISTINCT ca.ability_id) FILTER (WHERE ca.ability_id IS NOT NULL), '{}')`.as('abilities'),
+    ])
+    .where(column as any, '=', value)
+    .groupBy([
+      'c.id',
+      'c.card_name',
+      'c.trophic_level',
+      'c.trophic_category_id',
+      'c.conservation_status_id',
+      'c.cost',
+      'c.victory_points',
+      'c.common_name',
+      'c.scientific_name',
+      'c.mass_kg',
+      'c.lifespan_max_days',
+      'c.taxo_domain',
+      'c.taxo_kingdom',
+      'c.taxo_phylum',
+      'c.taxo_class',
+      'c.taxo_order',
+      'c.taxo_family',
+      'c.taxo_genus',
+      'c.taxo_species',
+      'c.created_at',
+      'c.updated_at'
+    ])
+    .execute();
+
+  return result.map(processCardDecimalFields);
+}
+
+/**
+ * Get taxonomic diversity statistics
+ */
+export async function getTaxonomicDiversityStats(): Promise<{
+  domains: number;
+  kingdoms: number;
+  phylums: number;
+  classes: number;
+  orders: number;
+  families: number;
+  genera: number;
+  species: number;
+}> {
+  const result = await db
+    .selectFrom('cards')
+    .select([
+      sql<number>`COUNT(DISTINCT taxo_domain)`.as('domains'),
+      sql<number>`COUNT(DISTINCT taxo_kingdom)`.as('kingdoms'),
+      sql<number>`COUNT(DISTINCT taxo_phylum)`.as('phylums'),
+      sql<number>`COUNT(DISTINCT taxo_class)`.as('classes'),
+      sql<number>`COUNT(DISTINCT taxo_order)`.as('orders'),
+      sql<number>`COUNT(DISTINCT taxo_family)`.as('families'),
+      sql<number>`COUNT(DISTINCT taxo_genus)`.as('genera'),
+      sql<number>`COUNT(DISTINCT taxo_species)`.as('species'),
+    ])
+    .executeTakeFirstOrThrow();
+
+  return result;
+}
+
+/**
+ * Get related cards at a specific taxonomic level
+ */
+export async function getRelatedCards(
+  cardId: CardId,
+  level: 'domain' | 'kingdom' | 'phylum' | 'class' | 'order' | 'family' | 'genus' | 'species'
+): Promise<CardWithRelations[]> {
+  // First get the target card's taxonomy
+  const targetCard = await db
+    .selectFrom('cards')
+    .select(['taxo_domain', 'taxo_kingdom', 'taxo_phylum', 'taxo_class', 'taxo_order', 'taxo_family', 'taxo_genus', 'taxo_species'])
+    .where('id', '=', cardId)
+    .executeTakeFirst();
+
+  if (!targetCard) {
+    return [];
+  }
+
+  const columnMap = {
+    domain: 'taxo_domain',
+    kingdom: 'taxo_kingdom',
+    phylum: 'taxo_phylum',
+    class: 'taxo_class',
+    order: 'taxo_order',
+    family: 'taxo_family',
+    genus: 'taxo_genus',
+    species: 'taxo_species'
+  };
+
+  const column = columnMap[level];
+  const value = targetCard[column as keyof typeof targetCard];
+
+  if (!value) {
+    return [];
+  }
+
+  return getCardsByTaxonomyLevel(level, value);
 }

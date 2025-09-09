@@ -1,24 +1,38 @@
 // Frontend-specific types and re-exports from shared module
 import { ConservationStatus } from '@shared/enums';
+import { CardData } from '@shared/types';
 
 // Re-export shared types for backward compatibility
 export type {
   CardData,
   AbilityData,
-  GameState as SharedGameState,
-  Player as SharedPlayer,
+  GameState,
+  Player,
   Position,
   CardInstance,
   GameAction,
-  ActionResult
+  ActionResult,
+  CardModifier,
+  GameSettings,
+  GameMetadata
 } from '@shared/types';
+
+
 
 export {
   CardId,
   AbilityId,
   TrophicLevel,
   TurnPhase,
-  ConservationStatus
+  ConservationStatus,
+  GamePhase,
+  Domain,
+  KeywordId,
+  TriggerId,
+  EffectId,
+  SelectorId,
+  ActionId,
+  TrophicCategoryId
 } from '@shared/enums';
 
 // Frontend-specific enums that don't exist in shared
@@ -78,13 +92,7 @@ export enum WinCondition {
   SPECIES_COLLECTION = 'Species Collection'
 }
 
-export enum GamePhase {
-  SETUP = 'Setup',
-  PLAYER_TURN = 'Player Turn',
-  COMBAT = 'Combat',
-  END_TURN = 'End Turn',
-  GAME_OVER = 'Game Over'
-}
+
 
 export interface SpeciesData {
   archetypeName: string;
@@ -168,27 +176,26 @@ export interface SpeciesData {
   };
 }
 
-export interface Card {
-  id: string;
-  cardId: number; // Numeric ID for database operations
-  // Enum-based localization IDs (required)
-  nameId: string;
-  scientificNameId: string;
-  descriptionId: string;
-  taxonomyId: string;
-  trophicRole: TrophicRole;
-  habitat: Habitat;
-  power: number;
-  health: number;
-  maxHealth: number;
-  speed: number;
-  senses: number;
-  energyCost: number;
-  abilities: CardAbility[];
-  conservationStatus: ConservationStatus;
-  artwork: string;
-  description: string;
-  // Real biological data
+// Create a unified Card type that includes shared CardData with backward compatibility
+export interface Card extends Omit<CardData, 'abilities'> {
+  // Frontend-specific properties for UI display
+  id: string; // Unique instance ID for game logic (generated from cardId)
+  artwork: string; // Path to card artwork
+  description: string; // Localized description
+
+  // Backward compatibility properties (mapped from shared CardData)
+  conservationStatus: ConservationStatus; // Maps to conservation_status
+  trophicRole: TrophicRole; // Maps to trophic_level
+  habitat: Habitat; // Maps to domain/keywords
+  power: number; // Calculated from biological data
+  health: number; // Calculated from biological data
+  maxHealth: number; // Same as health
+  speed: number; // Maps to movement speeds
+  senses: number; // Maps to sensory capabilities
+  energyCost: number; // Maps to cost requirements
+  abilities: CardAbility[]; // Transformed from AbilityId[]
+
+  // Real biological data (already exists in CardData)
   realData?: {
     mass_kg: number;
     // Movement speeds
@@ -216,6 +223,7 @@ export interface Card {
     lifespan_Max_Days?: number;
     habitat?: string;
   };
+
   // Phylo domino-style game attributes
   phyloAttributes?: {
     terrains: string[];
@@ -235,6 +243,146 @@ export interface Card {
     compatibilityNotes: string;
   };
 }
+
+// Helper functions for mapping shared types to frontend types
+function mapTrophicLevelToRole(trophicLevel: any): TrophicRole {
+  // Map numeric trophic levels to frontend roles
+  switch (trophicLevel) {
+    case 1: return TrophicRole.PRODUCER;
+    case 2: return TrophicRole.HERBIVORE;
+    case 3: return TrophicRole.CARNIVORE;
+    case 4: return TrophicRole.OMNIVORE;
+    case 5: return TrophicRole.DECOMPOSER;
+    case 6: return TrophicRole.DECOMPOSER; // SAPROTROPH
+    default: return TrophicRole.PRODUCER;
+  }
+}
+
+function mapDomainToHabitat(domain: any): Habitat {
+  // Simple mapping - could be enhanced based on actual domain values
+  return Habitat.TEMPERATE; // Default
+}
+
+function calculatePowerFromBiologicalData(cardData: CardData): number {
+  // Calculate power based on mass and other biological factors
+  const basePower = Math.log10((cardData.mass_kg || 1) + 1) * 20;
+  return Math.max(1, Math.round(basePower));
+}
+
+function calculateHealthFromBiologicalData(cardData: CardData): number {
+  // Calculate health based on mass and lifespan
+  const baseHealth = Math.log10((cardData.mass_kg || 1) + 1) * 30;
+  const lifespanBonus = (cardData.lifespan_max_days || 365) / 365 * 10;
+  return Math.max(10, Math.round(baseHealth + lifespanBonus));
+}
+
+/**
+ * Create a Card with default values for missing properties
+ * Useful for frontend code that needs to create cards quickly
+ */
+export function createCardWithDefaults(partial: Partial<Card> & { cardId: number; nameId: string }): Card {
+  return {
+    // Required CardData properties with defaults
+    cardId: partial.cardId,
+    nameId: partial.nameId,
+    scientificNameId: partial.scientificNameId || `SCIENTIFIC_${partial.nameId}`,
+    descriptionId: partial.descriptionId || `DESC_${partial.nameId}`,
+    taxonomyId: partial.taxonomyId || `TAXONOMY_${partial.nameId}`,
+    taxoDomain: partial.taxoDomain || 1,
+    taxoKingdom: partial.taxoKingdom || 1,
+    taxoPhylum: partial.taxoPhylum || 1,
+    taxoClass: partial.taxoClass || 1,
+    taxoOrder: partial.taxoOrder || 1,
+    taxoFamily: partial.taxoFamily || 1,
+    taxoGenus: partial.taxoGenus || 1,
+    taxoSpecies: partial.taxoSpecies || 1,
+    trophicLevel: partial.trophicLevel || 1,
+    trophicCategory: partial.trophicCategory || null,
+    cost: partial.cost || null,
+    victoryPoints: partial.victoryPoints || 1,
+    mass_kg: partial.mass_kg || null,
+    lifespan_max_days: partial.lifespan_max_days || null,
+    vision_range_m: partial.vision_range_m || null,
+    smell_range_m: partial.smell_range_m || null,
+    hearing_range_m: partial.hearing_range_m || null,
+    walk_speed_m_per_hr: partial.walk_speed_m_per_hr || null,
+    run_speed_m_per_hr: partial.run_speed_m_per_hr || null,
+    swim_speed_m_per_hr: partial.swim_speed_m_per_hr || null,
+    fly_speed_m_per_hr: partial.fly_speed_m_per_hr || null,
+    offspring_count: partial.offspring_count || null,
+    gestation_days: partial.gestation_days || null,
+    domain: partial.domain || 0,
+    keywords: partial.keywords || [],
+    abilities: partial.abilities || [],
+    artwork_url: partial.artwork_url || null,
+    conservation_status: partial.conservation_status || ConservationStatus.NOT_EVALUATED,
+    iucn_id: partial.iucn_id || null,
+    population_trend: partial.population_trend || null,
+
+    // Frontend-specific properties
+    id: partial.id || `card_${partial.cardId}`,
+    artwork: partial.artwork || `/images/cards/${partial.nameId.toLowerCase()}.jpg`,
+    description: partial.description || '',
+    conservationStatus: partial.conservationStatus || ConservationStatus.NOT_EVALUATED,
+    trophicRole: partial.trophicRole || TrophicRole.PRODUCER,
+    habitat: partial.habitat || Habitat.TEMPERATE,
+    power: partial.power || 1,
+    health: partial.health || 10,
+    maxHealth: partial.maxHealth || 10,
+    speed: partial.speed || 10,
+    senses: partial.senses || 50,
+    energyCost: partial.energyCost || 1,
+
+    // Optional properties
+    realData: partial.realData,
+    phyloAttributes: partial.phyloAttributes,
+  };
+}
+
+/**
+ * Transform shared CardData to frontend Card view model
+ * This makes the data flow predictable and easier to debug
+ */
+export function transformCardDataToCard(cardData: CardData): Card {
+  return {
+    ...cardData, // Include all shared CardData properties
+    id: `card_${cardData.cardId}`, // Generate instance ID from cardId
+    artwork: `/images/cards/${cardData.nameId.toLowerCase()}.jpg`,
+    description: '', // Should be localized
+
+    // Map shared properties to backward compatibility properties
+    conservationStatus: cardData.conservation_status || ConservationStatus.NOT_EVALUATED,
+    trophicRole: mapTrophicLevelToRole(cardData.trophicLevel),
+    habitat: mapDomainToHabitat(cardData.taxoDomain),
+    power: calculatePowerFromBiologicalData(cardData),
+    health: calculateHealthFromBiologicalData(cardData),
+    maxHealth: calculateHealthFromBiologicalData(cardData),
+    speed: cardData.walk_speed_m_per_hr || 10,
+    senses: cardData.vision_range_m || 50,
+    energyCost: 1, // Default - should be calculated from cost requirements
+    abilities: [], // Should be populated from abilities data
+
+    // Map biological data to realData format
+    realData: {
+      mass_kg: cardData.mass_kg || 0,
+      walk_Speed_m_per_hr: cardData.walk_speed_m_per_hr || undefined,
+      run_Speed_m_per_hr: cardData.run_speed_m_per_hr || undefined,
+      swim_Speed_m_per_hr: cardData.swim_speed_m_per_hr || undefined,
+      fly_Speed_m_per_hr: cardData.fly_speed_m_per_hr || undefined,
+      vision_range_m: cardData.vision_range_m || undefined,
+      hearing_range_m: cardData.hearing_range_m || undefined,
+      smell_range_m: cardData.smell_range_m || undefined,
+      lifespan_Max_Days: cardData.lifespan_max_days || undefined,
+      // Temperature data not available in shared CardData yet
+      temperatureMinimum_C: undefined,
+      temperatureMaximum_C: undefined,
+    }
+  };
+}
+
+
+
+
 
 export interface CardAbility {
   id: string;
@@ -342,34 +490,9 @@ export const CONSERVATION_RARITY_DATA: Record<ConservationStatus, ConservationRa
   }
 };
 
-export interface Deck {
-  id: string;
-  name: string;
-  cards: Card[];
-  isValid: boolean;
-}
 
-export interface Player {
-  id: string;
-  name: string;
-  deck: Deck;
-  hand: Card[];
-  field: Card[];
-  energy: number;
-  maxEnergy: number;
-  playedSpecies: Set<string>;
-}
 
-export interface GameState {
-  id: string;
-  phase: GamePhase;
-  currentPlayer: number;
-  players: [Player, Player];
-  environment: Habitat;
-  turnCount: number;
-  winConditions: WinConditionProgress[];
-  combatLog: CombatEvent[];
-}
+
 
 export interface WinConditionProgress {
   condition: WinCondition;

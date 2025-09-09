@@ -19,11 +19,15 @@ import {
 // Import the shared, authoritative game engine
 import {
   BioMastersEngine,
-  GameState as ServerGameState,
   CardData as ServerCardData,
   AbilityData as ServerAbilityData,
   PlayerAction as ServerPlayerAction
 } from '@shared/game-engine/BioMastersEngine';
+
+// Import shared types
+import {
+  GameState as ServerGameState
+} from '@shared/types';
 
 // Import localization system
 import {
@@ -31,6 +35,9 @@ import {
   LocalizationManager,
   JSONFileDataLoader
 } from '@shared/localization-manager';
+
+// Import shared data loader
+import { DataLoader } from '@shared/data/DataLoader';
 
 import {
   CardNameId,
@@ -143,8 +150,8 @@ export interface ClientActivateAbilityPayload {
   targetPosition?: { x: number; y: number };
 }
 
-// Client Game Data Manager
-class ClientGameDataManager {
+// Client Game Data Manager (Legacy - use shared DataLoader instead)
+class ClientGameDataManager_old {
   private cards: Map<number, EnumBasedCardData> = new Map();
   private dataLoaded = false;
 
@@ -204,8 +211,17 @@ class ClientGameDataManager {
   }
 }
 
-// Singleton instance
-export const clientGameDataManager = new ClientGameDataManager();
+// Singleton instance (Legacy - use shared DataLoader instead)
+export const clientGameDataManager_old = new ClientGameDataManager_old();
+
+// Shared data loader instance
+export const sharedDataLoader = new DataLoader({
+  baseUrl: '/data',
+  enableCaching: true,
+  cacheTimeout: 300000, // 5 minutes
+  retryAttempts: 3,
+  retryDelay: 1000
+});
 
 /**
  * Client-side BioMasters Game Engine
@@ -215,19 +231,22 @@ export const clientGameDataManager = new ClientGameDataManager();
 export class ClientGameEngine {
   private coreEngine: BioMastersEngine | null = null;
   private gameState: ClientGameState | null = null;
-  private gameDataManager: ClientGameDataManager;
+  private dataLoader: DataLoader;
 
   constructor() {
-    this.gameDataManager = clientGameDataManager;
+    this.dataLoader = sharedDataLoader;
   }
 
   /**
    * Initialize the game engine with JSON data
    */
   async initialize(): Promise<void> {
-    if (!this.gameDataManager.isDataLoaded()) {
-      await this.gameDataManager.loadGameData();
+    // Load game data using shared DataLoader
+    const gameDataResult = await this.dataLoader.loadGameData();
+    if (!gameDataResult) {
+      throw new Error('Failed to load game data');
     }
+    console.log('✅ [ClientGameEngine] Game data loaded successfully using shared DataLoader');
   }
 
   /**
@@ -282,51 +301,11 @@ export class ClientGameEngine {
     );
     await localizationManager.loadLanguage(SupportedLanguage.ENGLISH); // Default to English
 
-    // Prepare data for the shared engine
-    const cardDatabase = new Map<number, ServerCardData>();
-    this.gameDataManager.getAllCards().forEach(enumCard => {
-      // Validate enum-based card data
-      if (!enumCard.nameId || !enumCard.scientificNameId) {
-        console.warn(`⚠️ [ClientGameEngine] Skipping card ${enumCard.cardId} - missing enum IDs`);
-        return;
-      }
-
-      // Use the enum IDs directly - no need to derive them!
-      const card: ServerCardData = {
-        id: enumCard.cardId,
-        nameId: enumCard.nameId,
-        scientificNameId: enumCard.scientificNameId,
-        descriptionId: enumCard.descriptionId,
-        taxonomyId: enumCard.taxonomyId,
-        trophicLevel: enumCard.trophicLevel,
-        trophicCategory: enumCard.trophicCategory,
-        domain: enumCard.domain,
-        cost: enumCard.cost,
-        keywords: enumCard.keywords,
-        abilities: enumCard.abilities,
-        victoryPoints: enumCard.victoryPoints,
-        conservation_status: enumCard.conservationStatus,
-        mass_kg: enumCard.mass_kg,
-        lifespan_max_days: enumCard.lifespan_max_days,
-        vision_range_m: enumCard.vision_range_m,
-        smell_range_m: enumCard.smell_range_m,
-        hearing_range_m: enumCard.hearing_range_m,
-        walk_speed_m_per_hr: enumCard.walk_speed_m_per_hr,
-        run_speed_m_per_hr: enumCard.run_speed_m_per_hr,
-        swim_speed_m_per_hr: enumCard.swim_speed_m_per_hr,
-        fly_speed_m_per_hr: enumCard.fly_speed_m_per_hr,
-        offspring_count: enumCard.offspring_count,
-        gestation_days: enumCard.gestation_days,
-        artwork_url: null,
-        iucn_id: null,
-        population_trend: null
-      };
-      cardDatabase.set(card.id, card);
-    });
-
-    // For now, use empty ability and keyword databases
-    const abilityDatabase = new Map<number, ServerAbilityData>();
-    const keywordDatabase = new Map<number, string>();
+    // Load game data using shared DataLoader
+    const gameData = await this.dataLoader.loadGameData();
+    const cardDatabase = gameData.cards;
+    const abilityDatabase = gameData.abilities;
+    const keywordDatabase = gameData.keywords;
 
     // Create the shared engine instance
     this.coreEngine = new BioMastersEngine(cardDatabase, abilityDatabase, keywordDatabase, localizationManager);
@@ -357,10 +336,16 @@ export class ClientGameEngine {
       name: p.name,
       hand: p.hand,
       deck: p.deck,
-      scorePile: p.scorePile.map(card => ({
-        ...card,
+      scorePile: p.scorePile.map(cardId => ({
+        instanceId: cardId,
+        cardId: parseInt(cardId.split('_')[0]) || 0, // Extract numeric cardId from instance ID
+        ownerId: p.id,
+        position: { x: 0, y: 0 }, // Score pile cards don't have positions
+        isExhausted: false,
         attachments: [],
-        statusEffects: []
+        statusEffects: [],
+        isDetritus: false,
+        isHOME: false
       })),
       energy: p.energy,
       isReady: p.isReady

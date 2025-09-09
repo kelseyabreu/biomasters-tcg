@@ -6,6 +6,14 @@
  * SINGLE SOURCE OF TRUTH for all card ID mappings across frontend, server, and shared modules
  */
 /**
+ * Initialize the card mapping from the cards data
+ * This ensures we have a complete mapping for all cards in the system
+ */
+export declare function initializeCardMapping(cardsData: Array<{
+    cardId: number;
+    nameId: string;
+}>): void;
+/**
  * Convert CardId (number) to nameId (string)
  * Used when game logic needs to interface with data files
  */
@@ -18,13 +26,15 @@ export declare function nameIdToCardId(nameId: string): number | null;
 /**
  * Convert legacy species_name (kebab-case) to CardId (number)
  * Used for migrating old data that uses species_name format
+ * @deprecated Legacy migration utility - use direct CardId system instead
  */
-export declare function speciesNameToCardId(speciesName: string): number | null;
+export declare function speciesNameToCardId_old(speciesName: string): number | null;
 /**
  * Convert CardId (number) to legacy species_name (kebab-case)
  * Used for backward compatibility during migration
+ * @deprecated Legacy migration utility - use direct CardId system instead
  */
-export declare function cardIdToSpeciesName(cardId: number): string | null;
+export declare function cardIdToSpeciesName_old(cardId: number): string | null;
 /**
  * Validate that a CardId exists in the system
  */
@@ -66,8 +76,9 @@ export declare function isCardOwnedByNameId(nameId: string, cardsOwned: Record<n
 export declare function getCardOwnershipByNameId(nameId: string, cardsOwned: Record<number, any>): any | null;
 /**
  * Migration helper: Convert old collection format to new format
+ * @deprecated Legacy migration utility - collections should use CardId system directly
  */
-export declare function migrateCollectionToCardIds(oldCollection: Record<string, any>): Record<number, any>;
+export declare function migrateCollectionToCardIds_old(oldCollection: Record<string, any>): Record<number, any>;
 export declare const isSpeciesOwned: typeof isCardOwnedByNameId;
 export declare const getSpeciesOwnership: typeof getCardOwnershipByNameId;
 /**

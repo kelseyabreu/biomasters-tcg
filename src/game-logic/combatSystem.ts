@@ -53,8 +53,8 @@ export function hasTrophicAdvantage(attacker: Card, defender: Card): boolean {
  * Calculates all combat modifiers for an attack
  */
 export function calculateCombatModifiers(
-  attacker: Card, 
-  defender: Card, 
+  attacker: Card,
+  defender: Card,
   environment: Habitat,
   friendlyCards: Card[] = []
 ): CombatModifier[] {
@@ -99,7 +99,7 @@ export function calculateCombatModifiers(
   // Pack hunting for wolves
   if (attacker.nameId === 'wolf') {
     const otherCarnivores = friendlyCards.filter(card => 
-      card.trophicRole === TrophicRole.CARNIVORE && card.id !== attacker.id
+      card.trophicRole === TrophicRole.CARNIVORE && card.cardId !== attacker.cardId
     );
     if (otherCarnivores.length > 0) {
       modifiers.push({

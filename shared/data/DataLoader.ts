@@ -173,7 +173,7 @@ export class DataLoader implements IGameDataLoader {
     // Try to get from all cards cache first
     const allCardsResult = await this.loadAllCards();
     if (allCardsResult.success && allCardsResult.data) {
-      const card = allCardsResult.data.find(c => c.id === cardId);
+      const card = allCardsResult.data.find(c => c.cardId === cardId);
       if (card) {
         // Cache individual card
         if (this.config.enableCaching) {
@@ -217,7 +217,7 @@ export class DataLoader implements IGameDataLoader {
       return { success: false, error: allCardsResult.error || 'Failed to load cards' };
     }
 
-    const cards = allCardsResult.data.filter(card => cardIds.includes(card.id));
+    const cards = allCardsResult.data.filter(card => cardIds.includes(card.cardId));
     
     // Cache the result
     if (this.config.enableCaching) {
@@ -369,7 +369,7 @@ export class DataLoader implements IGameDataLoader {
    */
   private transformCardData(rawCard: any): CardData {
     return {
-      id: rawCard.id || rawCard.cardId,
+      cardId: rawCard.cardId,
       nameId: rawCard.nameId,
       scientificNameId: rawCard.scientificNameId,
       descriptionId: rawCard.descriptionId,
@@ -395,7 +395,16 @@ export class DataLoader implements IGameDataLoader {
       artwork_url: rawCard.artwork_url,
       conservation_status: rawCard.conservationStatus || rawCard.conservation_status,
       iucn_id: rawCard.iucn_id,
-      population_trend: rawCard.population_trend
+      population_trend: rawCard.population_trend,
+      // Add taxonomy fields
+      taxoDomain: rawCard.taxoDomain || rawCard.taxo_domain || null,
+      taxoKingdom: rawCard.taxoKingdom || rawCard.taxo_kingdom || null,
+      taxoPhylum: rawCard.taxoPhylum || rawCard.taxo_phylum || null,
+      taxoClass: rawCard.taxoClass || rawCard.taxo_class || null,
+      taxoOrder: rawCard.taxoOrder || rawCard.taxo_order || null,
+      taxoFamily: rawCard.taxoFamily || rawCard.taxo_family || null,
+      taxoGenus: rawCard.taxoGenus || rawCard.taxo_genus || null,
+      taxoSpecies: rawCard.taxoSpecies || rawCard.taxo_species || null
     };
   }
 
@@ -451,7 +460,7 @@ export class DataLoader implements IGameDataLoader {
 
     const cardsMap = new Map<number, CardData>();
     for (const card of result.data) {
-      cardsMap.set(card.id, card);
+      cardsMap.set(card.cardId, card);
     }
     return cardsMap;
   }

@@ -14,6 +14,7 @@ import {
   KeywordNameId,
   UITextId,
   TaxonomyId,
+  TaxonomyDisplayId,
   SupportedLanguage
 } from './text-ids';
 
@@ -56,6 +57,7 @@ export interface UILocalizationData {
  * Interface for taxonomy localization data
  */
 export interface TaxonomyLocalizationData {
+  // Legacy taxonomy data (keep for backward compatibility)
   taxonomy: Record<TaxonomyId, {
     kingdom: string;
     phylum: string;
@@ -66,6 +68,16 @@ export interface TaxonomyLocalizationData {
     species: string;
     commonNames: string[];
   }>;
+
+  // New taxonomy display data (for enum-based system)
+  domains: Record<string, string>;
+  kingdoms: Record<string, string>;
+  phylums: Record<string, string>;
+  classes: Record<string, string>;
+  orders: Record<string, string>;
+  families: Record<string, string>;
+  genera: Record<string, string>;
+  species: Record<string, string>;
 }
 
 /**
@@ -161,6 +173,11 @@ export interface ILocalizationManager {
   getFormattedScientificName(taxonomyId: TaxonomyId): string;
 
   /**
+   * Get taxonomy display name (for new enum-based system)
+   */
+  getTaxonomyName(taxonomyDisplayId: TaxonomyDisplayId): string;
+
+  /**
    * Check if a text ID exists in the current language
    */
   hasText(textId: string): boolean;
@@ -253,6 +270,22 @@ export class LocalizationManager implements ILocalizationManager {
     if (!taxonomy) return `[${taxonomyId}]`;
 
     return `${taxonomy.genus} ${taxonomy.species}`;
+  }
+
+  getTaxonomyName(taxonomyDisplayId: TaxonomyDisplayId): string {
+    const taxonomy = this._languageData?.taxonomy;
+    if (!taxonomy) return `[${taxonomyDisplayId}]`;
+
+    // Search through all taxonomy categories
+    return taxonomy.domains[taxonomyDisplayId] ??
+           taxonomy.kingdoms[taxonomyDisplayId] ??
+           taxonomy.phylums[taxonomyDisplayId] ??
+           taxonomy.classes[taxonomyDisplayId] ??
+           taxonomy.orders[taxonomyDisplayId] ??
+           taxonomy.families[taxonomyDisplayId] ??
+           taxonomy.genera[taxonomyDisplayId] ??
+           taxonomy.species[taxonomyDisplayId] ??
+           `[${taxonomyDisplayId}]`;
   }
 
   hasText(textId: string): boolean {

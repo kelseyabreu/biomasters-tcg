@@ -96,8 +96,9 @@ export function nameIdToCardId(nameId: string): number | null {
 /**
  * Convert legacy species_name (kebab-case) to CardId (number)
  * Used for migrating old data that uses species_name format
+ * @deprecated Legacy migration utility - use direct CardId system instead
  */
-export function speciesNameToCardId(speciesName: string): number | null {
+export function speciesNameToCardId_old(speciesName: string): number | null {
   // First try direct mapping for common legacy names
   const legacyMappings: Record<string, number> = {
     'oak-tree': 1,
@@ -124,8 +125,9 @@ export function speciesNameToCardId(speciesName: string): number | null {
 /**
  * Convert CardId (number) to legacy species_name (kebab-case)
  * Used for backward compatibility during migration
+ * @deprecated Legacy migration utility - use direct CardId system instead
  */
-export function cardIdToSpeciesName(cardId: number): string | null {
+export function cardIdToSpeciesName_old(cardId: number): string | null {
   const nameId = cardIdToNameId(cardId);
   if (!nameId) return null;
   
@@ -209,12 +211,13 @@ export function getCardOwnershipByNameId(nameId: string, cardsOwned: Record<numb
 
 /**
  * Migration helper: Convert old collection format to new format
+ * @deprecated Legacy migration utility - collections should use CardId system directly
  */
-export function migrateCollectionToCardIds(oldCollection: Record<string, any>): Record<number, any> {
+export function migrateCollectionToCardIds_old(oldCollection: Record<string, any>): Record<number, any> {
   const newCollection: Record<number, any> = {};
 
   for (const [speciesName, data] of Object.entries(oldCollection)) {
-    const cardId = speciesNameToCardId(speciesName);
+    const cardId = speciesNameToCardId_old(speciesName);
     if (cardId !== null) {
       newCollection[cardId] = data;
     } else {

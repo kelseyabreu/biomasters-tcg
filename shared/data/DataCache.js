@@ -324,7 +324,7 @@ class CardDataCache extends DataCache {
      * Set multiple cards
      */
     setCards(cards) {
-        cards.forEach(card => this.setCard(card.id, card));
+        cards.forEach(card => this.setCard(card.cardId, card));
     }
 }
 exports.CardDataCache = CardDataCache;

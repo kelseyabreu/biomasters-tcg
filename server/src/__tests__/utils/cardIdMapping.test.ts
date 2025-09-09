@@ -4,8 +4,8 @@
  */
 
 import {
-  speciesNameToCardId,
-  cardIdToSpeciesName,
+  speciesNameToCardId_old,
+  cardIdToSpeciesName_old,
   isValidCardId,
   isValidSpeciesName,
   getAllValidCardIds,
@@ -13,90 +13,90 @@ import {
 } from '../../utils/cardIdMapping';
 
 describe('CardId Mapping Utilities', () => {
-  describe('speciesNameToCardId', () => {
+  describe('speciesNameToCardId_old', () => {
     test('should map starter pack species correctly', () => {
-      expect(speciesNameToCardId('oak-tree')).toBe(1);
-      expect(speciesNameToCardId('giant-kelp')).toBe(2);
-      expect(speciesNameToCardId('grass')).toBe(3);
-      expect(speciesNameToCardId('rabbit')).toBe(4);
-      expect(speciesNameToCardId('fox')).toBe(53);
-      expect(speciesNameToCardId('butterfly')).toBe(34);
+      expect(speciesNameToCardId_old('oak-tree')).toBe(1);
+      expect(speciesNameToCardId_old('giant-kelp')).toBe(2);
+      expect(speciesNameToCardId_old('grass')).toBe(3);
+      expect(speciesNameToCardId_old('rabbit')).toBe(4);
+      expect(speciesNameToCardId_old('fox')).toBe(53);
+      expect(speciesNameToCardId_old('butterfly')).toBe(34);
     });
 
     test('should map both legacy and proper species names', () => {
       // Legacy vs proper mappings should point to same CardId
-      expect(speciesNameToCardId('grass')).toBe(3);
-      expect(speciesNameToCardId('reed-canary-grass')).toBe(3);
-      
-      expect(speciesNameToCardId('rabbit')).toBe(4);
-      expect(speciesNameToCardId('european-rabbit')).toBe(4);
-      
-      expect(speciesNameToCardId('fox')).toBe(53);
-      expect(speciesNameToCardId('red-fox')).toBe(53);
-      
-      expect(speciesNameToCardId('butterfly')).toBe(34);
-      expect(speciesNameToCardId('monarch-butterfly')).toBe(34);
+      expect(speciesNameToCardId_old('grass')).toBe(3);
+      expect(speciesNameToCardId_old('reed-canary-grass')).toBe(3);
+
+      expect(speciesNameToCardId_old('rabbit')).toBe(4);
+      expect(speciesNameToCardId_old('european-rabbit')).toBe(4);
+
+      expect(speciesNameToCardId_old('fox')).toBe(53);
+      expect(speciesNameToCardId_old('red-fox')).toBe(53);
+
+      expect(speciesNameToCardId_old('butterfly')).toBe(34);
+      expect(speciesNameToCardId_old('monarch-butterfly')).toBe(34);
     });
 
     test('should map common animal names to specific species', () => {
-      expect(speciesNameToCardId('bear')).toBe(6); // AMERICAN_BLACK_BEAR
-      expect(speciesNameToCardId('deer')).toBe(47); // WHITETAILED_DEER
-      expect(speciesNameToCardId('wolf')).toBe(96); // GRAY_WOLF
-      expect(speciesNameToCardId('mouse')).toBe(73); // HOUSE_MOUSE
-      expect(speciesNameToCardId('cat')).toBe(37); // DOMESTIC_CAT
-      expect(speciesNameToCardId('dog')).toBe(48); // DOMESTIC_DOG
+      expect(speciesNameToCardId_old('bear')).toBe(6); // AMERICAN_BLACK_BEAR
+      expect(speciesNameToCardId_old('deer')).toBe(47); // WHITETAILED_DEER
+      expect(speciesNameToCardId_old('wolf')).toBe(96); // GRAY_WOLF
+      expect(speciesNameToCardId_old('mouse')).toBe(73); // HOUSE_MOUSE
+      expect(speciesNameToCardId_old('cat')).toBe(37); // DOMESTIC_CAT
+      expect(speciesNameToCardId_old('dog')).toBe(48); // DOMESTIC_DOG
     });
 
     test('should map plant names correctly', () => {
-      expect(speciesNameToCardId('apple-tree')).toBe(29);
-      expect(speciesNameToCardId('corn')).toBe(42);
-      expect(speciesNameToCardId('rice')).toBe(83);
-      expect(speciesNameToCardId('sunflower')).toBe(90);
-      expect(speciesNameToCardId('strawberry')).toBe(89);
+      expect(speciesNameToCardId_old('apple-tree')).toBe(29);
+      expect(speciesNameToCardId_old('corn')).toBe(42);
+      expect(speciesNameToCardId_old('rice')).toBe(83);
+      expect(speciesNameToCardId_old('sunflower')).toBe(90);
+      expect(speciesNameToCardId_old('strawberry')).toBe(89);
     });
 
     test('should return null for unknown species', () => {
-      expect(speciesNameToCardId('unknown-species')).toBeNull();
-      expect(speciesNameToCardId('fake-animal')).toBeNull();
-      expect(speciesNameToCardId('')).toBeNull();
-      expect(speciesNameToCardId('123')).toBeNull();
+      expect(speciesNameToCardId_old('unknown-species')).toBeNull();
+      expect(speciesNameToCardId_old('fake-animal')).toBeNull();
+      expect(speciesNameToCardId_old('')).toBeNull();
+      expect(speciesNameToCardId_old('123')).toBeNull();
     });
 
     test('should handle edge cases', () => {
-      expect(speciesNameToCardId('caterpillar')).toBe(38); // MONARCH_CATERPILLAR
-      expect(speciesNameToCardId('caterpillar_egg')).toBe(39); // BUTTERFLY_EGG (underscore)
-      expect(speciesNameToCardId('water-buffalo')).toBe(94); // ASIAN_WATER_BUFFALO
+      expect(speciesNameToCardId_old('caterpillar')).toBe(38); // MONARCH_CATERPILLAR
+      expect(speciesNameToCardId_old('caterpillar_egg')).toBe(39); // BUTTERFLY_EGG (underscore)
+      expect(speciesNameToCardId_old('water-buffalo')).toBe(94); // ASIAN_WATER_BUFFALO
     });
   });
 
-  describe('cardIdToSpeciesName', () => {
+  describe('cardIdToSpeciesName_old', () => {
     test('should reverse map CardIds to species names', () => {
-      expect(cardIdToSpeciesName(1)).toBe('oak-tree');
-      expect(cardIdToSpeciesName(2)).toBe('giant-kelp');
-      expect(cardIdToSpeciesName(3)).toBe('grass'); // Should return first mapping found
-      expect(cardIdToSpeciesName(4)).toBe('rabbit'); // Should return first mapping found
-      expect(cardIdToSpeciesName(53)).toBe('fox'); // Should return first mapping found
-      expect(cardIdToSpeciesName(34)).toBe('butterfly'); // Should return first mapping found
+      expect(cardIdToSpeciesName_old(1)).toBe('oak-tree');
+      expect(cardIdToSpeciesName_old(2)).toBe('giant-kelp');
+      expect(cardIdToSpeciesName_old(3)).toBe('grass'); // Should return first mapping found
+      expect(cardIdToSpeciesName_old(4)).toBe('rabbit'); // Should return first mapping found
+      expect(cardIdToSpeciesName_old(53)).toBe('fox'); // Should return first mapping found
+      expect(cardIdToSpeciesName_old(34)).toBe('butterfly'); // Should return first mapping found
     });
 
     test('should map high CardIds correctly', () => {
-      expect(cardIdToSpeciesName(96)).toBe('gray-wolf');
-      expect(cardIdToSpeciesName(97)).toBe('plains-zebra');
-      expect(cardIdToSpeciesName(95)).toBe('white-clover');
+      expect(cardIdToSpeciesName_old(96)).toBe('gray-wolf');
+      expect(cardIdToSpeciesName_old(97)).toBe('plains-zebra');
+      expect(cardIdToSpeciesName_old(95)).toBe('white-clover');
     });
 
     test('should return null for invalid CardIds', () => {
-      expect(cardIdToSpeciesName(0)).toBeNull();
-      expect(cardIdToSpeciesName(-1)).toBeNull();
-      expect(cardIdToSpeciesName(999)).toBeNull();
-      expect(cardIdToSpeciesName(1000)).toBeNull();
+      expect(cardIdToSpeciesName_old(0)).toBeNull();
+      expect(cardIdToSpeciesName_old(-1)).toBeNull();
+      expect(cardIdToSpeciesName_old(999)).toBeNull();
+      expect(cardIdToSpeciesName_old(1000)).toBeNull();
     });
 
     test('should handle gaps in CardId sequence', () => {
       // There might be gaps in the CardId sequence (e.g., 23, 24 might be missing)
       // The function should handle this gracefully
-      expect(cardIdToSpeciesName(23)).toBeNull(); // Assuming this ID doesn't exist
-      expect(cardIdToSpeciesName(24)).toBeNull(); // Assuming this ID doesn't exist
+      expect(cardIdToSpeciesName_old(23)).toBeNull(); // Assuming this ID doesn't exist
+      expect(cardIdToSpeciesName_old(24)).toBeNull(); // Assuming this ID doesn't exist
     });
   });
 
@@ -108,13 +108,13 @@ describe('CardId Mapping Utilities', () => {
       ];
 
       for (const species of testSpecies) {
-        const cardId = speciesNameToCardId(species);
+        const cardId = speciesNameToCardId_old(species);
         if (cardId !== null) {
-          const backToSpecies = cardIdToSpeciesName(cardId);
+          const backToSpecies = cardIdToSpeciesName_old(cardId);
           expect(backToSpecies).toBeDefined();
           // Note: backToSpecies might not equal original species due to legacy mappings
           // but it should be a valid species name that maps back to the same CardId
-          expect(speciesNameToCardId(backToSpecies!)).toBe(cardId);
+          expect(speciesNameToCardId_old(backToSpecies!)).toBe(cardId);
         }
       }
     });
@@ -122,11 +122,11 @@ describe('CardId Mapping Utilities', () => {
     test('should handle legacy name preferences correctly', () => {
       // When multiple species names map to same CardId, 
       // cardIdToSpeciesName should return a consistent one
-      const cardId3 = speciesNameToCardId('grass');
-      const cardId3Alt = speciesNameToCardId('reed-canary-grass');
+      const cardId3 = speciesNameToCardId_old('grass');
+      const cardId3Alt = speciesNameToCardId_old('reed-canary-grass');
       expect(cardId3).toBe(cardId3Alt);
-      
-      const reverseMapped = cardIdToSpeciesName(cardId3!);
+
+      const reverseMapped = cardIdToSpeciesName_old(cardId3!);
       expect(reverseMapped).toBe('grass'); // Should prefer legacy name
     });
   });
@@ -199,35 +199,35 @@ describe('CardId Mapping Utilities', () => {
 
   describe('Edge cases and error handling', () => {
     test('should handle null and undefined inputs gracefully', () => {
-      expect(speciesNameToCardId(null as any)).toBeNull();
-      expect(speciesNameToCardId(undefined as any)).toBeNull();
-      expect(cardIdToSpeciesName(null as any)).toBeNull();
-      expect(cardIdToSpeciesName(undefined as any)).toBeNull();
+      expect(speciesNameToCardId_old(null as any)).toBeNull();
+      expect(speciesNameToCardId_old(undefined as any)).toBeNull();
+      expect(cardIdToSpeciesName_old(null as any)).toBeNull();
+      expect(cardIdToSpeciesName_old(undefined as any)).toBeNull();
     });
 
     test('should handle non-string inputs for species names', () => {
-      expect(speciesNameToCardId(123 as any)).toBeNull();
-      expect(speciesNameToCardId({} as any)).toBeNull();
-      expect(speciesNameToCardId([] as any)).toBeNull();
+      expect(speciesNameToCardId_old(123 as any)).toBeNull();
+      expect(speciesNameToCardId_old({} as any)).toBeNull();
+      expect(speciesNameToCardId_old([] as any)).toBeNull();
     });
 
     test('should handle non-number inputs for CardIds', () => {
-      expect(cardIdToSpeciesName('1' as any)).toBeNull();
-      expect(cardIdToSpeciesName({} as any)).toBeNull();
-      expect(cardIdToSpeciesName([] as any)).toBeNull();
+      expect(cardIdToSpeciesName_old('1' as any)).toBeNull();
+      expect(cardIdToSpeciesName_old({} as any)).toBeNull();
+      expect(cardIdToSpeciesName_old([] as any)).toBeNull();
     });
 
     test('should handle case sensitivity', () => {
       // Should be case sensitive
-      expect(speciesNameToCardId('OAK-TREE')).toBeNull();
-      expect(speciesNameToCardId('Oak-Tree')).toBeNull();
-      expect(speciesNameToCardId('GRASS')).toBeNull();
+      expect(speciesNameToCardId_old('OAK-TREE')).toBeNull();
+      expect(speciesNameToCardId_old('Oak-Tree')).toBeNull();
+      expect(speciesNameToCardId_old('GRASS')).toBeNull();
     });
 
     test('should handle whitespace', () => {
-      expect(speciesNameToCardId(' oak-tree ')).toBeNull();
-      expect(speciesNameToCardId('oak-tree ')).toBeNull();
-      expect(speciesNameToCardId(' oak-tree')).toBeNull();
+      expect(speciesNameToCardId_old(' oak-tree ')).toBeNull();
+      expect(speciesNameToCardId_old('oak-tree ')).toBeNull();
+      expect(speciesNameToCardId_old(' oak-tree')).toBeNull();
     });
   });
 });

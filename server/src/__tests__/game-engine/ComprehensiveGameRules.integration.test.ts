@@ -405,24 +405,34 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       // This bypasses the action limit issue and focuses on trophic validation
       const newState = engine.getGameState();
       const rabbit1 = {
+        id: 'rabbit1',
         instanceId: 'rabbit1',
         cardId: CardId.EUROPEAN_RABBIT,
         ownerId: 'Alice',
         position: { x: oakPos.x, y: oakPos.y - 1 },
         isExhausted: false,
+        isReady: true,
+        attachedCards: [],
         attachments: [],
+        modifiers: [],
         statusEffects: [],
+        zone: 'BATTLEFIELD' as any,
         isDetritus: false,
         isHOME: false
       };
       const rabbit2 = {
+        id: 'rabbit2',
         instanceId: 'rabbit2',
         cardId: CardId.EUROPEAN_RABBIT,
         ownerId: 'Alice',
         position: { x: oakPos.x - 1, y: oakPos.y },
         isExhausted: false,
+        isReady: true,
+        attachedCards: [],
         attachments: [],
+        modifiers: [],
         statusEffects: [],
+        zone: 'BATTLEFIELD' as any,
         isDetritus: false,
         isHOME: false
       };

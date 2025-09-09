@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_cards (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    card_id VARCHAR(100) NOT NULL,
+    card_id INTEGER NOT NULL,
     quantity INTEGER DEFAULT 1 CHECK (quantity >= 0),
     acquired_at TIMESTAMP DEFAULT NOW(),
     acquisition_method VARCHAR(50) DEFAULT 'unknown' CHECK (
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS physical_redemptions (
     qr_code VARCHAR(255) UNIQUE NOT NULL,
     nfc_chip VARCHAR(255) UNIQUE,
     serial_number VARCHAR(100) NOT NULL,
-    card_id VARCHAR(100) NOT NULL,
+    card_id INTEGER NOT NULL,
     set_id VARCHAR(50) NOT NULL,
     
     -- Redemption status

@@ -4,63 +4,113 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ClientGameEngine, clientGameDataManager } from '../ClientGameEngine';
+import { ClientGameEngine } from '../ClientGameEngine';
 import { SupportedLanguage } from '@shared/text-ids';
 import { GameActionType, GamePhase, TurnPhase } from '../../../shared/enums';
 
-// Mock fetch for testing
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-const mockCardsData = [
-  {
-    cardId: 1,
-    nameId: "CARD_OAK_TREE",
-    scientificNameId: "SCIENTIFIC_QUERCUS_ROBUR",
-    descriptionId: "DESC_OAK_TREE",
-    taxonomyId: "TAXONOMY_OAK_TREE",
-    trophicLevel: 1,
-    trophicCategory: 1,
-    domain: 1,
-    cost: null,
-    keywords: [1, 6, 20],
-    abilities: [6],
-    victoryPoints: 1,
-    conservationStatus: 7,
-    mass_kg: 50000,
-    lifespan_max_days: 36500,
-    vision_range_m: 0,
-    smell_range_m: 0,
-    hearing_range_m: 0,
-    walk_speed_m_per_hr: 0,
-    run_speed_m_per_hr: 0,
-    swim_speed_m_per_hr: 0,
-    fly_speed_m_per_hr: 0,
-    offspring_count: 1000,
-    gestation_days: 365
-  }
-];
-
-const mockAbilitiesData = [
-  {
-    abilityId: 1,
-    nameId: "ABILITY_PHOTOSYNTHESIS",
-    descriptionId: "DESC_PHOTOSYNTHESIS",
-    triggerId: 1,
-    effects: [
-      {
-        effectId: 1,
-        selectorId: 1,
-        actionId: 1
-      }
-    ]
-  }
-];
-
+// Mock data for fetch responses
 const mockLocalizationData = {
   "card.oak_tree.name": "Oak Tree",
   "ability.photosynthesis.name": "Photosynthesis"
 };
+
+// Mock the DataLoader module
+vi.mock('@shared/data/DataLoader', () => {
+  const mockCardsData = [
+    {
+      cardId: 1,
+      nameId: "CARD_OAK_TREE",
+      scientificNameId: "SCIENTIFIC_QUERCUS_ROBUR",
+      descriptionId: "DESC_OAK_TREE",
+      taxonomyId: "TAXONOMY_OAK_TREE",
+      trophicLevel: 1,
+      trophicCategory: 1,
+      domain: 1,
+      cost: null,
+      keywords: [1, 6, 20],
+      abilities: [6],
+      victoryPoints: 1,
+      conservationStatus: 7,
+      mass_kg: 50000,
+      lifespan_max_days: 36500,
+      vision_range_m: 0,
+      smell_range_m: 0,
+      hearing_range_m: 0,
+      walk_speed_m_per_hr: 0,
+      run_speed_m_per_hr: 0,
+      swim_speed_m_per_hr: 0,
+      fly_speed_m_per_hr: 0,
+      offspring_count: 1000,
+      gestation_days: 365
+    }
+  ];
+
+  const mockKeywordsData = [
+    {
+      keywordId: 1,
+      nameId: "KEYWORD_PRODUCER",
+      descriptionId: "DESC_PRODUCER"
+    },
+    {
+      keywordId: 6,
+      nameId: "KEYWORD_TERRESTRIAL",
+      descriptionId: "DESC_TERRESTRIAL"
+    },
+    {
+      keywordId: 20,
+      nameId: "KEYWORD_PLANT",
+      descriptionId: "DESC_PLANT"
+    }
+  ];
+
+  const mockAbilitiesData = [
+    {
+      abilityId: 1,
+      nameId: "ABILITY_PHOTOSYNTHESIS",
+      descriptionId: "DESC_PHOTOSYNTHESIS",
+      triggerId: 1,
+      effects: [
+        {
+          effectId: 1,
+          type: "energy_gain",
+          value: 1
+        }
+      ]
+    }
+  ];
+
+  // Convert arrays to Maps as expected by the engine
+  const mockCardsMap = new Map();
+  mockCardsData.forEach(card => mockCardsMap.set(card.cardId, card));
+
+  const mockAbilitiesMap = new Map();
+  mockAbilitiesData.forEach(ability => mockAbilitiesMap.set(ability.abilityId, ability));
+
+  const mockKeywordsMap = new Map();
+  mockKeywordsData.forEach(keyword => mockKeywordsMap.set(keyword.keywordId, keyword.nameId));
+
+  return {
+    DataLoader: vi.fn().mockImplementation(() => ({
+      loadGameData: vi.fn().mockResolvedValue({
+        cards: mockCardsMap,
+        abilities: mockAbilitiesMap,
+        keywords: mockKeywordsMap,
+        localizationManager: {
+          loadLanguage: vi.fn().mockResolvedValue(undefined),
+          getCardName: vi.fn().mockReturnValue('Test Card'),
+          getAbilityName: vi.fn().mockReturnValue('Test Ability')
+        }
+      }),
+      loadCards: vi.fn().mockResolvedValue(mockCardsMap),
+      loadAbilities: vi.fn().mockResolvedValue(mockAbilitiesMap),
+      loadKeywords: vi.fn().mockResolvedValue(mockKeywordsMap)
+    }))
+  };
+});
+
+// Mock fetch for testing
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 describe('ClientGameEngine', () => {
   let engine: ClientGameEngine;
@@ -141,10 +191,8 @@ describe('ClientGameEngine', () => {
 
   describe('Initialization', () => {
     it('should initialize and load game data', async () => {
-      await engine.initialize();
-
-      expect(fetch).toHaveBeenCalledTimes(1);
-      expect(fetch).toHaveBeenCalledWith('/data/game-config/cards.json');
+      // Should not throw an error
+      await expect(engine.initialize()).resolves.not.toThrow();
     });
 
     it('should create a new game with correct grid dimensions', async () => {

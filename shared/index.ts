@@ -16,8 +16,18 @@ export * from './types';
 
 // Export shared utilities
 export * from './utils/cardIdHelpers';
+
 export * from './data/DataLoader';
 export * from './data/DataCache';
+export * from './taxonomy-mapping';
+
+// Export services
+export * from './services/TaxonomyFilter';
+export * from './services/TaxonomyDisplay';
+
+// Export text IDs and taxonomy mapping
+export { TaxonomyDisplayId } from './text-ids';
+export { TaxonomyMapper } from './taxonomy-mapping';
 
 // Re-export commonly used combinations for convenience
 export type {
@@ -53,5 +63,13 @@ export {
   ApiStatus,
   GAME_CONSTANTS,
   DOMAIN_COMPATIBILITY,
-  TROPHIC_CONNECTIONS
+  TROPHIC_CONNECTIONS,
+  TaxoDomain,
+  TaxoKingdom,
+  TaxoPhylum,
+  TaxoClass,
+  TaxoOrder,
+  TaxoFamily,
+  TaxoGenus,
+  TaxoSpecies
 } from './enums';

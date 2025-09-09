@@ -1,0 +1,102 @@
+/**
+ * TaxonomyDemo Page Styles
+ */
+
+.taxonomy-demo-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  gap: 1rem;
+}
+
+.loading-container p {
+  color: var(--ion-color-medium);
+  font-size: 1.1rem;
+}
+
+/* Stats Card */
+.stats-card {
+  margin-bottom: 1rem;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--ion-color-primary);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+  margin-top: 0.25rem;
+}
+
+/* Selected Card */
+.selected-card {
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+.selected-card-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.selected-card-info div {
+  padding: 0.25rem 0;
+}
+
+/* Browser Card */
+.browser-card {
+  margin-bottom: 1rem;
+}
+
+.demo-browser {
+  /* Additional styles for demo context */
+}
+
+/* Testing Card */
+.testing-card {
+  margin-bottom: 1rem;
+}
+
+.test-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .taxonomy-demo-container {
+    padding: 0.5rem;
+  }
+  
+  .selected-card-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .test-buttons {
+    flex-direction: column;
+  }
+  
+  .test-buttons ion-button {
+    width: 100%;
+  }
+}

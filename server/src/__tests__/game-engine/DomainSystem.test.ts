@@ -96,11 +96,22 @@ describe('Domain System Tests', () => {
       // Test that the engine correctly identifies them as chemoautotrophs
       // Convert to engine-compatible format
       const engineCard: CardData = {
-        id: card.id,
+        cardId: card.cardId,
         nameId: CardNameId.CARD_OAK_TREE, // Using placeholder since we don't have real mapping
         scientificNameId: ScientificNameId.SCIENTIFIC_QUERCUS_ROBUR, // Using placeholder
         descriptionId: CardDescriptionId.DESC_OAK_TREE, // Using placeholder
         taxonomyId: TaxonomyId.TAXONOMY_OAK_TREE, // Using placeholder
+
+        // Taxonomy fields (using defaults for test)
+        taxoDomain: 1, // EUKARYOTA
+        taxoKingdom: 2, // PLANTAE
+        taxoPhylum: 5, // TRACHEOPHYTA
+        taxoClass: 8, // MAGNOLIOPSIDA
+        taxoOrder: 6, // FAGALES
+        taxoFamily: 6, // FAGACEAE
+        taxoGenus: 5, // QUERCUS
+        taxoSpecies: 5, // QUERCUS_ROBUR
+
         trophicLevel: card.trophicLevel,
         trophicCategory: card.trophicCategory,
         domain: card.domain || 0,

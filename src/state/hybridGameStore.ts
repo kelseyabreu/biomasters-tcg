@@ -13,7 +13,7 @@ import { dataLoader } from '@shared/data/DataLoader';
 import { cardIdToNameId, initializeCardMapping } from '@shared/utils/cardIdHelpers';
 import { ConservationStatus } from '@shared/enums';
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
-import { Card, TrophicRole, Habitat } from '../types';
+import { Card, TrophicRole, Habitat, transformCardDataToCard } from '../types';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, User, signInAnonymously, signOut } from 'firebase/auth';
 import { tokenManager } from '../services/tokenStorage';
@@ -23,7 +23,7 @@ import { tcgGameService, ServiceResult } from '../services/TCGGameService';
 import { phyloGameService } from '../services/PhyloGameService';
 import type { GameState } from '../game-logic/gameStateManager';
 import type { ClientGameState } from '../services/ClientGameEngine';
-import { nameIdToCardId, migrateCollectionToCardIds } from '@shared/utils/cardIdHelpers';
+import { nameIdToCardId, migrateCollectionToCardIds_old } from '@shared/utils/cardIdHelpers';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
@@ -817,7 +817,7 @@ export const useHybridGameStore = create<HybridGameState>()(
               console.log('🔄 Migrating collection from species_name to CardId format...');
               const oldStoredCollection = stored as any;
               const oldCollection = oldStoredCollection.species_owned;
-              const newCardsOwned = migrateCollectionToCardIds(oldCollection);
+              const newCardsOwned = migrateCollectionToCardIds_old(oldCollection);
               migratedCollection = {
                 user_id: oldStoredCollection.user_id,
                 device_id: oldStoredCollection.device_id,
@@ -875,58 +875,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
 
             // Transform shared CardData to frontend Card format
-            const allCards: Card[] = result.data.map(cardData => {
-              // Map trophic level to TrophicRole enum
-              const getTrophicRole = (level: number | null) => {
-                switch (level) {
-                  case 1: return TrophicRole.PRODUCER;
-                  case 2: return TrophicRole.HERBIVORE;
-                  case 3: return TrophicRole.CARNIVORE;
-                  case 4: return TrophicRole.CARNIVORE;
-                  case 5: return TrophicRole.CARNIVORE;
-                  default: return TrophicRole.OMNIVORE;
-                }
-              };
-
-              // Map keywords to Habitat enum (simplified mapping)
-              const getHabitat = (keywords: number[] | undefined) => {
-                if (!keywords || keywords.length === 0) return Habitat.TEMPERATE;
-                // This is a simplified mapping - you may want to improve this
-                return Habitat.TEMPERATE; // Default for now
-              };
-
-              return {
-                id: cardData.id.toString(),
-                cardId: cardData.id,
-                nameId: cardData.nameId,
-                scientificNameId: cardData.scientificNameId,
-                descriptionId: cardData.descriptionId,
-                taxonomyId: cardData.taxonomyId,
-                trophicRole: getTrophicRole(cardData.trophicLevel),
-                habitat: getHabitat(cardData.keywords),
-                power: cardData.victoryPoints || 1,
-                health: cardData.mass_kg ? Math.ceil(cardData.mass_kg / 10) : 1,
-                maxHealth: cardData.mass_kg ? Math.ceil(cardData.mass_kg / 10) : 1,
-                speed: cardData.run_speed_m_per_hr ? Math.ceil(cardData.run_speed_m_per_hr / 100) : 1,
-                senses: cardData.vision_range_m ? Math.ceil(cardData.vision_range_m / 10) : 1,
-                energyCost: 1, // Default energy cost
-                abilities: [], // Will be populated from abilities data
-                conservationStatus: cardData.conservation_status || ConservationStatus.NOT_EVALUATED,
-                artwork: cardData.artwork_url || '',
-                description: cardData.descriptionId,
-                realData: {
-                  mass_kg: cardData.mass_kg || 0,
-                  walk_Speed_m_per_hr: cardData.walk_speed_m_per_hr || undefined,
-                  run_Speed_m_per_hr: cardData.run_speed_m_per_hr || undefined,
-                  swim_Speed_m_per_hr: cardData.swim_speed_m_per_hr || undefined,
-                  fly_Speed_m_per_hr: cardData.fly_speed_m_per_hr || undefined,
-                  vision_range_m: cardData.vision_range_m || undefined,
-                  hearing_range_m: cardData.hearing_range_m || undefined,
-                  smell_range_m: cardData.smell_range_m || undefined,
-                  lifespan_Max_Days: cardData.lifespan_max_days || undefined
-                }
-              };
-            });
+            const allCards: Card[] = result.data.map(cardData => transformCardDataToCard(cardData));
 
             console.log(`✅ Loaded ${allCards.length} species cards`);
 

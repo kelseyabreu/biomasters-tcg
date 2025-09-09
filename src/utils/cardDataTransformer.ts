@@ -3,7 +3,7 @@
  * Handles conversion between backend and frontend card formats
  */
 
-import { Card as FrontendCard, Habitat } from '../types';
+import { Card as FrontendCard, Habitat, createCardWithDefaults } from '../types';
 
 export interface BackendCard {
   id: string;
@@ -36,10 +36,10 @@ export interface BackendCard {
 export function convertBackendCardToFrontend(backendCard: BackendCard): FrontendCard {
   const { card_data } = backendCard;
   
-  return {
-    id: backendCard.id, // Keep as string to match frontend type
+  return createCardWithDefaults({
     cardId: parseInt(backendCard.id) || 0, // Convert to number for cardId
     nameId: backendCard.archetype_name || 'UNKNOWN_CARD',
+    id: backendCard.id, // Keep as string to match frontend type
     scientificNameId: backendCard.scientific_name || 'UNKNOWN_SCIENTIFIC',
     descriptionId: 'DESC_UNKNOWN',
     taxonomyId: 'TAXONOMY_UNKNOWN',
@@ -68,7 +68,7 @@ export function convertBackendCardToFrontend(backendCard: BackendCard): Frontend
       taste_range_m: card_data.biological_data?.taste_range_m,
       touch_range_m: card_data.biological_data?.touch_range_m,
     }
-  };
+  });
 }
 
 /**

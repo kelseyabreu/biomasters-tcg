@@ -163,7 +163,7 @@ export function createMinimalTestGameData(): TestGameData {
 
   // Add a basic test card with all required properties
   cardsMap.set(1, {
-    id: 1,
+    cardId: 1,
     nameId: 'CARD_OAK_TREE' as any,
     scientificNameId: 'SCIENTIFIC_OAK_TREE' as any,
     descriptionId: 'DESC_OAK_TREE' as any,
@@ -189,7 +189,16 @@ export function createMinimalTestGameData(): TestGameData {
     gestation_days: 365,
     artwork_url: null,
     iucn_id: null,
-    population_trend: null
+    population_trend: null,
+    // Add required taxonomy fields
+    taxoDomain: 1 as any,
+    taxoKingdom: 2 as any,
+    taxoPhylum: 5 as any,
+    taxoClass: 8 as any,
+    taxoOrder: 12 as any,
+    taxoFamily: 15 as any,
+    taxoGenus: 18 as any,
+    taxoSpecies: 20 as any
   });
 
   // Create a mock localization manager
@@ -217,7 +226,8 @@ export function createMinimalTestGameData(): TestGameData {
     }),
     getFormattedScientificName: () => 'Test Genus species',
     hasText: () => true,
-    getText: (textId: string) => `[${textId}]`
+    getText: (textId: string) => `[${textId}]`,
+    getTaxonomyName: (taxonomyDisplayId: string) => taxonomyDisplayId
   };
 
   return {

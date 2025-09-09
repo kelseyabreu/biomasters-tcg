@@ -194,7 +194,7 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
               <IonGrid className="cards-grid">
                 <IonRow>
                   {lastOpenedPack.pack.cards.map((card, index) => (
-                    <IonCol size="6" size-md="3" key={`${card.id}-${index}`}>
+                    <IonCol size="6" size-md="3" key={`${card.cardId}-${index}`}>
                       <motion.div
                         initial={{ opacity: 0, rotateY: 180 }}
                         animate={{ opacity: 1, rotateY: 0 }}

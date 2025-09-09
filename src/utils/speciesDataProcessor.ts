@@ -1,4 +1,4 @@
-import { SpeciesData, Card, TrophicRole, Habitat, ConservationStatus, CardAbility } from '../types';
+import { SpeciesData, Card, TrophicRole, Habitat, ConservationStatus, CardAbility, createCardWithDefaults } from '../types';
 import { CardId } from '@shared/enums';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -453,10 +453,10 @@ export function convertSpeciesToCard(speciesData: any, cardId?: number): Card {
   const abilities = generateAbilities(speciesData, trophicRole);
   const energyCost = determineEnergyCost(trophicRole, stats.power);
 
-  return {
-    id: uuidv4(),
+  return createCardWithDefaults({
     cardId: cardId || 0, // Use provided cardId or default to 0
     nameId: identity?.commonName || 'UNKNOWN_CARD',
+    id: uuidv4(),
     scientificNameId: identity?.scientificName || 'UNKNOWN_SCIENTIFIC',
     descriptionId: 'DESC_UNKNOWN',
     taxonomyId: 'TAXONOMY_UNKNOWN',
@@ -518,7 +518,7 @@ export function convertSpeciesToCard(speciesData: any, cardId?: number): Card {
       conservationStatus: phyloAttributes.conservationStatus || 'Not Evaluated',
       compatibilityNotes: phyloAttributes.compatibilityNotes || ''
     } : undefined
-  };
+  });
 }
 
 /**
@@ -695,18 +695,14 @@ function createFallbackCards(): Card[] {
     { name: 'oak-tree', common: 'Oak Tree', type: 'Producer' }
   ];
 
-  return fallbackSpecies.map((species, index) => ({
-    id: `fallback-${index}`,
+  return fallbackSpecies.map((species, index) => createCardWithDefaults({
     cardId: index + 1000, // Use high numbers for fallback cards
     nameId: species.common || 'FALLBACK_CARD',
+    id: `fallback-${index}`,
     scientificNameId: `FALLBACK_${species.common.toLowerCase()}`,
     descriptionId: 'DESC_FALLBACK',
     taxonomyId: 'TAXONOMY_FALLBACK',
-    type: species.type,
-    rarity: 'Common',
-    cost: Math.floor(Math.random() * 5) + 1,
     energyCost: Math.floor(Math.random() * 5) + 1,
-    attack: Math.floor(Math.random() * 10) + 1,
     health: Math.floor(Math.random() * 10) + 5,
     power: Math.floor(Math.random() * 10) + 1,
     maxHealth: Math.floor(Math.random() * 10) + 5,
@@ -720,20 +716,14 @@ function createFallbackCards(): Card[] {
       effect: { type: 'none' } as any
     }],
     description: `A ${species.type.toLowerCase()} species for demonstration.`,
-    flavorText: `${species.common} - essential for ecosystem balance.`,
-    habitat: 'Forest' as Habitat,
-    diet: species.type.includes('Producer') ? 'Photosynthesis' : 'Omnivore',
-    imageUrl: `/images/species/${species.name}.jpg`,
+    habitat: Habitat.TEMPERATE,
     artwork: `/images/species/${species.name}.jpg`,
     realData: {
       mass_kg: Math.random() * 100,
-      lifespan_days: Math.floor(Math.random() * 3650),
-      metabolic_rate: Math.random() * 1000
+      lifespan_Max_Days: Math.floor(Math.random() * 3650),
     },
     trophicRole: species.type as TrophicRole,
-    ecosystemRole: 'Balanced',
     conservationStatus: ConservationStatus.LEAST_CONCERN,
-    currentHealth: Math.floor(Math.random() * 10) + 5
   }));
 }
 

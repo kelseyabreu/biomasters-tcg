@@ -8,10 +8,11 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSpeciesOwnership = exports.isSpeciesOwned = void 0;
+exports.initializeCardMapping = initializeCardMapping;
 exports.cardIdToNameId = cardIdToNameId;
 exports.nameIdToCardId = nameIdToCardId;
-exports.speciesNameToCardId = speciesNameToCardId;
-exports.cardIdToSpeciesName = cardIdToSpeciesName;
+exports.speciesNameToCardId_old = speciesNameToCardId_old;
+exports.cardIdToSpeciesName_old = cardIdToSpeciesName_old;
 exports.isValidCardId = isValidCardId;
 exports.isValidNameId = isValidNameId;
 exports.getAllCardIds = getAllCardIds;
@@ -21,67 +22,92 @@ exports.nameIdsToCardIds = nameIdsToCardIds;
 exports.getCollectionStats = getCollectionStats;
 exports.isCardOwnedByNameId = isCardOwnedByNameId;
 exports.getCardOwnershipByNameId = getCardOwnershipByNameId;
-exports.migrateCollectionToCardIds = migrateCollectionToCardIds;
+exports.migrateCollectionToCardIds_old = migrateCollectionToCardIds_old;
 exports.getCardDisplayName = getCardDisplayName;
 const enums_1 = require("../enums");
 /**
- * Map CardId enum values to their corresponding nameId strings
- * This is the authoritative mapping between numeric IDs and string IDs
+ * Dynamic mapping cache for cardId to nameId
  */
-const CARD_ID_TO_NAME_ID_MAP = {
-    [enums_1.CardId.OAK_TREE]: 'CARD_OAK_TREE',
-    [enums_1.CardId.REED_CANARY_GRASS]: 'CARD_REED_CANARY_GRASS',
-    [enums_1.CardId.EUROPEAN_RABBIT]: 'CARD_EUROPEAN_RABBIT',
-    [enums_1.CardId.EUROPEAN_HONEY_BEE]: 'CARD_EUROPEAN_HONEY_BEE',
-    [enums_1.CardId.GIANT_KELP]: 'CARD_GIANT_KELP',
-    [enums_1.CardId.SOCKEYE_SALMON]: 'CARD_SOCKEYE_SALMON',
-    [enums_1.CardId.AMERICAN_BLACK_BEAR]: 'CARD_AMERICAN_BLACK_BEAR',
-    [enums_1.CardId.GREAT_WHITE_SHARK]: 'CARD_GREAT_WHITE_SHARK',
-    [enums_1.CardId.MYCENA_MUSHROOM]: 'CARD_MYCENA_MUSHROOM',
-    [enums_1.CardId.TURKEY_VULTURE]: 'CARD_TURKEY_VULTURE',
-    [enums_1.CardId.DEER_TICK]: 'CARD_DEER_TICK',
-    [enums_1.CardId.COMMON_EARTHWORM]: 'CARD_COMMON_EARTHWORM',
-    [enums_1.CardId.DUNG_BEETLE]: 'CARD_DUNG_BEETLE',
-    [enums_1.CardId.SOIL_BACTERIA]: 'CARD_SOIL_BACTERIA',
-    [enums_1.CardId.DECOMPOSER_MUSHROOM]: 'CARD_DECOMPOSER_MUSHROOM',
-    [enums_1.CardId.DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA]: 'CARD_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA',
-    [enums_1.CardId.IRON_SPRING_BACTERIA]: 'CARD_IRON_SPRING_BACTERIA',
-    [enums_1.CardId.MYCORRHIZAL_FUNGI]: 'CARD_MYCORRHIZAL_FUNGI',
-    [enums_1.CardId.NITROGEN_FIXING_BACTERIA]: 'CARD_NITROGEN_FIXING_BACTERIA',
-    [enums_1.CardId.PACIFIC_KRILL]: 'CARD_PACIFIC_KRILL',
-    [enums_1.CardId.PHYTOPLANKTON]: 'CARD_PHYTOPLANKTON',
-    [enums_1.CardId.ZOOPLANKTON]: 'CARD_ZOOPLANKTON',
-    [enums_1.CardId.VOLCANIC_HYDROGEN_BACTERIA]: 'CARD_VOLCANIC_HYDROGEN_BACTERIA',
-    [enums_1.CardId.NITRIFYING_SOIL_BACTERIA]: 'CARD_NITRIFYING_SOIL_BACTERIA',
-    [enums_1.CardId.SEDIMENT_CHEMOSYNTHETIC_BACTERIA]: 'CARD_SEDIMENT_CHEMOSYNTHETIC_BACTERIA',
-    // Add mappings for cards found in cards.json
-    34: 'CARD_MONARCH_BUTTERFLY', // CardId 34
-    53: 'CARD_RED_FOX', // CardId 53
-    // Add more mappings as needed - this should be generated from the actual enums
-};
+let CARD_ID_TO_NAME_ID_MAP = null;
 /**
- * Reverse map for nameId to CardId lookups
+ * Initialize the card mapping from the cards data
+ * This ensures we have a complete mapping for all cards in the system
  */
-const NAME_ID_TO_CARD_ID_MAP = Object.fromEntries(Object.entries(CARD_ID_TO_NAME_ID_MAP).map(([cardId, nameId]) => [nameId, parseInt(cardId)]));
+function initializeCardMapping(cardsData) {
+    if (CARD_ID_TO_NAME_ID_MAP === null) {
+        CARD_ID_TO_NAME_ID_MAP = {};
+        cardsData.forEach(card => {
+            CARD_ID_TO_NAME_ID_MAP[card.cardId] = card.nameId;
+        });
+        console.log(`🗺️ Initialized card mapping with ${cardsData.length} cards`);
+    }
+}
+/**
+ * Get the card mapping, initializing it if necessary
+ */
+function getCardMapping() {
+    if (CARD_ID_TO_NAME_ID_MAP === null) {
+        // Fallback to basic mapping if not initialized
+        console.warn('⚠️ Card mapping not initialized, using fallback mapping');
+        return {
+            [enums_1.CardId.OAK_TREE]: 'CARD_OAK_TREE',
+            [enums_1.CardId.GIANT_KELP]: 'CARD_GIANT_KELP',
+            [enums_1.CardId.REED_CANARY_GRASS]: 'CARD_REED_CANARY_GRASS',
+            [enums_1.CardId.EUROPEAN_RABBIT]: 'CARD_EUROPEAN_RABBIT',
+            [enums_1.CardId.SOCKEYE_SALMON]: 'CARD_SOCKEYE_SALMON',
+            [enums_1.CardId.AMERICAN_BLACK_BEAR]: 'CARD_AMERICAN_BLACK_BEAR',
+            [enums_1.CardId.GREAT_WHITE_SHARK]: 'CARD_GREAT_WHITE_SHARK',
+            [enums_1.CardId.MYCENA_MUSHROOM]: 'CARD_MYCENA_MUSHROOM',
+            [enums_1.CardId.TURKEY_VULTURE]: 'CARD_TURKEY_VULTURE',
+            [enums_1.CardId.DEER_TICK]: 'CARD_DEER_TICK',
+            [enums_1.CardId.COMMON_EARTHWORM]: 'CARD_COMMON_EARTHWORM',
+            [enums_1.CardId.DUNG_BEETLE]: 'CARD_DUNG_BEETLE',
+            [enums_1.CardId.SOIL_BACTERIA]: 'CARD_SOIL_BACTERIA',
+            [enums_1.CardId.DECOMPOSER_MUSHROOM]: 'CARD_DECOMPOSER_MUSHROOM',
+            [enums_1.CardId.DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA]: 'CARD_DEEP_SEA_HYDROTHERMAL_VENT_BACTERIA',
+            [enums_1.CardId.IRON_SPRING_BACTERIA]: 'CARD_IRON_SPRING_BACTERIA',
+            [enums_1.CardId.MYCORRHIZAL_FUNGI]: 'CARD_MYCORRHIZAL_FUNGI',
+            [enums_1.CardId.NITROGEN_FIXING_BACTERIA]: 'CARD_NITROGEN_FIXING_BACTERIA',
+            [enums_1.CardId.PACIFIC_KRILL]: 'CARD_PACIFIC_KRILL',
+            [enums_1.CardId.PHYTOPLANKTON]: 'CARD_PHYTOPLANKTON',
+            [enums_1.CardId.ZOOPLANKTON]: 'CARD_ZOOPLANKTON',
+            [enums_1.CardId.EUROPEAN_HONEY_BEE]: 'CARD_EUROPEAN_HONEY_BEE',
+            [enums_1.CardId.VOLCANIC_HYDROGEN_BACTERIA]: 'CARD_VOLCANIC_HYDROGEN_BACTERIA',
+            [enums_1.CardId.NITRIFYING_SOIL_BACTERIA]: 'CARD_NITRIFYING_SOIL_BACTERIA',
+            [enums_1.CardId.SEDIMENT_CHEMOSYNTHETIC_BACTERIA]: 'CARD_SEDIMENT_CHEMOSYNTHETIC_BACTERIA',
+        };
+    }
+    return CARD_ID_TO_NAME_ID_MAP;
+}
+/**
+ * Get reverse map for nameId to CardId lookups
+ */
+function getNameIdToCardIdMap() {
+    const cardMapping = getCardMapping();
+    return Object.fromEntries(Object.entries(cardMapping).map(([cardId, nameId]) => [nameId, parseInt(cardId)]));
+}
 /**
  * Convert CardId (number) to nameId (string)
  * Used when game logic needs to interface with data files
  */
 function cardIdToNameId(cardId) {
-    return CARD_ID_TO_NAME_ID_MAP[cardId] || null;
+    const mapping = getCardMapping();
+    return mapping[cardId] || null;
 }
 /**
  * Convert nameId (string) to CardId (number)
  * Used when data files need to interface with game logic
  */
 function nameIdToCardId(nameId) {
-    return NAME_ID_TO_CARD_ID_MAP[nameId] || null;
+    const mapping = getNameIdToCardIdMap();
+    return mapping[nameId] || null;
 }
 /**
  * Convert legacy species_name (kebab-case) to CardId (number)
  * Used for migrating old data that uses species_name format
+ * @deprecated Legacy migration utility - use direct CardId system instead
  */
-function speciesNameToCardId(speciesName) {
+function speciesNameToCardId_old(speciesName) {
     // First try direct mapping for common legacy names
     const legacyMappings = {
         'oak-tree': 1,
@@ -105,8 +131,9 @@ function speciesNameToCardId(speciesName) {
 /**
  * Convert CardId (number) to legacy species_name (kebab-case)
  * Used for backward compatibility during migration
+ * @deprecated Legacy migration utility - use direct CardId system instead
  */
-function cardIdToSpeciesName(cardId) {
+function cardIdToSpeciesName_old(cardId) {
     const nameId = cardIdToNameId(cardId);
     if (!nameId)
         return null;
@@ -117,25 +144,29 @@ function cardIdToSpeciesName(cardId) {
  * Validate that a CardId exists in the system
  */
 function isValidCardId(cardId) {
-    return cardId in CARD_ID_TO_NAME_ID_MAP;
+    const mapping = getCardMapping();
+    return cardId in mapping;
 }
 /**
  * Validate that a nameId exists in the system
  */
 function isValidNameId(nameId) {
-    return nameId in NAME_ID_TO_CARD_ID_MAP;
+    const mapping = getNameIdToCardIdMap();
+    return nameId in mapping;
 }
 /**
  * Get all valid CardIds in the system
  */
 function getAllCardIds() {
-    return Object.keys(CARD_ID_TO_NAME_ID_MAP).map(id => parseInt(id));
+    const mapping = getCardMapping();
+    return Object.keys(mapping).map(id => parseInt(id));
 }
 /**
  * Get all valid nameIds in the system
  */
 function getAllNameIds() {
-    return Object.values(CARD_ID_TO_NAME_ID_MAP);
+    const mapping = getCardMapping();
+    return Object.values(mapping);
 }
 /**
  * Batch convert array of CardIds to nameIds
@@ -173,11 +204,12 @@ function getCardOwnershipByNameId(nameId, cardsOwned) {
 }
 /**
  * Migration helper: Convert old collection format to new format
+ * @deprecated Legacy migration utility - collections should use CardId system directly
  */
-function migrateCollectionToCardIds(oldCollection) {
+function migrateCollectionToCardIds_old(oldCollection) {
     const newCollection = {};
     for (const [speciesName, data] of Object.entries(oldCollection)) {
-        const cardId = speciesNameToCardId(speciesName);
+        const cardId = speciesNameToCardId_old(speciesName);
         if (cardId !== null) {
             newCollection[cardId] = data;
         }

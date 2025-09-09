@@ -1,6 +1,19 @@
-import { Player, Card, GameState, TrophicRole, WinCondition } from '../types';
+import { Player, GameState, TrophicRole, WinCondition, Habitat } from '../types';
+import { Card } from '../types'; // Legacy Card interface for AI logic
 import { simulateCombat } from './combatSystem';
 import { checkAllWinConditions, getWinConditionPriority } from './winConditions';
+
+/**
+ * Convert string environment to Habitat enum
+ */
+function stringToHabitat(environment?: string): Habitat {
+  if (!environment) return Habitat.TEMPERATE;
+
+  const envLower = environment.toLowerCase();
+  if (envLower.includes('tropical')) return Habitat.TROPICAL;
+  if (envLower.includes('tundra') || envLower.includes('arctic')) return Habitat.TUNDRA;
+  return Habitat.TEMPERATE;
+}
 
 export interface AIDecision {
   type: 'play_card' | 'attack' | 'end_turn';
@@ -109,7 +122,7 @@ function evaluateAttack(
   gameState: GameState,
   aiPlayer: Player
 ): number {
-  const simulation = simulateCombat(attacker, defender, gameState.environment, aiPlayer.field, 100);
+  const simulation = simulateCombat(attacker, defender, stringToHabitat(gameState.environment), aiPlayer.field || [], 100);
   
   let value = 0;
   
@@ -134,9 +147,11 @@ function evaluateAttack(
 /**
  * Finds the best card to play
  */
-function findBestCardToPlay(gameState: GameState, aiPlayer: Player, strategy: AIStrategy): Card | null {
-  const playableCards = aiPlayer.hand.filter(card => 
-    aiPlayer.energy >= card.energyCost && aiPlayer.field.length < 6
+function findBestCardToPlay(gameState: GameState, aiPlayer: Player, strategy: AIStrategy, cardDatabase: Card[]): Card | null {
+  // Convert card IDs to Card objects and filter playable ones
+  const handCards = aiPlayer.hand.map(cardId => cardDatabase.find(card => card.id === cardId)).filter(card => card !== undefined) as Card[];
+  const playableCards = handCards.filter(card =>
+    aiPlayer.energy >= card.energyCost && (aiPlayer.field?.length || 0) < 6
   );
   
   if (playableCards.length === 0) return null;
@@ -188,7 +203,8 @@ function findBestAttack(
  * Evaluates current win condition progress
  */
 function evaluateWinConditionProgress(gameState: GameState, aiPlayer: Player): number {
-  const winConditions = checkAllWinConditions(aiPlayer, gameState.players[1 - gameState.currentPlayer]);
+  const currentPlayerIndex = gameState.currentPlayerIndex;
+  const winConditions = checkAllWinConditions(aiPlayer, gameState.players[1 - currentPlayerIndex]);
   
   let totalPriority = 0;
   for (const condition of winConditions) {
@@ -203,10 +219,12 @@ function evaluateWinConditionProgress(gameState: GameState, aiPlayer: Player): n
  */
 export function makeAIDecision(
   gameState: GameState,
+  cardDatabase: Card[],
   difficulty: AIDifficulty = AIDifficulty.MEDIUM
 ): AIDecision {
-  const aiPlayer = gameState.players[gameState.currentPlayer];
-  const opponent = gameState.players[1 - gameState.currentPlayer];
+  const currentPlayerIndex = gameState.currentPlayerIndex;
+  const aiPlayer = gameState.players[currentPlayerIndex];
+  const opponent = gameState.players[1 - currentPlayerIndex];
   const strategy = getAIStrategy(difficulty);
   
   // Evaluate win condition progress
@@ -216,7 +234,7 @@ export function makeAIDecision(
   
   // 1. Try to play a card if we have energy and good options
   if (aiPlayer.energy > 0) {
-    const bestCard = findBestCardToPlay(gameState, aiPlayer, strategy);
+    const bestCard = findBestCardToPlay(gameState, aiPlayer, strategy, cardDatabase);
     if (bestCard) {
       return {
         type: 'play_card',

@@ -4,7 +4,7 @@
  * This module provides a centralized interface for accessing localized text content.
  * It loads language-specific JSON files and provides type-safe text lookup methods.
  */
-import { CardNameId, ScientificNameId, CardDescriptionId, AbilityNameId, AbilityDescriptionId, KeywordNameId, UITextId, TaxonomyId, SupportedLanguage } from './text-ids';
+import { CardNameId, ScientificNameId, CardDescriptionId, AbilityNameId, AbilityDescriptionId, KeywordNameId, UITextId, TaxonomyId, TaxonomyDisplayId, SupportedLanguage } from './text-ids';
 /**
  * Interface for card localization data
  */
@@ -47,6 +47,14 @@ export interface TaxonomyLocalizationData {
         species: string;
         commonNames: string[];
     }>;
+    domains: Record<string, string>;
+    kingdoms: Record<string, string>;
+    phylums: Record<string, string>;
+    classes: Record<string, string>;
+    orders: Record<string, string>;
+    families: Record<string, string>;
+    genera: Record<string, string>;
+    species: Record<string, string>;
 }
 /**
  * Complete localization data for a language
@@ -123,6 +131,10 @@ export interface ILocalizationManager {
      */
     getFormattedScientificName(taxonomyId: TaxonomyId): string;
     /**
+     * Get taxonomy display name (for new enum-based system)
+     */
+    getTaxonomyName(taxonomyDisplayId: TaxonomyDisplayId): string;
+    /**
      * Check if a text ID exists in the current language
      */
     hasText(textId: string): boolean;
@@ -162,6 +174,7 @@ export declare class LocalizationManager implements ILocalizationManager {
         commonNames: string[];
     } | null;
     getFormattedScientificName(taxonomyId: TaxonomyId): string;
+    getTaxonomyName(taxonomyDisplayId: TaxonomyDisplayId): string;
     hasText(textId: string): boolean;
     getText(textId: string): string;
 }

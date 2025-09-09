@@ -27,9 +27,9 @@ describe('Final Turn System Integration Tests', () => {
     // Convert data to engine-expected format
     const cardDatabase = new Map<number, any>();
     rawCards.forEach((card: any) => {
-      cardDatabase.set(card.id, {
+      cardDatabase.set(card.cardId, {
         ...card,
-        id: card.id,
+        id: card.cardId,
         victoryPoints: card.victoryPoints || 1 // Ensure required field
       });
     });

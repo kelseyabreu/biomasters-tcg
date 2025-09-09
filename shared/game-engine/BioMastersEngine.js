@@ -67,13 +67,18 @@ class BioMastersEngine {
         players.forEach((player, index) => {
             const homePosition = this.getHOMEPosition(index, players.length, gameSettings);
             const homeCard = {
+                id: `home-${player.id}`,
                 instanceId: `home-${player.id}`,
                 cardId: 0, // Special HOME card ID
                 ownerId: player.id,
                 position: homePosition,
                 isExhausted: false,
+                isReady: true,
+                attachedCards: [],
                 attachments: [],
+                modifiers: [],
                 statusEffects: [],
+                zone: enums_1.CardZone.GRID,
                 isDetritus: false,
                 isHOME: true
             };
@@ -88,7 +93,10 @@ class BioMastersEngine {
                 deck: [],
                 scorePile: [],
                 energy: 0,
-                isReady: false
+                isReady: false,
+                actionsRemaining: 0,
+                field: [],
+                playedSpecies: new Set()
             })),
             currentPlayerIndex: 0,
             gamePhase: enums_1.GamePhase.SETUP,
@@ -96,7 +104,12 @@ class BioMastersEngine {
             actionsRemaining: 0, // No actions during setup
             turnNumber: 1,
             grid,
-            gameSettings,
+            detritus: [], // Initialize empty detritus zone
+            gameSettings: {
+                ...gameSettings,
+                turnTimeLimit: gameSettings.turnTimeLimit || 300, // Default 5 minutes
+                startingEnergy: gameSettings.startingEnergy || 3 // Default starting energy
+            },
             metadata: {}
         };
         // Set as current game state
@@ -255,7 +268,7 @@ class BioMastersEngine {
         try {
             console.log(`🔍 Card data properties:`, Object.keys(cardData));
             actualCardId = cardData.cardId || cardData.id;
-            console.log(`🔍 cardData.id:`, cardData.id);
+            console.log(`🔍 cardData.id (legacy):`, cardData.id);
             console.log(`🔍 cardData.cardId:`, cardData.cardId);
             console.log(`🔍 Using card ID:`, actualCardId);
             console.log(`✅ Card trophic level:`, cardData.trophicLevel);
@@ -341,13 +354,18 @@ class BioMastersEngine {
         const adjacentCards = this.getAdjacentCards(position);
         const hasPreferredDietBonus = this.checkPreferredDietBonus(cardData, adjacentCards);
         const gridCard = {
+            id: instanceId,
             instanceId,
             cardId: actualCardId,
             ownerId: this.getCurrentPlayer().id,
             position,
             isExhausted: !hasPreferredDietBonus, // Enter ready if preferred diet bonus
+            isReady: hasPreferredDietBonus,
+            attachedCards: [],
             attachments: [],
+            modifiers: [],
             statusEffects: [],
+            zone: enums_1.CardZone.GRID,
             isDetritus: false,
             isHOME: false
         };
@@ -389,7 +407,7 @@ class BioMastersEngine {
             console.log(`🔍 Search for "${cardIdString}" in hand: index ${handIndex}`);
             // If not found, try to find by card ID number
             if (handIndex === -1) {
-                const numericId = cardData.id.toString();
+                const numericId = cardData.cardId.toString();
                 console.log(`🔍 Search for card data ID "${numericId}" in hand: index ${handIndex}`);
                 handIndex = currentPlayer.hand.indexOf(numericId);
             }
@@ -588,7 +606,7 @@ class BioMastersEngine {
         const result = cardData.trophicLevel === enums_1.TrophicLevel.SAPROTROPH &&
             cardData.trophicCategory === enums_1.TrophicCategoryId.SAPROTROPH;
         const cardName = this.getCardName(cardData);
-        console.log(`🍄 isSaprotroph check for ${cardName} (CardID: ${cardData.id}):`);
+        console.log(`🍄 isSaprotroph check for ${cardName} (CardID: ${cardData.cardId}):`);
         console.log(`🍄   TrophicLevel: ${cardData.trophicLevel} === ${enums_1.TrophicLevel.SAPROTROPH} = ${cardData.trophicLevel === enums_1.TrophicLevel.SAPROTROPH}`);
         console.log(`🍄   TrophicCategory: ${cardData.trophicCategory} === ${enums_1.TrophicCategoryId.SAPROTROPH} = ${cardData.trophicCategory === enums_1.TrophicCategoryId.SAPROTROPH}`);
         console.log(`🍄   Result: ${result}`);
@@ -626,7 +644,7 @@ class BioMastersEngine {
                     ownerId: playerId // Now owned by the player who placed the saprotroph
                 };
                 // Add to score pile
-                player.scorePile.push(scorePileCard);
+                player.scorePile.push(scorePileCard.id);
                 // Remove the detritus card from the grid (it will be replaced by the saprotroph)
                 state.grid.delete(positionKey);
                 console.log(`🏆 ${player.name} gained VP from detritus conversion at ${position.x},${position.y}`);
@@ -996,7 +1014,7 @@ class BioMastersEngine {
      */
     getCardDomains(cardData, isHOME = false) {
         // Handle HOME cards - they have Domain.HOME
-        if (isHOME || (cardData && Number(cardData.id) === 0)) {
+        if (isHOME || (cardData && Number(cardData.cardId) === 0)) {
             return {
                 domain: enums_1.Domain.HOME,
                 isTerrestrial: false,
@@ -1702,7 +1720,7 @@ class BioMastersEngine {
         for (const target of targets) {
             const positionKey = `${target.position.x},${target.position.y}`;
             context.gameState.grid.delete(positionKey);
-            player.scorePile.push(target);
+            player.scorePile.push(target.id);
             console.log(`🏆 ${player.name} gained VP from ${target.cardId}`);
         }
         return { isValid: true };
@@ -1838,7 +1856,7 @@ class BioMastersEngine {
             case 6: // GAIN_VP
                 const vpPlayer = context.gameState.players.find(p => p.id === context.actingCard.ownerId);
                 if (vpPlayer) {
-                    vpPlayer.scorePile.push(target);
+                    vpPlayer.scorePile.push(target.id);
                 }
                 break;
             case 7: // DRAW_CARD
@@ -2345,7 +2363,7 @@ class BioMastersEngine {
     loadCardDatabase(cards) {
         this.cardDatabase.clear();
         cards.forEach(card => {
-            this.cardDatabase.set(card.id, card);
+            this.cardDatabase.set(card.cardId, card);
         });
     }
     loadAbilityDatabase(abilities) {
@@ -2399,7 +2417,7 @@ class BioMastersEngine {
         let totalVP = 0;
         // Count VP from cards in score pile
         for (const card of player.scorePile) {
-            const cardData = this.cardDatabase.get(card.cardId);
+            const cardData = this.cardDatabase.get(card);
             if (cardData) {
                 // Each card in score pile is worth 1 VP by default
                 // Some cards might have special VP values in the future
@@ -2542,7 +2560,7 @@ class BioMastersEngine {
             return { isValid: false, errorMessage: 'No current player' };
         }
         // Remove adult card from hand
-        let handIndex = currentPlayer.hand.indexOf(adultData.id.toString());
+        let handIndex = currentPlayer.hand.indexOf(adultData.cardId.toString());
         if (handIndex === -1) {
             const adultName = this.getCardName(adultData);
             handIndex = currentPlayer.hand.indexOf(adultName);
@@ -2551,7 +2569,7 @@ class BioMastersEngine {
             currentPlayer.hand.splice(handIndex, 1);
         }
         // Transform juvenile into adult
-        juvenileCard.cardId = adultData.id;
+        juvenileCard.cardId = adultData.cardId;
         // Metamorphosis tempo bonus: adult enters ready
         juvenileCard.isExhausted = false;
         // Preserve position and attachments

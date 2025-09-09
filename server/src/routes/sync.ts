@@ -11,7 +11,7 @@ import { requireAuth } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import CryptoJS from 'crypto-js';
 import crypto from 'crypto';
-import { speciesNameToCardId } from '../utils/cardIdMapping';
+import { speciesNameToCardId_old } from '@shared/utils/cardIdHelpers';
 
 const router = Router();
 
@@ -27,7 +27,8 @@ function verifyActionSignature(action: Omit<OfflineAction, 'signature'>, signatu
 interface OfflineAction {
   id: string;
   action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'starter_pack_opened';
-  species_name?: string;
+  card_id?: number;        // New cardId system
+  species_name?: string;   // Legacy support during transition
   quantity?: number;
   pack_type?: string;
   deck_id?: string;
@@ -317,15 +318,28 @@ router.post('/',
               break;
 
             case 'card_acquired':
-              if (action.species_name && action.quantity) {
-                const existing = serverCollection.get(action.species_name);
+              // Support both new cardId system and legacy species_name
+              let cardId: number | null = null;
+              let cardKey: string = '';
+
+              if (action.card_id) {
+                // New cardId system
+                cardId = action.card_id;
+                cardKey = `card_${cardId}`;
+              } else if (action.species_name) {
+                // Legacy species_name system
+                cardId = speciesNameToCardId_old(action.species_name);
+                cardKey = action.species_name;
+              }
+
+              if (cardId && action.quantity) {
+                const existing = serverCollection.get(cardKey);
                 if (existing) {
                   existing.quantity += action.quantity;
                   existing.last_acquired_at = new Date(action.timestamp);
                 } else {
-                  const cardId = speciesNameToCardId(action.species_name) || 0;
-                  serverCollection.set(action.species_name, {
-                    id: `temp_${action.species_name}`,
+                  serverCollection.set(cardKey, {
+                    id: `temp_${cardKey}`,
                     user_id: req.user.id,
                     card_id: cardId,
                     quantity: action.quantity,
@@ -356,11 +370,11 @@ router.post('/',
       await db.transaction().execute(async (trx) => {
 
         // Upsert each card individually using CardId system
-        for (const [speciesName, card] of serverCollection) {
-          const cardId = speciesNameToCardId(speciesName);
+        for (const [cardKey, card] of serverCollection) {
+          const cardId = card.card_id;
 
-          if (!cardId) {
-            console.warn(`Unknown species in sync: ${speciesName} - skipping`);
+          if (!cardId || cardId <= 0) {
+            console.warn(`Invalid cardId in sync: ${cardKey} (cardId: ${cardId}) - skipping`);
             continue;
           }
 

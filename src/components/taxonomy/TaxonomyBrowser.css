@@ -1,0 +1,311 @@
+/**
+ * TaxonomyBrowser Component Styles
+ * Modern CSS Grid-based layout for taxonomic browsing
+ */
+
+.taxonomy-browser {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: var(--ion-color-light);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.taxonomy-browser__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--ion-color-medium);
+}
+
+.taxonomy-browser__header h3 {
+  margin: 0;
+  color: var(--ion-color-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.taxonomy-browser__stats {
+  color: var(--ion-color-medium-shade);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Quick Filters Section */
+.taxonomy-browser__quick-filters {
+  background: var(--ion-color-light-shade);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.taxonomy-browser__quick-filters h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--ion-color-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.quick-filter-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+}
+
+.quick-filter-btn {
+  padding: 0.5rem 1rem;
+  background: var(--ion-color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-filter-btn:hover {
+  background: var(--ion-color-primary-shade);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Level Selector */
+.taxonomy-browser__level-selector {
+  background: var(--ion-color-light-shade);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.taxonomy-browser__level-selector h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--ion-color-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.level-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--ion-color-medium);
+  border-radius: 6px;
+  background: white;
+  font-size: 1rem;
+  color: var(--ion-color-dark);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.level-select:focus {
+  outline: none;
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.1);
+}
+
+/* Value Selector */
+.taxonomy-browser__value-selector {
+  background: var(--ion-color-light-shade);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.taxonomy-browser__value-selector h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--ion-color-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.value-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.value-btn {
+  padding: 0.75rem 1rem;
+  background: white;
+  color: var(--ion-color-dark);
+  border: 2px solid var(--ion-color-medium);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.value-btn:hover {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-primary-tint);
+}
+
+.value-btn.active {
+  background: var(--ion-color-primary);
+  color: white;
+  border-color: var(--ion-color-primary-shade);
+}
+
+/* Results Section */
+.taxonomy-browser__results {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-medium);
+}
+
+.taxonomy-browser__results h4 {
+  margin: 0 0 1rem 0;
+  color: var(--ion-color-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card-item {
+  background: var(--ion-color-light);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--ion-color-primary);
+}
+
+.card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  margin-bottom: 0.25rem;
+}
+
+.card-scientific {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ion-color-medium-shade);
+  margin-bottom: 0.5rem;
+}
+
+.card-taxonomy {
+  font-size: 0.8rem;
+  color: var(--ion-color-dark);
+  background: var(--ion-color-light-shade);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Stats Panel */
+.taxonomy-browser__stats-panel {
+  background: var(--ion-color-light-shade);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.taxonomy-browser__stats-panel h4 {
+  margin: 0 0 1rem 0;
+  color: var(--ion-color-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--ion-color-medium);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium-shade);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .taxonomy-browser {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+  
+  .quick-filter-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+  
+  .value-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .taxonomy-browser__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Loading and Empty States */
+.taxonomy-browser__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: var(--ion-color-medium);
+}
+
+.taxonomy-browser__empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--ion-color-medium);
+}
+
+.taxonomy-browser__empty h5 {
+  margin: 0 0 0.5rem 0;
+  color: var(--ion-color-medium-shade);
+}
+
+.taxonomy-browser__empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}

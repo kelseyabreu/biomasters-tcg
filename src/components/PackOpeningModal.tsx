@@ -318,7 +318,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 <IonGrid className="cards-grid">
                   <IonRow>
                     {packResult.cards.map((card, index) => (
-                      <IonCol size="6" sizeMd="4" sizeLg="3" sizeXl="2" key={`${card.id}-${index}`}>
+                      <IonCol size="6" sizeMd="4" sizeLg="3" sizeXl="2" key={`${card.cardId}-${index}`}>
                         <motion.div
                           initial={{ opacity: 0, rotateY: 180 }}
                           animate={{ opacity: 1, rotateY: 0 }}

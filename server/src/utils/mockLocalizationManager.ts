@@ -102,6 +102,10 @@ export class MockLocalizationManager implements ILocalizationManager {
   getText(textId: string): string {
     return `[${textId}]`;
   }
+
+  getTaxonomyName(taxonomyDisplayId: string): string {
+    return taxonomyDisplayId.replace('TAXO_', '').replace(/_/g, ' ');
+  }
 }
 
 /**

@@ -137,7 +137,7 @@ const PhysicalCardPreview: React.FC<PhysicalCardPreviewProps> = ({
 
             {/* Card Footer */}
             <div className="card-footer">
-              <div className="card-id">#{card.id.slice(-PHYSICAL_CARD_CONFIG.cardIdDisplayLength)}</div>
+              <div className="card-id">#{card.cardId.toString().slice(-PHYSICAL_CARD_CONFIG.cardIdDisplayLength)}</div>
               <div className="card-rarity">
                 <IonIcon
                   icon={getConservationIcon(card.conservationStatus)}

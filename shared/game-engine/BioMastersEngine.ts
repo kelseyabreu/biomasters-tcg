@@ -15,7 +15,9 @@ import {
   TrophicLevel,
   TrophicCategoryId,
   Domain,
-  DOMAIN_COMPATIBILITY
+  DOMAIN_COMPATIBILITY,
+  CardZone,
+  CardId
 } from '../enums';
 
 // Import localization types
@@ -27,7 +29,13 @@ import {
 } from '../text-ids';
 
 import { ILocalizationManager } from '../localization-manager';
-import { CardData as SharedCardData, AbilityData as SharedAbilityData } from '../types';
+import {
+  CardData as SharedCardData,
+  AbilityData as SharedAbilityData,
+  GameState,
+  Player,
+  CardInstance
+} from '../types';
 
 // Runtime card data that extends shared CardData with game state
 export interface CardData extends SharedCardData {
@@ -73,43 +81,7 @@ export interface AbilityData extends SharedAbilityData {
   // Add any runtime properties here if needed
 }
 
-// Core game state interfaces
-export interface GameState {
-  gameId: string;
-  players: Player[];
-  currentPlayerIndex: number;
-  gamePhase: GamePhase;
-  turnPhase: TurnPhase;
-  actionsRemaining: number; // New: Action limit tracking
-  turnNumber: number;
-  finalTurnTriggeredBy?: string; // Player ID who triggered final turn (deck empty)
-  finalTurnPlayersRemaining?: string[]; // Players who still need their final turn
-  grid: Map<string, GridCard>; // position key -> card
-  gameSettings: GameSettings;
-  metadata: Record<string, any>;
-}
 
-export interface Player {
-  id: string;
-  name: string;
-  hand: string[]; // card instance IDs
-  deck: string[]; // card instance IDs
-  scorePile: GridCard[];
-  energy: number;
-  isReady: boolean;
-}
-
-export interface GridCard {
-  instanceId: string;
-  cardId: number;
-  ownerId: string;
-  position: { x: number; y: number };
-  isExhausted: boolean;
-  attachments: GridCard[];
-  statusEffects: StatusEffect[];
-  isDetritus: boolean; // For detritus tiles
-  isHOME: boolean; // For HOME cards
-}
 
 
 export interface StatusEffect {
@@ -154,8 +126,8 @@ export interface ActivateAbilityPayload {
 // Using CardData and AbilityData from GameDataManager (JSON-driven)
 
 export interface EffectContext {
-  actingCard: GridCard;
-  targetCard?: GridCard | undefined;
+  actingCard: CardInstance;
+  targetCard?: CardInstance | undefined;
   gameState: GameState;
   ability: AbilityData;
   additionalData?: Record<string, any>;
@@ -238,19 +210,24 @@ export class BioMastersEngine {
     players: { id: string; name: string }[],
     gameSettings: GameSettings
   ): GameState {
-    const grid = new Map<string, GridCard>();
+    const grid = new Map<string, CardInstance>();
 
     // Initialize HOME cards for each player
     players.forEach((player, index) => {
       const homePosition = this.getHOMEPosition(index, players.length, gameSettings);
-      const homeCard: GridCard = {
+      const homeCard: CardInstance = {
+        id: `home-${player.id}`,
         instanceId: `home-${player.id}`,
-        cardId: 0, // Special HOME card ID
+        cardId: 0 as CardId, // Special HOME card ID
         ownerId: player.id,
         position: homePosition,
         isExhausted: false,
+        isReady: true,
+        attachedCards: [],
         attachments: [],
+        modifiers: [],
         statusEffects: [],
+        zone: CardZone.GRID,
         isDetritus: false,
         isHOME: true
       };
@@ -266,7 +243,10 @@ export class BioMastersEngine {
         deck: [],
         scorePile: [],
         energy: 0,
-        isReady: false
+        isReady: false,
+        actionsRemaining: 0,
+        field: [],
+        playedSpecies: new Set<string>()
       })),
       currentPlayerIndex: 0,
       gamePhase: GamePhase.SETUP,
@@ -274,7 +254,12 @@ export class BioMastersEngine {
       actionsRemaining: 0, // No actions during setup
       turnNumber: 1,
       grid,
-      gameSettings,
+      detritus: [], // Initialize empty detritus zone
+      gameSettings: {
+        ...gameSettings,
+        turnTimeLimit: gameSettings.turnTimeLimit || 300, // Default 5 minutes
+        startingEnergy: gameSettings.startingEnergy || 3 // Default starting energy
+      },
       metadata: {}
     };
 
@@ -452,7 +437,7 @@ export class BioMastersEngine {
       console.log(`🔍 Card data properties:`, Object.keys(cardData));
 
       actualCardId = (cardData as any).cardId || (cardData as any).id;
-      console.log(`🔍 cardData.id:`, (cardData as any).id);
+      console.log(`🔍 cardData.id (legacy):`, (cardData as any).id);
       console.log(`🔍 cardData.cardId:`, (cardData as any).cardId);
       console.log(`🔍 Using card ID:`, actualCardId);
       console.log(`✅ Card trophic level:`, cardData.trophicLevel);
@@ -548,14 +533,19 @@ export class BioMastersEngine {
     const adjacentCards = this.getAdjacentCards(position);
     const hasPreferredDietBonus = this.checkPreferredDietBonus(cardData, adjacentCards);
 
-    const gridCard: GridCard = {
+    const gridCard: CardInstance = {
+      id: instanceId,
       instanceId,
       cardId: actualCardId,
       ownerId: this.getCurrentPlayer().id,
       position,
       isExhausted: !hasPreferredDietBonus, // Enter ready if preferred diet bonus
+      isReady: hasPreferredDietBonus,
+      attachedCards: [],
       attachments: [],
+      modifiers: [],
       statusEffects: [],
+      zone: CardZone.GRID,
       isDetritus: false,
       isHOME: false
     };
@@ -603,7 +593,7 @@ export class BioMastersEngine {
 
       // If not found, try to find by card ID number
       if (handIndex === -1) {
-        const numericId = cardData.id.toString();
+        const numericId = cardData.cardId.toString();
         console.log(`🔍 Search for card data ID "${numericId}" in hand: index ${handIndex}`);
         handIndex = currentPlayer.hand.indexOf(numericId);
       }
@@ -721,7 +711,7 @@ export class BioMastersEngine {
   /**
    * Validate ability targeting requirements
    */
-  private validateAbilityTargeting(ability: AbilityData, actingCard: GridCard, targetInstanceId?: string): { isValid: boolean; errorMessage?: string } {
+  private validateAbilityTargeting(ability: AbilityData, actingCard: CardInstance, targetInstanceId?: string): { isValid: boolean; errorMessage?: string } {
     // Check if ability requires a target
     const requiresTarget = this.abilityRequiresTarget(ability);
 
@@ -783,7 +773,7 @@ export class BioMastersEngine {
   /**
    * Validate if a target is valid for an ability
    */
-  private isValidTarget(ability: AbilityData, actingCard: GridCard, targetCard: GridCard): { isValid: boolean; errorMessage?: string } {
+  private isValidTarget(ability: AbilityData, actingCard: CardInstance, targetCard: CardInstance): { isValid: boolean; errorMessage?: string } {
     // Create a temporary context to test target selection
     const gameState = this.ensureGameInitialized();
     const tempContext: EffectContext = {
@@ -838,7 +828,7 @@ export class BioMastersEngine {
     const result = cardData.trophicLevel === TrophicLevel.SAPROTROPH &&
            cardData.trophicCategory === TrophicCategoryId.SAPROTROPH;
     const cardName = this.getCardName(cardData);
-    console.log(`🍄 isSaprotroph check for ${cardName} (CardID: ${cardData.id}):`);
+    console.log(`🍄 isSaprotroph check for ${cardName} (CardID: ${cardData.cardId}):`);
     console.log(`🍄   TrophicLevel: ${cardData.trophicLevel} === ${TrophicLevel.SAPROTROPH} = ${cardData.trophicLevel === TrophicLevel.SAPROTROPH}`);
     console.log(`🍄   TrophicCategory: ${cardData.trophicCategory} === ${TrophicCategoryId.SAPROTROPH} = ${cardData.trophicCategory === TrophicCategoryId.SAPROTROPH}`);
     console.log(`🍄   Result: ${result}`);
@@ -875,14 +865,14 @@ export class BioMastersEngine {
 
       if (player) {
         // Create a copy for the score pile (no longer detritus)
-        const scorePileCard: GridCard = {
+        const scorePileCard: CardInstance = {
           ...detritusCard,
           isDetritus: false, // No longer detritus when in score pile
           ownerId: playerId  // Now owned by the player who placed the saprotroph
         };
 
         // Add to score pile
-        player.scorePile.push(scorePileCard);
+        player.scorePile.push(scorePileCard.id);
 
         // Remove the detritus card from the grid (it will be replaced by the saprotroph)
         state.grid.delete(positionKey);
@@ -909,10 +899,10 @@ export class BioMastersEngine {
   /**
    * Find a valid host for a parasite or mutualist
    */
-  private findValidHost(attachmentCard: CardData, adjacentCards: GridCard[]): GridCard | null {
+  private findValidHost(attachmentCard: CardData, adjacentCards: CardInstance[]): CardInstance | null {
     for (const card of adjacentCards) {
       // Skip HOME cards (cardId: 0) as they don't have card data
-      if (card.isHOME || card.cardId === 0) continue;
+      if (card.isHOME || card.cardId === (0 as CardId)) continue;
       const cardData = this.cardDatabase.get(card.cardId);
       if (!cardData) continue;
 
@@ -964,7 +954,7 @@ export class BioMastersEngine {
   /**
    * Process attachment when a parasite or mutualist is played
    */
-  private processAttachment(attachmentCard: GridCard, cardData: CardData, adjacentCards: GridCard[]): void {
+  private processAttachment(attachmentCard: CardInstance, cardData: CardData, adjacentCards: CardInstance[]): void {
     const host = this.findValidHost(cardData, adjacentCards);
     if (host) {
       // Attach the card to the host
@@ -984,7 +974,7 @@ export class BioMastersEngine {
   /**
    * Apply effects when a card attaches to a host
    */
-  private applyAttachmentEffects(attachment: GridCard, host: GridCard, attachmentData: CardData): void {
+  private applyAttachmentEffects(attachment: CardInstance, host: CardInstance, attachmentData: CardData): void {
     if (this.isParasite(attachmentData)) {
       // Parasites typically harm the host
       host.statusEffects.push({
@@ -1053,7 +1043,7 @@ export class BioMastersEngine {
     return `instance_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
-  private findCardByInstanceId(instanceId: string): GridCard | null {
+  private findCardByInstanceId(instanceId: string): CardInstance | null {
     const gameState = this.ensureGameInitialized();
     for (const card of gameState.grid.values()) {
       if (card.instanceId === instanceId) {
@@ -1063,7 +1053,7 @@ export class BioMastersEngine {
     return null;
   }
 
-  private findCardInState(state: GameState, instanceId: string): GridCard | null {
+  private findCardInState(state: GameState, instanceId: string): CardInstance | null {
     for (const card of state.grid.values()) {
       if (card.instanceId === instanceId) {
         return card;
@@ -1109,7 +1099,7 @@ export class BioMastersEngine {
         if (hasChemicalOpportunist) {
           const hasSaprophyteAdjacent = adjacentCards.some(card => {
             // Skip HOME cards (cardId: 0) as they don't have card data
-            if (card.isHOME || card.cardId === 0) return false;
+            if (card.isHOME || card.cardId === (0 as CardId)) return false;
             const adjCardData = this.cardDatabase.get(card.cardId);
             return adjCardData && this.isSaprotroph(adjCardData);
           });
@@ -1123,7 +1113,7 @@ export class BioMastersEngine {
         if (hasDetritalSpecialist) {
           const hasDetritivoreAdjacent = adjacentCards.some(card => {
             // Skip HOME cards (cardId: 0) as they don't have card data
-            if (card.isHOME || card.cardId === 0) return false;
+            if (card.isHOME || card.cardId === (0 as CardId)) return false;
             const adjCardData = this.cardDatabase.get(card.cardId);
             return adjCardData && this.isDetritivore(adjCardData);
           });
@@ -1136,7 +1126,7 @@ export class BioMastersEngine {
         // They can also connect to other producers for network building
         const hasProducerAdjacent = adjacentCards.some(card => {
           // Skip HOME cards (cardId: 0) as they don't have card data
-          if (card.isHOME || card.cardId === 0) return false;
+          if (card.isHOME || card.cardId === (0 as CardId)) return false;
           const adjCardData = this.cardDatabase.get(card.cardId);
           return adjCardData && adjCardData.trophicLevel === 1; // Other producers
         });
@@ -1158,7 +1148,7 @@ export class BioMastersEngine {
 
         const hasProducerAdjacent = adjacentCards.some(card => {
           // Skip HOME cards (cardId: 0) as they don't have card data
-          if (card.isHOME || card.cardId === 0) return false;
+          if (card.isHOME || card.cardId === (0 as CardId)) return false;
           const adjCardData = this.cardDatabase.get(card.cardId);
           return adjCardData && adjCardData.trophicLevel === TrophicLevel.PRODUCER; // Other producers
         });
@@ -1177,7 +1167,7 @@ export class BioMastersEngine {
       // First check for trophic level matches - EXCLUDE HOME cards explicitly
       const trophicMatches = adjacentCards.filter(card => {
         // HOME cards cannot be used as trophic connections for consumers
-        if (card.isHOME || card.cardId === 0) {
+        if (card.isHOME || card.cardId === (0 as CardId)) {
           return false;
         }
 
@@ -1192,7 +1182,7 @@ export class BioMastersEngine {
       // Then check domain compatibility among trophic matches
       const validConnections = trophicMatches.filter(card => {
         // Skip HOME cards (cardId: 0) as they don't have card data
-        if (card.isHOME || card.cardId === 0) return false;
+        if (card.isHOME || card.cardId === (0 as CardId)) return false;
         const adjCardData = this.cardDatabase.get(card.cardId);
 
         // Check domain compatibility for this specific connection
@@ -1216,7 +1206,7 @@ export class BioMastersEngine {
     if (cardData.trophicLevel === TrophicLevel.DETRITIVORE && this.isDetritivore(cardData)) {
       const hasSaprophyteAdjacent = adjacentCards.some(card => {
         // Skip HOME cards (cardId: 0) as they don't have card data
-        if (card.isHOME || card.cardId === 0) return false;
+        if (card.isHOME || card.cardId === (0 as CardId)) return false;
         const adjCardData = this.cardDatabase.get(card.cardId);
         return adjCardData && adjCardData.trophicLevel === TrophicLevel.SAPROTROPH && this.isSaprotroph(adjCardData);
       });
@@ -1236,7 +1226,7 @@ export class BioMastersEngine {
       if (hostAtPosition) {
         // Trying to attach to card at same position
         // Skip HOME cards (cardId: 0) as they don't have card data
-        if (hostAtPosition.isHOME || hostAtPosition.cardId === 0) {
+        if (hostAtPosition.isHOME || hostAtPosition.cardId === (0 as CardId)) {
           return { isValid: false, errorMessage: 'Cannot attach to HOME cards' };
         }
         const hostData = this.cardDatabase.get(hostAtPosition.cardId);
@@ -1268,7 +1258,7 @@ export class BioMastersEngine {
   /**
    * Validate domain compatibility between cards - Enhanced with FRESHWATER/MARINE distinction
    */
-  private validateDomainCompatibility(cardData: CardData, adjacentCards: GridCard[]): { isValid: boolean; errorMessage?: string } {
+  private validateDomainCompatibility(cardData: CardData, adjacentCards: CardInstance[]): { isValid: boolean; errorMessage?: string } {
     const domains = this.getCardDomains(cardData);
 
     // Amphibious cards can connect to any domain
@@ -1278,7 +1268,7 @@ export class BioMastersEngine {
 
     for (const adjCard of adjacentCards) {
       // Skip HOME cards (cardId: 0) as they don't have card data
-      if (adjCard.isHOME || adjCard.cardId === 0) {
+      if (adjCard.isHOME || adjCard.cardId === (0 as CardId)) {
         // HOME cards are domain-neutral, so they're always compatible
         continue;
       }
@@ -1307,7 +1297,7 @@ export class BioMastersEngine {
    */
   private getCardDomains(cardData: CardData | null, isHOME: boolean = false) {
     // Handle HOME cards - they have Domain.HOME
-    if (isHOME || (cardData && Number(cardData.id) === 0)) {
+    if (isHOME || (cardData && Number(cardData.cardId) === 0)) {
       return {
         domain: Domain.HOME,
         isTerrestrial: false,
@@ -1612,7 +1602,7 @@ export class BioMastersEngine {
   /**
    * Check if card should get preferred diet bonus (enter ready)
    */
-  private checkPreferredDietBonus(cardData: CardData, adjacentCards: GridCard[]): boolean {
+  private checkPreferredDietBonus(cardData: CardData, adjacentCards: CardInstance[]): boolean {
     // Only consumers (trophic level > 1) can get preferred diet bonuses
     if (!cardData.trophicLevel || cardData.trophicLevel <= 1) {
       return false;
@@ -1648,7 +1638,7 @@ export class BioMastersEngine {
   /**
    * Check for synergy bonuses (Preferred Diet)
    */
-  private checkSynergyBonuses(_state: GameState, gridCard: GridCard): void {
+  private checkSynergyBonuses(_state: GameState, gridCard: CardInstance): void {
     const cardData = this.cardDatabase.get(gridCard.cardId);
     if (!cardData) return;
 
@@ -1667,7 +1657,7 @@ export class BioMastersEngine {
   /**
    * Check if card has preferred diet available - Enhanced with more keyword combinations
    */
-  private checkPreferredDiet(cardData: CardData, adjacentCards: GridCard[]): boolean {
+  private checkPreferredDiet(cardData: CardData, adjacentCards: CardInstance[]): boolean {
     // Define keyword pairs for preferred diets
     const dietPairs = [
       { consumer: 18, food: 18 }, // FRUGIVORE + FRUIT
@@ -1744,7 +1734,7 @@ export class BioMastersEngine {
   /**
    * Check if mixotroph is near HOME position
    */
-  private isNearHome(adjacentCards: GridCard[]): boolean {
+  private isNearHome(adjacentCards: CardInstance[]): boolean {
     // Check if any adjacent position is HOME (center of grid)
     return adjacentCards.some(card =>
       this.isHomePosition(card.position)
@@ -1754,7 +1744,7 @@ export class BioMastersEngine {
   /**
    * Check for specific prey bonuses for mixotrophs
    */
-  private checkMixotrophPreyBonus(cardData: CardData, adjacentCards: GridCard[]): boolean {
+  private checkMixotrophPreyBonus(cardData: CardData, adjacentCards: CardInstance[]): boolean {
     // Venus Flytrap example: gets bonus when adjacent to insects
     const cardName = this.getCardName(cardData).toLowerCase();
     if (cardName.includes('venus flytrap') ||
@@ -1792,7 +1782,7 @@ export class BioMastersEngine {
   /**
    * Process mixotroph special abilities
    */
-  private processMixotrophAbilities(gameState: GameState, mixotroph: GridCard, cardData: CardData): void {
+  private processMixotrophAbilities(gameState: GameState, mixotroph: CardInstance, cardData: CardData): void {
     if (!this.hasMixotrophAbilities(cardData)) return;
 
     const adjacentCards = this.getAdjacentCards(mixotroph.position);
@@ -2015,7 +2005,7 @@ export class BioMastersEngine {
     const positionKey = `${context.targetCard.position.x},${context.targetCard.position.y}`;
 
     // Convert the card to detritus instead of removing it
-    const detritusCard: GridCard = {
+    const detritusCard: CardInstance = {
       ...context.targetCard,
       isDetritus: true,
       isExhausted: true // Visual indicator that it's face-down
@@ -2131,7 +2121,7 @@ export class BioMastersEngine {
     for (const target of targets) {
       const positionKey = `${target.position.x},${target.position.y}`;
       context.gameState.grid.delete(positionKey);
-      player.scorePile.push(target);
+      player.scorePile.push(target.id);
       console.log(`🏆 ${player.name} gained VP from ${target.cardId}`);
     }
 
@@ -2161,8 +2151,8 @@ export class BioMastersEngine {
   /**
    * Select targets based on selector and filters
    */
-  private selectTargets(effect: any, context: EffectContext): GridCard[] {
-    const targets: GridCard[] = [];
+  private selectTargets(effect: any, context: EffectContext): CardInstance[] {
+    const targets: CardInstance[] = [];
 
     switch (effect.SelectorID) {
       case 1: // ADJACENT
@@ -2209,7 +2199,7 @@ export class BioMastersEngine {
   /**
    * Apply filters to target selection
    */
-  private applyFilters(targets: GridCard[], effect: any, _context: EffectContext): GridCard[] {
+  private applyFilters(targets: CardInstance[], effect: any, _context: EffectContext): CardInstance[] {
     let filteredTargets = targets;
 
     // Filter by keywords
@@ -2242,7 +2232,7 @@ export class BioMastersEngine {
   /**
    * Execute an action on a target
    */
-  private executeAction(actionId: number, target: GridCard, context: EffectContext): { isValid: boolean; errorMessage?: string } {
+  private executeAction(actionId: number, target: CardInstance, context: EffectContext): { isValid: boolean; errorMessage?: string } {
     switch (actionId) {
       case 1: // EXHAUST_TARGET
         target.isExhausted = true;
@@ -2262,7 +2252,7 @@ export class BioMastersEngine {
         const detritusKey = `${target.position.x},${target.position.y}`;
 
         // Convert the card to detritus instead of removing it
-        const detritusCard: GridCard = {
+        const detritusCard: CardInstance = {
           ...target,
           isDetritus: true,
           isExhausted: true // Visual indicator that it's face-down
@@ -2282,7 +2272,7 @@ export class BioMastersEngine {
       case 6: // GAIN_VP
         const vpPlayer = context.gameState.players.find(p => p.id === context.actingCard.ownerId);
         if (vpPlayer) {
-          vpPlayer.scorePile.push(target);
+          vpPlayer.scorePile.push(target.id);
         }
         break;
       case 7: // DRAW_CARD
@@ -2309,8 +2299,8 @@ export class BioMastersEngine {
   /**
    * Get cards adjacent to a position
    */
-  private getAdjacentCards(position: { x: number; y: number }): GridCard[] {
-    const adjacent: GridCard[] = [];
+  private getAdjacentCards(position: { x: number; y: number }): CardInstance[] {
+    const adjacent: CardInstance[] = [];
     const directions = [
       { x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }
     ];
@@ -2331,8 +2321,8 @@ export class BioMastersEngine {
   /**
    * Get cards adjacent to shared amphibious cards
    */
-  private getAdjacentsToSharedAmphibious(actingCard: GridCard): GridCard[] {
-    const targets: GridCard[] = [];
+  private getAdjacentsToSharedAmphibious(actingCard: CardInstance): CardInstance[] {
+    const targets: CardInstance[] = [];
     const adjacentToActor = this.getAdjacentCards(actingCard.position);
 
     // Find amphibious cards adjacent to the acting card
@@ -2673,7 +2663,7 @@ export class BioMastersEngine {
     // Create detritus tile if it's a creature death
     if (reason === 'death') {
       // Convert the card to detritus by setting the flag and keeping it on the grid
-      const detritusCard: GridCard = {
+      const detritusCard: CardInstance = {
         ...card,
         isDetritus: true,
         isExhausted: true // Visual indicator that it's face-down
@@ -2736,7 +2726,7 @@ export class BioMastersEngine {
   /**
    * Process ON_PLAY abilities when a card is played
    */
-  private processOnPlayAbilities(gameState: GameState, playedCard: GridCard, cardData: CardData): void {
+  private processOnPlayAbilities(gameState: GameState, playedCard: CardInstance, cardData: CardData): void {
     if (cardData.abilities.length === 0) {
       return;
     }
@@ -2761,7 +2751,7 @@ export class BioMastersEngine {
   /**
    * Process the effects of an ability
    */
-  private processAbilityEffects(gameState: GameState, sourceCard: GridCard, ability: AbilityData): void {
+  private processAbilityEffects(gameState: GameState, sourceCard: CardInstance, ability: AbilityData): void {
     if (!ability.effects || ability.effects.length === 0) {
       return;
     }
@@ -2835,7 +2825,7 @@ export class BioMastersEngine {
   /**
    * Process triggered abilities based on specific game events
    */
-  private processTriggerAbilities(gameState: GameState, triggerType: string, _sourceCard?: GridCard): void {
+  private processTriggerAbilities(gameState: GameState, triggerType: string, _sourceCard?: CardInstance): void {
     console.log(`🎯 Processing trigger abilities for: ${triggerType}`);
 
     // Find all cards with abilities that match the trigger type
@@ -2884,7 +2874,7 @@ export class BioMastersEngine {
   public loadCardDatabase(cards: CardData[]): void {
     this.cardDatabase.clear();
     cards.forEach(card => {
-      this.cardDatabase.set(card.id, card);
+      this.cardDatabase.set(card.cardId, card);
     });
   }
 
@@ -2947,7 +2937,7 @@ export class BioMastersEngine {
 
     // Count VP from cards in score pile
     for (const card of player.scorePile) {
-      const cardData = this.cardDatabase.get(card.cardId);
+      const cardData = this.cardDatabase.get(card as unknown as CardId);
       if (cardData) {
         // Each card in score pile is worth 1 VP by default
         // Some cards might have special VP values in the future
@@ -3110,14 +3100,14 @@ export class BioMastersEngine {
   /**
    * Execute the metamorphosis transformation
    */
-  private executeMetamorphosis(state: GameState, juvenileCard: GridCard, adultData: CardData): { isValid: boolean; errorMessage?: string } {
+  private executeMetamorphosis(state: GameState, juvenileCard: CardInstance, adultData: CardData): { isValid: boolean; errorMessage?: string } {
     const currentPlayer = state.players[state.currentPlayerIndex];
     if (!currentPlayer) {
       return { isValid: false, errorMessage: 'No current player' };
     }
 
     // Remove adult card from hand
-    let handIndex = currentPlayer.hand.indexOf(adultData.id.toString());
+    let handIndex = currentPlayer.hand.indexOf(adultData.cardId.toString());
     if (handIndex === -1) {
       const adultName = this.getCardName(adultData);
       handIndex = currentPlayer.hand.indexOf(adultName);
@@ -3128,7 +3118,7 @@ export class BioMastersEngine {
     }
 
     // Transform juvenile into adult
-    juvenileCard.cardId = adultData.id;
+    juvenileCard.cardId = adultData.cardId;
 
     // Metamorphosis tempo bonus: adult enters ready
     juvenileCard.isExhausted = false;

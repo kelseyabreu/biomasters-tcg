@@ -244,10 +244,13 @@ export declare enum CardId {
     REED_CANARY_GRASS = 3,// Replaced "Riverbank Grass" with individual species
     EUROPEAN_RABBIT = 4,// Updated from "Field Rabbit"
     SOCKEYE_SALMON = 5,
-    AMERICAN_BLACK_BEAR = 6,// Updated from "Grizzly Bear"
-    GREAT_WHITE_SHARK = 7,
+    ZOOPLANKTON = 21,// Marine primary consumer
+    AMERICAN_BLACK_BEAR = 6,// Trophic level 3, terrestrial, requires 2 herbivores
+    GREAT_WHITE_SHARK = 7,// Trophic level 4, marine, requires 2 trophic level 3 carnivores
     MYCENA_MUSHROOM = 8,
-    TURKEY_VULTURE = 9,// Updated from "Vulture"
+    TURKEY_VULTURE = 9,// Trophic level 3, terrestrial, requires 1 herbivore
+    DOMESTIC_CAT = 37,// Trophic level 3, terrestrial, cost: null
+    DOMESTIC_DOG = 48,// Trophic level 3, terrestrial, cost: null
     DEER_TICK = 10,
     COMMON_EARTHWORM = 11,
     DUNG_BEETLE = 12,
@@ -259,7 +262,6 @@ export declare enum CardId {
     NITROGEN_FIXING_BACTERIA = 18,
     PACIFIC_KRILL = 19,
     PHYTOPLANKTON = 20,
-    ZOOPLANKTON = 21,
     EUROPEAN_HONEY_BEE = 22,
     VOLCANIC_HYDROGEN_BACTERIA = 25,
     NITRIFYING_SOIL_BACTERIA = 26,
@@ -289,7 +291,7 @@ export declare enum CardId {
     WHITE_CLOVER = 50,
     BEAVER = 51,
     BISON = 52,
-    BOAR = 53,
+    RED_FOX = 53,// Trophic level 3, terrestrial, cost: null
     CAMEL = 54,
     CAT = 55,
     CHIPMUNK = 56,
@@ -303,19 +305,18 @@ export declare enum CardId {
     HEDGEHOG = 64,
     HIPPOPOTAMUS = 65,
     HORSE = 66,
-    KOALA = 67,
-    LEOPARD = 68,
-    LION = 69,
+    LEOPARD = 67,// Trophic level 3, terrestrial, cost: null (CardId 67)
+    AFRICAN_LION = 68,// Trophic level 3, terrestrial, cost: null (CardId 68)
     LLAMA = 70,
     MAMMOTH = 71,
     MONKEY = 72,
-    ORANGUTAN = 73,
+    HOUSE_MOUSE = 73,// Small urban adapter (CardId 73)
     OX = 74,
     PANDA = 75,
     PIG = 76,
     RAM = 77,
-    RHINOCEROS = 78,
-    TIGER = 79,
+    GIANT_PANDA = 78,// Trophic level 3, terrestrial, cost: null (CardId 78)
+    TIGER = 91,// Trophic level 3, terrestrial, cost: null (CardId 91)
     WATER_BUFFALO = 80,
     ZEBRA = 81,
     FROG = 82,
@@ -328,11 +329,9 @@ export declare enum CardId {
     MUSHROOM = 89,
     GRIZZLY_BEAR = 90,// Larger, more aggressive bear variant
     COTTONTAIL_RABBIT = 91,// North American cottontail variant
-    RED_FOX = 92,// Cunning predator
-    HOUSE_MOUSE = 93,// Small urban adapter
     COMMON_RACCOON = 94,// Intelligent omnivore
-    GRAY_WOLF = 95,// Pack hunter
-    WHITE_TAILED_DEER = 96,// Graceful herbivore
+    WHITE_TAILED_DEER = 95,// Graceful herbivore
+    GRAY_WOLF = 96,// Pack hunter (corrected from JSON data)
     DESERT_LIZARD = 97,// Heat-adapted reptile
     CORN_MAIZE = 98,// Agricultural crop
     PERENNIAL_RYEGRASS = 99,// Common grass species
@@ -389,6 +388,392 @@ export declare enum CardAbilitiesText {
     SCAVENGE = "[SCAVENGE] (Action): Exhaust this card. Take one creature card from the Detritus Zone and put it into your hand.",
     PARASITIC_DRAIN = "[PARASITIC DRAIN] (Persistent): The host creature does not Ready during its owner's Ready Phase.",
     RECYCLER = "[RECYCLER] (Action): Exhaust this card. Place the card underneath the adjacent -1S card into your score pile. It is worth its printed VP +1. Then, draw a card."
+}
+/**
+ * Taxonomic Domain - Highest level of biological classification
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoDomain {
+    None = 0,
+    ARCHAEA = 1,
+    BACTERIA = 2,
+    EUKARYOTA = 3
+}
+/**
+ * Taxonomic Kingdom - Major groups within domains
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoKingdom {
+    None = 0,
+    ANIMALIA = 1,
+    ARCHAEA = 2,
+    BACTERIA = 3,
+    CHROMISTA = 4,
+    FUNGI = 5,
+    PLANTAE = 6
+}
+/**
+ * Taxonomic Phylum - Major body plan groups
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoPhylum {
+    None = 0,
+    ANNELIDA = 1,
+    AQUIFICOTA = 2,
+    ARTHROPODA = 3,
+    BACILLOTA = 4,
+    BASIDIOMYCOTA = 5,
+    CHORDATA = 6,
+    GLOMEROMYCOTA = 7,
+    MOLLUSCA = 8,
+    OCHROPHYTA = 9,
+    PSEUDOMONADOTA = 10,
+    THERMOPROTEOTA = 11,
+    TRACHEOPHYTA = 12
+}
+/**
+ * Taxonomic Class - Groups with similar characteristics
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoClass {
+    None = 0,
+    ACIDITHIOBACILLIA = 1,
+    ACTINOPTERYGII = 2,
+    AGARICOMYCETES = 3,
+    ALPHAPROTEOBACTERIA = 4,
+    AMPHIBIA = 5,
+    AQUIFICAE = 6,
+    ARACHNIDA = 7,
+    AVES = 8,
+    BACILLARIOPHYCEAE = 9,
+    BACILLI = 10,
+    BETAPROTEOBACTERIA = 11,
+    CHONDRICHTHYES = 12,
+    CLITELLATA = 13,
+    COPEPODA = 14,
+    GASTROPODA = 15,
+    GLOMEROMYCETES = 16,
+    INSECTA = 17,
+    LILIOPSIDA = 18,
+    MAGNOLIOPSIDA = 19,
+    MALACOSTRACA = 20,
+    MAMMALIA = 21,
+    PHAEOPHYCEAE = 22,
+    PINOPSIDA = 23,
+    REPTILIA = 24,
+    THERMOPROTEI = 25
+}
+/**
+ * Taxonomic Order - Groups with similar lifestyles/ecology
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoOrder {
+    None = 0,
+    ACIDITHIOBACILLALES = 1,
+    AGARICALES = 2,
+    ALISMATALES = 3,
+    ANURA = 4,
+    AQUIFICALES = 5,
+    ARANEAE = 6,
+    ARECALES = 7,
+    ARTIODACTYLA = 8,
+    ASTERALES = 9,
+    BACILLALES = 10,
+    BURKHOLDERIALES = 11,
+    CALANOIDA = 12,
+    CARNIVORA = 13,
+    CARYOPHYLLALES = 14,
+    CATHARTIFORMES = 15,
+    COLEOPTERA = 16,
+    CRASSICLITELLATA = 17,
+    DIPROTODONTIA = 18,
+    ERINACEOMORPHA = 19,
+    EUPHAUSIACEA = 20,
+    FABALES = 21,
+    FAGALES = 22,
+    GLOMERALES = 23,
+    HYMENOPTERA = 24,
+    HYPHOMICROBIALES = 25,
+    IXODIDA = 26,
+    LAGOMORPHA = 27,
+    LAMIALES = 28,
+    LAMINARIALES = 29,
+    LAMNIFORMES = 30,
+    LEPIDOPTERA = 31,
+    LILIALES = 32,
+    MALVALES = 33,
+    NITROSOMONADALES = 34,
+    ORTHOPTERA = 35,
+    PERISSODACTYLA = 36,
+    PINALES = 37,
+    POALES = 38,
+    PRIMATES = 39,
+    PROBOSCIDEA = 40,
+    RODENTIA = 41,
+    ROSALES = 42,
+    SALMONIFORMES = 43,
+    SCORPIONES = 44,
+    SQUAMATA = 45,
+    STYLOMMATOPHORA = 46,
+    TESTUDINES = 47,
+    THALASSIOSIRALES = 48,
+    THERMOPROTEALES = 49,
+    VITALES = 50
+}
+/**
+ * Taxonomic Family - Groups of related genera
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoFamily {
+    None = 0,
+    ACIDITHIOBACILLACEAE = 1,
+    AGARICACEAE = 2,
+    APIDAE = 3,
+    AQUIFICACEAE = 4,
+    ARANEIDAE = 5,
+    ARECACEAE = 6,
+    ASTERACEAE = 7,
+    BACILLACEAE = 8,
+    BOVIDAE = 9,
+    CACTACEAE = 10,
+    CALANIDAE = 11,
+    CAMELIDAE = 12,
+    CANIDAE = 13,
+    CASTORIDAE = 14,
+    CATHARTIDAE = 15,
+    CERVIDAE = 16,
+    CHELONIIDAE = 17,
+    COMAMONADACEAE = 18,
+    CRICETIDAE = 19,
+    ELEPHANTIDAE = 20,
+    EQUIDAE = 21,
+    ERINACEIDAE = 22,
+    EUPHAUSIIDAE = 23,
+    FABACEAE = 24,
+    FAGACEAE = 25,
+    FELIDAE = 26,
+    FORMICIDAE = 27,
+    GIRAFFIDAE = 28,
+    GLOMERACEAE = 29,
+    GRYLLIDAE = 30,
+    HADRURIDAE = 31,
+    HELICIDAE = 32,
+    HIPPOPOTAMIDAE = 33,
+    HOMINIDAE = 34,
+    IXODIDAE = 35,
+    LACERTIDAE = 36,
+    LAMIACEAE = 37,
+    LAMINARIACEAE = 38,
+    LAMNIDAE = 39,
+    LEPORIDAE = 40,
+    LILIACEAE = 41,
+    LUMBRICIDAE = 42,
+    MALVACEAE = 43,
+    MURIDAE = 44,
+    MYCENACEAE = 45,
+    NITROSOMONADACEAE = 46,
+    NYMPHALIDAE = 47,
+    PHASCOLARCTIDAE = 48,
+    PINACEAE = 49,
+    POACEAE = 50,
+    PROCYONIDAE = 51,
+    PYTHONIDAE = 52,
+    RANIDAE = 53,
+    RHINOCEROTIDAE = 54,
+    RHIZOBIACEAE = 55,
+    ROSACEAE = 56,
+    SALMONIDAE = 57,
+    SCARABAEIDAE = 58,
+    SCIURIDAE = 59,
+    SUIDAE = 60,
+    THALASSIOSIRACEAE = 61,
+    THERMOFILACEAE = 62,
+    URSIDAE = 63,
+    VITACEAE = 64,
+    ZOSTERACEAE = 65
+}
+/**
+ * Taxonomic Genus - Groups of closely related species
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoGenus {
+    None = 0,
+    ACHETA = 1,
+    ACIDITHIOBACILLUS = 2,
+    AGARICUS = 3,
+    AILUROPODA = 4,
+    APIS = 5,
+    AQUIFEX = 6,
+    ARANEUS = 7,
+    BACILLUS = 8,
+    BELLIS = 9,
+    BISON = 10,
+    BOS = 11,
+    BUBALUS = 12,
+    CALANUS = 13,
+    CAMELUS = 14,
+    CANIS = 15,
+    CAPRA = 16,
+    CARCHARODON = 17,
+    CASTOR = 18,
+    CATHARTES = 19,
+    CERATOTHERIUM = 20,
+    CHELONIA = 21,
+    COCOS = 22,
+    DANAUS = 23,
+    EQUUS = 24,
+    ERINACEUS = 25,
+    EUPHAUSIA = 26,
+    FELIS = 27,
+    FORMICA = 28,
+    FRAGARIA = 29,
+    GIRAFFA = 30,
+    GLOMUS = 31,
+    GORILLA = 32,
+    HADRURUS = 33,
+    HELIANTHUS = 34,
+    HELIX = 35,
+    HIBISCUS = 36,
+    HIPPOPOTAMUS = 37,
+    IXODES = 38,
+    LACERTA = 39,
+    LAMA = 40,
+    LOLIUM = 41,
+    LOXODONTA = 42,
+    LUMBRICUS = 43,
+    MACROCYSTIS = 44,
+    MALUS = 45,
+    MAMMUTHUS = 46,
+    MENTHA = 47,
+    MESOCRICETUS = 48,
+    MUS = 49,
+    MYCENA = 50,
+    NITROSOMONAS = 51,
+    ODOCOILEUS = 52,
+    ONCORHYNCHUS = 53,
+    OPUNTIA = 54,
+    ORYCTOLAGUS = 55,
+    ORYZA = 56,
+    OVIS = 57,
+    PAN = 58,
+    PANTHERA = 59,
+    PHALARIS = 60,
+    PHASCOLARCTOS = 61,
+    PINUS = 62,
+    PONGO = 63,
+    PROCYON = 64,
+    PRUNUS = 65,
+    PYROCOCCUS = 66,
+    PYTHON = 67,
+    QUERCUS = 68,
+    RANA = 69,
+    RHIZOBIUM = 70,
+    ROSA = 71,
+    SCARABAEUS = 72,
+    SUS = 73,
+    TAMIAS = 74,
+    THALASSIOSIRA = 75,
+    THIOBACILLUS = 76,
+    TRIFOLIUM = 77,
+    TULIPA = 78,
+    URSUS = 79,
+    VITIS = 80,
+    VULPES = 81,
+    ZEA = 82,
+    ZOSTERA = 83
+}
+/**
+ * Taxonomic Species - Individual species epithets
+ * Auto-generated from complete taxonomy data for all 95 cards.
+ */
+export declare enum TaxoSpecies {
+    None = 0,
+    AEGAGRUS = 1,
+    AEOLICUS = 2,
+    AFRICANA = 3,
+    AMERICANUS = 4,
+    AMPHIBIUS = 5,
+    ANANASSA = 6,
+    ANNUUS = 7,
+    ARIZONENSIS = 8,
+    ARUNDINACEA = 9,
+    AURA = 10,
+    AURATUS = 11,
+    BERINGEI = 12,
+    BISON = 13,
+    BISPORUS = 14,
+    BUBALIS = 15,
+    CABALLUS = 16,
+    CAMELOPARDALIS = 17,
+    CANADENSIS = 18,
+    CARCHARIAS = 19,
+    CATUS = 20,
+    CINEREUS = 21,
+    CUNICULUS = 22,
+    DENITRIFICANS = 23,
+    DESERTI = 24,
+    DIADEMATUS = 25,
+    DOMESTICUS = 26,
+    DROMEDARIUS = 27,
+    EUROPAEA = 28,
+    EUROPAEUS = 29,
+    FERROOXIDANS = 30,
+    FICUS_INDICA = 31,
+    FINMARCHICUS = 32,
+    FURIOSUS = 33,
+    GALERICULATA = 34,
+    GESNERIANA = 35,
+    GLAMA = 36,
+    INTRARADICES = 37,
+    LATICOLLIS = 38,
+    LEGUMINOSARUM = 39,
+    LEO = 40,
+    LOTOR = 41,
+    LUPUS = 42,
+    MARINA = 43,
+    MAYS = 44,
+    MELANOLEUCA = 45,
+    MELLIFERA = 46,
+    MUSCULUS = 47,
+    MYDAS = 48,
+    NERKA = 49,
+    NUCIFERA = 50,
+    PACIFICA = 51,
+    PARDUS = 52,
+    PERENNE = 53,
+    PERENNIS = 54,
+    PLEXIPPUS = 55,
+    POMATIA = 56,
+    PRIMIGENIUS = 57,
+    PSEUDONANA = 58,
+    PUMILA = 59,
+    PYGMAEUS = 60,
+    PYRIFERA = 61,
+    QUAGGA = 62,
+    REGIUS = 63,
+    REPENS = 64,
+    ROBUR = 65,
+    ROSA_SINENSIS = 66,
+    RUBIGINOSA = 67,
+    RUFA = 68,
+    SACER = 69,
+    SATIVA = 70,
+    SCAPULARIS = 71,
+    SCROFA = 72,
+    SERRULATA = 73,
+    SIMUM = 74,
+    SPICATA = 75,
+    STRIATUS = 76,
+    SUBTILIS = 77,
+    SYLVESTRIS = 78,
+    TAURUS = 79,
+    TEMPORARIA = 80,
+    TERRESTRIS = 81,
+    TIGRIS = 82,
+    TROGLODYTES = 83,
+    VINIFERA = 84,
+    VIRGINIANUS = 85,
+    VULPES = 86
 }
 /**
  * User Account Types

@@ -1,7 +1,8 @@
 /**
- * Server-side CardId mapping utilities
+ * Server-side CardId mapping utilities (Legacy)
  * Provides conversion between species_name (legacy) and CardId (new system)
  * This should match the mapping in the database migration 010_migrate_to_cardid_system.sql
+ * @deprecated Use shared/utils/cardIdHelpers.ts instead for consistency
  */
 
 /**
@@ -167,16 +168,18 @@ const SPECIES_NAME_TO_CARD_ID_MAP: Record<string, number> = {
 
 /**
  * Convert species_name (kebab-case) to CardId (number)
+ * @deprecated Use shared/utils/cardIdHelpers.ts instead
  */
-export function speciesNameToCardId(speciesName: string): number | null {
+export function speciesNameToCardId_old(speciesName: string): number | null {
   return SPECIES_NAME_TO_CARD_ID_MAP[speciesName] || null;
 }
 
 /**
  * Convert CardId (number) to species_name (kebab-case)
  * Creates reverse mapping for backward compatibility
+ * @deprecated Use shared/utils/cardIdHelpers.ts instead
  */
-export function cardIdToSpeciesName(cardId: number): string | null {
+export function cardIdToSpeciesName_old(cardId: number): string | null {
   for (const [speciesName, id] of Object.entries(SPECIES_NAME_TO_CARD_ID_MAP)) {
     if (id === cardId) {
       return speciesName;

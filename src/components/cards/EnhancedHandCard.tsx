@@ -30,7 +30,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
   const localization = useLocalization();
 
   console.log('🃏 EnhancedHandCard rendered:', {
-    cardId: card.id,
+    cardId: card.cardId,
     cardName: localization.getCardName(card.nameId as any),
     isSelected,
     isPlayerTurn,
@@ -45,14 +45,14 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
   const { gestureState } = useMobileGestures(cardRef as React.RefObject<HTMLElement>, {
     onTap: () => {
       console.log('🖱️ EnhancedHandCard onTap triggered:', {
-        cardId: card.id,
+        cardId: card.cardId,
         cardName: localization.getCardName(card.nameId as any),
         isPlayerTurn,
         isSelected,
         gestureState
       });
       if (isPlayerTurn) {
-        console.log('✅ Calling onSelect for card:', card.id);
+        console.log('✅ Calling onSelect for card:', card.cardId);
         onSelect();
       } else {
         console.log('❌ Not player turn, ignoring tap');
@@ -61,12 +61,12 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
     
     onLongPress: () => {
       console.log('🖱️ EnhancedHandCard onLongPress triggered:', {
-        cardId: card.id,
+        cardId: card.cardId,
         cardName: localization.getCardName(card.nameId as any),
         isPlayerTurn
       });
       if (isPlayerTurn) {
-        console.log('✅ Opening species info modal for card:', card.id);
+        console.log('✅ Opening species info modal for card:', card.cardId);
         setShowSpeciesInfo(true);
       } else {
         console.log('❌ Not player turn, ignoring long press');
@@ -75,17 +75,17 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
     
     onDragStart: (position) => {
       console.log('🖱️ EnhancedHandCard onDragStart triggered:', {
-        cardId: card.id,
+        cardId: card.cardId,
         cardName: localization.getCardName(card.nameId as any),
         isPlayerTurn,
         isSelected,
         position
       });
       if (isPlayerTurn && isSelected) {
-        console.log('✅ Starting drag for card:', card.id);
+        console.log('✅ Starting drag for card:', card.cardId);
         setIsDragging(true);
         setDragPosition(position);
-        onDragStart?.(card.id);
+        onDragStart?.(card.cardId.toString());
       } else {
         console.log('❌ Cannot drag - not player turn or card not selected');
       }
@@ -100,7 +100,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
     onDragEnd: (position) => {
       if (isDragging) {
         setIsDragging(false);
-        onDragEnd?.(card.id, position);
+        onDragEnd?.(card.cardId.toString(), position);
       }
     }
   }, {
@@ -158,7 +158,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
         transition={{ duration: 0.2 }}
         onClick={() => {
           console.log('🖱️ EnhancedHandCard direct onClick triggered:', {
-            cardId: card.id,
+            cardId: card.cardId,
             cardName: localization.getCardName(card.nameId as any),
             isPlayerTurn,
             isSelected
@@ -344,7 +344,7 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
 export default memo(EnhancedHandCard, (prevProps, nextProps) => {
   // Only re-render if these specific props change
   return (
-    prevProps.card.id === nextProps.card.id &&
+    prevProps.card.cardId === nextProps.card.cardId &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isPlayerTurn === nextProps.isPlayerTurn &&
     prevProps.onSelect === nextProps.onSelect &&

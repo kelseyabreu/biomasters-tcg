@@ -77,6 +77,21 @@ class LocalizationManager {
             return `[${taxonomyId}]`;
         return `${taxonomy.genus} ${taxonomy.species}`;
     }
+    getTaxonomyName(taxonomyDisplayId) {
+        const taxonomy = this._languageData?.taxonomy;
+        if (!taxonomy)
+            return `[${taxonomyDisplayId}]`;
+        // Search through all taxonomy categories
+        return taxonomy.domains[taxonomyDisplayId] ??
+            taxonomy.kingdoms[taxonomyDisplayId] ??
+            taxonomy.phylums[taxonomyDisplayId] ??
+            taxonomy.classes[taxonomyDisplayId] ??
+            taxonomy.orders[taxonomyDisplayId] ??
+            taxonomy.families[taxonomyDisplayId] ??
+            taxonomy.genera[taxonomyDisplayId] ??
+            taxonomy.species[taxonomyDisplayId] ??
+            `[${taxonomyDisplayId}]`;
+    }
     hasText(textId) {
         return this.getText(textId) !== `[${textId}]`;
     }

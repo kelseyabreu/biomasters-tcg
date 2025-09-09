@@ -3,7 +3,8 @@
  * Tests the user's request for a complete ecosystem gameplay flow
  */
 
-import { BioMastersEngine, GameSettings, GridCard } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { CardInstance } from '../../../../shared/types';
 import { CardId, GameActionType, GamePhase, TrophicLevel } from '../../../../shared/enums';
 import { Position } from '../../../../shared/types';
 import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../../../../shared/text-ids';
@@ -18,7 +19,7 @@ describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {
 
     // Create mock card database with proper CardData interface
     const createMockCard = (cardId: CardId, nameId: CardNameId, scientificNameId: ScientificNameId, trophicLevel: TrophicLevel) => ({
-      id: cardId,
+      cardId: cardId,
       nameId,
       scientificNameId,
       descriptionId: `DESC_${nameId}` as CardDescriptionId,
@@ -45,7 +46,16 @@ describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {
       artwork_url: null,
       conservation_status: 1,
       iucn_id: null,
-      population_trend: null
+      population_trend: null,
+      // Add taxonomy fields
+      taxoDomain: 1 as any,
+      taxoKingdom: 1 as any,
+      taxoPhylum: 1 as any,
+      taxoClass: 1 as any,
+      taxoOrder: 1 as any,
+      taxoFamily: 1 as any,
+      taxoGenus: 1 as any,
+      taxoSpecies: 1 as any
     });
 
     const mockCardDatabase = new Map([
@@ -114,7 +124,7 @@ describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {
 
     // Find Alice's HOME position
     let aliceHome: Position | null = null;
-    gameState.grid.forEach((card: GridCard) => {
+    gameState.grid.forEach((card: CardInstance) => {
       if (card.isHOME && card.ownerId === 'Alice') {
         aliceHome = card.position;
       }
@@ -125,7 +135,7 @@ describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {
 
     // Debug: Check all occupied positions
     console.log('🔍 Current grid positions:');
-    gameState.grid.forEach((card: GridCard) => {
+    gameState.grid.forEach((card: CardInstance) => {
       console.log(`  - (${card.position.x}, ${card.position.y}): ${card.isHOME ? 'HOME' : 'Card'} owned by ${card.ownerId}`);
     });
 
@@ -232,12 +242,12 @@ describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {
     console.log('🔍 Verifying ecosystem...');
     
     const ecosystemCards = {
-      producer: null as GridCard | null,
-      primaryConsumers: [] as GridCard[],
-      secondaryConsumer: null as GridCard | null
+      producer: null as CardInstance | null,
+      primaryConsumers: [] as CardInstance[],
+      secondaryConsumer: null as CardInstance | null
     };
 
-    gameState.grid.forEach((card: GridCard) => {
+    gameState.grid.forEach((card: CardInstance) => {
       if (!card.isHOME && card.ownerId === 'Alice') {
         switch (card.cardId) {
           case CardId.OAK_TREE:

@@ -48,6 +48,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     isAuthenticated,
     isGuestMode,
     firebaseUser,
+    userProfile,
     offlineCollection,
     signOutUser,
     guestId
@@ -69,9 +70,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
   // Get user display information
   const getUserInfo = () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !userProfile) {
       return {
         username: 'Not Signed In',
+        displayName: 'Not Signed In',
         email: null,
         avatar: null,
         accountType: 'none' as const,
@@ -83,8 +85,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
     if (isGuestMode) {
       return {
-        username: getGuestUsername(),
-        email: null,
+        username: userProfile.username,
+        displayName: userProfile.display_name || userProfile.username,
+        email: userProfile.email || null,
         avatar: null,
         accountType: 'guest' as const,
         showCTA: true,
@@ -94,9 +97,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     }
 
     return {
-      username: firebaseUser?.displayName || firebaseUser?.email?.split('@')[0] || 'User',
-      email: firebaseUser?.email,
-      avatar: firebaseUser?.photoURL,
+      username: userProfile.username,
+      displayName: userProfile.display_name || userProfile.username,
+      email: userProfile.email || null,
+      avatar: firebaseUser?.photoURL || null,
       accountType: 'registered' as const,
       showCTA: false,
       ctaText: '',
@@ -142,7 +146,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           />
           
           <div className="user-details-compact">
-            <div className="username">{userInfo.username}</div>
+            <div className="username">{userInfo.displayName}</div>
             <IonBadge 
               color={userInfo.accountType === 'registered' ? 'success' : 
                      userInfo.accountType === 'guest' ? 'warning' : 'medium'}
@@ -189,7 +193,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           />
           
           <div className="user-info">
-            <IonCardTitle>{userInfo.username}</IonCardTitle>
+            <IonCardTitle>{userInfo.displayName}</IonCardTitle>
             {userInfo.email && (
               <IonText color="medium">
                 <p>{userInfo.email}</p>

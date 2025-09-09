@@ -43,26 +43,13 @@ export async function initializeDatabase(): Promise<void> {
   try {
     const dbConfig = getDbConfig();
 
-    // Debug: Log the configuration being used
-    console.log('🔍 Database config:', {
-      host: dbConfig.host,
-      port: dbConfig.port,
-      database: dbConfig.database,
-      user: dbConfig.user,
-      ssl: dbConfig.ssl
-    });
-
     // Create connection pool
     pool = new Pool(dbConfig);
 
     // Test the connection
     const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
+    await client.query('SELECT NOW()');
     client.release();
-
-    console.log('✅ PostgreSQL connected successfully');
-    console.log(`📍 Database: ${dbConfig.database} on ${dbConfig.host}:${dbConfig.port}`);
-    console.log(`🕐 Server time: ${result.rows[0]?.now}`);
 
     // Set up error handling
     pool.on('error', (err) => {
@@ -147,7 +134,6 @@ export async function checkDatabaseHealth(): Promise<boolean> {
 export async function closeDatabase(): Promise<void> {
   if (pool) {
     await pool.end();
-    console.log('✅ Database connection pool closed');
   }
 }
 
@@ -199,7 +185,6 @@ export class DatabaseMigration {
     await this.ensureMigrationsTable();
     
     if (await this.isMigrationExecuted(name)) {
-      console.log(`⏭️  Migration '${name}' already executed, skipping`);
       return;
     }
 
@@ -213,8 +198,6 @@ export class DatabaseMigration {
         [name]
       );
     });
-
-    console.log(`✅ Migration '${name}' executed successfully`);
   }
 }
 

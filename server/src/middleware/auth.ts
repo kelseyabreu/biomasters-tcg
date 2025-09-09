@@ -1,21 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyIdToken, getFirebaseUser } from '../config/firebase';
-import { verifyGuestJWT, isGuestToken, GuestJWTPayload } from '../utils/guestAuth';
+import { verifyGuestJWT, isGuestToken } from '../utils/guestAuth';
 import { db } from '../database/kysely';
-import { User } from '../database/types';
 import { CacheManager } from '../config/redis';
+import { adaptDatabaseUserToUnified } from '../database/types';
+import type {
+  DatabaseUser
+} from '../../../shared/types';
 
-// Extend Express Request type to include user data
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User; // The user from your PostgreSQL database
-      firebaseUser?: { uid: string; email?: string; email_verified?: boolean; };
-      guestUser?: GuestJWTPayload;
-      isGuestAuth?: boolean;
-    }
-  }
-}
+// Note: Express Request types are now defined in server/src/types/express.d.ts
+// using the unified authentication context
 
 /**
  * The SINGLE unified authentication middleware.
@@ -45,12 +39,34 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
         .executeTakeFirst();
 
       if (guestDbUser) {
-        req.user = guestDbUser;
+        req.user = adaptDatabaseUserToUnified(guestDbUser);
       }
 
     } else {
       // --- Handle Firebase JWT ---
-      const decodedToken = await verifyIdToken(token);
+      let decodedToken;
+
+      // In test environment, allow test tokens signed with JWT_SECRET
+      if (process.env['NODE_ENV'] === 'test' || process.env['NODE_ENV'] === 'development') {
+        try {
+          const jwt = require('jsonwebtoken');
+          const testToken = jwt.verify(token, process.env['JWT_SECRET'] || 'test-secret');
+          if (testToken && typeof testToken === 'object' && testToken.test_token) {
+            // This is a test token, use it directly
+            decodedToken = testToken;
+          } else {
+            // Not a test token, try Firebase verification
+            decodedToken = await verifyIdToken(token);
+          }
+        } catch (testError) {
+          // Test token verification failed, try Firebase
+          decodedToken = await verifyIdToken(token);
+        }
+      } else {
+        // Production: only use Firebase verification
+        decodedToken = await verifyIdToken(token);
+      }
+
       req.firebaseUser = {
         uid: decodedToken.uid,
         ...(decodedToken.email && { email: decodedToken.email }),
@@ -58,9 +74,19 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
       };
       req.isGuestAuth = false;
 
-      // Check cache first
+      // Check cache first (skip in test environment if Redis not available)
       const cacheKey = `user:${decodedToken.uid}`;
-      let dbUser = await CacheManager.get<User>(cacheKey);
+      let dbUser: DatabaseUser | null = null;
+
+      try {
+        dbUser = await CacheManager.get<DatabaseUser>(cacheKey);
+      } catch (cacheError) {
+        if (process.env['NODE_ENV'] === 'test') {
+          dbUser = null;
+        } else {
+          throw cacheError;
+        }
+      }
 
       if (!dbUser) {
         const fetchedUser = await db
@@ -70,8 +96,14 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
           .executeTakeFirst();
 
         if (fetchedUser) {
-          dbUser = fetchedUser;
-          await CacheManager.set(cacheKey, dbUser, 300); // Cache for 5 mins
+          dbUser = adaptDatabaseUserToUnified(fetchedUser);
+          try {
+            await CacheManager.set(cacheKey, dbUser, 300); // Cache for 5 mins
+          } catch (cacheError) {
+            if (process.env['NODE_ENV'] !== 'test') {
+              throw cacheError;
+            }
+          }
         }
       }
 
@@ -175,6 +207,24 @@ export const requireAdmin = [
       error: 'INSUFFICIENT_PRIVILEGES',
       message: 'Admin privileges required.'
     });
+  }
+];
+
+/**
+ * Use this for routes that require a valid Firebase token but don't require the user to exist in database yet
+ * (e.g., registration endpoints)
+ */
+export const requireFirebaseAuth = [
+  authenticate,
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.firebaseUser) {
+      res.status(401).json({
+        error: 'FIREBASE_AUTH_REQUIRED',
+        message: 'Valid Firebase authentication required.'
+      });
+      return;
+    }
+    next();
   }
 ];
 

@@ -5,8 +5,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// Mock the DataLoader module first (hoisted to top)
-vi.mock('@shared/data/DataLoader', () => {
+// Mock the unified data loader module first (hoisted to top)
+vi.mock('@shared/data/UnifiedDataLoader', () => {
   // Define mock data inside the mock factory
   const mockCardsData = [
     {
@@ -82,21 +82,46 @@ vi.mock('@shared/data/DataLoader', () => {
   mockKeywordsData.forEach(keyword => mockKeywordsMap.set(keyword.keywordId, keyword.nameId));
 
   return {
-    DataLoader: vi.fn().mockImplementation(() => ({
-      loadGameData: vi.fn().mockResolvedValue({
-        cards: mockCardsMap,
-        abilities: mockAbilitiesMap,
-        keywords: mockKeywordsMap,
-        localizationManager: {
-          loadLanguage: vi.fn().mockResolvedValue(undefined),
-          getCardName: vi.fn().mockReturnValue('Test Card'),
-          getAbilityName: vi.fn().mockReturnValue('Test Ability')
-        }
+    createUnifiedDataLoader: vi.fn().mockReturnValue({
+      loadCards: vi.fn().mockResolvedValue({
+        success: true,
+        data: Array.from(mockCardsMap.values()),
+        error: null
       }),
-      loadCards: vi.fn().mockResolvedValue(mockCardsMap),
-      loadAbilities: vi.fn().mockResolvedValue(mockAbilitiesMap),
-      loadKeywords: vi.fn().mockResolvedValue(mockKeywordsMap)
-    }))
+      loadAbilities: vi.fn().mockResolvedValue({
+        success: true,
+        data: Array.from(mockAbilitiesMap.values()),
+        error: null
+      }),
+      loadGameConfig: vi.fn().mockResolvedValue({
+        success: true,
+        data: {},
+        error: null
+      }),
+      loadLocalizationData: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+          "card.oak_tree.name": "Oak Tree",
+          "ability.photosynthesis.name": "Photosynthesis"
+        },
+        error: null
+      }),
+      getCardById: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockCardsData[0],
+        error: null
+      }),
+      getAbilityById: vi.fn().mockResolvedValue({
+        success: true,
+        data: mockAbilitiesData[0],
+        error: null
+      }),
+      createLocalizationManager: vi.fn().mockResolvedValue({
+        loadLanguage: vi.fn().mockResolvedValue(undefined),
+        getCardName: vi.fn().mockReturnValue('Test Card'),
+        getAbilityName: vi.fn().mockReturnValue('Test Ability')
+      })
+    })
   };
 });
 

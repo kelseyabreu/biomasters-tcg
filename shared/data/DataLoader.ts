@@ -13,6 +13,7 @@ import { CardId } from '../enums';
 import { nameIdToCardId } from '../utils/cardIdHelpers';
 import { ILocalizationManager, LocalizationManager, JSONFileDataLoader } from '../localization-manager';
 import { SupportedLanguage } from '../text-ids';
+import { IUnifiedDataLoader, LoadResult as UnifiedLoadResult } from './IServerDataLoader';
 
 /**
  * Data loading configuration
@@ -86,7 +87,7 @@ export interface IGameDataLoader {
 
 /**
  * Centralized data loader class
- * Implements IGameDataLoader interface and consolidates all data loading functionality
+ * Implements IGameDataLoader interface for backward compatibility
  */
 export class DataLoader implements IGameDataLoader {
   private config: Required<DataLoaderConfig>;
@@ -305,10 +306,14 @@ export class DataLoader implements IGameDataLoader {
   /**
    * Get cache statistics
    */
-  getCacheStats(): { size: number; entries: string[] } {
+  getCacheStats(): { size: number; cacheHits: number; cacheMisses: number; hitRate: number; missRate: number; totalRequests: number; } {
     return {
       size: this.cache.size,
-      entries: Array.from(this.cache.keys())
+      cacheHits: 0, // TODO: Implement hit tracking
+      cacheMisses: 0, // TODO: Implement miss tracking
+      hitRate: 0, // TODO: Implement hit rate tracking
+      missRate: 0, // TODO: Implement miss rate tracking
+      totalRequests: 0 // TODO: Implement request tracking
     };
   }
 
@@ -522,6 +527,157 @@ export class DataLoader implements IGameDataLoader {
     const dataLoader = new JSONFileDataLoader(this.config.baseUrl + '/localization');
     return new LocalizationManager(dataLoader);
   }
+  // Note: The UnifiedDataLoaderAdapter below provides IUnifiedDataLoader interface implementation
+
+  /**
+   * Preload commonly used data
+   */
+  async preloadData(): Promise<void> {
+    try {
+      await Promise.all([
+        this.loadCards(),
+        this.loadAbilities(),
+        this.loadKeywords(),
+        this.createLocalizationManager()
+      ]);
+    } catch (error) {
+      console.error('Failed to preload data:', error);
+    }
+  }
+
+  /**
+   * Health check for the data source
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Test loading a small piece of data
+      const cardsResult = await this.loadCards();
+      return cardsResult.size > 0; // Check if we got any cards
+    } catch (error) {
+      return false;
+    }
+  }
+}
+
+/**
+ * Unified Data Loader Adapter
+ * Wraps the existing DataLoader to implement IUnifiedDataLoader interface
+ */
+export class UnifiedDataLoaderAdapter implements IUnifiedDataLoader {
+  private dataLoader: DataLoader;
+
+  constructor(config: DataLoaderConfig = {}) {
+    this.dataLoader = new DataLoader(config);
+  }
+
+  async loadCards(): Promise<UnifiedLoadResult<CardData[]>> {
+    return this.dataLoader.loadAllCards();
+  }
+
+  async loadAbilities(): Promise<UnifiedLoadResult<AbilityData[]>> {
+    return this.dataLoader.loadAllAbilities();
+  }
+
+  async loadGameConfig(): Promise<UnifiedLoadResult<any>> {
+    try {
+      const response = await (this.dataLoader as any).fetchWithRetry(`${(this.dataLoader as any).config.baseUrl}/game-config/game-config.json`);
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async loadLocalizationData(languageCode: SupportedLanguage): Promise<UnifiedLoadResult<any>> {
+    try {
+      const localizationManager = await this.dataLoader.createLocalizationManager();
+      await localizationManager.loadLanguage(languageCode);
+
+      // Extract the loaded data
+      const data = {
+        cards: (localizationManager as any).cardNames || {},
+        abilities: (localizationManager as any).abilityNames || {},
+        ui: (localizationManager as any).uiTexts || {},
+        taxonomy: (localizationManager as any).taxonomyTexts || {}
+      };
+
+      return { success: true, data };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async getCardById(cardId: number): Promise<UnifiedLoadResult<CardData | null>> {
+    const cardsResult = await this.loadCards();
+
+    if (!cardsResult.success || !cardsResult.data) {
+      return { success: false, error: cardsResult.error || 'Failed to load cards' };
+    }
+
+    const card = cardsResult.data.find(c => c.cardId === cardId) || null;
+    return {
+      success: true,
+      data: card,
+      fromCache: cardsResult.fromCache || false
+    };
+  }
+
+  async getAbilityById(abilityId: number): Promise<UnifiedLoadResult<AbilityData | null>> {
+    const abilitiesResult = await this.loadAbilities();
+
+    if (!abilitiesResult.success || !abilitiesResult.data) {
+      return { success: false, error: abilitiesResult.error || 'Failed to load abilities' };
+    }
+
+    const ability = abilitiesResult.data.find(a => a.id === abilityId) || null;
+    return {
+      success: true,
+      data: ability,
+      fromCache: abilitiesResult.fromCache || false
+    };
+  }
+
+  async createLocalizationManager(): Promise<ILocalizationManager> {
+    return this.dataLoader.createLocalizationManager();
+  }
+
+  clearCache(): void {
+    this.dataLoader.clearCache();
+  }
+
+  getCacheStats(): { size: number; cacheHits: number; cacheMisses: number; hitRate: number; missRate: number; totalRequests: number; } {
+    const basicStats = this.dataLoader.getCacheStats();
+    return {
+      size: basicStats.size,
+      cacheHits: basicStats.cacheHits,
+      cacheMisses: basicStats.cacheMisses,
+      hitRate: basicStats.hitRate,
+      missRate: basicStats.missRate,
+      totalRequests: basicStats.totalRequests
+    };
+  }
+
+  async preloadData(): Promise<void> {
+    try {
+      await Promise.all([
+        this.loadCards(),
+        this.loadAbilities(),
+        this.loadGameConfig(),
+        this.loadLocalizationData(SupportedLanguage.ENGLISH)
+      ]);
+    } catch (error) {
+      console.error('Failed to preload data:', error);
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      const cardsResult = await this.loadCards();
+      return cardsResult.success;
+    } catch (error) {
+      return false;
+    }
+  }
 }
 
 // Export singleton instance for convenience
@@ -530,4 +686,9 @@ export const dataLoader = new DataLoader();
 // Export factory function for custom configurations
 export function createDataLoader(config: DataLoaderConfig): DataLoader {
   return new DataLoader(config);
+}
+
+// Export unified data loader factory
+export function createUnifiedDataLoaderFromConfig(config: DataLoaderConfig): IUnifiedDataLoader {
+  return new UnifiedDataLoaderAdapter(config);
 }

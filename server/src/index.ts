@@ -28,6 +28,9 @@ import gameRoutes from './routes/game';
 import adminRoutes from './routes/admin';
 import localizationRoutes from './routes/localization';
 
+// Import unified data loader factory
+import { createProductionDataLoader, createDevelopmentDataLoader } from '../../shared/data/UnifiedDataLoader';
+
 // Import WebSocket setup
 import { setupGameSocket } from './websocket/gameSocket';
 
@@ -62,25 +65,36 @@ async function initializeServices() {
       console.warn('⚠️  Redis not available, using memory-based caching');
     }
 
-    // Load game data from JSON files
+    // Initialize server data loader
     try {
-      console.log('📚 Loading game data from JSON files...');
-      const fs = require('fs').promises;
-      const path = require('path');
+      console.log('📚 Initializing server data loader...');
 
-      // Load cards directly from file system
-      const cardsPath = path.join(__dirname, '../../public/data/game-config/cards.json');
-      const cardsData = JSON.parse(await fs.readFile(cardsPath, 'utf8'));
-      console.log(`✅ Loaded ${cardsData.length} cards from JSON`);
+      // Create data loader based on environment
+      const isProduction = process.env['NODE_ENV'] === 'production';
+      const dataPath = process.env['GAME_DATA_PATH'] || undefined;
 
-      // Load abilities
-      const abilitiesPath = path.join(__dirname, '../../public/data/game-config/abilities.json');
-      const abilitiesData = JSON.parse(await fs.readFile(abilitiesPath, 'utf8'));
-      console.log(`✅ Loaded ${abilitiesData.length} abilities from JSON`);
+      const serverDataLoader = isProduction
+        ? createProductionDataLoader(dataPath)
+        : createDevelopmentDataLoader(dataPath);
 
-      console.log('✅ Game data loaded successfully');
+      // Preload commonly used data
+      await serverDataLoader.preloadData();
+
+      // Health check
+      const isHealthy = await serverDataLoader.healthCheck();
+      if (!isHealthy) {
+        console.warn('⚠️  Server data loader health check failed');
+      }
+
+      // Store data loader globally for use in routes
+      (global as any).serverDataLoader = serverDataLoader;
+
+      // Log cache stats
+      const stats = serverDataLoader.getCacheStats();
+      console.log(`✅ Server data loader initialized (cache: ${stats.size} items)`);
+
     } catch (error) {
-      console.error('❌ Failed to load game data:', error);
+      console.error('❌ Failed to initialize server data loader:', error);
       console.error('   Game engine will not function without game data');
       // Don't exit - let server run without game data for now
     }
@@ -154,6 +168,7 @@ app.use('/api/localization', localizationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.log('🚨🚨🚨 404 HANDLER HIT:', req.method, req.originalUrl);
   res.status(404).json({
     error: 'Not Found',
     message: `Route ${req.originalUrl} not found`,

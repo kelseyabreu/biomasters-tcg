@@ -1,7 +1,7 @@
-import { Player, GameState, TrophicRole, WinCondition, Habitat } from '../types';
+import { TrophicRole, WinCondition, Habitat } from '../types';
 import { Card } from '../types'; // Legacy Card interface for AI logic
+import { GameState, Player } from './gameStateManager'; // Use Phylo-specific types
 import { simulateCombat } from './combatSystem';
-import { checkAllWinConditions, getWinConditionPriority } from './winConditions';
 
 /**
  * Convert string environment to Habitat enum
@@ -74,47 +74,38 @@ function getAIStrategy(difficulty: AIDifficulty): AIStrategy {
 
 /**
  * Evaluates the value of playing a card
+ * Fixed for Phylo compatibility - uses hand cards instead of field
  */
 function evaluateCardPlay(card: Card, gameState: GameState, aiPlayer: Player): number {
   let value = 0;
-  
+
   // Base value from card stats
   value += card.power * 0.3;
   value += card.health * 0.2;
   value += card.speed * 0.1;
   value += card.senses * 0.1;
-  
+
   // Energy efficiency
   const energyEfficiency = (card.power + card.health) / card.energyCost;
   value += energyEfficiency * 0.2;
-  
-  // Trophic role considerations
-  const fieldRoles = new Set(aiPlayer.field.map(c => c.trophicRole));
-  
-  // Bonus for completing ecosystem balance
-  if (card.trophicRole === TrophicRole.PRODUCER && !fieldRoles.has(TrophicRole.PRODUCER)) {
-    value += 0.5;
-  }
-  if (card.trophicRole === TrophicRole.HERBIVORE && !fieldRoles.has(TrophicRole.HERBIVORE)) {
-    value += 0.5;
-  }
-  if (card.trophicRole === TrophicRole.CARNIVORE && !fieldRoles.has(TrophicRole.CARNIVORE)) {
-    value += 0.5;
-  }
-  
+
+  // For Phylo mode, we don't have field cards, so skip field-based logic
   // Environmental bonus
-  if (card.habitat === gameState.environment) {
+  if (gameState.environment && card.habitat === gameState.environment) {
     value += 0.3;
   }
-  
+
   // Ability value
-  value += card.abilities.length * 0.2;
-  
+  if (card.abilities && card.abilities.length > 0) {
+    value += card.abilities.length * 0.2;
+  }
+
   return value;
 }
 
 /**
  * Evaluates the value of an attack
+ * Fixed for Phylo compatibility - simplified without field dependency
  */
 function evaluateAttack(
   attacker: Card,
@@ -122,56 +113,55 @@ function evaluateAttack(
   gameState: GameState,
   aiPlayer: Player
 ): number {
-  const simulation = simulateCombat(attacker, defender, stringToHabitat(gameState.environment), aiPlayer.field || [], 100);
-  
+  const simulation = simulateCombat(attacker, defender, stringToHabitat(gameState.environment || 'TEMPERATE'), [], 100);
+
   let value = 0;
-  
+
   // Success probability
   value += simulation.winRate * 0.5;
-  
+
   // Damage potential
   value += simulation.averageDamage / defender.maxHealth * 0.3;
-  
+
   // Target priority (high-value targets)
   const targetValue = (defender.power + defender.health + defender.speed) / 3;
   value += targetValue * 0.1;
-  
+
   // Risk assessment (don't attack if attacker is valuable and likely to die)
   const attackerValue = (attacker.power + attacker.health + attacker.speed) / 3;
   const counterAttackRisk = defender.power / attacker.health;
   value -= counterAttackRisk * attackerValue * 0.2;
-  
+
   return value;
 }
 
 /**
  * Finds the best card to play
+ * Fixed for Phylo compatibility - simplified without energy/field checks
  */
 function findBestCardToPlay(gameState: GameState, aiPlayer: Player, strategy: AIStrategy, cardDatabase: Card[]): Card | null {
   // Convert card IDs to Card objects and filter playable ones
   const handCards = aiPlayer.hand.map(cardId => cardDatabase.find(card => card.id === cardId)).filter(card => card !== undefined) as Card[];
-  const playableCards = handCards.filter(card =>
-    aiPlayer.energy >= card.energyCost && (aiPlayer.field?.length || 0) < 6
-  );
-  
-  if (playableCards.length === 0) return null;
-  
+
+  if (handCards.length === 0) return null;
+
   let bestCard: Card | null = null;
   let bestValue = strategy.cardValueThreshold;
-  
-  for (const card of playableCards) {
+
+  for (const card of handCards) {
     const value = evaluateCardPlay(card, gameState, aiPlayer);
     if (value > bestValue) {
       bestValue = value;
       bestCard = card;
     }
   }
-  
+
   return bestCard;
 }
 
 /**
  * Finds the best attack to make
+ * Disabled for Phylo mode - returns null since Phylo doesn't use field combat
  */
 function findBestAttack(
   gameState: GameState,
@@ -179,39 +169,17 @@ function findBestAttack(
   opponent: Player,
   strategy: AIStrategy
 ): { attacker: Card; target: Card } | null {
-  if (aiPlayer.field.length === 0 || opponent.field.length === 0) return null;
-  
-  let bestAttack: { attacker: Card; target: Card } | null = null;
-  let bestValue = 0.3; // Minimum threshold for attacking
-  
-  for (const attacker of aiPlayer.field) {
-    for (const target of opponent.field) {
-      const value = evaluateAttack(attacker, target, gameState, aiPlayer);
-      const adjustedValue = value * strategy.aggressionLevel;
-      
-      if (adjustedValue > bestValue) {
-        bestValue = adjustedValue;
-        bestAttack = { attacker, target };
-      }
-    }
-  }
-  
-  return bestAttack;
+  // Phylo mode doesn't use field-based combat, return null
+  return null;
 }
 
 /**
  * Evaluates current win condition progress
+ * Disabled for Phylo mode - returns 0 since win conditions are different
  */
 function evaluateWinConditionProgress(gameState: GameState, aiPlayer: Player): number {
-  const currentPlayerIndex = gameState.currentPlayerIndex;
-  const winConditions = checkAllWinConditions(aiPlayer, gameState.players[1 - currentPlayerIndex]);
-  
-  let totalPriority = 0;
-  for (const condition of winConditions) {
-    totalPriority += getWinConditionPriority(condition);
-  }
-  
-  return totalPriority / winConditions.length;
+  // Phylo mode has different win conditions, return neutral value
+  return 0;
 }
 
 /**
@@ -232,27 +200,14 @@ export function makeAIDecision(
   
   // Decision priority: Play cards first, then attack, then end turn
   
-  // 1. Try to play a card if we have energy and good options
-  if (aiPlayer.energy > 0) {
+  // 1. Try to play a card if we have good options
+  if (aiPlayer.hand.length > 0) {
     const bestCard = findBestCardToPlay(gameState, aiPlayer, strategy, cardDatabase);
     if (bestCard) {
       return {
         type: 'play_card',
         cardId: bestCard.id,
         reasoning: `Playing ${bestCard.nameId} for strategic value`
-      };
-    }
-  }
-  
-  // 2. Try to attack if we have creatures and good targets
-  if (aiPlayer.field.length > 0 && opponent.field.length > 0) {
-    const bestAttack = findBestAttack(gameState, aiPlayer, opponent, strategy);
-    if (bestAttack) {
-      return {
-        type: 'attack',
-        cardId: bestAttack.attacker.id,
-        targetCardId: bestAttack.target.id,
-        reasoning: `Attacking ${bestAttack.target.nameId} with ${bestAttack.attacker.nameId}`
       };
     }
   }

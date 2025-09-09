@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { authenticateToken, optionalAuth } from '../middleware/auth';
+import { authenticateToken, optionalAuth, requireFirebaseAuth } from '../middleware/auth';
 import { authRateLimiter, accountCreationRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
-import { NewUser, NewTransaction } from '../database/types';
+import { NewTransaction } from '../database/types';
 // import { getFirebaseUser } from '../config/firebase'; // Unused for now
 import { CacheManager } from '../config/redis';
 import crypto from 'crypto';
@@ -14,7 +14,7 @@ const router = Router();
  * POST /api/auth/register
  * Register a new user or sync existing Firebase user with database
  */
-router.post('/register', authRateLimiter, accountCreationRateLimiter, authenticateToken, asyncHandler(async (req, res) => {
+router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFirebaseAuth, asyncHandler(async (req, res) => {
   const { username } = req.body;
   const firebaseUid = req.firebaseUser?.uid;
   const email = req.firebaseUser?.email;
@@ -43,6 +43,7 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
 
   if (existingUser) {
     return res.status(409).json({
+      success: false,
       error: 'USER_EXISTS',
       message: 'User already registered'
     });
@@ -57,15 +58,18 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
 
   if (usernameExists) {
     return res.status(409).json({
+      success: false,
       error: 'USERNAME_TAKEN',
       message: 'Username is already taken'
     });
   }
 
   // Create user in database with transaction
-  const result = await db.transaction().execute(async (trx) => {
+  let result;
+  try {
+    result = await db.transaction().execute(async (trx) => {
     // Create user
-    const userData: NewUser = {
+    const userData = {
       firebase_uid: firebaseUid,
       username,
       email,
@@ -76,7 +80,7 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
       is_active: true,
       is_banned: false,
       ban_reason: null,
-      account_type: 'registered',
+      account_type: 'registered' as const,
       is_guest: false,
       needs_registration: false,
       // Profile defaults
@@ -86,7 +90,7 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
       experience: 0,
       title: null,
       gems: 0,
-      coins: 0,
+      coins: 100, // Starting coins
       dust: 0,
       // Game statistics defaults
       games_played: 0,
@@ -94,7 +98,7 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
       cards_collected: 0,
       packs_opened: 0,
       // Metadata defaults
-      preferences: null,
+      preferences: JSON.stringify({}),
       last_login_at: null,
       // Missing required fields
       is_public_profile: false,
@@ -105,9 +109,8 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
     const users = await trx
       .insertInto('users')
       .values(userData)
-      .returning(['id', 'username', 'email', 'eco_credits', 'xp_points', 'created_at'])
+      .returning(['id', 'username', 'email', 'display_name', 'eco_credits', 'xp_points', 'created_at'])
       .execute();
-
     const user = users[0];
     if (!user) {
       throw new Error('Failed to create user');
@@ -136,6 +139,14 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
     });
     return;
   }
+  } catch (error) {
+    console.error('🚨 REGISTRATION ERROR:', error);
+    res.status(500).json({
+      error: 'REGISTRATION_FAILED',
+      message: error instanceof Error ? error.message : 'User registration failed'
+    });
+    return;
+  }
 
   // Cache the new user
   const cacheKey = `user:${firebaseUid}`;
@@ -144,13 +155,18 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, authentica
   res.status(201).json({
     success: true,
     message: 'User registered successfully',
-    user: {
-      id: result.id,
-      username: result.username,
-      email: result.email,
-      eco_credits: result.eco_credits,
-      xp_points: result.xp_points,
-      created_at: result.created_at
+    data: {
+      user: {
+        id: result.id,
+        username: result.username,
+        email: result.email,
+        display_name: result.display_name,
+        user_type: 'REGISTERED',
+        is_guest: false,
+        eco_credits: result.eco_credits,
+        xp_points: result.xp_points,
+        created_at: result.created_at
+      }
     }
   });
   return;
@@ -180,13 +196,18 @@ router.get('/profile', authenticateToken, asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      eco_credits: user.eco_credits,
-      xp_points: user.xp_points,
-      created_at: user.created_at
+    data: {
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        display_name: user.display_name,
+        user_type: user.account_type?.toUpperCase() || 'REGISTERED',
+        is_guest: user.is_guest,
+        eco_credits: user.eco_credits,
+        xp_points: user.xp_points,
+        created_at: user.created_at
+      }
     }
   });
 }));
@@ -210,16 +231,17 @@ router.put('/profile', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Update user in database
-  const updateData: any = {};
-  if (displayName !== undefined) updateData.display_name = displayName;
-  if (preferences !== undefined) updateData.preferences = JSON.stringify(preferences);
+  try {
+    const updateData: any = {};
+    if (displayName !== undefined) updateData.display_name = displayName;
+    if (preferences !== undefined) updateData.preferences = JSON.stringify(preferences);
 
-  const updatedUser = await db
-    .updateTable('users')
-    .set(updateData)
-    .where('firebase_uid', '=', firebaseUser.uid)
-    .returning(['id', 'username', 'email', 'display_name', 'preferences'])
-    .executeTakeFirst();
+    const updatedUser = await db
+      .updateTable('users')
+      .set(updateData)
+      .where('firebase_uid', '=', firebaseUser.uid)
+      .returning(['id', 'username', 'email', 'display_name', 'preferences', 'account_type'])
+      .executeTakeFirst();
 
   if (!updatedUser) {
     res.status(404).json({
@@ -232,9 +254,23 @@ router.put('/profile', authenticateToken, asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: 'Profile updated successfully',
-    user: updatedUser
+    data: {
+      user: {
+        ...updatedUser,
+        user_type: updatedUser.account_type?.toUpperCase() || 'REGISTERED',
+        is_guest: false
+      }
+    }
   });
   return;
+  } catch (error) {
+    console.error('🚨 PROFILE UPDATE ERROR:', error);
+    res.status(500).json({
+      error: 'PROFILE_UPDATE_FAILED',
+      message: error instanceof Error ? error.message : 'Profile update failed'
+    });
+    return;
+  }
 }));
 
 /**
@@ -375,10 +411,7 @@ router.post('/offline-key', authenticateToken, asyncHandler(async (req, res) => 
     return;
   }
 
-  console.log('🔑 Generating offline key for device registration:', {
-    device_id,
-    user_id: req.user!.id
-  });
+
 
   // Generate cryptographically secure signing key
   const signingKey = crypto.randomBytes(32).toString('hex');
@@ -406,11 +439,7 @@ router.post('/offline-key', authenticateToken, asyncHandler(async (req, res) => 
     )
     .execute();
 
-  console.log('✅ Device registered for offline sync:', {
-    device_id,
-    user_id: req.user!.id,
-    key_expires_at: expiresAt
-  });
+
 
   res.json({
     signing_key: signingKey,

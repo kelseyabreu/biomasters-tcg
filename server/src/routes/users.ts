@@ -5,6 +5,10 @@ import { apiRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
 import { CacheManager } from '../config/redis';
+import { adaptDatabaseUserToUnified } from '../database/types';
+import type {
+  PublicUser
+} from '../../../shared/types';
 
 const router = Router();
 
@@ -35,36 +39,66 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   // Get recent achievements - TODO: Implement achievements table
   const recentAchievements: any[] = [];
 
+  // Convert to unified user type for consistent API response
+  const unifiedUser = adaptDatabaseUserToUnified(user);
+
   res.json({
     user: {
-      id: user.id,
-      username: user.username,
-      displayName: user.display_name,
-      email: user.email,
-      avatarUrl: user.avatar_url,
-      accountType: user.account_type,
-      emailVerified: user.email_verified,
-      level: user.level,
-      experience: user.experience,
-      title: user.title,
+      id: unifiedUser.id,
+      username: unifiedUser.username,
+      displayName: unifiedUser.display_name,
+      email: unifiedUser.email,
+      avatarUrl: unifiedUser.avatar_url,
+      accountType: unifiedUser.account_type,
+      emailVerified: unifiedUser.email_verified,
+      level: unifiedUser.level,
+      experience: unifiedUser.experience,
+      title: unifiedUser.title,
+
+      // Enhanced currency system
       currency: {
-        gems: user.gems,
-        coins: user.coins,
-        dust: user.dust
+        gems: unifiedUser.gems,
+        coins: unifiedUser.coins,
+        dust: unifiedUser.dust,
+        ecoCredits: unifiedUser.eco_credits,
+        xpPoints: unifiedUser.xp_points
       },
+
+      // Game statistics
       stats: {
-        gamesPlayed: user.games_played,
-        gamesWon: user.games_won,
-        cardsCollected: user.cards_collected,
-        packsOpened: user.packs_opened,
+        gamesPlayed: unifiedUser.games_played,
+        gamesWon: unifiedUser.games_won,
+        cardsCollected: unifiedUser.cards_collected,
+        packsOpened: unifiedUser.packs_opened,
         deckCount: parseInt(deckCountResult?.count as string) || 0,
         uniqueCards: parseInt(cardCountResult?.unique_cards as string) || 0,
         totalCards: parseInt(cardCountResult?.total_cards as string) || 0
       },
-      preferences: user.preferences,
+
+      // Enhanced profile fields
+      profile: {
+        bio: unifiedUser.bio,
+        location: unifiedUser.location,
+        favoriteSpecies: unifiedUser.favorite_species,
+        isPublicProfile: unifiedUser.is_public_profile
+      },
+
+      // Notification preferences
+      notifications: {
+        email: unifiedUser.email_notifications,
+        push: unifiedUser.push_notifications
+      },
+
+      // Reward system
+      rewards: {
+        lastClaimedAt: unifiedUser.last_reward_claimed_at
+      },
+
+      // Legacy fields for backward compatibility
+      preferences: unifiedUser.preferences,
       recentAchievements,
-      createdAt: user.created_at,
-      lastLoginAt: user.last_login_at
+      createdAt: unifiedUser.created_at,
+      lastLoginAt: unifiedUser.last_login_at
     }
   });
 }));
@@ -80,6 +114,7 @@ router.put('/me', requireRegisteredUser, apiRateLimiter, asyncHandler(async (req
   // Validate input
   if (displayName && (typeof displayName !== 'string' || displayName.length > 50)) {
     res.status(400).json({
+      success: false,
       error: 'INVALID_DISPLAY_NAME',
       message: 'Display name must be a string with max 50 characters'
     });
@@ -136,8 +171,11 @@ router.put('/me', requireRegisteredUser, apiRateLimiter, asyncHandler(async (req
     await CacheManager.delete(`user:${user.id}`);
 
     res.json({
+      success: true,
       message: 'Profile updated successfully',
-      user: updatedUser
+      data: {
+        user: updatedUser
+      }
     });
   } catch (error) {
     console.error('Profile update failed:', error);
@@ -170,6 +208,7 @@ router.get('/:userId/profile', apiRateLimiter, asyncHandler(async (req, res) => 
 
   if (!user) {
     return res.status(404).json({
+      success: false,
       error: 'USER_NOT_FOUND',
       message: 'User not found'
     });
@@ -191,27 +230,41 @@ router.get('/:userId/profile', apiRateLimiter, asyncHandler(async (req, res) => 
   // Get public achievements (only completed ones) - TODO: Implement achievements table
   const achievements: any[] = [];
 
+  // Create PublicUser response following unified type structure
+  const publicUser: PublicUser = {
+    id: user.id,
+    username: user.username,
+    display_name: user.display_name,
+    avatar_url: user.avatar_url,
+    account_type: user.account_type,
+    level: user.level,
+    experience: user.experience,
+    title: user.title,
+    games_played: user.games_played,
+    games_won: user.games_won,
+    cards_collected: user.cards_collected,
+    packs_opened: user.packs_opened,
+    created_at: user.created_at
+  };
+
   res.json({
     user: {
-      id: user.id,
-      username: user.username,
-      displayName: user.display_name,
-      avatarUrl: user.avatar_url,
-      accountType: user.account_type,
-      level: user.level,
-      experience: user.experience,
-      title: user.title,
+      ...publicUser,
+      // Additional computed fields for API response
+      displayName: publicUser.display_name,
+      avatarUrl: publicUser.avatar_url,
+      accountType: publicUser.account_type,
       stats: {
-        gamesPlayed: user.games_played,
-        gamesWon: user.games_won,
-        winRate: user.games_played > 0 ? ((user.games_won / user.games_played) * 100).toFixed(1) : '0.0',
-        cardsCollected: user.cards_collected,
-        packsOpened: user.packs_opened,
+        gamesPlayed: publicUser.games_played,
+        gamesWon: publicUser.games_won,
+        winRate: publicUser.games_played > 0 ? ((publicUser.games_won / publicUser.games_played) * 100).toFixed(1) : '0.0',
+        cardsCollected: publicUser.cards_collected,
+        packsOpened: publicUser.packs_opened,
         deckCount: parseInt(deckCountResult?.count as string) || 0,
         uniqueCards: parseInt(cardCountResult?.unique_cards as string) || 0
       },
       achievements,
-      memberSince: user.created_at
+      memberSince: publicUser.created_at
     }
   });
   return;

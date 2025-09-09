@@ -89,6 +89,29 @@ export function getFirebaseFirestore(): admin.firestore.Firestore {
  */
 export async function verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
   try {
+    // In test environment, handle test tokens
+    if (process.env['NODE_ENV'] === 'test' && idToken.startsWith('eyJ')) {
+      // This is a JWT token for testing - decode it directly
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(idToken, process.env['JWT_SECRET'] || 'test-secret');
+
+      // Return in Firebase DecodedIdToken format
+      return {
+        uid: decoded.uid,
+        email: decoded.email,
+        email_verified: decoded.email_verified || false,
+        iss: decoded.iss,
+        aud: decoded.aud,
+        auth_time: decoded.auth_time,
+        user_id: decoded.user_id,
+        sub: decoded.sub,
+        iat: decoded.iat,
+        exp: decoded.exp,
+        firebase: decoded.firebase || {}
+      } as admin.auth.DecodedIdToken;
+    }
+
+    // Production: use real Firebase verification
     const decodedToken = await getFirebaseAuth().verifyIdToken(idToken);
     return decodedToken;
   } catch (error) {

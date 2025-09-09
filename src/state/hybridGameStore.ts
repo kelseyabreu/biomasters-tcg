@@ -17,13 +17,19 @@ import { Card, transformCardDataToCard } from '../types';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { tokenManager } from '../services/tokenStorage';
-import { createUserScopedIndexedDBStorage, clearUserData, migrateToUserScopedStorage } from '../utils/userScopedStorage';
+import { createUserScopedIndexedDBStorage, clearUserData } from '../utils/userScopedStorage';
 import { guestApi } from '../services/apiClient';
-import { tcgGameService, ServiceResult } from '../services/TCGGameService';
+import { tcgGameService } from '../services/TCGGameService';
 import { phyloGameService } from '../services/PhyloGameService';
-import type { GameState } from '../game-logic/gameStateManager';
+import { PhyloGameState as SharedPhyloGameState } from '@shared/types';
 import type { ClientGameState } from '../services/ClientGameEngine';
 import { nameIdToCardId } from '@shared/utils/cardIdHelpers';
+
+// Import unified user types
+import type {
+  AuthenticatedUser
+} from '@shared/types';
+import { SyncStatus, UserType } from '@shared/enums';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
@@ -41,7 +47,7 @@ export interface Position {
   y: number;
 }
 
-// Import the actual ClientGameState from ClientGameEngine to ensure compatibility
+// UI-enhanced game states that extend shared types with UI-specific properties
 
 export interface TCGGameState extends ClientGameState {
   // Additional properties specific to the store
@@ -49,9 +55,7 @@ export interface TCGGameState extends ClientGameState {
   // Add other TCG-specific state properties as needed
 }
 
-// Import the actual GameState from gameStateManager to ensure compatibility
-
-export interface PhyloGameState extends GameState {
+export interface PhyloGameState extends SharedPhyloGameState {
   // Additional properties specific to the store
   levelId?: string | null;
   difficulty?: 'easy' | 'medium' | 'hard' | null;
@@ -145,14 +149,8 @@ export interface HybridGameState {
   guestToken: string | null;
   needsRegistration: boolean;
 
-  // User Profile Information
-  userProfile: {
-    username: string | null;
-    displayName: string | null;
-    email: string | null;
-    avatarUrl: string | null;
-    accountType: 'guest' | 'registered' | 'none';
-  } | null;
+  // User Profile Information (using unified types)
+  userProfile: AuthenticatedUser | null;
   
   // Sync State
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
@@ -170,7 +168,7 @@ export interface HybridGameState {
   saveOfflineCollection: (collection: OfflineCollection) => void;
 
   // User Profile Actions
-  updateUserProfile: (profile: Partial<HybridGameState['userProfile']>) => void;
+  updateUserProfile: (profile: Partial<AuthenticatedUser>) => void;
   generateGuestUsername: () => string;
   clearUserProfile: () => void;
 
@@ -926,11 +924,18 @@ export const useHybridGameStore = create<HybridGameState>()(
                 isGuestMode: false, // Firebase user overrides guest mode
                 userId: user.uid,
                 userProfile: {
+                  id: user.uid,
                   username: user.displayName || user.email?.split('@')[0] || 'User',
-                  displayName: user.displayName,
-                  email: user.email,
-                  avatarUrl: user.photoURL,
-                  accountType: 'registered'
+                  display_name: user.displayName || undefined,
+                  user_type: UserType.REGISTERED,
+                  is_guest: false,
+                  created_at: new Date(),
+                  firebase_uid: user.uid,
+                  email: user.email || undefined,
+                  last_login: new Date(),
+                  isOnline: true,
+                  syncStatus: SyncStatus.SYNCED,
+                  lastSyncTime: new Date()
                 }
               });
 
@@ -981,11 +986,16 @@ export const useHybridGameStore = create<HybridGameState>()(
                       userId: guestCredentials.guestId,
                       firebaseUser: null,
                       userProfile: {
+                        id: guestCredentials.guestId,
                         username: `Guest-${guestCredentials.guestId.slice(-6).toUpperCase()}`,
-                        displayName: `Guest-${guestCredentials.guestId.slice(-6).toUpperCase()}`,
-                        email: null,
-                        avatarUrl: null,
-                        accountType: 'guest'
+                        display_name: `Guest-${guestCredentials.guestId.slice(-6).toUpperCase()}`,
+                        user_type: UserType.GUEST,
+                        is_guest: true,
+                        created_at: new Date(),
+                        email: undefined,
+                        isOnline: true,
+                        syncStatus: SyncStatus.PENDING,
+                        lastSyncTime: new Date()
                       }
                     });
                     console.log('✅ Guest session restored from secure storage');
@@ -1106,11 +1116,16 @@ export const useHybridGameStore = create<HybridGameState>()(
             userId: guestId, // Use guestId as userId initially
             firebaseUser: null,
             userProfile: {
+              id: guestId,
               username: guestUsername,
-              displayName: guestUsername,
-              email: null,
-              avatarUrl: null,
-              accountType: 'guest'
+              display_name: guestUsername,
+              user_type: UserType.GUEST,
+              is_guest: true,
+              created_at: new Date(),
+              email: undefined,
+              isOnline: true,
+              syncStatus: SyncStatus.PENDING,
+              lastSyncTime: new Date()
             }
           });
 

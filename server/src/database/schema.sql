@@ -37,16 +37,27 @@ CREATE TABLE IF NOT EXISTS users (
     gems INTEGER DEFAULT 0 CHECK (gems >= 0),
     coins INTEGER DEFAULT 100 CHECK (coins >= 0),
     dust INTEGER DEFAULT 0 CHECK (dust >= 0),
-    
+    eco_credits INTEGER DEFAULT 100 CHECK (eco_credits >= 0),
+    xp_points INTEGER DEFAULT 0 CHECK (xp_points >= 0),
+    last_reward_claimed_at TIMESTAMP,
+
     -- Statistics
     games_played INTEGER DEFAULT 0,
     games_won INTEGER DEFAULT 0,
     cards_collected INTEGER DEFAULT 0,
     packs_opened INTEGER DEFAULT 0,
-    
+
+    -- Profile fields
+    bio TEXT,
+    location VARCHAR(255),
+    favorite_species VARCHAR(255),
+    is_public_profile BOOLEAN DEFAULT TRUE,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    push_notifications BOOLEAN DEFAULT TRUE,
+
     -- Preferences
     preferences JSONB DEFAULT '{}',
-    
+
     -- Metadata
     metadata JSONB DEFAULT '{}'
 );

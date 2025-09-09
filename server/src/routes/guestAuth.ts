@@ -10,20 +10,144 @@ import { authRateLimiter } from '../middleware/rateLimiter';
 import { requireAuth } from '../middleware/auth';
 import { verifyIdToken } from '../config/firebase';
 import { db } from '../database/kysely';
-import { 
-  generateGuestCredentials, 
-  hashGuestSecret, 
-  verifyGuestSecret, 
-  generateGuestJWT, 
-  generateGuestUsername 
+import {
+  generateGuestCredentials,
+  hashGuestSecret,
+  verifyGuestSecret,
+  generateGuestJWT,
+  generateGuestUsername
 } from '../utils/guestAuth';
-import { NewUser, NewOfflineAction } from '../database/types';
+import { NewOfflineAction } from '../database/types';
 
 const router = Router();
 
 /**
+ * POST /api/guest/create
+ * Create immediate online guest account (online-first flow)
+ * Different from register-and-sync which handles offline→online migration
+ */
+router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
+  const { username, deviceId } = req.body;
+
+  // Generate guest credentials
+  const guestCredentials = generateGuestCredentials();
+  const guestSecretHash = await hashGuestSecret(guestCredentials.guestSecret);
+  const guestUsername = username || generateGuestUsername(guestCredentials.guestId);
+
+  // Check if guest already exists (prevent duplicates)
+  const existingGuest = await db
+    .selectFrom('users')
+    .select('id')
+    .where('guest_id', '=', guestCredentials.guestId)
+    .executeTakeFirst();
+
+  if (existingGuest) {
+    return res.status(409).json({
+      error: 'GUEST_EXISTS',
+      message: 'Guest account already exists'
+    });
+  }
+
+  // Create guest account in transaction
+  const result = await db.transaction().execute(async (trx) => {
+    // Create guest user account
+    const userData = {
+      guest_id: guestCredentials.guestId,
+      guest_secret_hash: guestSecretHash,
+      username: guestUsername,
+      email: `${guestCredentials.guestId}@guest.local`, // Placeholder email
+      email_verified: false,
+      eco_credits: 100, // Starting currency
+      xp_points: 0,
+      last_reward_claimed_at: null,
+      is_guest: true,
+      needs_registration: false,
+      account_type: 'guest',
+      firebase_uid: null,
+      display_name: guestUsername,
+      avatar_url: null,
+      level: 1,
+      experience: 0,
+      title: null,
+      gems: 0,
+      coins: 100, // Starting currency
+      dust: 0,
+      games_played: 0,
+      games_won: 0,
+      cards_collected: 0,
+      packs_opened: 0,
+      preferences: null,
+      last_login_at: null,
+      is_active: true,
+      is_banned: false,
+      ban_reason: null,
+      // Missing required fields
+      is_public_profile: false,
+      email_notifications: false,
+      push_notifications: false
+    };
+
+    const users = await trx
+      .insertInto('users')
+      .values(userData)
+      .returning(['id', 'username', 'guest_id', 'coins', 'gems', 'dust'])
+      .execute();
+
+    const user = users[0];
+    if (!user) {
+      throw new Error('Failed to create guest user');
+    }
+
+    // Create device sync state for offline sync if deviceId provided
+    if (deviceId) {
+      const signingKey = crypto.randomBytes(32).toString('hex');
+      const keyExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+      await trx
+        .insertInto('device_sync_states')
+        .values({
+          device_id: deviceId,
+          user_id: user.id,
+          signing_key: signingKey,
+          key_expires_at: keyExpiresAt,
+          last_sync_timestamp: 0,
+          last_used_at: new Date()
+        })
+        .execute();
+    }
+
+    return user;
+  });
+
+  // Generate JWT for immediate use
+  const guestJWT = generateGuestJWT(result.id, guestCredentials.guestId);
+
+  res.status(201).json({
+    success: true,
+    data: {
+      user: {
+        id: result.id,
+        username: result.username,
+        guestId: result.guest_id,
+        user_type: 'GUEST',
+        is_guest: true,
+        coins: result.coins,
+        gems: result.gems,
+        dust: result.dust
+      }
+    },
+    auth: {
+      guestSecret: guestCredentials.guestSecret,
+      token: guestJWT,
+      expiresIn: '7d'
+    }
+  });
+  return;
+}));
+
+/**
  * POST /api/guest/register-and-sync
- * Lazy registration endpoint for first-time guest sync
+ * Lazy registration endpoint for first-time guest sync (offline→online flow)
  */
 router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res) => {
   const { guestId, initialUsername, actionQueue, deviceId } = req.body;
@@ -58,7 +182,7 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
   // Create guest account and process action queue in transaction
   const result = await db.transaction().execute(async (trx) => {
     // 1. Create guest user account
-    const userData: NewUser = {
+    const userData = {
       guest_id: guestId,
       guest_secret_hash: guestSecretHash,
       username,
@@ -353,11 +477,15 @@ router.post('/convert', requireAuth, asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: 'Guest account converted to registered account successfully',
-    user: {
-      id: guestUser.id,
-      username: guestUser.username,
-      email: firebaseUser.email,
-      accountType: 'registered'
+    data: {
+      user: {
+        id: guestUser.id,
+        username: guestUser.username,
+        email: firebaseUser.email,
+        user_type: 'REGISTERED',
+        is_guest: false,
+        accountType: 'registered'
+      }
     }
   });
   return;

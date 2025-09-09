@@ -493,7 +493,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
 
       expect(result.isValid).toBe(true);
       expect(result.newState?.players[0]?.hand.length).toBe(initialHandSize - 1);
-      expect(result.newState?.players[0]?.hand).not.toContain(CardId.OAK_TREE.toString()); // Oak Tree should be removed from hand
+      expect(result.newState?.players[0]?.hand).not.toContain(CardId.OAK_TREE); // Oak Tree should be removed from hand
     });
 
     test('should handle multiple players correctly', () => {

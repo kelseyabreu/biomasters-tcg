@@ -6,16 +6,18 @@
 
 import { Router, Request, Response } from 'express';
 import { SupportedLanguage, LANGUAGE_CONFIG } from '../../../shared/text-ids';
-import { LocalizationManager, JSONFileDataLoader } from '../../../shared/localization-manager';
-import path from 'path';
-import fs from 'fs/promises';
+import { IServerDataLoader } from '../../../shared/data/IServerDataLoader';
 
 const router = Router();
 
-// Initialize localization manager for server-side operations
-const localizationManager = new LocalizationManager(
-  new JSONFileDataLoader(path.join(process.cwd(), 'public/data/localization'))
-);
+// Helper function to get server data loader from global
+function getServerDataLoader(): IServerDataLoader {
+  const loader = (global as any).serverDataLoader;
+  if (!loader) {
+    throw new Error('Server data loader not initialized');
+  }
+  return loader;
+}
 
 /**
  * GET /api/localization/languages
@@ -62,25 +64,24 @@ router.get('/:language', async (req: Request, res: Response) => {
 
     const supportedLanguage = language as SupportedLanguage;
 
-    // Load language data
-    await localizationManager.loadLanguage(supportedLanguage);
+    // Load language data using server data loader
+    const serverDataLoader = getServerDataLoader();
+    const localizationResult = await serverDataLoader.loadLocalizationData(supportedLanguage);
+
+    if (!localizationResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: localizationResult.error
+      });
+    }
 
     // Get all localization data
     const languageData = {
       language: supportedLanguage,
       languageInfo: LANGUAGE_CONFIG[supportedLanguage],
-      // Note: In a real implementation, you'd want to expose specific methods
-      // rather than internal data structures
-      data: {
-        cards: {
-          // Sample card names - in production, get from localization manager
-          sampleCardName: localizationManager.getCardName('CARD_OAK_TREE' as any),
-        },
-        ui: {
-          // Sample UI text - in production, get from localization manager
-          sampleUIText: localizationManager.getUIText('UI_PLAY_CARD' as any),
-        }
-      }
+      data: localizationResult.data,
+      fromCache: localizationResult.fromCache,
+      timestamp: localizationResult.timestamp
     };
 
     return res.json({
@@ -111,12 +112,20 @@ router.get('/:language/cards', async (req: Request, res: Response) => {
       });
     }
 
-    const filePath = path.join(process.cwd(), 'public/data/localization', language, 'cards.json');
-    const cardData = await fs.readFile(filePath, 'utf-8');
+    const serverDataLoader = getServerDataLoader();
+    const localizationResult = await serverDataLoader.loadLocalizationData(language as SupportedLanguage);
+
+    if (!localizationResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: localizationResult.error
+      });
+    }
 
     return res.json({
       success: true,
-      data: JSON.parse(cardData)
+      data: localizationResult.data?.cards,
+      fromCache: localizationResult.fromCache
     });
   } catch (error) {
     console.error(`Error loading card data for ${req.params['language']}:`, error);
@@ -142,12 +151,20 @@ router.get('/:language/abilities', async (req: Request, res: Response) => {
       });
     }
 
-    const filePath = path.join(process.cwd(), 'public/data/localization', language, 'abilities.json');
-    const abilityData = await fs.readFile(filePath, 'utf-8');
+    const serverDataLoader = getServerDataLoader();
+    const localizationResult = await serverDataLoader.loadLocalizationData(language as SupportedLanguage);
+
+    if (!localizationResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: localizationResult.error
+      });
+    }
 
     return res.json({
       success: true,
-      data: JSON.parse(abilityData)
+      data: localizationResult.data?.abilities,
+      fromCache: localizationResult.fromCache
     });
   } catch (error) {
     console.error(`Error loading ability data for ${req.params['language']}:`, error);
@@ -173,12 +190,20 @@ router.get('/:language/ui', async (req: Request, res: Response) => {
       });
     }
 
-    const filePath = path.join(process.cwd(), 'public/data/localization', language, 'ui.json');
-    const uiData = await fs.readFile(filePath, 'utf-8');
+    const serverDataLoader = getServerDataLoader();
+    const localizationResult = await serverDataLoader.loadLocalizationData(language as SupportedLanguage);
+
+    if (!localizationResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: localizationResult.error
+      });
+    }
 
     return res.json({
       success: true,
-      data: JSON.parse(uiData)
+      data: localizationResult.data?.ui,
+      fromCache: localizationResult.fromCache
     });
   } catch (error) {
     console.error(`Error loading UI data for ${req.params['language']}:`, error);

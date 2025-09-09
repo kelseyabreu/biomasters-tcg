@@ -7,18 +7,27 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { db } from '../database/kysely';
 import { NewRedemptionCode } from '../database/types';
+// import { createDevelopmentServerDataLoader } from '../../../shared/data/ServerDataLoader'; // Available for future migration
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
+// ServerDataLoader available for future migration when species files are moved to standard data structure
+
 /**
  * Load species manifest to get available species
  */
-function loadSpeciesManifest(): string[] {
-  const manifestPath = join(process.cwd(), '../public/species/manifest.json');
-  const manifestData = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  return manifestData.species;
+async function loadSpeciesManifest(): Promise<string[]> {
+  try {
+    // For species manifest, keep using direct file access since it's not part of standard game data
+    const manifestPath = join(process.cwd(), '../public/species/manifest.json');
+    const manifestData = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    return manifestData.species;
+  } catch (error) {
+    console.error('❌ Failed to load species manifest:', error);
+    throw error;
+  }
 }
 
 /**
@@ -54,7 +63,7 @@ async function seedDatabase() {
     console.log('🌱 Starting database seeding...');
 
     // Load available species from manifest
-    const speciesList = loadSpeciesManifest();
+    const speciesList = await loadSpeciesManifest();
     console.log(`📋 Found ${speciesList.length} species available in JSON files`);
 
     // Check if redemption codes already exist

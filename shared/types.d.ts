@@ -129,53 +129,120 @@ export interface StatusEffect {
     metadata: Record<string, any>;
 }
 /**
- * Player data structure
+ * Base player data structure - Core properties shared across all game modes
  */
-export interface Player {
+export interface BasePlayer {
     id: string;
     name: string;
     hand: string[];
     deck: string[];
+    isReady: boolean;
+}
+/**
+ * TCG Player - For BioMasters TCG mode
+ */
+export interface TCGPlayer extends BasePlayer {
     scorePile: string[];
     energy: number;
-    isReady: boolean;
     actionsRemaining: number;
     field: any[];
     playedSpecies: Set<string>;
 }
 /**
- * Game state structure
+ * Phylo Player - For Phylo domino-style gameplay
  */
-export interface GameState {
+export interface PhyloPlayer extends BasePlayer {
+    discardPile: string[];
+    score: number;
+    timeRemaining?: number;
+}
+/**
+ * Default Player interface - TCG Player for backward compatibility
+ */
+export interface Player extends TCGPlayer {
+}
+/**
+ * Base game state structure - Core properties shared across all game modes
+ */
+export interface BaseGameState {
     gameId: string;
-    players: Player[];
     currentPlayerIndex: number;
-    gamePhase: GamePhase;
-    turnPhase: TurnPhase;
-    actionsRemaining: number;
     turnNumber: number;
-    finalTurnTriggeredBy?: string;
-    finalTurnPlayersRemaining?: string[];
-    grid: Map<string, CardInstance>;
-    detritus: CardInstance[];
-    gameSettings: GameSettings;
     metadata: GameMetadata;
     winner?: string;
     endReason?: GameEndReason;
     currentPlayer?: number;
+}
+/**
+ * TCG Game State - For BioMasters TCG mode
+ */
+export interface TCGGameState extends BaseGameState {
+    players: TCGPlayer[];
+    gamePhase: GamePhase;
+    turnPhase: TurnPhase;
+    actionsRemaining: number;
+    finalTurnTriggeredBy?: string;
+    finalTurnPlayersRemaining?: string[];
+    grid: Map<string, CardInstance>;
+    detritus: CardInstance[];
+    gameSettings: TCGGameSettings;
+}
+/**
+ * Phylo Game State - For Phylo domino-style gameplay
+ */
+export interface PhyloGameState extends BaseGameState {
+    players: PhyloPlayer[];
+    gameBoard: any;
+    cards: Map<string, any>;
+    gamePhase: 'setup' | 'playing' | 'event_reaction' | 'challenge_phase' | 'game_over';
+    actionHistory: any[];
+    pendingChallenges: any[];
+    eventDeck: any[];
+    gameSettings: PhyloGameSettings;
+    gameStats: {
+        gameStartTime: number;
+        totalTurns: number;
+        cardsPlayed: number;
+        eventsTriggered: number;
+    };
     environment?: string;
 }
 /**
- * Game settings
+ * Default GameState interface - TCG GameState for backward compatibility
  */
-export interface GameSettings {
+export interface GameState extends TCGGameState {
+}
+/**
+ * Base game settings - Core properties shared across all game modes
+ */
+export interface BaseGameSettings {
     maxPlayers: number;
+    startingHandSize: number;
+    turnTimeLimit?: number;
+}
+/**
+ * TCG Game settings - For BioMasters TCG mode
+ */
+export interface TCGGameSettings extends BaseGameSettings {
     gridWidth: number;
     gridHeight: number;
-    startingHandSize: number;
     maxHandSize: number;
-    turnTimeLimit: number;
     startingEnergy: number;
+}
+/**
+ * Phylo Game settings - For Phylo domino-style gameplay
+ */
+export interface PhyloGameSettings extends BaseGameSettings {
+    gameTimeLimit?: number;
+    maxTurns?: number;
+    eventFrequency: number;
+    allowChallenges: boolean;
+    deckSize: number;
+}
+/**
+ * Default GameSettings interface - TCG GameSettings for backward compatibility
+ */
+export interface GameSettings extends TCGGameSettings {
 }
 /**
  * Game metadata

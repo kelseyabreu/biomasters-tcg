@@ -1,6 +1,6 @@
 /**
- * Test Data Loader - File System Based
- * Loads game data directly from JSON files for testing without requiring a running server
+ * Test Data Loader - ServerDataLoader Based
+ * Uses the unified ServerDataLoader for consistent data loading in tests
  */
 
 import { promises as fs } from 'fs';
@@ -13,6 +13,7 @@ import {
   LocalizationManager
 } from '../../../../shared/localization-manager';
 import { SupportedLanguage } from '../../../../shared/text-ids';
+import { createDevelopmentDataLoader } from '../../../../shared/data/UnifiedDataLoader';
 
 export interface TestGameData {
   cards: Map<number, CardData>;
@@ -56,7 +57,7 @@ class TestJSONFileDataLoader implements ILocalizationDataLoader {
 }
 
 /**
- * Load game data from file system for testing
+ * Load game data using ServerDataLoader for testing
  */
 export async function loadTestGameData(): Promise<TestGameData> {
   try {
@@ -69,27 +70,27 @@ export async function loadTestGameData(): Promise<TestGameData> {
     console.log(`📂 __dirname is: ${__dirname}`);
     console.log(`📂 projectRoot is: ${projectRoot}`);
 
-    // Load cards
-    const cardsPath = join(dataPath, 'game-config/cards.json');
-    console.log(`📂 cardsPath is: ${cardsPath}`);
+    // Initialize unified data loader for testing
+    const serverDataLoader = createDevelopmentDataLoader(dataPath);
 
-    // Check if file exists
-    const cardsExists = await fs.access(cardsPath).then(() => true).catch(() => false);
-    console.log(`📂 cardsPath exists: ${cardsExists}`);
-
-    if (!cardsExists) {
-      throw new Error(`Cards file not found at: ${cardsPath}`);
+    // Load cards using ServerDataLoader
+    console.log(`📂 Loading cards using ServerDataLoader...`);
+    const cardsResult = await serverDataLoader.loadCards();
+    if (!cardsResult.success) {
+      throw new Error(`Failed to load cards: ${cardsResult.error}`);
     }
+    const cardsData = cardsResult.data!;
+    console.log(`✅ Loaded ${cardsData.length} cards using ServerDataLoader`);
 
-    const cardsData = JSON.parse(await fs.readFile(cardsPath, 'utf8'));
-    console.log(`✅ Loaded ${cardsData.length} cards from file system`);
+    // Load abilities using ServerDataLoader
+    const abilitiesResult = await serverDataLoader.loadAbilities();
+    if (!abilitiesResult.success) {
+      throw new Error(`Failed to load abilities: ${abilitiesResult.error}`);
+    }
+    const abilitiesData = abilitiesResult.data!;
+    console.log(`✅ Loaded ${abilitiesData.length} abilities using ServerDataLoader`);
 
-    // Load abilities
-    const abilitiesPath = join(dataPath, 'game-config/abilities.json');
-    const abilitiesData = JSON.parse(await fs.readFile(abilitiesPath, 'utf8'));
-    console.log(`✅ Loaded ${abilitiesData.length} abilities from file system`);
-
-    // Load keywords
+    // Load keywords - fallback to direct file access since keywords might not be in ServerDataLoader yet
     const keywordsPath = join(dataPath, 'game-config/keywords.json');
     console.log(`📂 Loading keywords from: ${keywordsPath}`);
     const keywordsData = JSON.parse(await fs.readFile(keywordsPath, 'utf8'));
@@ -106,21 +107,24 @@ export async function loadTestGameData(): Promise<TestGameData> {
     for (const ability of abilitiesData) {
       // Transform JSON field names to match AbilityData interface
       const transformedAbility: AbilityData = {
-        id: ability.abilityId,
+        id: (ability as any).abilityId || ability.id,
         nameId: ability.nameId,
         descriptionId: ability.descriptionId,
         triggerId: ability.triggerId,
         effects: ability.effects.map((effect: any) => ({
-          effectId: effect.effectId,
-          selectorId: effect.selectorId,
-          actionId: effect.actionId,
-          filterKeywords: effect.filterKeywords,
-          filterTrophicCategories: effect.filterTrophicCategories,
-          filterTrophicLevels: effect.filterTrophicLevels,
-          filterDomains: effect.filterDomains
+          type: String(effect.effectId || effect.type || 'unknown'),
+          value: effect.value,
+          selector: effect.selectorId ? String(effect.selectorId) : effect.selector,
+          filter: {
+            keywords: effect.filterKeywords,
+            trophicCategories: effect.filterTrophicCategories,
+            trophicLevels: effect.filterTrophicLevels,
+            domains: effect.filterDomains
+          },
+          target: effect.target
         }))
       };
-      abilitiesMap.set(ability.abilityId, transformedAbility);
+      abilitiesMap.set(transformedAbility.id, transformedAbility);
     }
 
     // Create keywords map

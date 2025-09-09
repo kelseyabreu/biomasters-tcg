@@ -149,8 +149,13 @@ export class KyselyMigrator {
       const cardIdMigrationSql = readFileSync(cardIdMigrationPath, 'utf8');
       await this.executeMigration('010_migrate_to_cardid_system_simple', cardIdMigrationSql);
 
+      // 012: Add unified user type fields
+      const unifiedUserFieldsPath = join(__dirname, 'migrations/012_add_unified_user_fields.sql');
+      const unifiedUserFieldsSql = readFileSync(unifiedUserFieldsPath, 'utf8');
+      await this.executeMigration('012_add_unified_user_fields', unifiedUserFieldsSql);
+
       console.log('✅ All Kysely migrations completed successfully');
-      
+
     } catch (error) {
       console.error('❌ Kysely migration failed:', error);
       throw error;

@@ -11,7 +11,7 @@ import { requireAuth } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import CryptoJS from 'crypto-js';
 import crypto from 'crypto';
-import { speciesNameToCardId_old } from '@shared/utils/cardIdHelpers';
+// import { speciesNameToCardId_old } from '@shared/utils/cardIdHelpers'; // Disabled - function removed
 
 const router = Router();
 
@@ -327,9 +327,9 @@ router.post('/',
                 cardId = action.card_id;
                 cardKey = `card_${cardId}`;
               } else if (action.species_name) {
-                // Legacy species_name system
-                cardId = speciesNameToCardId_old(action.species_name);
-                cardKey = action.species_name;
+                // Legacy species_name system - disabled, use cardId instead
+                console.warn('Legacy species_name system is deprecated, use cardId instead');
+                continue; // Skip this action
               }
 
               if (cardId && action.quantity) {

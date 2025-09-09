@@ -352,10 +352,29 @@ export interface Database {
   conservation_statuses: ConservationStatusesTable;
 }
 
-// Helper types for CRUD operations
-export type User = Selectable<UsersTable>;
-export type NewUser = Insertable<UsersTable>;
-export type UserUpdate = Updateable<UsersTable>;
+// ============================================================================
+// UNIFIED USER TYPES INTEGRATION
+// ============================================================================
+
+// Import unified types from shared module
+import type {
+  DatabaseUser
+} from '../../../shared/types';
+
+// Helper types for CRUD operations using unified types
+export type User = DatabaseUser; // Use unified DatabaseUser type
+export type NewUser = Insertable<UsersTable>; // Keep Kysely type for database operations
+export type UserUpdate = Updateable<UsersTable>; // Keep Kysely type for database operations
+
+// Type adapter to convert database results to unified types
+export function adaptDatabaseUserToUnified(dbUser: Selectable<UsersTable>): DatabaseUser {
+  return {
+    ...dbUser,
+    user_type: dbUser.account_type as any, // Convert account_type to UserType enum
+  };
+}
+
+
 
 // Removed Card types since we're using JSON files
 

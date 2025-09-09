@@ -11,7 +11,11 @@ const JWT_SECRET = process.env['JWT_SECRET'] || 'your-super-secret-jwt-key-chang
 const JWT_EXPIRES_IN = '7d'; // Guest tokens last 7 days
 const SALT_ROUNDS = 12;
 
-export interface GuestJWTPayload {
+// Import unified GuestJWTPayload from shared types
+import type { GuestJWTPayload } from '../../../shared/types';
+
+// Legacy type (marked for removal)
+export interface GuestJWTPayload_old {
   userId: string;
   guestId: string;
   isGuest: true;

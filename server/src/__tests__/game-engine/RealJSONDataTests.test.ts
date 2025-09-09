@@ -153,11 +153,17 @@ describe('BioMasters Engine - Real JSON Data Tests', () => {
         expect(ability.effects).toBeDefined();
         expect(Array.isArray(ability.effects)).toBe(true);
 
-        // Test effect structure
+        // Test effect structure (updated for new AbilityEffect interface)
         for (const effect of ability.effects) {
-          expect(effect.effectId).toBeDefined();
-          expect(effect.selectorId).toBeDefined();
-          expect(effect.actionId).toBeDefined();
+          expect(effect.type).toBeDefined();
+          expect(typeof effect.type).toBe('string');
+          // Optional properties may or may not be defined
+          if (effect.selector) {
+            expect(typeof effect.selector).toBe('string');
+          }
+          if (effect.value) {
+            expect(typeof effect.value).toBe('number');
+          }
         }
       }
     });

@@ -1,5 +1,6 @@
 import { Card, PhyloGameBoard, PhyloCardPosition, TrophicRole, Habitat, createCardWithDefaults } from '../types';
 import { ConservationStatus } from '@shared/enums';
+import { PhyloGameState, PhyloPlayer, PhyloGameSettings } from '@shared/types';
 import { validateCardPlacement } from './phyloCompatibility';
 import { placeCardOnBoard, removeCardFromBoard } from './ecosystemBuilder';
 import { executeCardMovement, validateCardMovement } from './cardMovement';
@@ -8,49 +9,16 @@ import { calculatePlayerScore, determineWinCondition, ScientificChallenge, creat
 
 /**
  * Game State Management for Phylo domino-style gameplay
+ *
+ * Note: Now uses shared types from @shared/types for consistency
+ * - GameState -> PhyloGameState (from shared)
+ * - Player -> PhyloPlayer (from shared)
  */
 
-export interface GameState {
-  gameId: string;
-  players: Player[];
-  currentPlayerIndex: number;
-  gameBoard: PhyloGameBoard;
-  cards: Map<string, Card>;
-  gamePhase: 'setup' | 'playing' | 'event_reaction' | 'challenge_phase' | 'game_over';
-  turnNumber: number;
-  actionHistory: GameAction[];
-  pendingChallenges: ScientificChallenge[];
-  eventDeck: EventCard[];
-  gameSettings: GameSettings;
-  gameStats: {
-    gameStartTime: number;
-    totalTurns: number;
-    cardsPlayed: number;
-    eventsTriggered: number;
-  };
-}
-
-export interface Player {
-  id: string;
-  name: string;
-  hand: string[]; // Card IDs in player's hand
-  deck: string[]; // Card IDs in player's deck
-  discardPile: string[]; // Card IDs in player's discard pile
-  score: number;
-  isReady: boolean;
-  timeRemaining?: number; // For timed games
-}
-
-export interface GameSettings {
-  maxPlayers: number;
-  turnTimeLimit?: number; // milliseconds
-  gameTimeLimit?: number; // milliseconds
-  maxTurns?: number;
-  eventFrequency: number; // 0-1, probability of event each turn
-  allowChallenges: boolean;
-  startingHandSize: number;
-  deckSize: number;
-}
+// Re-export shared types for backward compatibility
+export type GameState = PhyloGameState;
+export type Player = PhyloPlayer;
+export type GameSettings = PhyloGameSettings;
 
 export interface GameAction {
   id: string;
@@ -203,6 +171,10 @@ export function createGameState(
     pendingChallenges: [],
     eventDeck: shuffleArray([...Array(10)].map(() => getRandomEventCard(gameBoard, gameCards))).filter(Boolean) as EventCard[],
     gameSettings: settings,
+    metadata: {
+      createdAt: new Date(),
+      startedAt: new Date()
+    },
     gameStats: {
       gameStartTime: Date.now(),
       totalTurns: 0,
@@ -809,7 +781,7 @@ export function getValidActions(gameState: GameState, playerId: string): {
 
   // Get cards that can be moved
   const canMoveCards: string[] = [];
-  gameState.gameBoard.positions.forEach(position => {
+  gameState.gameBoard.positions.forEach((position: any) => {
     if (position.playerId === playerId) {
       const card = gameState.cards.get(position.cardId);
       if (card?.phyloAttributes?.movementCapability &&

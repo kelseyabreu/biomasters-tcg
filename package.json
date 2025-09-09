@@ -8,7 +8,9 @@
     "build": "tsc && vite build",
     "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview",
-    "test.e2e": "cypress run",
+    "test.e2e": "playwright test",
+    "test.e2e.ui": "playwright test --ui",
+    "test.e2e.headed": "playwright test --headed",
     "test.unit": "vitest",
     "lint": "eslint",
     "android:build": "npm run build:prod && npx cap sync android && npx cap build android",
@@ -46,6 +48,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "7.4.2",
+    "@playwright/test": "^1.55.0",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^16.2.0",
@@ -54,7 +57,7 @@
     "@types/react-dom": "19.0.4",
     "@vitejs/plugin-legacy": "^5.0.0",
     "@vitejs/plugin-react": "^4.0.1",
-    "cypress": "^13.5.0",
+
     "eslint": "^9.20.1",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^5.1.0",

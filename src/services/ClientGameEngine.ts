@@ -18,7 +18,9 @@ import {
 
 // Import shared types
 import {
-  GameState as ServerGameState
+  GameState as ServerGameState,
+  CardData,
+  AbilityData
 } from '@shared/types';
 
 // Import localization system
@@ -27,8 +29,10 @@ import {
   JSONFileDataLoader
 } from '@shared/localization-manager';
 
-// Import shared data loader
-import { DataLoader } from '@shared/data/DataLoader';
+// Import unified data loader factory
+import { createUnifiedDataLoader } from '@shared/data/UnifiedDataLoader';
+import { IUnifiedDataLoader } from '@shared/data/IServerDataLoader';
+import { GameDataSet } from '@shared/data/DataLoader';
 
 import {
   SupportedLanguage
@@ -111,13 +115,21 @@ export interface ClientActivateAbilityPayload {
 
 
 
-// Shared data loader instance
-export const sharedDataLoader = new DataLoader({
+// Shared unified data loader instance
+export const sharedDataLoader = createUnifiedDataLoader({
+  environment: 'client',
+  source: 'fetch',
   baseUrl: '/data',
   enableCaching: true,
-  cacheTimeout: 300000, // 5 minutes
-  retryAttempts: 3,
-  retryDelay: 1000
+  cacheConfig: {
+    ttl: 300000, // 5 minutes
+    maxSize: 100
+  },
+  retryConfig: {
+    maxRetries: 3,
+    retryDelay: 1000,
+    backoffMultiplier: 2
+  }
 });
 
 /**
@@ -128,7 +140,7 @@ export const sharedDataLoader = new DataLoader({
 export class ClientGameEngine {
   private coreEngine: BioMastersEngine | null = null;
   private gameState: ClientGameState | null = null;
-  private dataLoader: DataLoader;
+  private dataLoader: IUnifiedDataLoader;
 
   constructor() {
     this.dataLoader = sharedDataLoader;
@@ -138,12 +150,56 @@ export class ClientGameEngine {
    * Initialize the game engine with JSON data
    */
   async initialize(): Promise<void> {
-    // Load game data using shared DataLoader
-    const gameDataResult = await this.dataLoader.loadGameData();
+    // Load game data using unified data loader
+    const gameDataResult = await this.loadGameDataSet();
     if (!gameDataResult) {
       throw new Error('Failed to load game data');
     }
-    console.log('✅ [ClientGameEngine] Game data loaded successfully using shared DataLoader');
+    console.log('✅ [ClientGameEngine] Game data loaded successfully using unified DataLoader');
+  }
+
+  /**
+   * Load complete game data set using unified data loader
+   */
+  private async loadGameDataSet(): Promise<GameDataSet> {
+    // Load all data in parallel using unified interface
+    const [cardsResult, abilitiesResult, localizationManager] = await Promise.all([
+      this.dataLoader.loadCards(),
+      this.dataLoader.loadAbilities(),
+      this.dataLoader.createLocalizationManager()
+    ]);
+
+    // Check for loading errors
+    if (!cardsResult.success || !cardsResult.data) {
+      throw new Error(`Failed to load cards: ${cardsResult.error}`);
+    }
+    if (!abilitiesResult.success || !abilitiesResult.data) {
+      throw new Error(`Failed to load abilities: ${abilitiesResult.error}`);
+    }
+
+    // Convert arrays to Maps for GameDataSet compatibility
+    const cardsMap = new Map<number, CardData>();
+    for (const card of cardsResult.data) {
+      cardsMap.set(card.cardId, card);
+    }
+
+    const abilitiesMap = new Map<number, AbilityData>();
+    for (const ability of abilitiesResult.data) {
+      abilitiesMap.set(ability.id, ability);
+    }
+
+    // Create empty keywords map for now (can be enhanced later)
+    const keywordsMap = new Map<number, string>();
+
+    // Load default language
+    await localizationManager.loadLanguage(SupportedLanguage.ENGLISH);
+
+    return {
+      cards: cardsMap,
+      abilities: abilitiesMap,
+      keywords: keywordsMap,
+      localizationManager
+    };
   }
 
   /**
@@ -198,8 +254,8 @@ export class ClientGameEngine {
     );
     await localizationManager.loadLanguage(SupportedLanguage.ENGLISH); // Default to English
 
-    // Load game data using shared DataLoader
-    const gameData = await this.dataLoader.loadGameData();
+    // Load game data using unified data loader
+    const gameData = await this.loadGameDataSet();
     const cardDatabase = gameData.cards;
     const abilityDatabase = gameData.abilities;
     const keywordDatabase = gameData.keywords;

@@ -7,7 +7,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
 import { BioMastersEngine, GameSettings, PlayerAction } from '../../../shared/game-engine/BioMastersEngine';
-import { DataLoader } from '@biomasters/shared/data/DataLoader';
+import { IUnifiedDataLoader } from '../../../shared/data/IServerDataLoader';
 import { createMockLocalizationManager } from '../utils/mockLocalizationManager';
 
 const router = Router();
@@ -465,14 +465,39 @@ router.post('/biomasters/create', requireAuth, asyncHandler(async (req, res) => 
   ];
 
   try {
-    // Load game data using DataLoader
-    const dataLoader = new DataLoader();
-    const gameData = await dataLoader.loadGameData();
+    // Get the global server data loader
+    const serverDataLoader = (global as any).serverDataLoader as IUnifiedDataLoader;
+    if (!serverDataLoader) {
+      throw new Error('Server data loader not initialized');
+    }
 
-    // Use the shared data directly (engine now uses shared CardData interface)
-    const cardDatabase = gameData.cards;
-    const abilityDatabase = gameData.abilities;
-    const keywordMap = gameData.keywords;
+    // Load game data using unified data loader
+    const [cardsResult, abilitiesResult] = await Promise.all([
+      serverDataLoader.loadCards(),
+      serverDataLoader.loadAbilities()
+    ]);
+
+    // Check for loading errors
+    if (!cardsResult.success || !cardsResult.data) {
+      throw new Error(`Failed to load cards: ${cardsResult.error}`);
+    }
+    if (!abilitiesResult.success || !abilitiesResult.data) {
+      throw new Error(`Failed to load abilities: ${abilitiesResult.error}`);
+    }
+
+    // Convert arrays to Maps for engine compatibility
+    const cardDatabase = new Map();
+    for (const card of cardsResult.data) {
+      cardDatabase.set(card.cardId, card);
+    }
+
+    const abilityDatabase = new Map();
+    for (const ability of abilitiesResult.data) {
+      abilityDatabase.set(ability.id, ability);
+    }
+
+    // Create empty keywords map for now (can be enhanced later)
+    const keywordMap = new Map();
 
     // Create new game engine instance with injected data
     const mockLocalizationManager = createMockLocalizationManager();

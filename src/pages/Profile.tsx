@@ -93,7 +93,7 @@ const Profile: React.FC = () => {
       setEmail(firebaseUser.email || '');
     }
     if (userProfile) {
-      setDisplayName(userProfile.displayName || userProfile.username || '');
+      setDisplayName(userProfile.display_name || userProfile.username || '');
     }
   }, [firebaseUser, userProfile]);
 
@@ -135,8 +135,7 @@ const Profile: React.FC = () => {
 
       // Update local store
       updateUserProfile({
-        displayName: displayName.trim(),
-        username: displayName.trim() || firebaseUser.email?.split('@')[0] || 'User'
+        display_name: displayName.trim() || undefined
       });
 
       showToastMessage('✅ Profile updated successfully!');

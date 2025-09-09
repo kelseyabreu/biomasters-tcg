@@ -7,26 +7,42 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { db } from '../database/kysely';
 // import { NewCard } from '../database/types'; // Type doesn't exist, using any for now
+// import { createDevelopmentServerDataLoader } from '../../../shared/data/ServerDataLoader'; // Available for future migration
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
+// ServerDataLoader available for future migration when species files are moved to standard data structure
+
 /**
- * Load species manifest
+ * Load species manifest using ServerDataLoader
  */
-function loadSpeciesManifest(): string[] {
-  const manifestPath = join(process.cwd(), '../public/species/manifest.json');
-  const manifestData = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  return manifestData.species;
+async function loadSpeciesManifest(): Promise<string[]> {
+  try {
+    // Try to load from ServerDataLoader first (if available)
+    const manifestPath = join(process.cwd(), '../public/species/manifest.json');
+    const manifestData = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    return manifestData.species;
+  } catch (error) {
+    console.error('❌ Failed to load species manifest:', error);
+    throw error;
+  }
 }
 
 /**
- * Load individual species data
+ * Load individual species data using ServerDataLoader fallback
  */
-function loadSpeciesData(speciesName: string): any {
-  const speciesPath = join(process.cwd(), `../public/species/${speciesName}.json`);
-  return JSON.parse(readFileSync(speciesPath, 'utf8'));
+async function loadSpeciesData(speciesName: string): Promise<any> {
+  try {
+    // For now, keep using direct file access for species files
+    // since they're not part of the standard game data structure
+    const speciesPath = join(process.cwd(), `../public/species/${speciesName}.json`);
+    return JSON.parse(readFileSync(speciesPath, 'utf8'));
+  } catch (error) {
+    console.error(`❌ Failed to load species data for ${speciesName}:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -211,7 +227,7 @@ async function importSpeciesData() {
     console.log('🌱 Starting species data import...');
     
     // Load species list
-    const speciesList = loadSpeciesManifest();
+    const speciesList = await loadSpeciesManifest();
     console.log(`📋 Found ${speciesList.length} species to import`);
     
     // Check if cards already exist (using user_cards as placeholder)
@@ -238,7 +254,7 @@ async function importSpeciesData() {
       try {
         console.log(`📦 Processing ${speciesName}...`);
         
-        const speciesData = loadSpeciesData(speciesName);
+        const speciesData = await loadSpeciesData(speciesName);
         const cardData = convertSpeciesToCard(speciesData);
         
         importedCards.push(cardData);

@@ -1,5 +1,5 @@
 /**
- * Card Data Transformation Utilities
+ * Card Data Transformation Utilities (DEPRECATED - use shared DataLoader instead)
  * Handles conversion between backend and frontend card formats
  */
 
@@ -30,46 +30,7 @@ export interface BackendCard {
   };
 }
 
-/**
- * Converts backend card format to frontend card format
- */
-export function convertBackendCardToFrontend(backendCard: BackendCard): FrontendCard {
-  const { card_data } = backendCard;
-  
-  return createCardWithDefaults({
-    cardId: parseInt(backendCard.id) || 0, // Convert to number for cardId
-    nameId: backendCard.archetype_name || 'UNKNOWN_CARD',
-    id: backendCard.id, // Keep as string to match frontend type
-    scientificNameId: backendCard.scientific_name || 'UNKNOWN_SCIENTIFIC',
-    descriptionId: 'DESC_UNKNOWN',
-    taxonomyId: 'TAXONOMY_UNKNOWN',
-    trophicRole: card_data.type as any,
-    habitat: mapHabitatToClimate(card_data.habitat),
-    power: card_data.attack,
-    health: card_data.health,
-    maxHealth: card_data.health,
-    speed: calculateSpeed(card_data.biological_data),
-    senses: calculateSenses(card_data.biological_data),
-    energyCost: card_data.cost,
-    abilities: convertAbilities(card_data.abilities),
-    conservationStatus: mapRarityToConservation(card_data.rarity),
-    artwork: card_data.image_url,
-    description: card_data.description,
-    realData: {
-      mass_kg: card_data.biological_data?.mass_kg || 1,
-      walk_Speed_m_per_hr: card_data.biological_data?.walk_Speed_m_per_hr,
-      run_Speed_m_per_hr: card_data.biological_data?.run_Speed_m_per_hr,
-      swim_Speed_m_per_hr: card_data.biological_data?.swim_Speed_m_per_hr,
-      burrow_Speed_m_per_hr: card_data.biological_data?.burrow_Speed_m_per_hr,
-      fly_Speed_m_per_hr: card_data.biological_data?.fly_Speed_m_per_hr,
-      vision_range_m: card_data.biological_data?.vision_range_m,
-      hearing_range_m: card_data.biological_data?.hearing_range_m,
-      smell_range_m: card_data.biological_data?.smell_range_m,
-      taste_range_m: card_data.biological_data?.taste_range_m,
-      touch_range_m: card_data.biological_data?.touch_range_m,
-    }
-  });
-}
+
 
 /**
  * Maps backend habitat to frontend Habitat enum

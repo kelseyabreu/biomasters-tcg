@@ -4,18 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ClientGameEngine } from '../ClientGameEngine';
-import { SupportedLanguage } from '@shared/text-ids';
-import { GameActionType, GamePhase, TurnPhase } from '../../../shared/enums';
 
-// Mock data for fetch responses
-const mockLocalizationData = {
-  "card.oak_tree.name": "Oak Tree",
-  "ability.photosynthesis.name": "Photosynthesis"
-};
-
-// Mock the DataLoader module
+// Mock the DataLoader module first (hoisted to top)
 vi.mock('@shared/data/DataLoader', () => {
+  // Define mock data inside the mock factory
   const mockCardsData = [
     {
       cardId: 1,
@@ -108,6 +100,17 @@ vi.mock('@shared/data/DataLoader', () => {
   };
 });
 
+// Import after mocks to avoid hoisting issues
+import { ClientGameEngine } from '../ClientGameEngine';
+import { SupportedLanguage } from '@shared/text-ids';
+import { GameActionType, GamePhase, TurnPhase } from '../../../shared/enums';
+
+// Mock data for fetch responses
+const mockLocalizationData = {
+  "card.oak_tree.name": "Oak Tree",
+  "ability.photosynthesis.name": "Photosynthesis"
+};
+
 // Mock fetch for testing
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -125,12 +128,53 @@ describe('ClientGameEngine', () => {
       if (url.includes('/data/game-config/cards.json')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(mockCardsData)
+          json: () => Promise.resolve([
+            {
+              cardId: 1,
+              nameId: "CARD_OAK_TREE",
+              scientificNameId: "SCIENTIFIC_QUERCUS_ROBUR",
+              descriptionId: "DESC_OAK_TREE",
+              taxonomyId: "TAXONOMY_OAK_TREE",
+              trophicLevel: 1,
+              trophicCategory: 1,
+              domain: 1,
+              cost: null,
+              keywords: [1, 6, 20],
+              abilities: [6],
+              victoryPoints: 1,
+              conservationStatus: 7,
+              mass_kg: 50000,
+              lifespan_max_days: 36500,
+              vision_range_m: 0,
+              smell_range_m: 0,
+              hearing_range_m: 0,
+              walk_speed_m_per_hr: 0,
+              run_speed_m_per_hr: 0,
+              swim_speed_m_per_hr: 0,
+              fly_speed_m_per_hr: 0,
+              offspring_count: 1000,
+              gestation_days: 365
+            }
+          ])
         });
       } else if (url.includes('/data/game-config/abilities.json')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(mockAbilitiesData)
+          json: () => Promise.resolve([
+            {
+              abilityId: 1,
+              nameId: "ABILITY_PHOTOSYNTHESIS",
+              descriptionId: "DESC_PHOTOSYNTHESIS",
+              triggerId: 1,
+              effects: [
+                {
+                  effectId: 1,
+                  type: "energy_gain",
+                  value: 1
+                }
+              ]
+            }
+          ])
         });
       } else if (url.includes('en.json')) {
         return Promise.resolve({

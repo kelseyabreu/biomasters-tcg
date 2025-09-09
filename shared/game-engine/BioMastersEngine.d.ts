@@ -5,7 +5,7 @@
  *
  * This engine is shared between client and server, with data injected via constructor
  */
-import { GamePhase, TurnPhase, GameActionType } from '../enums';
+import { GameActionType } from '../enums';
 import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../text-ids';
 import { ILocalizationManager } from '../localization-manager';
 import { CardData as SharedCardData, AbilityData as SharedAbilityData, GameState, CardInstance } from '../types';
@@ -40,45 +40,6 @@ export interface LegacyEngineCardData {
     gestation_days: number;
 }
 export interface AbilityData extends SharedAbilityData {
-}
-export interface GameState_old {
-    gameId: string;
-    players: Player_old[];
-    currentPlayerIndex: number;
-    gamePhase: GamePhase;
-    turnPhase: TurnPhase;
-    actionsRemaining: number;
-    turnNumber: number;
-    finalTurnTriggeredBy?: string;
-    finalTurnPlayersRemaining?: string[];
-    grid: Map<string, GridCard_old>;
-    detritus: CardInstance[];
-    gameSettings: GameSettings;
-    metadata: Record<string, any>;
-}
-export interface Player_old {
-    id: string;
-    name: string;
-    hand: string[];
-    deck: string[];
-    scorePile: string[];
-    energy: number;
-    isReady: boolean;
-    actionsRemaining: number;
-}
-export interface GridCard_old {
-    instanceId: string;
-    cardId: number;
-    ownerId: string;
-    position: {
-        x: number;
-        y: number;
-    };
-    isExhausted: boolean;
-    attachments: GridCard_old[];
-    statusEffects: StatusEffect[];
-    isDetritus: boolean;
-    isHOME: boolean;
 }
 export interface StatusEffect {
     effectId: string;

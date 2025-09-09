@@ -30,6 +30,8 @@ import {
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, AuthError } from '../../utils/auth';
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import { handleGuestConversion, canConvertGuest } from '../../utils/guestConversion';
+import { useUILocalization } from '../../hooks/useCardLocalization';
+import { UITextId } from '@shared/text-ids';
 import './AuthForm.css';
 
 interface AuthFormProps {
@@ -53,6 +55,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
   const [displayName, setDisplayName] = useState('');
 
   const { signInAsGuest, guestToken, isGuestMode } = useHybridGameStore();
+  const { getUIText } = useUILocalization();
 
   const showError = (message: string) => {
     setToastMessage(message);
@@ -70,12 +73,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
     e.preventDefault();
     
     if (!email || !password) {
-      showError('Please fill in all required fields');
+      showError(getUIText(UITextId.UI_FILL_REQUIRED_FIELDS));
       return;
     }
 
     if (isSignUp && !displayName) {
-      showError('Please enter a display name');
+      showError(getUIText(UITextId.UI_ENTER_DISPLAY_NAME_MSG));
       return;
     }
 
@@ -86,31 +89,33 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
 
       if (isSignUp) {
         firebaseCredential = await signUpWithEmail({ email, password, displayName });
-        showSuccess('Account created! Please check your email for verification.');
+        showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED));
       } else {
         firebaseCredential = await signInWithEmail({ email, password });
-        showSuccess('Signed in successfully!');
+        showSuccess(getUIText(UITextId.UI_SIGNED_IN_SUCCESS));
       }
 
       // Handle guest conversion if this is a guest user
       if (isGuestConversion && canConvertGuest(isGuestMode, guestToken)) {
-        showSuccess('Converting your guest account...');
+        showSuccess(getUIText(UITextId.UI_CONVERTING_GUEST));
 
         const conversionResult = await handleGuestConversion(
           guestToken!,
           firebaseCredential,
           (result) => {
-            showSuccess(`✅ Success! Your account is now secure. Welcome, ${result.user?.username}!`);
+            const message = getUIText(UITextId.UI_CONVERSION_SUCCESS).replace('{username}', result.user?.username || 'User');
+            showSuccess(message);
           },
           (error) => {
-            showError(`Conversion failed: ${error}`);
+            const message = getUIText(UITextId.UI_CONVERSION_FAILED).replace('{error}', error);
+            showError(message);
           }
         );
 
         if (!conversionResult.success) {
           // If conversion fails, we should still allow the user to continue
           // but inform them about the issue
-          showError('Account created but failed to merge guest data. Please contact support.');
+          showError(getUIText(UITextId.UI_ACCOUNT_CREATED_MERGE_FAILED));
         }
       }
 
@@ -119,7 +124,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       }
     } catch (error: any) {
       const authError = error as AuthError;
-      showError(authError.message || 'Authentication failed');
+      showError(authError.message || getUIText(UITextId.UI_AUTH_FAILED));
     } finally {
       setLoading(false);
     }
@@ -129,25 +134,27 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
     setLoading(true);
     try {
       const firebaseCredential = await signInWithGoogle();
-      showSuccess('Signed in with Google successfully!');
+      showSuccess(getUIText(UITextId.UI_GOOGLE_SIGNIN_SUCCESS));
 
       // Handle guest conversion if this is a guest user
       if (isGuestConversion && canConvertGuest(isGuestMode, guestToken)) {
-        showSuccess('Converting your guest account...');
+        showSuccess(getUIText(UITextId.UI_CONVERTING_GUEST));
 
         const conversionResult = await handleGuestConversion(
           guestToken!,
           firebaseCredential,
           (result) => {
-            showSuccess(`✅ Success! Your account is now secure. Welcome, ${result.user?.username}!`);
+            const message = getUIText(UITextId.UI_CONVERSION_SUCCESS).replace('{username}', result.user?.username || 'User');
+            showSuccess(message);
           },
           (error) => {
-            showError(`Conversion failed: ${error}`);
+            const message = getUIText(UITextId.UI_CONVERSION_FAILED).replace('{error}', error);
+            showError(message);
           }
         );
 
         if (!conversionResult.success) {
-          showError('Account created but failed to merge guest data. Please contact support.');
+          showError(getUIText(UITextId.UI_ACCOUNT_CREATED_MERGE_FAILED));
         }
       }
 
@@ -156,7 +163,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       }
     } catch (error: any) {
       const authError = error as AuthError;
-      showError(authError.message || 'Google sign-in failed');
+      showError(authError.message || getUIText(UITextId.UI_GOOGLE_SIGNIN_FAILED));
     } finally {
       setLoading(false);
     }
@@ -166,12 +173,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
     setLoading(true);
     try {
       await signInAsGuest();
-      showSuccess('Signed in as guest!');
+      showSuccess(getUIText(UITextId.UI_GUEST_SIGNIN_SUCCESS));
       if (onSuccess) {
         setTimeout(onSuccess, 1500);
       }
     } catch (error: any) {
-      showError('Guest sign-in failed');
+      showError(getUIText(UITextId.UI_GUEST_SIGNIN_FAILED));
     } finally {
       setLoading(false);
     }
@@ -182,10 +189,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       <IonCard className="auth-card">
         <IonCardHeader>
           <IonCardTitle className="auth-title">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {isSignUp ? getUIText(UITextId.UI_CREATE_ACCOUNT) : getUIText(UITextId.UI_WELCOME_BACK)}
           </IonCardTitle>
           <IonText color="medium">
-            <p>{isSignUp ? 'Join the Biomasters TCG community' : 'Sign in to your Biomasters TCG account'}</p>
+            <p>{isSignUp ? getUIText(UITextId.UI_JOIN_COMMUNITY) : getUIText(UITextId.UI_SIGN_IN_ACCOUNT)}</p>
           </IonText>
         </IonCardHeader>
 
@@ -195,11 +202,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             {isSignUp && (
               <IonItem className="auth-input">
                 <IonIcon slot="start" icon={personAdd} />
-                <IonLabel position="stacked">Display Name</IonLabel>
+                <IonLabel position="stacked">{getUIText(UITextId.UI_DISPLAY_NAME)}</IonLabel>
                 <IonInput
                   type="text"
                   value={displayName}
-                  placeholder="Enter your display name"
+                  placeholder={getUIText(UITextId.UI_ENTER_DISPLAY_NAME)}
                   onIonInput={(e) => setDisplayName(e.detail.value!)}
                   required
                 />
@@ -209,11 +216,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             {/* Email */}
             <IonItem className="auth-input">
               <IonIcon slot="start" icon={mail} />
-              <IonLabel position="stacked">Email</IonLabel>
+              <IonLabel position="stacked">{getUIText(UITextId.UI_EMAIL)}</IonLabel>
               <IonInput
                 type="email"
                 value={email}
-                placeholder="Enter your email"
+                placeholder={getUIText(UITextId.UI_ENTER_EMAIL)}
                 onIonInput={(e) => setEmail(e.detail.value!)}
                 required
               />
@@ -222,11 +229,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             {/* Password */}
             <IonItem className="auth-input">
               <IonIcon slot="start" icon={lockClosed} />
-              <IonLabel position="stacked">Password</IonLabel>
+              <IonLabel position="stacked">{getUIText(UITextId.UI_PASSWORD)}</IonLabel>
               <IonInput
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                placeholder="Enter your password"
+                placeholder={getUIText(UITextId.UI_ENTER_PASSWORD)}
                 onIonInput={(e) => setPassword(e.detail.value!)}
                 required
               />
@@ -248,7 +255,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                     checked={rememberMe}
                     onIonChange={(e) => setRememberMe(e.detail.checked)}
                   />
-                  <IonLabel>Remember me</IonLabel>
+                  <IonLabel>{getUIText(UITextId.UI_REMEMBER_ME)}</IonLabel>
                 </IonItem>
                 <IonButton
                   fill="clear"
@@ -256,7 +263,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                   color="primary"
                   className="forgot-password-btn"
                 >
-                  Forgot Password?
+                  {getUIText(UITextId.UI_FORGOT_PASSWORD)}
                 </IonButton>
               </div>
             )}
@@ -270,7 +277,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
               disabled={loading}
             >
               <IonIcon slot="start" icon={isSignUp ? personAdd : logIn} />
-              {loading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+              {loading ? getUIText(UITextId.UI_PLEASE_WAIT) : (isSignUp ? getUIText(UITextId.UI_SIGN_UP) : getUIText(UITextId.UI_SIGN_IN))}
             </IonButton>
 
             {/* Hidden submit button for form submission */}
@@ -279,7 +286,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
 
           {/* Divider */}
           <div className="auth-divider">
-            <span>or</span>
+            <span>{getUIText(UITextId.UI_OR)}</span>
           </div>
 
           {/* Google Sign In */}
@@ -292,7 +299,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             className="google-signin-btn"
           >
             <IonIcon slot="start" icon={logoGoogle} />
-            Continue with Google
+            {getUIText(UITextId.UI_CONTINUE_WITH_GOOGLE)}
           </IonButton>
 
           {/* Guest Continue */}
@@ -304,13 +311,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             disabled={loading}
             className="guest-continue-btn"
           >
-            Continue as Guest
+            {getUIText(UITextId.UI_CONTINUE_AS_GUEST)}
           </IonButton>
 
           {/* Auth Switch */}
           <div className="auth-switch">
             <IonText color="medium">
-              {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+              {isSignUp ? getUIText(UITextId.UI_ALREADY_HAVE_ACCOUNT) + ' ' : getUIText(UITextId.UI_DONT_HAVE_ACCOUNT) + ' '}
               <IonButton
                 fill="clear"
                 size="small"
@@ -318,7 +325,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="switch-auth-btn"
               >
-                {isSignUp ? 'Sign In' : 'Sign Up'}
+                {isSignUp ? getUIText(UITextId.UI_SIGN_IN) : getUIText(UITextId.UI_SIGN_UP)}
               </IonButton>
             </IonText>
           </div>
@@ -332,7 +339,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
               onClick={onCancel}
               style={{ marginTop: '20px' }}
             >
-              Cancel
+              {getUIText(UITextId.UI_CANCEL)}
             </IonButton>
           )}
         </IonCardContent>

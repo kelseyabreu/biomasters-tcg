@@ -1,30 +1,31 @@
-// Frontend-specific types and re-exports from shared module
-import { ConservationStatus } from '@shared/enums';
-import { CardData } from '@shared/types';
+/**
+ * Frontend-specific types for BioMasters TCG
+ *
+ * This file contains ONLY frontend-specific types and enums that don't exist in shared.
+ * All shared types should be imported directly from @shared/types and @shared/enums
+ */
 
-// Re-export shared types for backward compatibility
-export type {
+// Import and re-export shared types that are commonly used in frontend
+import type {
   CardData,
-  AbilityData,
-  GameState,
   Player,
+  GameState,
   Position,
   CardInstance,
   GameAction,
   ActionResult,
   CardModifier,
   GameSettings,
-  GameMetadata
+  GameMetadata,
+  AbilityData
 } from '@shared/types';
 
-
-
-export {
+import {
+  ConservationStatus,
   CardId,
   AbilityId,
   TrophicLevel,
   TurnPhase,
-  ConservationStatus,
   GamePhase,
   Domain,
   KeywordId,
@@ -35,7 +36,41 @@ export {
   TrophicCategoryId
 } from '@shared/enums';
 
-// Frontend-specific enums that don't exist in shared
+// Re-export shared types for convenience
+export type {
+  CardData,
+  Player,
+  GameState,
+  Position,
+  CardInstance,
+  GameAction,
+  ActionResult,
+  CardModifier,
+  GameSettings,
+  GameMetadata,
+  AbilityData
+} from '@shared/types';
+
+export {
+  ConservationStatus,
+  CardId,
+  AbilityId,
+  TrophicLevel,
+  TurnPhase,
+  GamePhase,
+  Domain,
+  KeywordId,
+  TriggerId,
+  EffectId,
+  SelectorId,
+  ActionId,
+  TrophicCategoryId
+} from '@shared/enums';
+
+// ============================================================================
+// FRONTEND-SPECIFIC ENUMS (not in shared)
+// ============================================================================
+
 export enum TrophicRole {
   PRODUCER = 'Producer',
   HERBIVORE = 'Herbivore',
@@ -92,8 +127,174 @@ export enum WinCondition {
   SPECIES_COLLECTION = 'Species Collection'
 }
 
+// ============================================================================
+// FRONTEND-SPECIFIC INTERFACES
+// ============================================================================
 
+/**
+ * Frontend Card interface that extends shared CardData with UI-specific properties
+ */
+export interface Card extends Omit<CardData, 'abilities'> {
+  // Frontend-specific properties for UI display
+  id: string; // Unique instance ID for game logic (generated from cardId)
+  artwork: string; // Path to card artwork
+  description: string; // Localized description
 
+  // Backward compatibility properties (mapped from shared CardData)
+  conservationStatus: ConservationStatus; // Maps to conservation_status
+  trophicRole: TrophicRole; // Maps to trophic_level
+  habitat: Habitat; // Maps to domain/keywords
+  power: number; // Calculated from biological data
+  health: number; // Calculated from biological data
+  maxHealth: number; // Same as health
+  speed: number; // Maps to movement speeds
+  senses: number; // Maps to sensory capabilities
+  energyCost: number; // Maps to cost requirements
+  abilities: CardAbility[]; // Transformed from AbilityId[]
+
+  // Real biological data (already exists in CardData)
+  realData?: {
+    mass_kg: number;
+    // Movement speeds
+    walk_Speed_m_per_hr?: number;
+    run_Speed_m_per_hr?: number;
+    swim_Speed_m_per_hr?: number;
+    burrow_Speed_m_per_hr?: number;
+    fly_Speed_m_per_hr?: number;
+    // Sensory capabilities
+    vision_range_m?: number;
+    hearing_range_m?: number;
+    smell_range_m?: number;
+    taste_range_m?: number;
+    touch_range_m?: number;
+    heat_range_m?: number;
+    // Environmental tolerances
+    temperatureMinimum_C?: number;
+    temperatureMaximum_C?: number;
+    temperatureOptimalMin_C?: number;
+    temperatureOptimalMax_C?: number;
+    moistureOptimal_pct?: number;
+    moistureTolerance_pct?: number;
+    moistureLethal_pct?: number;
+    // Lifespan
+    lifespan_Max_Days?: number;
+    habitat?: string;
+  };
+
+  // Phylo domino-style game attributes
+  phyloAttributes?: {
+    terrains: string[];
+    climates: string[];
+    foodchainLevel: number;
+    scale: number;
+    dietType: string;
+    movementCapability: {
+      moveValue: number;
+      canFly: boolean;
+      canSwim: boolean;
+      canBurrow: boolean;
+    };
+    specialKeywords: string[];
+    pointValue: number;
+    conservationStatus: string;
+    compatibilityNotes: string;
+  };
+}
+
+export interface CardAbility {
+  id: string;
+  name: string;
+  description: string;
+  trigger: AbilityTrigger;
+  effect: AbilityEffect;
+}
+
+export interface AbilityTrigger {
+  type: 'combat' | 'play' | 'environmental' | 'conditional';
+  condition?: string;
+  value?: number;
+}
+
+export interface AbilityEffect {
+  type: 'stat_modifier' | 'damage' | 'heal' | 'energy' | 'special';
+  target: 'self' | 'opponent' | 'all_friendly' | 'all_enemy';
+  value: number;
+  duration?: number;
+}
+
+// IUCN Red List rarity system for booster packs
+export interface ConservationRarity {
+  status: ConservationStatus;
+  percentage: number;
+  packRarity: number; // Cards per 1000 packs
+  description: string;
+  borderColor: string;
+  glowEffect: string;
+}
+
+export interface WinConditionProgress {
+  condition: WinCondition;
+  playerId: string;
+  progress: number;
+  target: number;
+  achieved: boolean;
+}
+
+// Phylo domino-style game interfaces
+export interface PhyloCardPosition {
+  x: number;
+  y: number;
+  cardId: string;
+  playerId: string;
+}
+
+export interface PhyloGameBoard {
+  positions: Map<string, PhyloCardPosition>; // key: "x,y"
+  connections: Map<string, string[]>; // key: cardId, value: array of connected cardIds
+  homeCards: PhyloCardPosition[];
+}
+
+export interface PhyloCompatibility {
+  environmental: boolean; // terrain + climate match
+  foodchain: boolean; // foodchain level compatibility
+  scale: boolean; // scale requirements for carnivores
+}
+
+export interface PhyloPlacementValidation {
+  isValid: boolean;
+  compatibility: PhyloCompatibility;
+  adjacentCards: string[];
+  errorMessage?: string;
+}
+
+export interface CombatEvent {
+  id: string;
+  timestamp: number;
+  attacker: Card;
+  defender: Card;
+  roll: number;
+  modifiers: CombatModifier[];
+  success: boolean;
+  damage: number;
+  description: string;
+}
+
+export interface CombatModifier {
+  type: 'trophic_advantage' | 'speed_advantage' | 'senses_advantage' | 'habitat_match' | 'ability';
+  value: number;
+  description: string;
+}
+
+export interface CombatResult {
+  success: boolean;
+  roll: number;
+  finalChance: number;
+  modifiers: CombatModifier[];
+  damage: number;
+  defenderDestroyed: boolean;
+}
+
+// Legacy SpeciesData interface for backward compatibility
 export interface SpeciesData {
   archetypeName: string;
   identity: {
@@ -176,71 +377,32 @@ export interface SpeciesData {
   };
 }
 
-// Create a unified Card type that includes shared CardData with backward compatibility
-export interface Card extends Omit<CardData, 'abilities'> {
-  // Frontend-specific properties for UI display
-  id: string; // Unique instance ID for game logic (generated from cardId)
-  artwork: string; // Path to card artwork
-  description: string; // Localized description
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
-  // Backward compatibility properties (mapped from shared CardData)
-  conservationStatus: ConservationStatus; // Maps to conservation_status
-  trophicRole: TrophicRole; // Maps to trophic_level
-  habitat: Habitat; // Maps to domain/keywords
-  power: number; // Calculated from biological data
-  health: number; // Calculated from biological data
-  maxHealth: number; // Same as health
-  speed: number; // Maps to movement speeds
-  senses: number; // Maps to sensory capabilities
-  energyCost: number; // Maps to cost requirements
-  abilities: CardAbility[]; // Transformed from AbilityId[]
+/**
+ * Transform shared CardData to frontend Card view model
+ * This makes the data flow predictable and easier to debug
+ */
+export function transformCardDataToCard(cardData: CardData): Card {
+  return {
+    ...cardData, // Include all shared CardData properties
+    id: `card_${cardData.cardId}`, // Generate instance ID from cardId
+    artwork: `/images/cards/${cardData.nameId.toLowerCase()}.jpg`,
+    description: '', // Should be localized
 
-  // Real biological data (already exists in CardData)
-  realData?: {
-    mass_kg: number;
-    // Movement speeds
-    walk_Speed_m_per_hr?: number;
-    run_Speed_m_per_hr?: number;
-    swim_Speed_m_per_hr?: number;
-    burrow_Speed_m_per_hr?: number;
-    fly_Speed_m_per_hr?: number;
-    // Sensory capabilities
-    vision_range_m?: number;
-    hearing_range_m?: number;
-    smell_range_m?: number;
-    taste_range_m?: number;
-    touch_range_m?: number;
-    heat_range_m?: number;
-    // Environmental tolerances
-    temperatureMinimum_C?: number;
-    temperatureMaximum_C?: number;
-    temperatureOptimalMin_C?: number;
-    temperatureOptimalMax_C?: number;
-    moistureOptimal_pct?: number;
-    moistureTolerance_pct?: number;
-    moistureLethal_pct?: number;
-    // Lifespan
-    lifespan_Max_Days?: number;
-    habitat?: string;
-  };
-
-  // Phylo domino-style game attributes
-  phyloAttributes?: {
-    terrains: string[];
-    climates: string[];
-    foodchainLevel: number;
-    scale: number;
-    dietType: string;
-    movementCapability: {
-      moveValue: number;
-      canFly: boolean;
-      canSwim: boolean;
-      canBurrow: boolean;
-    };
-    specialKeywords: string[];
-    pointValue: number;
-    conservationStatus: string;
-    compatibilityNotes: string;
+    // Map shared properties to backward compatibility properties
+    conservationStatus: cardData.conservation_status || ConservationStatus.NOT_EVALUATED,
+    trophicRole: mapTrophicLevelToRole(cardData.trophicLevel),
+    habitat: mapDomainToHabitat(cardData.taxoDomain),
+    power: calculatePowerFromBiologicalData(cardData),
+    health: calculateHealthFromBiologicalData(cardData),
+    maxHealth: calculateHealthFromBiologicalData(cardData),
+    speed: cardData.walk_speed_m_per_hr || 10,
+    senses: cardData.vision_range_m || 50,
+    energyCost: 1, // Default - should be calculated from cost requirements
+    abilities: [], // Should be populated from abilities data
   };
 }
 
@@ -339,81 +501,9 @@ export function createCardWithDefaults(partial: Partial<Card> & { cardId: number
   };
 }
 
-/**
- * Transform shared CardData to frontend Card view model
- * This makes the data flow predictable and easier to debug
- */
-export function transformCardDataToCard(cardData: CardData): Card {
-  return {
-    ...cardData, // Include all shared CardData properties
-    id: `card_${cardData.cardId}`, // Generate instance ID from cardId
-    artwork: `/images/cards/${cardData.nameId.toLowerCase()}.jpg`,
-    description: '', // Should be localized
-
-    // Map shared properties to backward compatibility properties
-    conservationStatus: cardData.conservation_status || ConservationStatus.NOT_EVALUATED,
-    trophicRole: mapTrophicLevelToRole(cardData.trophicLevel),
-    habitat: mapDomainToHabitat(cardData.taxoDomain),
-    power: calculatePowerFromBiologicalData(cardData),
-    health: calculateHealthFromBiologicalData(cardData),
-    maxHealth: calculateHealthFromBiologicalData(cardData),
-    speed: cardData.walk_speed_m_per_hr || 10,
-    senses: cardData.vision_range_m || 50,
-    energyCost: 1, // Default - should be calculated from cost requirements
-    abilities: [], // Should be populated from abilities data
-
-    // Map biological data to realData format
-    realData: {
-      mass_kg: cardData.mass_kg || 0,
-      walk_Speed_m_per_hr: cardData.walk_speed_m_per_hr || undefined,
-      run_Speed_m_per_hr: cardData.run_speed_m_per_hr || undefined,
-      swim_Speed_m_per_hr: cardData.swim_speed_m_per_hr || undefined,
-      fly_Speed_m_per_hr: cardData.fly_speed_m_per_hr || undefined,
-      vision_range_m: cardData.vision_range_m || undefined,
-      hearing_range_m: cardData.hearing_range_m || undefined,
-      smell_range_m: cardData.smell_range_m || undefined,
-      lifespan_Max_Days: cardData.lifespan_max_days || undefined,
-      // Temperature data not available in shared CardData yet
-      temperatureMinimum_C: undefined,
-      temperatureMaximum_C: undefined,
-    }
-  };
-}
-
-
-
-
-
-export interface CardAbility {
-  id: string;
-  name: string;
-  description: string;
-  trigger: AbilityTrigger;
-  effect: AbilityEffect;
-}
-
-export interface AbilityTrigger {
-  type: 'combat' | 'play' | 'environmental' | 'conditional';
-  condition?: string;
-  value?: number;
-}
-
-export interface AbilityEffect {
-  type: 'stat_modifier' | 'damage' | 'heal' | 'energy' | 'special';
-  target: 'self' | 'opponent' | 'all_friendly' | 'all_enemy';
-  value: number;
-  duration?: number;
-}
-
-// IUCN Red List rarity system for booster packs
-export interface ConservationRarity {
-  status: ConservationStatus;
-  percentage: number;
-  packRarity: number; // Cards per 1000 packs
-  description: string;
-  borderColor: string;
-  glowEffect: string;
-}
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
 export const CONSERVATION_RARITY_DATA: Record<ConservationStatus, ConservationRarity> = {
   [ConservationStatus.NOT_EVALUATED]: {
@@ -489,85 +579,3 @@ export const CONSERVATION_RARITY_DATA: Record<ConservationStatus, ConservationRa
     glowEffect: 'shadow-gray'
   }
 };
-
-
-
-
-
-export interface WinConditionProgress {
-  condition: WinCondition;
-  playerId: string;
-  progress: number;
-  target: number;
-  achieved: boolean;
-}
-
-// Phylo domino-style game interfaces
-export interface PhyloCardPosition {
-  x: number;
-  y: number;
-  cardId: string;
-  playerId: string;
-}
-
-export interface PhyloGameBoard {
-  positions: Map<string, PhyloCardPosition>; // key: "x,y"
-  connections: Map<string, string[]>; // key: cardId, value: array of connected cardIds
-  homeCards: PhyloCardPosition[];
-}
-
-export interface PhyloCompatibility {
-  environmental: boolean; // terrain + climate match
-  foodchain: boolean; // foodchain level compatibility
-  scale: boolean; // scale requirements for carnivores
-}
-
-export interface PhyloPlacementValidation {
-  isValid: boolean;
-  compatibility: PhyloCompatibility;
-  adjacentCards: string[];
-  errorMessage?: string;
-}
-
-export interface PhyloEventCard {
-  id: string;
-  name: string;
-  description: string;
-  targetCriteria: {
-    terrains?: PhyloTerrain[];
-    climates?: PhyloClimate[];
-    minScale?: number;
-    maxScale?: number;
-    dietTypes?: PhyloDietType[];
-  };
-  effect: string;
-  isRemoveAfterUse: boolean;
-  canSpread: boolean;
-}
-
-export interface CombatEvent {
-  id: string;
-  timestamp: number;
-  attacker: Card;
-  defender: Card;
-  roll: number;
-  modifiers: CombatModifier[];
-  success: boolean;
-  damage: number;
-  description: string;
-}
-
-export interface CombatModifier {
-  type: 'trophic_advantage' | 'speed_advantage' | 'senses_advantage' | 'habitat_match' | 'ability';
-  value: number;
-  description: string;
-}
-
-export interface CombatResult {
-  success: boolean;
-  roll: number;
-  finalChance: number;
-  modifiers: CombatModifier[];
-  damage: number;
-  defenderDestroyed: boolean;
-}

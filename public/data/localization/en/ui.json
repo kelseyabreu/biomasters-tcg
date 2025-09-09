@@ -39,6 +39,64 @@
     "UI_PRODUCTION_LOOP": "Production Loop",
     "UI_DECOMPOSITION_LOOP": "Decomposition Loop"
   },
+  "authentication": {
+    "UI_CREATE_ACCOUNT": "Create Account",
+    "UI_WELCOME_BACK": "Welcome Back",
+    "UI_JOIN_COMMUNITY": "Join the Biomasters TCG community",
+    "UI_SIGN_IN_ACCOUNT": "Sign in to your Biomasters TCG account",
+    "UI_DISPLAY_NAME": "Display Name",
+    "UI_EMAIL": "Email",
+    "UI_PASSWORD": "Password",
+    "UI_ENTER_DISPLAY_NAME": "Enter your display name",
+    "UI_ENTER_EMAIL": "Enter your email",
+    "UI_ENTER_PASSWORD": "Enter your password",
+    "UI_REMEMBER_ME": "Remember me",
+    "UI_FORGOT_PASSWORD": "Forgot Password?",
+    "UI_PLEASE_WAIT": "Please wait...",
+    "UI_SIGN_UP": "Sign Up",
+    "UI_SIGN_IN": "Sign In",
+    "UI_CONTINUE_WITH_GOOGLE": "Continue with Google",
+    "UI_CONTINUE_AS_GUEST": "Continue as Guest",
+    "UI_ALREADY_HAVE_ACCOUNT": "Already have an account?",
+    "UI_DONT_HAVE_ACCOUNT": "Don't have an account?",
+    "UI_CANCEL": "Cancel",
+    "UI_OR": "or"
+  },
+  "authMessages": {
+    "UI_FILL_REQUIRED_FIELDS": "Please fill in all required fields",
+    "UI_ENTER_DISPLAY_NAME_MSG": "Please enter a display name",
+    "UI_ACCOUNT_CREATED": "Account created! Please check your email for verification.",
+    "UI_SIGNED_IN_SUCCESS": "Signed in successfully!",
+    "UI_CONVERTING_GUEST": "Converting your guest account...",
+    "UI_CONVERSION_SUCCESS": "✅ Success! Your account is now secure. Welcome, {username}!",
+    "UI_CONVERSION_FAILED": "Conversion failed: {error}",
+    "UI_ACCOUNT_CREATED_MERGE_FAILED": "Account created but failed to merge guest data. Please contact support.",
+    "UI_AUTH_FAILED": "Authentication failed",
+    "UI_GOOGLE_SIGNIN_SUCCESS": "Signed in with Google successfully!",
+    "UI_GOOGLE_SIGNIN_FAILED": "Google sign-in failed",
+    "UI_GUEST_SIGNIN_SUCCESS": "Signed in as guest!",
+    "UI_GUEST_SIGNIN_FAILED": "Guest sign-in failed"
+  },
+  "guestRegistration": {
+    "UI_PROTECT_PROGRESS": "Protect Your Progress!",
+    "UI_CREATE_FREE_ACCOUNT": "Create a free account to save your collection across devices",
+    "UI_DONT_LOSE_CARDS": "Don't Lose Your Cards!",
+    "UI_SAVE_SPECIES_CREDITS": "Save your {species} species and {credits} eco-credits",
+    "UI_SECURE_COLLECTION": "Secure Your Collection!",
+    "UI_PROTECT_SPECIES_CARDS_CREDITS": "Protect {species} species, {cards} cards, and {credits} eco-credits"
+  },
+  "battle": {
+    "UI_NOTICE": "Notice",
+    "UI_FORFEIT_MATCH": "Forfeit Match"
+  },
+  "collection": {
+    "UI_ENTER_DECK_NAME": "Enter deck name",
+    "UI_CONSERVATION_STATUS": "Conservation Status",
+    "UI_ALL_STATUS": "All Status",
+    "UI_TROPHIC_ROLE": "Trophic Role",
+    "UI_ALL_ROLES": "All Roles",
+    "UI_PRODUCER": "Producer"
+  },
   "keywords": {
     "KEYWORD_TERRESTRIAL": "Terrestrial",
     "KEYWORD_AQUATIC": "Aquatic",

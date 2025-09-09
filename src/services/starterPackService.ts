@@ -3,9 +3,10 @@
  * Manages the fixed starter collection that all users receive
  */
 
-import { loadAllSpeciesCards } from '../utils/speciesDataProcessor';
+import { dataLoader } from '@shared/data/DataLoader';
 import { Card } from '../types';
 import { CardId } from '@shared/enums';
+import { CardData } from '@shared/types';
 // No longer need legacy species name conversions
 
 export interface StarterPackCard {
@@ -62,17 +63,41 @@ class StarterPackService {
    */
   async loadStarterPackData(): Promise<Card[]> {
     try {
-      // Load all species data and filter for starter cards
-      const allCards = await loadAllSpeciesCards();
+      // Load all cards using shared DataLoader
+      const result = await dataLoader.loadAllCards();
+      if (!result.success || !result.data) {
+        console.error('Failed to load cards:', result.error);
+        return [];
+      }
+
+      const allCards = result.data;
       const starterCards: Card[] = [];
 
       for (const starterCard of STARTER_PACK_SPECIES) {
-        const foundCard = allCards.find(card =>
+        const foundCard = allCards.find((card: CardData) =>
           card.cardId === starterCard.cardId
         );
 
         if (foundCard) {
-          starterCards.push(foundCard);
+          // Convert CardData to Card (frontend type)
+          const frontendCard: Card = {
+            ...foundCard,
+            // Add frontend-specific properties
+            id: `card-${foundCard.cardId}`, // Generate unique instance ID
+            artwork: foundCard.artwork_url || `/images/species/${foundCard.nameId.toLowerCase()}.jpg`, // Use artwork URL or default
+            description: foundCard.descriptionId || 'No description available', // Use description ID as fallback
+            conservationStatus: foundCard.conservation_status || 'Least Concern' as any, // Map conservation status
+            trophicRole: foundCard.trophicLevel || 'Primary Consumer' as any, // Map trophic level
+            habitat: foundCard.domain as any, // Map domain to habitat
+            power: foundCard.mass_kg ? Math.floor(foundCard.mass_kg / 10) + 1 : 1, // Calculate power from mass
+            health: foundCard.mass_kg ? Math.floor(foundCard.mass_kg / 5) + 5 : 5, // Calculate health from mass
+            maxHealth: foundCard.mass_kg ? Math.floor(foundCard.mass_kg / 5) + 5 : 5, // Same as health
+            speed: foundCard.run_speed_m_per_hr ? Math.floor(foundCard.run_speed_m_per_hr / 1000) + 1 : 1, // Calculate from run speed
+            senses: foundCard.vision_range_m ? Math.floor(foundCard.vision_range_m / 100) + 1 : 1, // Calculate from vision range
+            energyCost: foundCard.cost ? parseInt(foundCard.cost) || 1 : 1, // Parse cost or default
+            abilities: [], // Convert abilities if needed
+          };
+          starterCards.push(frontendCard);
         } else {
           console.warn(`Starter card not found: CardId ${starterCard.cardId}`);
         }

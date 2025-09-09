@@ -32,6 +32,11 @@ export interface UILocalizationData {
     gameTerms: Record<string, string>;
     keywords: Record<KeywordNameId, string>;
     trophicCategories: Record<string, string>;
+    authentication: Record<string, string>;
+    authMessages: Record<string, string>;
+    guestRegistration: Record<string, string>;
+    battle: Record<string, string>;
+    collection: Record<string, string>;
 }
 /**
  * Interface for taxonomy localization data

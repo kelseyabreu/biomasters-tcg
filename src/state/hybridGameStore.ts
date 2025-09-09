@@ -6,16 +6,16 @@
 
 import { create } from 'zustand';
 import { persist, subscribeWithSelector, createJSONStorage } from 'zustand/middleware';
-import { offlineSecurityService, OfflineCollection, OfflineAction } from '../services/offlineSecurityService';
+import { offlineSecurityService, OfflineCollection } from '../services/offlineSecurityService';
 import { starterPackService } from '../services/starterPackService';
 import { syncService, SyncResult } from '../services/syncService';
 import { dataLoader } from '@shared/data/DataLoader';
-import { cardIdToNameId, initializeCardMapping } from '@shared/utils/cardIdHelpers';
-import { ConservationStatus } from '@shared/enums';
+import { initializeCardMapping } from '@shared/utils/cardIdHelpers';
+
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
-import { Card, TrophicRole, Habitat, transformCardDataToCard } from '../types';
+import { Card, transformCardDataToCard } from '../types';
 import { auth } from '../config/firebase';
-import { onAuthStateChanged, User, signInAnonymously, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { tokenManager } from '../services/tokenStorage';
 import { createUserScopedIndexedDBStorage, clearUserData, migrateToUserScopedStorage } from '../utils/userScopedStorage';
 import { guestApi } from '../services/apiClient';
@@ -23,7 +23,7 @@ import { tcgGameService, ServiceResult } from '../services/TCGGameService';
 import { phyloGameService } from '../services/PhyloGameService';
 import type { GameState } from '../game-logic/gameStateManager';
 import type { ClientGameState } from '../services/ClientGameEngine';
-import { nameIdToCardId, migrateCollectionToCardIds_old } from '@shared/utils/cardIdHelpers';
+import { nameIdToCardId } from '@shared/utils/cardIdHelpers';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
@@ -816,8 +816,9 @@ export const useHybridGameStore = create<HybridGameState>()(
             if ('species_owned' in stored && !('cards_owned' in stored)) {
               console.log('🔄 Migrating collection from species_name to CardId format...');
               const oldStoredCollection = stored as any;
-              const oldCollection = oldStoredCollection.species_owned;
-              const newCardsOwned = migrateCollectionToCardIds_old(oldCollection);
+
+              // Simple migration: reset collection to empty since old format is incompatible
+              const newCardsOwned: Record<number, any> = {};
               migratedCollection = {
                 user_id: oldStoredCollection.user_id,
                 device_id: oldStoredCollection.device_id,

@@ -51,6 +51,11 @@ export interface UILocalizationData {
   gameTerms: Record<string, string>;
   keywords: Record<KeywordNameId, string>;
   trophicCategories: Record<string, string>;
+  authentication: Record<string, string>;
+  authMessages: Record<string, string>;
+  guestRegistration: Record<string, string>;
+  battle: Record<string, string>;
+  collection: Record<string, string>;
 }
 
 /**
@@ -258,6 +263,11 @@ export class LocalizationManager implements ILocalizationManager {
            ui.errorMessages[textId] ??
            ui.gameTerms[textId] ??
            ui.trophicCategories[textId] ??
+           ui.authentication[textId] ??
+           ui.authMessages[textId] ??
+           ui.guestRegistration[textId] ??
+           ui.battle[textId] ??
+           ui.collection[textId] ??
            `[${textId}]`;
   }
 

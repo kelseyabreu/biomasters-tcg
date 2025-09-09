@@ -24,18 +24,6 @@ export declare function cardIdToNameId(cardId: number): string | null;
  */
 export declare function nameIdToCardId(nameId: string): number | null;
 /**
- * Convert legacy species_name (kebab-case) to CardId (number)
- * Used for migrating old data that uses species_name format
- * @deprecated Legacy migration utility - use direct CardId system instead
- */
-export declare function speciesNameToCardId_old(speciesName: string): number | null;
-/**
- * Convert CardId (number) to legacy species_name (kebab-case)
- * Used for backward compatibility during migration
- * @deprecated Legacy migration utility - use direct CardId system instead
- */
-export declare function cardIdToSpeciesName_old(cardId: number): string | null;
-/**
  * Validate that a CardId exists in the system
  */
 export declare function isValidCardId(cardId: number): boolean;
@@ -74,11 +62,6 @@ export declare function isCardOwnedByNameId(nameId: string, cardsOwned: Record<n
  * Get ownership data for a card by nameId
  */
 export declare function getCardOwnershipByNameId(nameId: string, cardsOwned: Record<number, any>): any | null;
-/**
- * Migration helper: Convert old collection format to new format
- * @deprecated Legacy migration utility - collections should use CardId system directly
- */
-export declare function migrateCollectionToCardIds_old(oldCollection: Record<string, any>): Record<number, any>;
 export declare const isSpeciesOwned: typeof isCardOwnedByNameId;
 export declare const getSpeciesOwnership: typeof getCardOwnershipByNameId;
 /**

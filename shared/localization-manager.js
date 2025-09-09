@@ -66,6 +66,11 @@ class LocalizationManager {
             ui.errorMessages[textId] ??
             ui.gameTerms[textId] ??
             ui.trophicCategories[textId] ??
+            ui.authentication[textId] ??
+            ui.authMessages[textId] ??
+            ui.guestRegistration[textId] ??
+            ui.battle[textId] ??
+            ui.collection[textId] ??
             `[${textId}]`;
     }
     getTaxonomy(taxonomyId) {

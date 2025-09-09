@@ -7,20 +7,12 @@
 import {
   GamePhase,
   TurnPhase,
-  KeywordId,
-  GameActionType,
-  TrophicLevel,
-  TrophicCategoryId,
-  Domain,
-  DOMAIN_COMPATIBILITY,
-  CardId
+  GameActionType
 } from '@shared/enums';
 
 // Import the shared, authoritative game engine
 import {
   BioMastersEngine,
-  CardData as ServerCardData,
-  AbilityData as ServerAbilityData,
   PlayerAction as ServerPlayerAction
 } from '@shared/game-engine/BioMastersEngine';
 
@@ -31,7 +23,6 @@ import {
 
 // Import localization system
 import {
-  ILocalizationManager,
   LocalizationManager,
   JSONFileDataLoader
 } from '@shared/localization-manager';
@@ -40,42 +31,10 @@ import {
 import { DataLoader } from '@shared/data/DataLoader';
 
 import {
-  CardNameId,
-  ScientificNameId,
-  CardDescriptionId,
-  AbilityNameId,
-  AbilityDescriptionId,
-  TaxonomyId,
   SupportedLanguage
 } from '@shared/text-ids';
 
-// Enum-based card data interface (matches game-config/cards.json)
-interface EnumBasedCardData {
-  cardId: number;
-  nameId: CardNameId;
-  scientificNameId: ScientificNameId;
-  descriptionId: CardDescriptionId;
-  taxonomyId: TaxonomyId;
-  trophicLevel: number | null;
-  trophicCategory: number;
-  domain: number;
-  cost: any;
-  keywords: number[];
-  abilities: number[];
-  victoryPoints: number;
-  conservationStatus: number;
-  mass_kg: number;
-  lifespan_max_days: number;
-  vision_range_m: number;
-  smell_range_m: number;
-  hearing_range_m: number;
-  walk_speed_m_per_hr: number;
-  run_speed_m_per_hr: number;
-  swim_speed_m_per_hr: number;
-  fly_speed_m_per_hr: number;
-  offspring_count: number;
-  gestation_days: number;
-}
+
 
 // Client-specific interfaces for UI compatibility
 export interface ClientGameState {
@@ -150,69 +109,7 @@ export interface ClientActivateAbilityPayload {
   targetPosition?: { x: number; y: number };
 }
 
-// Client Game Data Manager (Legacy - use shared DataLoader instead)
-class ClientGameDataManager_old {
-  private cards: Map<number, EnumBasedCardData> = new Map();
-  private dataLoaded = false;
 
-  async loadGameData(): Promise<void> {
-    if (this.dataLoaded) return;
-
-    try {
-      console.log('📚 [ClientGameDataManager] Loading card data...');
-      const response = await fetch('/data/game-config/cards.json');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch game-config/cards.json: ${response.statusText}`);
-      }
-
-      const cardsArray: EnumBasedCardData[] = await response.json();
-      console.log(`📚 [ClientGameDataManager] Loaded ${cardsArray.length} cards`);
-
-      // Check for data integrity
-      let invalidCards = 0;
-      cardsArray.forEach((card, index) => {
-        if (!card.nameId || typeof card.nameId !== 'string') {
-          console.error(`❌ [ClientGameDataManager] Invalid card at index ${index}:`, {
-            cardId: card.cardId,
-            nameId: card.nameId,
-            type: typeof card.nameId
-          });
-          invalidCards++;
-        }
-      });
-
-      if (invalidCards > 0) {
-        throw new Error(`Found ${invalidCards} cards with invalid nameId fields`);
-      }
-
-      this.cards.clear();
-      cardsArray.forEach(card => {
-        this.cards.set(card.cardId, card);
-      });
-
-      this.dataLoaded = true;
-      console.log('✅ [ClientGameDataManager] Game data loaded successfully');
-    } catch (error) {
-      console.error('❌ [ClientGameDataManager] Failed to load game data:', error);
-      throw error;
-    }
-  }
-
-  isDataLoaded(): boolean {
-    return this.dataLoaded;
-  }
-
-  getAllCards(): EnumBasedCardData[] {
-    return Array.from(this.cards.values());
-  }
-
-  getCard(cardId: number): EnumBasedCardData | undefined {
-    return this.cards.get(cardId);
-  }
-}
-
-// Singleton instance (Legacy - use shared DataLoader instead)
-export const clientGameDataManager_old = new ClientGameDataManager_old();
 
 // Shared data loader instance
 export const sharedDataLoader = new DataLoader({

@@ -27,6 +27,8 @@ import {
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 import { AuthModal } from './auth/AuthModal';
+import { useUILocalization } from '../hooks/useCardLocalization';
+import { UITextId } from '@shared/text-ids';
 import './GuestRegistrationCTA.css';
 
 interface GuestRegistrationCTAProps {
@@ -42,6 +44,8 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
 }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+
+  const { getUIText } = useUILocalization();
 
   const {
     isGuestMode,
@@ -66,20 +70,25 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
   const getCtaMessage = () => {
     if (ownedSpecies === 0 && credits <= 100) {
       return {
-        title: "Protect Your Progress!",
-        subtitle: "Create a free account to save your collection across devices",
+        title: getUIText(UITextId.UI_PROTECT_PROGRESS),
+        subtitle: getUIText(UITextId.UI_CREATE_FREE_ACCOUNT),
         urgency: "low" as const
       };
     } else if (ownedSpecies < 5) {
       return {
-        title: "Don't Lose Your Cards!",
-        subtitle: `Save your ${ownedSpecies} species and ${credits} eco-credits`,
+        title: getUIText(UITextId.UI_DONT_LOSE_CARDS),
+        subtitle: getUIText(UITextId.UI_SAVE_SPECIES_CREDITS)
+          .replace('{species}', ownedSpecies.toString())
+          .replace('{credits}', credits.toString()),
         urgency: "medium" as const
       };
     } else {
       return {
-        title: "Secure Your Collection!",
-        subtitle: `Protect ${ownedSpecies} species, ${totalCards} cards, and ${credits} eco-credits`,
+        title: getUIText(UITextId.UI_SECURE_COLLECTION),
+        subtitle: getUIText(UITextId.UI_PROTECT_SPECIES_CARDS_CREDITS)
+          .replace('{species}', ownedSpecies.toString())
+          .replace('{cards}', totalCards.toString())
+          .replace('{credits}', credits.toString()),
         urgency: "high" as const
       };
     }

@@ -11,8 +11,6 @@ exports.getSpeciesOwnership = exports.isSpeciesOwned = void 0;
 exports.initializeCardMapping = initializeCardMapping;
 exports.cardIdToNameId = cardIdToNameId;
 exports.nameIdToCardId = nameIdToCardId;
-exports.speciesNameToCardId_old = speciesNameToCardId_old;
-exports.cardIdToSpeciesName_old = cardIdToSpeciesName_old;
 exports.isValidCardId = isValidCardId;
 exports.isValidNameId = isValidNameId;
 exports.getAllCardIds = getAllCardIds;
@@ -22,7 +20,6 @@ exports.nameIdsToCardIds = nameIdsToCardIds;
 exports.getCollectionStats = getCollectionStats;
 exports.isCardOwnedByNameId = isCardOwnedByNameId;
 exports.getCardOwnershipByNameId = getCardOwnershipByNameId;
-exports.migrateCollectionToCardIds_old = migrateCollectionToCardIds_old;
 exports.getCardDisplayName = getCardDisplayName;
 const enums_1 = require("../enums");
 /**
@@ -103,44 +100,6 @@ function nameIdToCardId(nameId) {
     return mapping[nameId] || null;
 }
 /**
- * Convert legacy species_name (kebab-case) to CardId (number)
- * Used for migrating old data that uses species_name format
- * @deprecated Legacy migration utility - use direct CardId system instead
- */
-function speciesNameToCardId_old(speciesName) {
-    // First try direct mapping for common legacy names
-    const legacyMappings = {
-        'oak-tree': 1,
-        'giant-kelp': 2,
-        'grass': 3,
-        'reed-canary-grass': 3,
-        'rabbit': 4,
-        'european-rabbit': 4,
-        'fox': 53,
-        'red-fox': 53,
-        'butterfly': 34,
-        'monarch-butterfly': 34,
-    };
-    if (legacyMappings[speciesName]) {
-        return legacyMappings[speciesName];
-    }
-    // Convert kebab-case to SCREAMING_SNAKE_CASE with CARD_ prefix
-    const nameId = 'CARD_' + speciesName.toUpperCase().replace(/-/g, '_');
-    return nameIdToCardId(nameId);
-}
-/**
- * Convert CardId (number) to legacy species_name (kebab-case)
- * Used for backward compatibility during migration
- * @deprecated Legacy migration utility - use direct CardId system instead
- */
-function cardIdToSpeciesName_old(cardId) {
-    const nameId = cardIdToNameId(cardId);
-    if (!nameId)
-        return null;
-    // Remove CARD_ prefix and convert to kebab-case
-    return nameId.replace(/^CARD_/, '').toLowerCase().replace(/_/g, '-');
-}
-/**
  * Validate that a CardId exists in the system
  */
 function isValidCardId(cardId) {
@@ -201,23 +160,6 @@ function isCardOwnedByNameId(nameId, cardsOwned) {
 function getCardOwnershipByNameId(nameId, cardsOwned) {
     const cardId = nameIdToCardId(nameId);
     return cardId ? cardsOwned[cardId] || null : null;
-}
-/**
- * Migration helper: Convert old collection format to new format
- * @deprecated Legacy migration utility - collections should use CardId system directly
- */
-function migrateCollectionToCardIds_old(oldCollection) {
-    const newCollection = {};
-    for (const [speciesName, data] of Object.entries(oldCollection)) {
-        const cardId = speciesNameToCardId_old(speciesName);
-        if (cardId !== null) {
-            newCollection[cardId] = data;
-        }
-        else {
-            console.warn(`Could not migrate species: ${speciesName} - no matching CardId found`);
-        }
-    }
-    return newCollection;
 }
 // Legacy function names for backward compatibility - will be removed in future versions
 exports.isSpeciesOwned = isCardOwnedByNameId;

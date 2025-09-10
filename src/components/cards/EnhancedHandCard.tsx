@@ -32,9 +32,13 @@ const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({
   console.log('🃏 EnhancedHandCard rendered:', {
     cardId: card.cardId,
     cardName: localization.getCardName(card.nameId as any),
+    nameId: card.nameId,
+    scientificNameId: card.scientificNameId,
+    trophicRole: card.trophicRole,
     isSelected,
     isPlayerTurn,
-    hasOnSelect: !!onSelect
+    hasOnSelect: !!onSelect,
+    cardData: card
   });
   const [showSpeciesInfo, setShowSpeciesInfo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);

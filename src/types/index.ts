@@ -408,14 +408,15 @@ export function transformCardDataToCard(cardData: CardData): Card {
 
 // Helper functions for mapping shared types to frontend types
 function mapTrophicLevelToRole(trophicLevel: any): TrophicRole {
-  // Map numeric trophic levels to frontend roles
+  // Map numeric trophic levels to frontend roles based on shared/enums.ts TrophicLevel enum
   switch (trophicLevel) {
-    case 1: return TrophicRole.PRODUCER;
-    case 2: return TrophicRole.HERBIVORE;
-    case 3: return TrophicRole.CARNIVORE;
-    case 4: return TrophicRole.OMNIVORE;
-    case 5: return TrophicRole.DECOMPOSER;
-    case 6: return TrophicRole.DECOMPOSER; // SAPROTROPH
+    case -2: return TrophicRole.DECOMPOSER; // DETRITIVORE
+    case -1: return TrophicRole.DECOMPOSER; // SAPROTROPH
+    case 0: return TrophicRole.DECOMPOSER;  // DETRITUS_TILE
+    case 1: return TrophicRole.PRODUCER;    // PRODUCER
+    case 2: return TrophicRole.HERBIVORE;   // PRIMARY_CONSUMER
+    case 3: return TrophicRole.CARNIVORE;   // SECONDARY_CONSUMER
+    case 4: return TrophicRole.CARNIVORE;   // APEX_PREDATOR
     default: return TrophicRole.PRODUCER;
   }
 }

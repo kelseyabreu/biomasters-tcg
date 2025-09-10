@@ -8,7 +8,9 @@ import {
   updateProfile,
   User,
   UserCredential,
-  sendEmailVerification
+  sendEmailVerification,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Capacitor } from '@capacitor/core';
@@ -181,6 +183,38 @@ export const isEmailVerified = (user: User | null): boolean => {
 export const resendEmailVerification = async (user: User): Promise<void> => {
   try {
     await sendEmailVerification(user);
+  } catch (error: any) {
+    throw {
+      code: error.code,
+      message: getAuthErrorMessage(error.code)
+    } as AuthError;
+  }
+};
+
+/**
+ * Re-authenticate user with password for sensitive operations
+ * This function verifies credentials without triggering a global sign-in event
+ */
+export const reauthenticateWithPassword = async (password: string): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw {
+      code: 'auth/no-user-found',
+      message: 'No user is currently signed in.'
+    } as AuthError;
+  }
+
+  if (!user.email) {
+    throw {
+      code: 'auth/no-email',
+      message: 'User email is not available for re-authentication.'
+    } as AuthError;
+  }
+
+  const credential = EmailAuthProvider.credential(user.email, password);
+
+  try {
+    await reauthenticateWithCredential(user, credential);
   } catch (error: any) {
     throw {
       code: error.code,

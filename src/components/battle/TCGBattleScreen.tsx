@@ -23,32 +23,22 @@ import {
   IonCol,
   IonBadge,
   IonAlert,
-  IonChip,
-  IonProgressBar,
-  IonItem,
-  IonLabel,
-  IonList
+  IonProgressBar
 } from '@ionic/react';
 import {
   flash,
-  shield,
-  heart,
   arrowBack,
   trophy,
-  globe,
   star,
-  play,
-  people,
-  book,
-  rocket
+  people
 } from 'ionicons/icons';
 
 // Import the battle store instead of game engine
 import useHybridGameStore from '../../state/hybridGameStore';
 import { GamePhase } from '../../../shared/enums';
 import { useLocalization } from '../../contexts/LocalizationContext';
-
 import OrganismRenderer from '../OrganismRenderer';
+
 import { TCGGameService } from '../../services/TCGGameService';
 
 interface TCGBattleScreenProps {
@@ -74,7 +64,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
   const isLoading = useHybridGameStore(state => state.battle.isLoading);
   const error = useHybridGameStore(state => state.battle.error);
   const selectedHandCardId = useHybridGameStore(state => state.battle.uiState.selectedHandCardId);
-  const selectedBoardCardId = useHybridGameStore(state => state.battle.uiState.selectedBoardCardId);
+
   const highlightedPositions = useHybridGameStore(state => state.battle.uiState.highlightedPositions);
 
   // Get battle actions from the store
@@ -201,31 +191,51 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     console.log('✅ Pass turn requested');
   }, [gameState, passTurn]);
 
-  // Helper function to extract card ID from instance ID
-  const extractCardIdFromInstance = (instanceId: string): string => {
-    // For now, return the instanceId as-is since we're using string IDs
-    const match = instanceId.match(/card-instance-(\d+)-/);
-    return match ? match[1] : instanceId;
-  };
 
-  // Helper function to get card data from the store
+
+  // Get all species cards from store at component level (following Rules of Hooks)
+  const allSpeciesCards = useHybridGameStore(state => state.allSpeciesCards);
+  const speciesLoaded = useHybridGameStore(state => state.speciesLoaded);
+  const loadSpeciesData = useHybridGameStore(state => state.loadSpeciesData);
+
+  // Load species data if not already loaded
+  useEffect(() => {
+    if (!speciesLoaded) {
+      console.log('🔄 [TCG] Loading species data for battle screen...');
+      loadSpeciesData();
+    }
+  }, [speciesLoaded, loadSpeciesData]);
+
+  console.log('🎮 [TCG] Card data debug:', {
+    allSpeciesCardsCount: allSpeciesCards?.length || 0,
+    allSpeciesCardsLoaded: !!allSpeciesCards,
+    speciesLoaded,
+    sampleCards: allSpeciesCards?.slice(0, 3)?.map(card => ({ cardId: card.cardId, nameId: card.nameId })) || []
+  });
+
+  // Helper function to get card data from the store (no hooks inside)
   const getCardData = (instanceId: string): any => {
     // Extract card ID from instance ID (e.g., "1" from "1_0" or just "1")
     const cardId = parseInt(instanceId.split('_')[0]);
 
-    // Get card data from the store
-    const allSpeciesCards = useHybridGameStore(state => state.allSpeciesCards);
+    // Find card data from the already-retrieved species cards
     const cardData = allSpeciesCards.find(card => card.cardId === cardId);
 
     if (cardData) {
-      return {
+      const result = {
         nameId: cardData.nameId,
         scientificNameId: cardData.scientificNameId,
-        victoryPoints: cardData.energyCost || 1, // Use energy cost as victory points for now
-        trophicLevel: cardData.trophicRole || 'Unknown',
+        victoryPoints: cardData.victoryPoints || 1, // Use actual victory points
+        VictoryPoints: cardData.victoryPoints || 1, // Capital V for UI compatibility
+        trophicLevel: cardData.trophicLevel || 0, // Use original numeric trophic level
+        TrophicLevel: cardData.trophicLevel || 0, // Numeric trophic level for UI display
+        trophicRole: cardData.trophicRole || 'Unknown', // String trophic role for organism renderer
         power: cardData.power || 0,
-        health: cardData.health || 1
+        health: cardData.health || 1,
+        cardId: cardData.cardId // Add cardId for organism renderer
       };
+
+      return result;
     }
 
     // Fallback for unknown cards
@@ -233,9 +243,13 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
       nameId: 'CARD_UNKNOWN',
       scientificNameId: 'SCIENTIFIC_UNKNOWN',
       victoryPoints: 1,
+      VictoryPoints: 1, // Capital V for UI compatibility
       trophicLevel: 'Unknown',
+      TrophicLevel: 0, // Numeric trophic level for UI display
+      trophicRole: 'Unknown', // For organism renderer
       power: 0,
-      health: 1
+      health: 1,
+      cardId: 0
     };
   };
 
@@ -551,6 +565,23 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                       <div style={{ fontWeight: 'bold', fontSize: '9px' }}>
                         {getLocalizedCardName(cardData) || 'Unknown'}
                       </div>
+
+                      {/* Organism Visual */}
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        margin: '2px 0',
+                        border: '1px solid var(--ion-color-light)',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <OrganismRenderer
+                          card={cardData}
+                          size={40}
+                          className="battle-card-organism"
+                        />
+                      </div>
+
                       <div style={{
                         fontSize: '8px',
                         color: 'var(--ion-color-medium)',

@@ -94,6 +94,19 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   };
 
   const handleOpenPack = useCallback(async () => {
+    console.log('🎁 [PackOpeningModal] handleOpenPack called');
+    console.log('🎁 [PackOpeningModal] packType:', packType);
+    console.log('🎁 [PackOpeningModal] Current state:', {
+      isOpening,
+      isOpeningRef: isOpeningRef.current,
+      hasOpenedRef: hasOpenedRef.current
+    });
+    console.log('🎁 [PackOpeningModal] localStorage before opening:', {
+      userCollection: localStorage.getItem('userCollection'),
+      userPacks: localStorage.getItem('userPacks'),
+      syncQueue: localStorage.getItem('syncQueue')
+    });
+
     // Prevent double-clicking with both state and ref
     if (isOpening || isOpeningRef.current || hasOpenedRef.current) {
       console.log('🚫 Pack opening already in progress or completed, ignoring duplicate call');
@@ -159,6 +172,15 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         rareCards,
         rarityBreakdown
       };
+
+      console.log('🎁 [PackOpeningModal] Pack opening completed successfully');
+      console.log('🎁 [PackOpeningModal] Result:', result);
+      console.log('🎁 [PackOpeningModal] New card IDs:', newCardIds);
+      console.log('🎁 [PackOpeningModal] localStorage after opening:', {
+        userCollection: localStorage.getItem('userCollection'),
+        userPacks: localStorage.getItem('userPacks'),
+        syncQueue: localStorage.getItem('syncQueue')
+      });
       
       setPackResult(result);
       setIsOpening(false);

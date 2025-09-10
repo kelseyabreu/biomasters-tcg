@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticateToken, optionalAuth, requireFirebaseAuth } from '../middleware/auth';
 import { authRateLimiter, accountCreationRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
@@ -445,6 +445,208 @@ router.post('/offline-key', authenticateToken, asyncHandler(async (req, res) => 
     signing_key: signingKey,
     expires_at: expiresAt.toISOString(),
     device_id
+  });
+}));
+
+/**
+ * DELETE /api/auth/account
+ * Delete current user's account completely
+ * Removes user from Firebase Auth, database, and all related data
+ */
+router.delete('/account', (req: Request, _res: Response, next: NextFunction) => {
+  console.log('🌐 [Route] DELETE /account endpoint hit');
+  console.log('🌐 [Route] Headers:', req.headers['authorization'] ? 'Auth header present' : 'No auth header');
+  next();
+}, authenticateToken, asyncHandler(async (req, res) => {
+  const firebaseUser = req.firebaseUser!;
+  const user = req.user!;
+
+  console.log(`🗑️ Starting account deletion for user: ${user.id} (Firebase: ${firebaseUser.uid})`);
+
+  // Retry logic for database operations
+  const maxRetries = 3;
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔗 Attempting database connection for account deletion (attempt ${attempt}/${maxRetries})...`);
+
+      await db.transaction().execute(async (trx) => {
+      console.log('📊 Deleting user data from database...');
+
+      // Get user data for logging before deletion
+      const userData = await trx
+        .selectFrom('users')
+        .select(['id', 'username', 'email', 'firebase_uid', 'is_guest'])
+        .where('id', '=', user.id)
+        .executeTakeFirst();
+
+      if (!userData) {
+        throw new Error('User not found in database');
+      }
+
+      // Delete from tables that don't have CASCADE DELETE or need special handling
+      console.log('🧹 Cleaning up redemption codes...');
+      await trx
+        .updateTable('redemption_codes')
+        .set({ redeemed_by_user_id: null })
+        .where('redeemed_by_user_id', '=', user.id)
+        .execute();
+
+      // Delete from device sync states (composite primary key)
+      console.log('📱 Cleaning up device sync states...');
+      await trx
+        .deleteFrom('device_sync_states')
+        .where('user_id', '=', user.id)
+        .execute();
+
+      // Delete from sync actions log
+      console.log('🔄 Cleaning up sync actions log...');
+      await trx
+        .deleteFrom('sync_actions_log')
+        .where('user_id', '=', user.id)
+        .execute();
+
+      // Delete from offline action queue
+      console.log('📴 Cleaning up offline action queue...');
+      await trx
+        .deleteFrom('offline_action_queue')
+        .where('user_id', '=', user.id)
+        .execute();
+
+      // Delete from game sessions where user is host
+      console.log('🎮 Cleaning up game sessions...');
+      await trx
+        .deleteFrom('game_sessions')
+        .where('host_user_id', '=', user.id)
+        .execute();
+
+      // The following tables have CASCADE DELETE and will be automatically cleaned up:
+      // - user_cards (CASCADE DELETE)
+      // - user_decks (CASCADE DELETE)
+      // - decks (CASCADE DELETE) -> deck_cards (CASCADE DELETE)
+      // - transactions (CASCADE DELETE)
+
+      // Finally, delete the user record (this will cascade to remaining tables)
+      console.log('👤 Deleting user record...');
+      const deletedUser = await trx
+        .deleteFrom('users')
+        .where('id', '=', user.id)
+        .returning(['id', 'username', 'firebase_uid'])
+        .executeTakeFirst();
+
+      if (!deletedUser) {
+        throw new Error('Failed to delete user from database');
+      }
+
+      console.log(`✅ Database deletion completed for user: ${deletedUser.username}`);
+    });
+
+    // Clear user cache
+    console.log('🗑️ Clearing user cache...');
+    const cacheKey = `user:${firebaseUser.uid}`;
+    await CacheManager.delete(cacheKey);
+
+    // Delete from Firebase Auth (only for registered users)
+    if (firebaseUser.uid && !user.is_guest) {
+      console.log('🔥 Deleting user from Firebase Auth...');
+      const { deleteFirebaseUser } = await import('../config/firebase');
+      try {
+        await deleteFirebaseUser(firebaseUser.uid);
+        console.log('✅ Firebase user deleted successfully');
+      } catch (firebaseError: any) {
+        console.error('🚨 FIREBASE DELETION FAILED 🚨');
+        console.error('🚨 This is likely a Firebase IAM permissions issue');
+        console.error('🚨 Error details:', firebaseError.message);
+
+        if (firebaseError.message.includes('serviceusage.serviceUsageConsumer')) {
+          console.error('🚨 SOLUTION: Grant the Firebase service account the "Service Usage Consumer" role');
+          console.error('🚨 Go to: https://console.developers.google.com/iam-admin/iam/project?project=biomasters-tcg');
+          console.error('🚨 Find your firebase-adminsdk service account and add the role: roles/serviceusage.serviceUsageConsumer');
+        }
+
+        // Re-throw the error to fail the account deletion
+        throw new Error(`Firebase user deletion failed: ${firebaseError.message}`);
+      }
+    } else {
+      console.log('ℹ️ Skipping Firebase deletion for guest user');
+    }
+
+    console.log(`🎉 Account deletion completed successfully for user: ${user.username}`);
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully',
+      data: {
+        deletedAt: new Date().toISOString(),
+        userId: user.id,
+        username: user.username
+      }
+    });
+
+    // If we reach here, the operation was successful, so break out of retry loop
+    return;
+
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ Account deletion attempt ${attempt} failed:`, (error as Error).message);
+
+      // Check if this is a retryable error (database connection issues)
+      const isRetryable = (error as Error).message.includes('Connection terminated') ||
+                         (error as Error).message.includes('ECONNRESET') ||
+                         (error as Error).message.includes('connection') ||
+                         (error as Error).message.includes('timeout') ||
+                         (error as Error).message.includes('ETIMEDOUT');
+
+      if (!isRetryable || attempt === maxRetries) {
+        // Either not retryable or we've exhausted retries
+        break;
+      }
+
+      // Wait before retrying (exponential backoff)
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      console.log(`⏳ Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  // If we get here, all retries failed
+  const error = lastError;
+  console.error('❌ Account deletion failed:', error);
+
+  // Provide specific error messages based on error type
+  let errorMessage = 'Account deletion failed';
+  let errorCode = 'ACCOUNT_DELETION_FAILED';
+
+  if (error instanceof Error) {
+    // Handle database connection errors specifically
+    if (error.message.includes('Connection terminated') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('connection') ||
+        error.message.includes('timeout')) {
+      errorMessage = 'Database connection error. Please try again in a moment.';
+      errorCode = 'DATABASE_CONNECTION_ERROR';
+      console.error('🔌 Database connection issue during account deletion');
+    } else if (error.message.includes('Firebase') || error.message.includes('serviceusage.serviceUsageConsumer')) {
+      console.error('🚨🚨🚨 FIREBASE PERMISSIONS ERROR 🚨🚨🚨');
+      console.error('🚨 The Firebase service account needs additional permissions');
+      console.error('🚨 Go to: https://console.developers.google.com/iam-admin/iam/project?project=biomasters-tcg');
+      console.error('🚨 Add role: roles/serviceusage.serviceUsageConsumer to your firebase-adminsdk service account');
+      errorMessage = 'Firebase permissions error: Service account needs "Service Usage Consumer" role';
+      errorCode = 'FIREBASE_PERMISSIONS_ERROR';
+    } else if (error.message.includes('database')) {
+      errorMessage = 'Failed to delete account data. Please try again.';
+      errorCode = 'DATABASE_DELETION_FAILED';
+    } else {
+      errorMessage = error.message;
+    }
+  }
+
+  res.status(500).json({
+    success: false,
+    error: errorCode,
+    message: errorMessage,
+    details: process.env['NODE_ENV'] === 'development' ? error.message : undefined
   });
 }));
 

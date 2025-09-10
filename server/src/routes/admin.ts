@@ -4,6 +4,7 @@ import { strictRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
 import { setCustomUserClaims } from '../config/firebase';
+import { CacheManager } from '../config/redis';
 
 const router = Router();
 
@@ -332,6 +333,155 @@ router.post('/physical-cards/generate', requireAdmin, strictRateLimiter, asyncHa
     expirationDate
   });
   return;
+}));
+
+/**
+ * DELETE /api/admin/users/:userId
+ * Delete a user account (admin only)
+ * Removes user from Firebase Auth, database, and all related data
+ */
+router.delete('/users/:userId', requireAdmin, strictRateLimiter, asyncHandler(async (req, res): Promise<any> => {
+  const { userId } = req.params;
+  const adminUser = req.user!;
+
+  if (!userId) {
+    return res.status(400).json({
+      error: 'INVALID_USER_ID',
+      message: 'User ID is required'
+    });
+  }
+
+  console.log(`🗑️ Admin ${adminUser.username} starting account deletion for user: ${userId}`);
+
+  try {
+    // Get user data before deletion for logging and Firebase cleanup
+    const targetUser = await db
+      .selectFrom('users')
+      .select(['id', 'username', 'email', 'firebase_uid', 'is_guest', 'account_type'])
+      .where('id', '=', userId)
+      .executeTakeFirst();
+
+    if (!targetUser) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deletion of other admin users (safety check)
+    if (targetUser.account_type === 'admin' && targetUser.id !== adminUser.id) {
+      return res.status(403).json({
+        error: 'CANNOT_DELETE_ADMIN',
+        message: 'Cannot delete other admin users'
+      });
+    }
+
+    // Start database transaction for atomic deletion
+    await db.transaction().execute(async (trx) => {
+      console.log('📊 Deleting user data from database...');
+
+      // Delete from tables that don't have CASCADE DELETE or need special handling
+      console.log('🧹 Cleaning up redemption codes...');
+      await trx
+        .updateTable('redemption_codes')
+        .set({ redeemed_by_user_id: null })
+        .where('redeemed_by_user_id', '=', userId)
+        .execute();
+
+      // Delete from device sync states (composite primary key)
+      console.log('📱 Cleaning up device sync states...');
+      await trx
+        .deleteFrom('device_sync_states')
+        .where('user_id', '=', userId)
+        .execute();
+
+      // Delete from sync actions log
+      console.log('🔄 Cleaning up sync actions log...');
+      await trx
+        .deleteFrom('sync_actions_log')
+        .where('user_id', '=', userId)
+        .execute();
+
+      // Delete from offline action queue
+      console.log('📴 Cleaning up offline action queue...');
+      await trx
+        .deleteFrom('offline_action_queue')
+        .where('user_id', '=', userId)
+        .execute();
+
+      // Delete from game sessions where user is host
+      console.log('🎮 Cleaning up game sessions...');
+      await trx
+        .deleteFrom('game_sessions')
+        .where('host_user_id', '=', userId)
+        .execute();
+
+      // Finally, delete the user record (this will cascade to remaining tables)
+      console.log('👤 Deleting user record...');
+      const deletedUser = await trx
+        .deleteFrom('users')
+        .where('id', '=', userId)
+        .returning(['id', 'username', 'firebase_uid'])
+        .executeTakeFirst();
+
+      if (!deletedUser) {
+        throw new Error('Failed to delete user from database');
+      }
+
+      console.log(`✅ Database deletion completed for user: ${deletedUser.username}`);
+    });
+
+    // Clear user cache
+    console.log('🗑️ Clearing user cache...');
+    if (targetUser.firebase_uid) {
+      const cacheKey = `user:${targetUser.firebase_uid}`;
+      await CacheManager.delete(cacheKey);
+    }
+
+    // Delete from Firebase Auth (only for registered users)
+    if (targetUser.firebase_uid && !targetUser.is_guest) {
+      console.log('🔥 Deleting user from Firebase Auth...');
+      const { deleteFirebaseUser } = await import('../config/firebase');
+      await deleteFirebaseUser(targetUser.firebase_uid);
+      console.log('✅ Firebase user deleted successfully');
+    } else {
+      console.log('ℹ️ Skipping Firebase deletion for guest user');
+    }
+
+    console.log(`🎉 Admin deletion completed successfully for user: ${targetUser.username}`);
+
+    res.json({
+      success: true,
+      message: 'User account deleted successfully',
+      data: {
+        deletedAt: new Date().toISOString(),
+        deletedUserId: targetUser.id,
+        deletedUsername: targetUser.username,
+        deletedByAdmin: adminUser.username
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Admin account deletion failed:', error);
+
+    // Provide specific error messages
+    let errorMessage = 'Account deletion failed';
+    if (error instanceof Error) {
+      if (error.message.includes('Firebase')) {
+        errorMessage = 'Failed to delete Firebase account. User may need to be manually removed from Firebase Console.';
+      } else if (error.message.includes('database')) {
+        errorMessage = 'Failed to delete account data from database.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'ADMIN_DELETION_FAILED',
+      message: errorMessage
+    });
+  }
 }));
 
 export default router;

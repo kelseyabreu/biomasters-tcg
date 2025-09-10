@@ -13,13 +13,27 @@ import { Database } from './types';
 function getDbConfig() {
   // Use connection string if available (for Railway and other hosted services)
   if (process.env['DATABASE_URL']) {
-    return {
+    console.log('🔍 Using DATABASE_URL for connection');
+    const config = {
       connectionString: process.env['DATABASE_URL'],
-      ssl: (process.env['DB_HOST']?.includes('rlwy.net') || process.env['NODE_ENV'] === 'production') ? { rejectUnauthorized: false } : false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000
+      ssl: { rejectUnauthorized: false }, // Always use SSL for Railway
+      // Robust pool configuration for Railway
+      max: 3, // Reduced for Railway limits
+      min: 0, // Allow pool to scale to zero
+      idleTimeoutMillis: 30000, // Keep connections longer
+      connectionTimeoutMillis: 15000, // Longer timeout for Railway
+      acquireTimeoutMillis: 20000,
+      createTimeoutMillis: 15000,
+      destroyTimeoutMillis: 5000,
+      reapIntervalMillis: 1000,
+      createRetryIntervalMillis: 2000, // Longer retry interval
     };
+    console.log('🔍 Database config:', {
+      connectionString: config.connectionString.substring(0, 50) + '...',
+      ssl: config.ssl,
+      max: config.max
+    });
+    return config;
   }
 
   // Fallback to individual config values
@@ -29,9 +43,17 @@ function getDbConfig() {
     database: process.env['DB_NAME'] || 'biomasters_tcg',
     user: process.env['DB_USER'] || 'postgres',
     password: process.env['DB_PASSWORD'] || '',
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 5000, // Increased timeout for network issues
+    max: 3, // Conservative limit for local development
+    min: 0, // Allow pool to scale to zero
+    idleTimeoutMillis: 30000, // Keep connections longer
+    connectionTimeoutMillis: 15000, // Longer timeout for network issues
+    acquireTimeoutMillis: 20000,
+    createTimeoutMillis: 15000,
+    destroyTimeoutMillis: 5000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 2000, // Longer retry interval
+    query_timeout: 30000,
+    statement_timeout: 30000,
     ssl: (process.env['DB_HOST']?.includes('rlwy.net') || process.env['NODE_ENV'] === 'production') ? { rejectUnauthorized: false } : false
   };
 }
@@ -42,11 +64,52 @@ function getDbConfig() {
  */
 
 /**
- * Create Kysely database instance with lazy pool creation
+ * Create PostgreSQL pool with error handling
+ */
+function createPool() {
+  const config = getDbConfig();
+  const pool = new Pool(config);
+
+  // Add comprehensive error handling for the pool
+  pool.on('error', (err) => {
+    console.error('🚨 PostgreSQL pool error:', err.message);
+    console.log('🔌 PostgreSQL connection error detected:', err.message);
+    // Don't crash the server on pool errors
+  });
+
+  pool.on('connect', (client) => {
+    console.log('🔗 New PostgreSQL connection established');
+
+    // Handle client errors to prevent crashes
+    client.on('error', (err) => {
+      console.error('🚨 PostgreSQL client error:', err.message);
+    });
+  });
+
+  pool.on('remove', () => {
+    console.log('🔌 PostgreSQL connection removed from pool');
+  });
+
+  pool.on('acquire', () => {
+    console.log('📥 PostgreSQL connection acquired from pool');
+  });
+
+  pool.on('release', () => {
+    console.log('📤 PostgreSQL connection released to pool');
+  });
+
+  return pool;
+}
+
+/**
+ * Create Kysely database instance with truly lazy pool creation
  */
 export const db = new Kysely<Database>({
   dialect: new PostgresDialect({
-    pool: async () => new Pool(getDbConfig()),
+    pool: async () => {
+      console.log('🔗 Creating new PostgreSQL pool...');
+      return createPool();
+    },
   }),
 });
 
@@ -59,11 +122,11 @@ export async function initializeKysely(): Promise<void> {
     
     // Debug: Log the configuration being used
     console.log('🔍 Kysely Database config:', {
-      host: dbConfig.host || 'connection string',
-      port: dbConfig.port || 'from connection string',
-      database: dbConfig.database || 'from connection string',
-      user: dbConfig.user || 'from connection string',
-      ssl: dbConfig.ssl
+      host: 'host' in dbConfig ? dbConfig.host : 'connection string',
+      port: 'port' in dbConfig ? dbConfig.port : 'from connection string',
+      database: 'database' in dbConfig ? dbConfig.database : 'from connection string',
+      user: 'user' in dbConfig ? dbConfig.user : 'from connection string',
+      ssl: 'ssl' in dbConfig ? dbConfig.ssl : 'from connection string'
     });
 
     // Test the connection with a simple query
@@ -79,6 +142,45 @@ export async function initializeKysely(): Promise<void> {
     console.error('❌ Failed to connect to PostgreSQL with Kysely:', error);
     throw error;
   }
+}
+
+/**
+ * Database operation with retry logic
+ */
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+
+      // Check if it's a connection error that we should retry
+      const isRetryableError =
+        error.message?.includes('Connection terminated') ||
+        error.message?.includes('connection closed') ||
+        error.message?.includes('ECONNRESET') ||
+        error.message?.includes('ENOTFOUND') ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ENOTFOUND';
+
+      if (!isRetryableError || attempt === maxRetries) {
+        console.error(`❌ Database operation failed after ${attempt} attempts:`, error.message);
+        throw error;
+      }
+
+      console.warn(`⚠️ Database operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delayMs}ms:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      delayMs *= 2; // Exponential backoff
+    }
+  }
+
+  throw lastError!;
 }
 
 /**

@@ -1,0 +1,300 @@
+/**
+ * Account Deletion Modal Styles
+ */
+
+.deletion-steps {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  background: var(--ion-color-primary-tint);
+  border-left: 4px solid var(--ion-color-primary);
+}
+
+.step.completed {
+  background: var(--ion-color-success-tint);
+  border-left: 4px solid var(--ion-color-success);
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ion-color-medium);
+  color: white;
+  font-weight: bold;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.step.active .step-indicator {
+  background: var(--ion-color-primary);
+}
+
+.step.completed .step-indicator {
+  background: var(--ion-color-success);
+}
+
+.step-content h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.step-content p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ion-color-medium-shade);
+}
+
+.deletion-warning {
+  text-align: center;
+  padding: 1rem;
+}
+
+.deletion-warning h3 {
+  color: var(--ion-color-danger);
+  margin: 1rem 0;
+}
+
+.deletion-warning ion-list {
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.deletion-warning ion-item {
+  --border-style: none;
+  --inner-padding-end: 0;
+}
+
+.deletion-warning ion-label h4 {
+  color: var(--ion-color-danger);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.deletion-warning ion-label p {
+  margin: 0.25rem 0;
+  color: var(--ion-color-medium-shade);
+}
+
+.data-export {
+  text-align: center;
+  padding: 1rem;
+}
+
+.data-export h3 {
+  color: var(--ion-color-primary);
+  margin: 1rem 0;
+}
+
+.data-export ul {
+  text-align: left;
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.data-export li {
+  margin: 0.5rem 0;
+  color: var(--ion-color-medium-shade);
+}
+
+.confirmation-step {
+  padding: 1rem;
+}
+
+.confirmation-step h3 {
+  text-align: center;
+  color: var(--ion-color-warning);
+  margin: 1rem 0;
+}
+
+.password-reauth {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--ion-color-warning-tint);
+  border-radius: 8px;
+  border-left: 4px solid var(--ion-color-warning);
+}
+
+.text-confirmation {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--ion-color-danger-tint);
+  border-radius: 8px;
+  border-left: 4px solid var(--ion-color-danger);
+}
+
+.text-confirmation strong {
+  color: var(--ion-color-danger);
+  font-weight: 700;
+}
+
+.deletion-progress {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.deletion-progress h3 {
+  color: var(--ion-color-primary);
+  margin-bottom: 1rem;
+}
+
+.deletion-progress p {
+  color: var(--ion-color-medium-shade);
+  margin-bottom: 2rem;
+}
+
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .deletion-steps {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+  }
+
+  .step {
+    margin-bottom: 0.75rem;
+    padding: 0.375rem;
+  }
+
+  .step-indicator {
+    width: 28px;
+    height: 28px;
+    font-size: 0.875rem;
+  }
+
+  .step-content h4 {
+    font-size: 0.875rem;
+  }
+
+  .step-content p {
+    font-size: 0.8125rem;
+  }
+
+  .deletion-warning,
+  .data-export,
+  .confirmation-step {
+    padding: 0.75rem;
+  }
+
+  .password-reauth,
+  .text-confirmation {
+    margin: 1rem 0;
+    padding: 0.75rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .deletion-steps {
+    background: var(--ion-color-dark-tint);
+  }
+
+  .step.active {
+    background: var(--ion-color-primary-shade);
+  }
+
+  .step.completed {
+    background: var(--ion-color-success-shade);
+  }
+
+  .password-reauth {
+    background: var(--ion-color-warning-shade);
+  }
+
+  .text-confirmation {
+    background: var(--ion-color-danger-shade);
+  }
+}
+
+/* Animation for step transitions */
+.step {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Loading state */
+.deletion-progress ion-progress-bar {
+  margin: 1rem 0;
+}
+
+/* Button spacing */
+.deletion-warning ion-button,
+.data-export ion-button,
+.confirmation-step ion-button {
+  margin: 0.5rem 0;
+}
+
+/* Alert customization */
+ion-alert.deletion-alert {
+  --backdrop-opacity: 0.8;
+}
+
+ion-alert.deletion-alert .alert-wrapper {
+  border-radius: 12px;
+}
+
+/* Toast customization */
+ion-toast.deletion-toast {
+  --border-radius: 8px;
+}
+
+/* Focus states for accessibility */
+ion-button:focus,
+ion-input:focus {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .step {
+    border: 2px solid var(--ion-color-medium);
+  }
+
+  .step.active {
+    border-color: var(--ion-color-primary);
+  }
+
+  .step.completed {
+    border-color: var(--ion-color-success);
+  }
+
+  .deletion-warning ion-label h4,
+  .text-confirmation strong {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}

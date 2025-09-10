@@ -121,7 +121,7 @@ Once the Domain is legal, you must connect to the correct Trophic Number.
 
 *   **Producers (`+1`):**
     *   **Photoautotrophs (`+1A`):** Have no cost and connect to a HOME card.
-    *   **Chemoautotrophs (`+1C`):** Have no cost and connect to a HOME card. HOME cards represent geological foundations that support both photosynthetic and chemosynthetic life.
+    *   **Chemoautotrophs (`+1C`):** Have no cost and connect to a HOME card. HOME cards represent geological foundations that support both photosynthetic and chemosynthetic life. Can also connect to Saprotrophs (-1S) or Detritivores (-2D) with Keywords or Abilities
 *   **Consumers (`+2` and up):** Played by paying their cost by Exhausting cards you control.
 *   **"Preferred Diet" Bonus:** A key strategic mechanic. Connecting a consumer to a specific food source keyword (e.g., a Frugivore to a `[FRUIT]` tree) grants a powerful tempo bonus, like entering play *Ready*.
 

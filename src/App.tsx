@@ -78,14 +78,21 @@ addIcons({
 });
 
 const App: React.FC = () => {
-  const { isAuthenticated, firebaseUser, initializeAuth } = useHybridGameStore();
+  const { isAuthenticated, firebaseUser, initializeAuth, loadSpeciesData, speciesLoaded } = useHybridGameStore();
   const [isInitialized, setIsInitialized] = React.useState(false);
 
-  // Initialize auth on app start
+  // Initialize auth and load species data on app start
   React.useEffect(() => {
     const initialize = async () => {
       try {
         await initializeAuth();
+
+        // Load species data if not already loaded
+        if (!speciesLoaded) {
+          console.log('🔄 [App] Loading species data on app start...');
+          await loadSpeciesData();
+        }
+
         // Give Firebase a moment to initialize
         setTimeout(() => setIsInitialized(true), 2000);
       } catch (error) {
@@ -94,7 +101,7 @@ const App: React.FC = () => {
       }
     };
     initialize();
-  }, [initializeAuth]);
+  }, [initializeAuth, loadSpeciesData, speciesLoaded]);
 
   // Show loading screen while initializing
   if (!isInitialized) {

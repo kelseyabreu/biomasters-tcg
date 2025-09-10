@@ -75,7 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={onClose}>
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} data-testid="auth-modal">
       <IonHeader>
         <IonToolbar>
           <IonTitle>{getModalTitle()}</IonTitle>

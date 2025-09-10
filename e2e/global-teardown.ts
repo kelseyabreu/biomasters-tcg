@@ -4,6 +4,7 @@
  */
 
 import { chromium, FullConfig } from '@playwright/test';
+import { firebaseEmulatorManager } from './config/firebase-test-config';
 
 async function globalTeardown(config: FullConfig) {
   console.log('🧹 Cleaning up Playwright E2E test environment...');
@@ -30,7 +31,11 @@ async function globalTeardown(config: FullConfig) {
     // Clear browser storage
     await context.clearCookies();
     await context.clearPermissions();
-    
+
+    // Clean up Firebase emulator data
+    console.log('⏳ Cleaning up Firebase test data...');
+    await firebaseEmulatorManager.clearEmulatorData();
+
     console.log('🎉 Playwright E2E test environment cleaned up!');
     
   } catch (error) {

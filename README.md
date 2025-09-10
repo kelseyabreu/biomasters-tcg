@@ -42,7 +42,7 @@ Each turn follows the **Ready → Draw → Action** sequence:
 
 ### Card Placement Rules
 - **Photoautotrophs (+1A)**: Must connect to your HOME card or other producers
-- **Chemoautotrophs (+1C)**: Cannot connect to HOME; must connect to Saprotrophs (-1S) or Detritivores (-2D)
+- **Chemoautotrophs (+1C)**: Can connect to HOME; Can also connect to Saprotrophs (-1S) or Detritivores (-2D) with Keywords or Abilities
 - **Consumers (+2, +3, +4)**: Must connect to lower trophic level (+1 progression rule)
 - **Saprotrophs (-1S)**: Must connect to detritus tiles (from removed creatures)
 - **Detritivores (-2D)**: Must connect to Saprotrophs (-1S) to complete decomposition loop
@@ -337,3 +337,5 @@ MIT License - see LICENSE file for details.
 ---
 
 **🧬 Built with scientific accuracy and educational purpose in mind**
+
+** Contact biomasters.tcg@gmail.com **

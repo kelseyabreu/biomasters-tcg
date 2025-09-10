@@ -807,7 +807,9 @@ export const useHybridGameStore = create<HybridGameState>()(
 
         // Load offline collection from storage
         loadOfflineCollection: () => {
-          const stored = offlineSecurityService.loadOfflineCollection();
+          const state = get();
+          const userId = state.userId || state.guestId;
+          const stored = offlineSecurityService.loadOfflineCollection(userId);
           if (stored) {
             // Handle migration from old species_owned to new cards_owned format
             let migratedCollection = stored;
@@ -854,7 +856,9 @@ export const useHybridGameStore = create<HybridGameState>()(
 
         // Save offline collection to storage
         saveOfflineCollection: (collection: OfflineCollection) => {
-          offlineSecurityService.saveOfflineCollection(collection);
+          const state = get();
+          const userId = state.userId || state.guestId;
+          offlineSecurityService.saveOfflineCollection(collection, userId);
           set({
             offlineCollection: collection,
             pendingActions: collection.action_queue.length
@@ -877,6 +881,11 @@ export const useHybridGameStore = create<HybridGameState>()(
             const allCards: Card[] = result.data.map(cardData => transformCardDataToCard(cardData));
 
             console.log(`✅ Loaded ${allCards.length} species cards`);
+            console.log('🔍 Sample cards:', allCards.slice(0, 3).map(card => ({
+              cardId: card.cardId,
+              nameId: card.nameId,
+              trophicRole: card.trophicRole
+            })));
 
             // Initialize card mapping for nameId <-> cardId conversions
             initializeCardMapping(allCards.map(card => ({ cardId: card.cardId, nameId: card.nameId })));
@@ -1269,80 +1278,97 @@ export const useHybridGameStore = create<HybridGameState>()(
             hasOfflineCollection: !!state.offlineCollection
           });
 
-          // If we have offline collection but no authentication, try to recover
-          if (state.offlineCollection && !state.isAuthenticated) {
-            console.log('🔄 Found offline collection without authentication, attempting recovery...');
-
-            // If we have guest credentials, try to restore guest session
-            if (state.guestId && state.guestSecret) {
-              console.log('🔄 Found guest credentials, attempting to restore guest session...');
-              try {
-                // If we have a token, validate it first
-                if (state.guestToken) {
-                  console.log('🔄 Found existing guest token, validating...');
-                  // For now, assume token is valid and restore state
-                  set({
-                    isAuthenticated: true,
-                    isGuestMode: true,
-                    userId: state.guestId,
-                    needsRegistration: false
-                  });
-                  console.log('✅ Guest session restored from token');
-                  return;
-                }
-
-                // No token, try to login with credentials
-                await get().loginExistingGuest();
-                console.log('✅ Guest session recovered via login');
-              } catch (error) {
-                console.warn('⚠️ Failed to recover guest session:', error);
-                // Clear invalid credentials
-                set({
-                  guestId: null,
-                  guestSecret: null,
-                  guestToken: null,
-                  needsRegistration: false
-                });
-              }
-            } else if (state.guestId && !state.guestSecret) {
-              console.log('🔄 Found guest ID without secret, needs re-registration...');
-              // We have a guest ID but no secret, mark for registration
-              set({
-                isAuthenticated: true,
-                isGuestMode: true,
-                userId: state.guestId,
-                needsRegistration: true
-              });
-              console.log('✅ Guest session restored, marked for registration');
-            }
-          } else if (state.isAuthenticated && state.isGuestMode && state.guestId) {
-            console.log('✅ Guest authentication state already valid');
-          } else {
-            console.log('ℹ️ No authentication recovery needed');
+          // If already authenticated, no need to recover
+          if (state.isAuthenticated) {
+            console.log('✅ Already authenticated, no recovery needed');
+            return;
           }
+
+          // Try to recover guest credentials from secure storage
+          console.log('🔍 Checking secure storage for guest credentials...');
+          const storedCredentials = await tokenManager.getGuestCredentials();
+
+          if (storedCredentials) {
+            console.log('🔄 Found guest credentials in secure storage, restoring session...');
+            console.log('🔍 Stored credentials:', {
+              hasGuestId: !!storedCredentials.guestId,
+              hasGuestSecret: !!storedCredentials.guestSecret,
+              hasGuestToken: !!storedCredentials.guestToken
+            });
+
+            // Update state with stored credentials
+            set({
+              guestId: storedCredentials.guestId,
+              guestSecret: storedCredentials.guestSecret,
+              guestToken: storedCredentials.guestToken || null
+            });
+
+            // Load the user's offline collection
+            const userCollection = offlineSecurityService.loadOfflineCollection(storedCredentials.guestId);
+            if (userCollection) {
+              console.log('📦 Loaded user collection from storage');
+              set({ offlineCollection: userCollection });
+            }
+
+            // Restore authentication state
+            const guestUsername = `Guest-${storedCredentials.guestId.slice(-6).toUpperCase()}`;
+            set({
+              isAuthenticated: true,
+              isGuestMode: true,
+              userId: storedCredentials.guestId,
+              needsRegistration: !storedCredentials.guestSecret, // Need registration if no secret
+              userProfile: {
+                id: storedCredentials.guestId,
+                username: guestUsername,
+                display_name: guestUsername,
+                user_type: UserType.GUEST,
+                is_guest: true,
+                created_at: new Date(),
+                email: undefined,
+                isOnline: navigator.onLine,
+                syncStatus: SyncStatus.PENDING,
+                lastSyncTime: new Date()
+              }
+            });
+
+            console.log('✅ Guest authentication state recovered successfully');
+            return;
+          }
+
+
         },
 
         // Sign out user
         signOutUser: async () => {
           try {
-            console.log('👤 Signing out...');
+            console.log('🔓 [SignOut] Starting sign-out process...');
 
             const state = get();
             const currentUserId = state.userId || state.guestId;
+            console.log('🔓 [SignOut] Current state:', {
+              isAuthenticated: state.isAuthenticated,
+              isGuestMode: state.isGuestMode,
+              userId: state.userId,
+              guestId: state.guestId,
+              firebaseUser: state.firebaseUser?.email
+            });
 
             if (state.isGuestMode) {
               // For guest mode, clear local state and secure storage
-              console.log('👤 Signing out guest user...');
+              console.log('🔓 [SignOut] Signing out guest user...');
 
               // Clear secure storage first
+              console.log('🔓 [SignOut] Clearing guest credentials...');
               await tokenManager.clearGuestCredentials();
 
               // Clear user-scoped data for this guest
               if (currentUserId) {
+                console.log('🔓 [SignOut] Clearing user-scoped data for guest:', currentUserId);
                 await clearUserData(currentUserId);
-                console.log(`🧹 Cleared user-scoped data for guest: ${currentUserId}`);
+                console.log(`🧹 [SignOut] Cleared user-scoped data for guest: ${currentUserId}`);
               }
 
+              console.log('🔓 [SignOut] Setting guest state to signed out...');
               set({
                 isAuthenticated: false,
                 userId: null,
@@ -1362,23 +1388,42 @@ export const useHybridGameStore = create<HybridGameState>()(
                 syncConflicts: [],
                 userProfile: null
               });
+              console.log('✅ [SignOut] Guest state cleared');
             } else {
               // For Firebase users, clear user-scoped data before signing out
+              console.log('🔓 [SignOut] Signing out Firebase user...');
+
               if (currentUserId) {
+                console.log('🔓 [SignOut] Clearing user-scoped data for Firebase user:', currentUserId);
                 await clearUserData(currentUserId);
-                console.log(`🧹 Cleared user-scoped data for user: ${currentUserId}`);
+                console.log(`🧹 [SignOut] Cleared user-scoped data for user: ${currentUserId}`);
               }
 
               // Sign out through Firebase
+              console.log('🔓 [SignOut] Calling Firebase signOut...');
               await signOut(auth);
+              console.log('✅ [SignOut] Firebase signOut completed');
+
               // Firebase auth state change will handle clearing state
               // Also clear any backup token storage
+              console.log('🔓 [SignOut] Clearing Firebase token...');
               await tokenManager.clearFirebaseToken();
+              console.log('✅ [SignOut] Firebase token cleared');
             }
 
-            console.log('✅ Sign-out successful');
+            console.log('✅ [SignOut] Sign-out process completed successfully');
+
+            // Log final state
+            const finalState = get();
+            console.log('🔓 [SignOut] Final state:', {
+              isAuthenticated: finalState.isAuthenticated,
+              isGuestMode: finalState.isGuestMode,
+              userId: finalState.userId,
+              guestId: finalState.guestId,
+              firebaseUser: finalState.firebaseUser?.email
+            });
           } catch (error) {
-            console.error('❌ Sign-out failed:', error);
+            console.error('❌ [SignOut] Sign-out failed:', error);
             throw error;
           }
         },
@@ -1597,7 +1642,20 @@ export const useHybridGameStore = create<HybridGameState>()(
 
         // Open pack with proper rarity system
         openPack: async (packType: string): Promise<number[]> => {
+          console.log('🎁 [HybridGameStore] openPack called with packType:', packType);
           const state = get();
+          console.log('🎁 [HybridGameStore] Current state:', {
+            isAuthenticated: state.isAuthenticated,
+            isGuestMode: state.isGuestMode,
+            hasOfflineCollection: !!state.offlineCollection,
+            collectionSize: Object.keys(state.offlineCollection?.cards_owned || {}).length
+          });
+          console.log('🎁 [HybridGameStore] localStorage before pack opening:', {
+            userCollection: localStorage.getItem('userCollection'),
+            userPacks: localStorage.getItem('userPacks'),
+            syncQueue: localStorage.getItem('syncQueue')
+          });
+
           if (!state.offlineCollection) {
             throw new Error('No collection initialized');
           }
@@ -1693,6 +1751,18 @@ export const useHybridGameStore = create<HybridGameState>()(
             updatedCollection.collection_hash = offlineSecurityService.calculateCollectionHash(updatedCollection);
 
             get().saveOfflineCollection(updatedCollection);
+
+            console.log('🎁 [HybridGameStore] Pack opening completed successfully');
+            console.log('🎁 [HybridGameStore] New card IDs:', newCardIds);
+            console.log('🎁 [HybridGameStore] Updated collection size:', Object.keys(updatedCollection.cards_owned).length);
+            console.log('🎁 [HybridGameStore] Remaining credits:', updatedCollection.eco_credits);
+            console.log('🎁 [HybridGameStore] Action queue size:', updatedCollection.action_queue.length);
+            console.log('🎁 [HybridGameStore] localStorage after pack opening:', {
+              userCollection: localStorage.getItem('userCollection'),
+              userPacks: localStorage.getItem('userPacks'),
+              syncQueue: localStorage.getItem('syncQueue')
+            });
+
             return newCardIds;
 
           } catch (error) {

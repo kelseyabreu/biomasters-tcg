@@ -41,15 +41,22 @@ import {
   accessibility,
   leaf,
   water,
-  snow
+  snow,
+  trash
 } from 'ionicons/icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { ThemeConfig, PREDEFINED_THEMES } from '../theme/themeSystem';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { LanguageSelector } from '../components/localization/LanguageSelector';
+import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
+import { useHybridGameStore } from '../state/hybridGameStore';
+import { useHistory } from 'react-router-dom';
 import './Settings.css';
+import '../components/auth/AccountDeletionModal.css';
 
 const Settings: React.FC = () => {
+  const history = useHistory();
+
   const {
     currentTheme,
     availableThemes,
@@ -81,6 +88,9 @@ const Settings: React.FC = () => {
   });
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showAccountDeletion, setShowAccountDeletion] = useState(false);
+
+  const { userProfile, isGuestMode } = useHybridGameStore();
 
   const handleCreateCustomTheme = () => {
     if (customThemeName.trim()) {
@@ -360,7 +370,7 @@ const Settings: React.FC = () => {
                 Game Settings
               </IonCardTitle>
             </IonCardHeader>
-            
+
             <IonCardContent>
               <IonItem>
                 <IonLabel>
@@ -387,6 +397,64 @@ const Settings: React.FC = () => {
               </IonItem>
             </IonCardContent>
           </IonCard>
+
+          {/* Account Management */}
+          {userProfile && (
+            <IonCard>
+              <IonCardHeader>
+                <IonCardTitle>
+                  <IonIcon icon={settings} />
+                  Account Management
+                </IonCardTitle>
+              </IonCardHeader>
+
+              <IonCardContent>
+                <IonItem>
+                  <IonLabel>
+                    <h3>Account Type</h3>
+                    <p>{isGuestMode ? 'Guest Account' : 'Registered Account'}</p>
+                  </IonLabel>
+                </IonItem>
+
+                {userProfile.email && (
+                  <IonItem>
+                    <IonLabel>
+                      <h3>Email</h3>
+                      <p>{userProfile.email}</p>
+                    </IonLabel>
+                  </IonItem>
+                )}
+
+                <IonItem>
+                  <IonLabel>
+                    <h3>Username</h3>
+                    <p>{userProfile.display_name || userProfile.username || 'Not set'}</p>
+                  </IonLabel>
+                </IonItem>
+
+                <div className="danger-zone">
+                  <h4 style={{ color: 'var(--ion-color-danger)', marginTop: '2rem', marginBottom: '1rem' }}>
+                    Danger Zone
+                  </h4>
+                  <IonButton
+                    expand="block"
+                    color="danger"
+                    fill="outline"
+                    onClick={() => setShowAccountDeletion(true)}
+                    data-testid="delete-account-button"
+                  >
+                    <IonIcon icon={trash} slot="start" />
+                    Delete Account
+                  </IonButton>
+                  <IonNote color="medium">
+                    <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                      This action cannot be undone. All your data will be permanently deleted.
+                    </p>
+                  </IonNote>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          )}
         </motion.div>
 
         {/* Custom Theme Creation Modal */}
@@ -479,6 +547,21 @@ const Settings: React.FC = () => {
           message={toastMessage}
           duration={3000}
           position="bottom"
+        />
+
+        {/* Account Deletion Modal */}
+        <AccountDeletionModal
+          isOpen={showAccountDeletion}
+          onClose={() => setShowAccountDeletion(false)}
+          onSuccess={() => {
+            console.log('🔄 [Settings] AccountDeletion onSuccess callback triggered');
+            // Use React Router navigation instead of hard page refresh
+            // This ensures proper component re-rendering after account deletion
+            setShowAccountDeletion(false);
+            console.log('🔄 [Settings] Modal closed, navigating to /home');
+            history.push('/home');
+            console.log('✅ [Settings] Navigation to /home completed');
+          }}
         />
       </IonContent>
     </IonPage>

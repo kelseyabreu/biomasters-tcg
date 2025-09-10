@@ -180,7 +180,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   }
 
   return (
-    <IonCard className="user-profile-card">
+    <IonCard className="user-profile-card" data-testid="user-profile">
       <IonCardHeader>
         <div className="profile-header">
           <Avatar
@@ -191,29 +191,33 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             showStatusBadge={true}
             showAccountTypeBadge={true}
           />
-          
+
           <div className="user-info">
-            <IonCardTitle>{userInfo.displayName}</IonCardTitle>
+            <IonCardTitle data-testid="display-name">{userInfo.displayName}</IonCardTitle>
             {userInfo.email && (
               <IonText color="medium">
-                <p>{userInfo.email}</p>
+                <p data-testid="user-email">{userInfo.email}</p>
               </IonText>
             )}
-            
+
             <div className="account-status">
-              <IonBadge 
-                color={userInfo.accountType === 'registered' ? 'success' : 
+              <IonBadge
+                color={userInfo.accountType === 'registered' ? 'success' :
                        userInfo.accountType === 'guest' ? 'warning' : 'medium'}
+                data-testid="account-type-badge"
               >
-                <IonIcon 
-                  icon={userInfo.accountType === 'registered' ? shield : 
-                        userInfo.accountType === 'guest' ? person : person} 
-                  style={{ marginRight: '5px' }} 
+                <IonIcon
+                  icon={userInfo.accountType === 'registered' ? shield :
+                        userInfo.accountType === 'guest' ? person : person}
+                  style={{ marginRight: '5px' }}
                 />
                 {userInfo.accountType === 'registered' ? 'Registered Account' :
                  userInfo.accountType === 'guest' ? 'Guest Account' : 'Not Signed In'}
               </IonBadge>
             </div>
+
+            {/* Hidden username for tests */}
+            <div style={{ display: 'none' }} data-testid="username">{userInfo.username}</div>
           </div>
         </div>
       </IonCardHeader>
@@ -228,6 +232,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               size="large"
               onClick={handleCTAClick}
               className="protection-cta"
+              data-testid={userInfo.accountType === 'none' ? 'signin-button' : 'guest-login-button'}
             >
               <IonIcon icon={shield} slot="start" />
               {userInfo.accountType === 'guest' ? 'Protect Your Progress!' : userInfo.ctaText}
@@ -292,6 +297,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               size="small"
               color="medium"
               onClick={handleSignOut}
+              data-testid="signout-button"
             >
               <IonIcon icon={logOut} slot="start" />
               {isGuestMode ? 'Exit Guest Mode' : 'Sign Out'}

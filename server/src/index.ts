@@ -9,6 +9,12 @@ import { createServer } from 'http';
 // Load environment variables
 dotenv.config();
 
+// Debug: Check if DATABASE_URL is loaded
+console.log('🔍 Environment check:');
+console.log('  DATABASE_URL:', process.env['DATABASE_URL'] ? 'Present' : 'Missing');
+console.log('  NODE_ENV:', process.env['NODE_ENV']);
+console.log('  Working directory:', process.cwd());
+
 // Import configurations and middleware
 import { initializeFirebase } from './config/firebase';
 import { initializeKysely } from './database/kysely';
@@ -27,6 +33,7 @@ import syncRoutes from './routes/sync';
 import gameRoutes from './routes/game';
 import adminRoutes from './routes/admin';
 import localizationRoutes from './routes/localization';
+import testRoutes from './routes/test';
 
 // Import unified data loader factory
 import { createProductionDataLoader, createDevelopmentDataLoader } from '../../shared/data/UnifiedDataLoader';
@@ -166,6 +173,11 @@ app.use('/api/game', gameRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/localization', localizationRoutes);
 
+// Test routes (only available in non-production environments)
+if (process.env['NODE_ENV'] !== 'production') {
+  app.use('/api/test', testRoutes);
+}
+
 // 404 handler
 app.use('*', (req, res) => {
   console.log('🚨🚨🚨 404 HANDLER HIT:', req.method, req.originalUrl);
@@ -204,6 +216,23 @@ process.on('SIGINT', () => {
   server.close(() => {
     console.log('✅ Server closed');
     process.exit(0);
+  });
+});
+
+// Handle unhandled promise rejections (like database connection errors)
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Promise Rejection:', reason);
+  console.error('🚨 Promise:', promise);
+  // Don't exit the process, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+  // For uncaught exceptions, we should exit gracefully
+  console.log('🛑 Shutting down due to uncaught exception...');
+  server.close(() => {
+    process.exit(1);
   });
 });
 

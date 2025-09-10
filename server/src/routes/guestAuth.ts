@@ -9,7 +9,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { authRateLimiter } from '../middleware/rateLimiter';
 import { requireAuth } from '../middleware/auth';
 import { verifyIdToken } from '../config/firebase';
-import { db } from '../database/kysely';
+import { db, withRetry } from '../database/kysely';
 import {
   generateGuestCredentials,
   hashGuestSecret,
@@ -49,7 +49,8 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
   }
 
   // Create guest account in transaction
-  const result = await db.transaction().execute(async (trx) => {
+  const result = await withRetry(async () => {
+    return await db.transaction().execute(async (trx) => {
     // Create guest user account
     const userData = {
       guest_id: guestCredentials.guestId,
@@ -117,6 +118,7 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
     }
 
     return user;
+    });
   });
 
   // Generate JWT for immediate use
@@ -161,11 +163,13 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
   }
 
   // Check if guest already exists (prevent replay attacks)
-  const existingGuest = await db
-    .selectFrom('users')
-    .select('id')
-    .where('guest_id', '=', guestId)
-    .executeTakeFirst();
+  const existingGuest = await withRetry(async () => {
+    return await db
+      .selectFrom('users')
+      .select('id')
+      .where('guest_id', '=', guestId)
+      .executeTakeFirst();
+  });
 
   if (existingGuest) {
     return res.status(409).json({
@@ -180,7 +184,8 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
   const username = initialUsername || generateGuestUsername(guestId);
 
   // Create guest account and process action queue in transaction
-  const result = await db.transaction().execute(async (trx) => {
+  const result = await withRetry(async () => {
+    return await db.transaction().execute(async (trx) => {
     // 1. Create guest user account
     const userData = {
       guest_id: guestId,
@@ -293,6 +298,7 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
 
     return { user, processedActions, errors };
   });
+  });
 
   // Generate JWT for immediate use
   const guestJWT = generateGuestJWT(result.user.id, guestId);
@@ -366,11 +372,13 @@ router.post('/login', authRateLimiter, asyncHandler(async (req, res) => {
   }
 
   // Update last login
-  await db
-    .updateTable('users')
-    .set({ last_login_at: new Date() })
-    .where('id', '=', user.id)
-    .execute();
+  await withRetry(async () => {
+    return await db
+      .updateTable('users')
+      .set({ last_login_at: new Date() })
+      .where('id', '=', user.id)
+      .execute();
+  });
 
   // Generate new JWT
   const guestJWT = generateGuestJWT(user.id, guestId);
@@ -458,7 +466,8 @@ router.post('/convert', requireAuth, asyncHandler(async (req, res) => {
   }
 
   // Convert guest to registered account
-  await db.transaction().execute(async (trx) => {
+  await withRetry(async () => {
+    return await db.transaction().execute(async (trx) => {
     await trx
       .updateTable('users')
       .set({
@@ -472,6 +481,7 @@ router.post('/convert', requireAuth, asyncHandler(async (req, res) => {
       })
       .where('id', '=', guestUser.id)
       .execute();
+    });
   });
 
   res.json({

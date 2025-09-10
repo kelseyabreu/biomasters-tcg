@@ -16,10 +16,16 @@ import type {
  * It intelligently handles both Firebase and custom Guest JWTs.
  */
 async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  console.log('🔐 [Auth] Authentication middleware called for:', req.method, req.path);
+
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
 
+  console.log('🔐 [Auth] Authorization header:', authHeader ? 'Present' : 'Missing');
+  console.log('🔐 [Auth] Token extracted:', token ? `Present (${token.substring(0, 50)}...)` : 'Missing');
+
   if (!token) {
+    console.log('🔐 [Auth] No token provided, continuing without authentication');
     // No token, continue without authentication for public routes
     return next();
   }
@@ -44,28 +50,36 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
 
     } else {
       // --- Handle Firebase JWT ---
+      console.log('🔐 [Auth] Processing Firebase JWT token');
       let decodedToken;
 
       // In test environment, allow test tokens signed with JWT_SECRET
       if (process.env['NODE_ENV'] === 'test' || process.env['NODE_ENV'] === 'development') {
+        console.log('🔐 [Auth] Development/test environment - checking for test tokens');
         try {
           const jwt = require('jsonwebtoken');
           const testToken = jwt.verify(token, process.env['JWT_SECRET'] || 'test-secret');
           if (testToken && typeof testToken === 'object' && testToken.test_token) {
             // This is a test token, use it directly
+            console.log('🔐 [Auth] Using test token');
             decodedToken = testToken;
           } else {
             // Not a test token, try Firebase verification
+            console.log('🔐 [Auth] Not a test token, trying Firebase verification');
             decodedToken = await verifyIdToken(token);
           }
         } catch (testError) {
           // Test token verification failed, try Firebase
+          console.log('🔐 [Auth] Test token verification failed, trying Firebase:', (testError as Error).message);
           decodedToken = await verifyIdToken(token);
         }
       } else {
         // Production: only use Firebase verification
+        console.log('🔐 [Auth] Production environment - using Firebase verification only');
         decodedToken = await verifyIdToken(token);
       }
+
+      console.log('🔐 [Auth] Token decoded successfully, UID:', decodedToken.uid);
 
       req.firebaseUser = {
         uid: decodedToken.uid,
@@ -108,10 +122,14 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
       }
 
       if (dbUser) {
+        console.log('🔐 [Auth] User found in database:', dbUser.username);
         req.user = dbUser;
+      } else {
+        console.log('🔐 [Auth] User not found in database for Firebase UID:', decodedToken.uid);
       }
     }
   } catch (error) {
+    console.log('🔐 [Auth] Authentication failed:', (error as Error).message);
     // If token is invalid/expired, we just clear any auth info and continue.
     // Routes that require auth will handle the rejection.
     delete req.user;
@@ -131,13 +149,19 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
 export const requireAuth = [
   authenticate,
   (req: Request, res: Response, next: NextFunction): void => {
+    console.log('🔐 [Auth] Checking if user is authenticated...');
+    console.log('🔐 [Auth] req.user:', req.user ? `Present (${req.user.username})` : 'Missing');
+    console.log('🔐 [Auth] req.firebaseUser:', req.firebaseUser ? `Present (${req.firebaseUser.uid})` : 'Missing');
+
     if (!req.user) {
+      console.log('🔐 [Auth] Authentication required - no user found');
       res.status(401).json({
         error: 'AUTHENTICATION_REQUIRED',
         message: 'You must be logged in to access this resource.'
       });
       return;
     }
+    console.log('🔐 [Auth] Authentication successful, proceeding...');
     next();
   }
 ];

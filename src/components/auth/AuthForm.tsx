@@ -32,6 +32,7 @@ import { useHybridGameStore } from '../../state/hybridGameStore';
 import { handleGuestConversion, canConvertGuest } from '../../utils/guestConversion';
 import { useUILocalization } from '../../hooks/useCardLocalization';
 import { UITextId } from '@shared/text-ids';
+import { authApi } from '../../services/apiClient';
 import './AuthForm.css';
 
 interface AuthFormProps {
@@ -88,8 +89,21 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       let firebaseCredential;
 
       if (isSignUp) {
+        // Step 1: Create Firebase user
         firebaseCredential = await signUpWithEmail({ email, password, displayName });
-        showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED));
+
+        // Step 2: Register user in backend database
+        console.log('🔄 [AuthForm] Firebase user created, registering in backend...');
+        try {
+          await authApi.register({ username: displayName });
+          console.log('✅ [AuthForm] Backend registration successful');
+          showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED));
+        } catch (backendError: any) {
+          console.error('❌ [AuthForm] Backend registration failed:', backendError);
+          // If backend registration fails, we should still show success since Firebase user was created
+          // The user can still use the app, but some features might not work until backend sync
+          showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED) + ' (Syncing with server...)');
+        }
       } else {
         firebaseCredential = await signInWithEmail({ email, password });
         showSuccess(getUIText(UITextId.UI_SIGNED_IN_SUCCESS));
@@ -209,6 +223,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                   placeholder={getUIText(UITextId.UI_ENTER_DISPLAY_NAME)}
                   onIonInput={(e) => setDisplayName(e.detail.value!)}
                   required
+                  data-testid="display-name-input"
                 />
               </IonItem>
             )}
@@ -223,6 +238,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                 placeholder={getUIText(UITextId.UI_ENTER_EMAIL)}
                 onIonInput={(e) => setEmail(e.detail.value!)}
                 required
+                data-testid="email-input"
               />
             </IonItem>
 
@@ -236,6 +252,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                 placeholder={getUIText(UITextId.UI_ENTER_PASSWORD)}
                 onIonInput={(e) => setPassword(e.detail.value!)}
                 required
+                data-testid="password-input"
               />
               <IonButton
                 slot="end"
@@ -275,6 +292,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
               color="primary"
               className="auth-primary-btn"
               disabled={loading}
+              data-testid={isSignUp ? "register-button" : "signin-button"}
             >
               <IonIcon slot="start" icon={isSignUp ? personAdd : logIn} />
               {loading ? getUIText(UITextId.UI_PLEASE_WAIT) : (isSignUp ? getUIText(UITextId.UI_SIGN_UP) : getUIText(UITextId.UI_SIGN_IN))}
@@ -310,6 +328,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             onClick={handleGuestAuth}
             disabled={loading}
             className="guest-continue-btn"
+            data-testid="guest-login-button"
           >
             {getUIText(UITextId.UI_CONTINUE_AS_GUEST)}
           </IonButton>
@@ -324,6 +343,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
                 color="primary"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="switch-auth-btn"
+                data-testid="switch-to-register"
               >
                 {isSignUp ? getUIText(UITextId.UI_SIGN_IN) : getUIText(UITextId.UI_SIGN_UP)}
               </IonButton>

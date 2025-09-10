@@ -48,6 +48,16 @@ const PackOpening: React.FC = () => {
   } = useHybridGameStore();
 
   // Debug logging
+  React.useEffect(() => {
+    console.log('🎁 [PackOpening] Component mounted');
+    console.log('🎁 [PackOpening] isAuthenticated:', isAuthenticated);
+    console.log('🎁 [PackOpening] isGuestMode:', isGuestMode);
+    console.log('🎁 [PackOpening] hasStarterPack:', hasStarterPack);
+    console.log('🎁 [PackOpening] offlineCollection:', offlineCollection);
+    console.log('🎁 [PackOpening] localStorage keys:', Object.keys(localStorage));
+    console.log('🎁 [PackOpening] userCollection in localStorage:', localStorage.getItem('userCollection'));
+    console.log('🎁 [PackOpening] userPacks in localStorage:', localStorage.getItem('userPacks'));
+  }, [isAuthenticated, isGuestMode, hasStarterPack, offlineCollection]);
   console.log('🔍 PackOpening state:', {
     isAuthenticated,
     isGuestMode,
@@ -123,6 +133,16 @@ const PackOpening: React.FC = () => {
   ];
 
   const handleOpenPack = async (packType: string) => {
+    console.log('🎁 [PackOpening] handleOpenPack called with packType:', packType);
+    console.log('🎁 [PackOpening] Current state - isOpening:', isOpening);
+    console.log('🎁 [PackOpening] Current state - isAuthenticated:', isAuthenticated);
+    console.log('🎁 [PackOpening] Current state - isGuestMode:', isGuestMode);
+    console.log('🎁 [PackOpening] localStorage before opening:', {
+      userCollection: localStorage.getItem('userCollection'),
+      userPacks: localStorage.getItem('userPacks'),
+      syncQueue: localStorage.getItem('syncQueue')
+    });
+
     // Prevent opening if already opening a pack
     if (isOpening) {
       console.log('🚫 Pack opening already in progress, ignoring duplicate call');
@@ -151,14 +171,17 @@ const PackOpening: React.FC = () => {
     }
 
     console.log(`🎁 Initiating ${packType} pack opening...`);
+    console.log('🎁 [PackOpening] About to show pack opener modal');
 
     // Show the pack opening modal with visual effects
     setSelectedPackType(packType);
     setShowPackOpener(true);
+
+    console.log('🎁 [PackOpening] Pack opener modal state set to true');
   };
 
   return (
-    <IonPage>
+    <IonPage data-testid="pack-opening-view">
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">

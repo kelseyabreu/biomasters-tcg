@@ -4,10 +4,20 @@
  */
 
 import { chromium, FullConfig } from '@playwright/test';
+import { firebaseEmulatorManager, validateTestEnvironment } from './config/firebase-test-config';
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Setting up Playwright E2E test environment...');
-  
+
+  // Validate test environment and Firebase configuration
+  validateTestEnvironment();
+
+  // Start Firebase emulators if needed
+  await firebaseEmulatorManager.startEmulators();
+
+  // Clear any existing emulator data
+  await firebaseEmulatorManager.clearEmulatorData();
+
   // Launch browser for setup
   const browser = await chromium.launch();
   const context = await browser.newContext();

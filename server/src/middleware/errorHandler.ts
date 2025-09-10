@@ -44,6 +44,14 @@ export function errorHandler(
     statusCode = 500;
     code = 'DATABASE_ERROR';
     message = 'Database operation failed';
+  } else if (error.message.includes('Connection terminated') ||
+             error.message.includes('ECONNRESET') ||
+             error.message.includes('connection') ||
+             error.message.includes('timeout')) {
+    statusCode = 500;
+    code = 'DATABASE_CONNECTION_ERROR';
+    message = 'Database connection error. Please try again.';
+    console.error('🔌 PostgreSQL connection error detected:', error.message);
   } else if (error.message.includes('duplicate key')) {
     statusCode = 409;
     code = 'DUPLICATE_RESOURCE';

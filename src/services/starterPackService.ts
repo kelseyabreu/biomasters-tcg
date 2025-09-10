@@ -4,10 +4,25 @@
  */
 
 import { dataLoader } from '@shared/data/DataLoader';
-import { Card } from '../types';
+import { Card, TrophicRole } from '../types';
 import { CardId } from '@shared/enums';
 import { CardData } from '@shared/types';
 // No longer need legacy species name conversions
+
+// Helper function to map trophic levels to roles
+function mapTrophicLevelToRole(trophicLevel: any): TrophicRole {
+  // Map numeric trophic levels to frontend roles based on shared/enums.ts TrophicLevel enum
+  switch (trophicLevel) {
+    case -2: return TrophicRole.DETRITIVORE; // DETRITIVORE
+    case -1: return TrophicRole.DECOMPOSER;  // SAPROTROPH
+    case 0: return TrophicRole.DECOMPOSER;   // DETRITUS_TILE
+    case 1: return TrophicRole.PRODUCER;     // PRODUCER
+    case 2: return TrophicRole.HERBIVORE;    // PRIMARY_CONSUMER
+    case 3: return TrophicRole.CARNIVORE;    // SECONDARY_CONSUMER
+    case 4: return TrophicRole.CARNIVORE;    // APEX_PREDATOR
+    default: return TrophicRole.PRODUCER;
+  }
+}
 
 export interface StarterPackCard {
   cardId: number;
@@ -87,7 +102,7 @@ class StarterPackService {
             artwork: foundCard.artwork_url || `/images/species/${foundCard.nameId.toLowerCase()}.jpg`, // Use artwork URL or default
             description: foundCard.descriptionId || 'No description available', // Use description ID as fallback
             conservationStatus: foundCard.conservation_status || 'Least Concern' as any, // Map conservation status
-            trophicRole: foundCard.trophicLevel || 'Primary Consumer' as any, // Map trophic level
+            trophicRole: mapTrophicLevelToRole(foundCard.trophicLevel), // Map trophic level
             habitat: foundCard.domain as any, // Map domain to habitat
             power: foundCard.mass_kg ? Math.floor(foundCard.mass_kg / 10) + 1 : 1, // Calculate power from mass
             health: foundCard.mass_kg ? Math.floor(foundCard.mass_kg / 5) + 5 : 5, // Calculate health from mass

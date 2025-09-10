@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { RateLimiterRedis, RateLimiterMemory } from 'rate-limiter-flexible';
 import { getRedisClient } from '../config/redis';
+import dotenv from 'dotenv';
+
+// Ensure environment variables are loaded
+dotenv.config();
 
 // Rate limiters for different endpoints - initialized lazily
 let generalLimiter: RateLimiterRedis | RateLimiterMemory | null = null;
@@ -9,78 +13,119 @@ let packOpeningLimiter: RateLimiterRedis | RateLimiterMemory | null = null;
 let apiLimiter: RateLimiterRedis | RateLimiterMemory | null = null;
 
 /**
+ * Get rate limit configuration from environment variables
+ */
+function getRateLimitConfig() {
+  return {
+    general: {
+      points: parseInt(process.env['RATE_LIMIT_GENERAL_POINTS'] || '100'),
+      duration: parseInt(process.env['RATE_LIMIT_GENERAL_DURATION'] || '900'),
+      blockDuration: parseInt(process.env['RATE_LIMIT_GENERAL_BLOCK_DURATION'] || '900')
+    },
+    auth: {
+      points: parseInt(process.env['RATE_LIMIT_AUTH_POINTS'] || '1000'),
+      duration: parseInt(process.env['RATE_LIMIT_AUTH_DURATION'] || '900'),
+      blockDuration: parseInt(process.env['RATE_LIMIT_AUTH_BLOCK_DURATION'] || '1800')
+    },
+    packs: {
+      points: parseInt(process.env['PACK_OPENING_RATE_LIMIT'] || '10'),
+      duration: 3600,
+      blockDuration: 3600
+    },
+    api: {
+      points: parseInt(process.env['RATE_LIMIT_API_POINTS'] || '1000'),
+      duration: parseInt(process.env['RATE_LIMIT_API_DURATION'] || '3600'),
+      blockDuration: parseInt(process.env['RATE_LIMIT_API_BLOCK_DURATION'] || '3600')
+    },
+    strict: {
+      points: parseInt(process.env['RATE_LIMIT_STRICT_POINTS'] || '10'),
+      duration: parseInt(process.env['RATE_LIMIT_STRICT_DURATION'] || '3600'),
+      blockDuration: parseInt(process.env['RATE_LIMIT_STRICT_BLOCK_DURATION'] || '3600')
+    }
+  };
+}
+
+/**
  * Initialize rate limiters
  */
 function initializeRateLimiters() {
+  const config = getRateLimitConfig();
+
+  console.log(`🔧 Rate Limiter Configuration:
+    General: ${config.general.points} requests per ${config.general.duration}s
+    Auth: ${config.auth.points} requests per ${config.auth.duration}s
+    API: ${config.api.points} requests per ${config.api.duration}s
+    Strict: ${config.strict.points} requests per ${config.strict.duration}s`);
+
   try {
     const redisClient = getRedisClient();
-    
+
     // General API rate limiter
     generalLimiter = new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_general',
-      points: 100, // Number of requests
-      duration: 900, // Per 15 minutes
-      blockDuration: 900, // Block for 15 minutes if limit exceeded
+      points: config.general.points,
+      duration: config.general.duration,
+      blockDuration: config.general.blockDuration,
     });
 
     // Authentication rate limiter
     authLimiter = new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_auth',
-      points: 1000, // Number of requests
-      duration: 900, // Per 15 minutes
-      blockDuration: 1800, // Block for 30 minutes if limit exceeded
+      points: config.auth.points,
+      duration: config.auth.duration,
+      blockDuration: config.auth.blockDuration,
     });
 
     // Pack opening rate limiter
     packOpeningLimiter = new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_packs',
-      points: parseInt(process.env['PACK_OPENING_RATE_LIMIT'] || '10'), // Number of packs
-      duration: 3600, // Per hour
-      blockDuration: 3600, // Block for 1 hour if limit exceeded
+      points: config.packs.points,
+      duration: config.packs.duration,
+      blockDuration: config.packs.blockDuration,
     });
 
     // API rate limiter (per user)
     apiLimiter = new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_api',
-      points: 1000, // Number of requests
-      duration: 3600, // Per hour
-      blockDuration: 3600, // Block for 1 hour if limit exceeded
+      points: config.api.points,
+      duration: config.api.duration,
+      blockDuration: config.api.blockDuration,
     });
 
   } catch (error) {
     console.warn('⚠️ Redis not available, using memory-based rate limiting');
-    
+
     // Fallback to memory-based rate limiting
     generalLimiter = new RateLimiterMemory({
       keyPrefix: 'rl_general',
-      points: 100,
-      duration: 900,
-      blockDuration: 900,
+      points: config.general.points,
+      duration: config.general.duration,
+      blockDuration: config.general.blockDuration,
     });
 
     authLimiter = new RateLimiterMemory({
       keyPrefix: 'rl_auth',
-      points: 1000,
-      duration: 900,
-      blockDuration: 1800,
+      points: config.auth.points,
+      duration: config.auth.duration,
+      blockDuration: config.auth.blockDuration,
     });
 
     packOpeningLimiter = new RateLimiterMemory({
       keyPrefix: 'rl_packs',
-      points: parseInt(process.env['PACK_OPENING_RATE_LIMIT'] || '10'),
-      duration: 3600,
-      blockDuration: 3600,
+      points: config.packs.points,
+      duration: config.packs.duration,
+      blockDuration: config.packs.blockDuration,
     });
 
     apiLimiter = new RateLimiterMemory({
       keyPrefix: 'rl_api',
-      points: 1000,
-      duration: 3600,
-      blockDuration: 3600,
+      points: config.api.points,
+      duration: config.api.duration,
+      blockDuration: config.api.blockDuration,
     });
   }
 }
@@ -185,21 +230,23 @@ export const apiRateLimiter = createRateLimitMiddleware(
  * Strict rate limiter for sensitive operations
  */
 function createStrictLimiter() {
+  const config = getRateLimitConfig();
+
   try {
     const redisClient = getRedisClient();
     return new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_strict',
-      points: 10, // Very limited requests
-      duration: 3600, // Per hour
-      blockDuration: 3600, // Block for 1 hour
+      points: config.strict.points,
+      duration: config.strict.duration,
+      blockDuration: config.strict.blockDuration,
     });
   } catch (error) {
     return new RateLimiterMemory({
       keyPrefix: 'rl_strict',
-      points: 10,
-      duration: 3600,
-      blockDuration: 3600,
+      points: config.strict.points,
+      duration: config.strict.duration,
+      blockDuration: config.strict.blockDuration,
     });
   }
 }
@@ -232,9 +279,9 @@ export function createCustomRateLimiter(options: {
  * Rate limiter for daily rewards
  */
 export const dailyRewardRateLimiter = createCustomRateLimiter({
-  points: 1, // One claim per day
-  duration: 24 * 60 * 60, // 24 hours
-  blockDuration: 24 * 60 * 60, // Block for 24 hours
+  points: parseInt(process.env['RATE_LIMIT_DAILY_REWARD_POINTS'] || '1'),
+  duration: parseInt(process.env['RATE_LIMIT_DAILY_REWARD_DURATION'] || '86400'), // 24 hours
+  blockDuration: parseInt(process.env['RATE_LIMIT_DAILY_REWARD_BLOCK_DURATION'] || '86400'),
   keyPrefix: 'rl_daily_reward',
   keyGenerator: (req) => `daily_${req.user?.firebase_uid || req.ip}_${new Date().toDateString()}`
 });
@@ -243,9 +290,9 @@ export const dailyRewardRateLimiter = createCustomRateLimiter({
  * Rate limiter for password reset
  */
 export const passwordResetRateLimiter = createCustomRateLimiter({
-  points: 3, // 3 attempts
-  duration: 3600, // Per hour
-  blockDuration: 3600, // Block for 1 hour
+  points: parseInt(process.env['RATE_LIMIT_PASSWORD_RESET_POINTS'] || '3'),
+  duration: parseInt(process.env['RATE_LIMIT_PASSWORD_RESET_DURATION'] || '3600'),
+  blockDuration: parseInt(process.env['RATE_LIMIT_PASSWORD_RESET_BLOCK_DURATION'] || '3600'),
   keyPrefix: 'rl_password_reset',
   keyGenerator: (req) => `pwd_reset_${req.ip}_${req.body?.email || 'unknown'}`
 });
@@ -254,9 +301,9 @@ export const passwordResetRateLimiter = createCustomRateLimiter({
  * Rate limiter for account creation
  */
 export const accountCreationRateLimiter = createCustomRateLimiter({
-  points: 3, // 3 accounts per IP
-  duration: 24 * 60 * 60, // Per day
-  blockDuration: 24 * 60 * 60, // Block for 24 hours
+  points: parseInt(process.env['RATE_LIMIT_ACCOUNT_CREATION_POINTS'] || '3'),
+  duration: parseInt(process.env['RATE_LIMIT_ACCOUNT_CREATION_DURATION'] || '86400'), // 24 hours
+  blockDuration: parseInt(process.env['RATE_LIMIT_ACCOUNT_CREATION_BLOCK_DURATION'] || '86400'),
   keyPrefix: 'rl_account_creation',
   keyGenerator: (req) => `account_${req.ip}`
 });

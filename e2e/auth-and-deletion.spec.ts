@@ -12,6 +12,14 @@
  */
 
 import { test, expect, Page, BrowserContext } from '@playwright/test';
+import {
+  fillIonInput,
+  clickIonButton,
+  waitForModal,
+  waitForAppInitialization,
+  clearBrowserData,
+  safeCDPOperation
+} from './utils/test-helpers';
 
 // Test configuration
 const TEST_CONFIG = {

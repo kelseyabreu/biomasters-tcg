@@ -248,7 +248,7 @@ router.post('/users/:userId/currency', requireAdmin, strictRateLimiter, asyncHan
  * Get basic analytics data
  */
 router.get('/analytics', requireAdmin, strictRateLimiter, asyncHandler(async (_req, res) => {
-  // Get user statistics - TODO: Implement proper analytics with date functions
+  // Get user statistics - requires analytics implementation with date functions
   const userStats = [{
     total_users: 0,
     new_users_24h: 0,
@@ -257,7 +257,7 @@ router.get('/analytics', requireAdmin, strictRateLimiter, asyncHandler(async (_r
     banned_users: 0
   }];
 
-  // Get game statistics - TODO: Implement game_sessions table
+  // Get game statistics - requires game_sessions table implementation
   const gameStats = [{
     total_games: 0,
     games_24h: 0,

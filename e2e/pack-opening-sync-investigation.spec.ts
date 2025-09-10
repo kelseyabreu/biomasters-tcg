@@ -1,4 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
+import {
+  clearBrowserData,
+  waitForAppInitialization,
+  safeCDPOperation
+} from './utils/test-helpers';
 
 test.describe('🎁 Pack Opening and Sync Investigation', () => {
   let page: Page;
@@ -253,19 +258,27 @@ test.describe('🎁 Pack Opening and Sync Investigation', () => {
       console.log('🧹 [Investigation] After clear - localStorage keys:', Object.keys(localStorage));
     });
     
-    // Clear browser cache via CDP
-    const client = await page.context().newCDPSession(page);
-    await client.send('Network.clearBrowserCache');
-    await client.send('Storage.clearDataForOrigin', {
-      origin: 'http://localhost:5173',
-      storageTypes: 'all'
-    });
-    
-    // Hard refresh after cache clear
-    await page.keyboard.down('Control');
-    await page.keyboard.press('F5');
-    await page.keyboard.up('Control');
-    await page.waitForSelector('ion-app', { timeout: 10000 });
+    // Clear browser cache with cross-platform compatibility
+    await safeCDPOperation(
+      page,
+      async () => {
+        const client = await page.context().newCDPSession(page);
+        await client.send('Network.clearBrowserCache');
+        await client.send('Storage.clearDataForOrigin', {
+          origin: 'http://localhost:5173',
+          storageTypes: 'all'
+        });
+      },
+      async () => {
+        // Fallback: Hard refresh for browsers without CDP support
+        await page.keyboard.down('Control');
+        await page.keyboard.press('F5');
+        await page.keyboard.up('Control');
+      }
+    );
+
+    // Wait for app to reload with enhanced compatibility
+    await waitForAppInitialization(page, { timeout: 15000 });
     
     await page.evaluate(() => {
       console.log('🧹 [Investigation] After cache clear and hard refresh...');

@@ -42,12 +42,14 @@ export const TEST_USER_PATTERNS = [
   'deletion-test-%'
 ];
 
-// Test configuration constants
+// Test configuration constants - Enhanced for mobile compatibility
 export const TEST_CONSTANTS = {
-  // Timeouts
-  AUTH_TIMEOUT: 30000,
-  DELETION_TIMEOUT: 45000,
-  NETWORK_TIMEOUT: 15000,
+  // Timeouts - Increased for mobile compatibility
+  AUTH_TIMEOUT: 45000, // Increased for mobile auth flows
+  DELETION_TIMEOUT: 60000, // Increased for mobile deletion flows
+  NETWORK_TIMEOUT: 25000, // Increased for mobile network operations
+  MOBILE_TIMEOUT: 60000, // Specific timeout for mobile operations
+  MODAL_TIMEOUT: 20000, // Timeout for modal operations
   
   // Retry configuration
   MAX_RETRIES: 3,

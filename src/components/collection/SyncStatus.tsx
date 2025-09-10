@@ -70,7 +70,7 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
   };
 
   return (
-    <IonCard className="sync-status-card">
+    <IonCard className="sync-status-card" data-testid="sync-status">
       <IonCardContent>
         <div className="sync-status-content">
           {/* Status Indicator */}

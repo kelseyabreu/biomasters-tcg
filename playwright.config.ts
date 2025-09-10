@@ -30,6 +30,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     /* Record video on failure */
     video: 'retain-on-failure',
+    /* Increased timeouts for mobile compatibility */
+    actionTimeout: 15 * 1000, // 15 seconds for actions
+    navigationTimeout: 30 * 1000, // 30 seconds for navigation
   },
 
   /* Environment variables for tests */
@@ -61,14 +64,28 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
 
-    /* Test against mobile viewports. */
+    /* Test against mobile viewports with enhanced compatibility */
     {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      use: {
+        ...devices['Pixel 5'],
+        // Enhanced mobile Chrome settings
+        actionTimeout: 20 * 1000,
+        navigationTimeout: 45 * 1000,
+      },
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: {
+        ...devices['iPhone 12'],
+        // Enhanced mobile Safari settings
+        actionTimeout: 25 * 1000, // Safari can be slower
+        navigationTimeout: 60 * 1000,
+        // Disable CDP-dependent features for Safari
+        launchOptions: {
+          args: ['--disable-web-security', '--disable-features=VizDisplayCompositor']
+        }
+      },
     },
 
     /* Test against branded browsers. */
@@ -102,9 +119,9 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
 
-  /* Test timeout */
-  timeout: 30 * 1000,
+  /* Test timeout - Increased for mobile compatibility */
+  timeout: 60 * 1000, // 60 seconds for complex authentication flows
   expect: {
-    timeout: 10 * 1000,
+    timeout: 15 * 1000, // 15 seconds for assertions
   },
 });

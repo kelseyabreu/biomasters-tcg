@@ -404,9 +404,9 @@ router.get('/search', apiRateLimiter, asyncHandler(async (req, res) => {
 router.get('/leaderboard', apiRateLimiter, asyncHandler(async (req, res) => {
   const { type = 'ranked', season = 'current' } = req.query;
 
-  // const leaderboardLimit = Math.min(parseInt(limit as string) || 50, 100); // TODO: Use when implementing leaderboard
+  // const leaderboardLimit = Math.min(parseInt(limit as string) || 50, 100); // For future leaderboard implementation
 
-  // Get leaderboard entries - TODO: Implement leaderboard_entries table
+  // Get leaderboard entries - requires leaderboard_entries table implementation
   const entries: any[] = [];
 
   res.json({

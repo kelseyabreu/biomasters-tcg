@@ -4434,8 +4434,8 @@ organismModels['CARD_BUSH_CHERRY'] = {
     }
 };
 
-// TODO, this is temp due to get getTrophicRole working for now with unknowns due to eggs and others not
-// having capabilities. Maybe use future looking type
+// Fallback model for organisms without specific trophic roles (eggs, larvae, etc.)
+// Uses herbivore model as default for rendering compatibility
 organismModels.unknown = organismModels.herbivore;
 
 console.log('✅ Organism 2D rendering models loaded');

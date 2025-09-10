@@ -42,13 +42,16 @@ import {
   leaf,
   water,
   snow,
-  trash
+  trash,
+  person,
+  sync
 } from 'ionicons/icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { ThemeConfig, PREDEFINED_THEMES } from '../theme/themeSystem';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { LanguageSelector } from '../components/localization/LanguageSelector';
 import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
+import { SyncStatus } from '../components/collection/SyncStatus';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { useHistory } from 'react-router-dom';
 import './Settings.css';
@@ -90,7 +93,16 @@ const Settings: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showAccountDeletion, setShowAccountDeletion] = useState(false);
 
-  const { userProfile, isGuestMode } = useHybridGameStore();
+  const {
+    userProfile,
+    isGuestMode,
+    isOnline,
+    syncStatus,
+    syncCollection,
+    pendingActions,
+    lastSyncTime,
+    syncError
+  } = useHybridGameStore();
 
   const handleCreateCustomTheme = () => {
     if (customThemeName.trim()) {
@@ -362,6 +374,43 @@ const Settings: React.FC = () => {
             </IonCardContent>
           </IonCard>
 
+          {/* Sync & Data Management */}
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={sync} />
+                Sync & Data Management
+              </IonCardTitle>
+            </IonCardHeader>
+
+            <IonCardContent>
+              <SyncStatus
+                isOnline={isOnline}
+                syncStatus={syncStatus}
+                onSync={async () => {
+                  console.log('Manual sync triggered from settings');
+                  try {
+                    if (isOnline) {
+                      await syncCollection();
+                      setToastMessage('Sync completed successfully!');
+                      setShowToast(true);
+                    } else {
+                      setToastMessage('Cannot sync while offline. Please check your connection.');
+                      setShowToast(true);
+                    }
+                  } catch (error) {
+                    console.error('Manual sync failed:', error);
+                    setToastMessage('Sync failed. Please try again.');
+                    setShowToast(true);
+                  }
+                }}
+                pendingActions={pendingActions}
+                lastSyncTime={lastSyncTime}
+                syncError={syncError}
+              />
+            </IonCardContent>
+          </IonCard>
+
           {/* Game Settings */}
           <IonCard>
             <IonCardHeader>
@@ -397,6 +446,65 @@ const Settings: React.FC = () => {
               </IonItem>
             </IonCardContent>
           </IonCard>
+
+          {/* Profile Management */}
+          {userProfile && (
+            <IonCard>
+              <IonCardHeader>
+                <IonCardTitle>
+                  <IonIcon icon={person} />
+                  Profile Management
+                </IonCardTitle>
+              </IonCardHeader>
+
+              <IonCardContent>
+                <IonItem>
+                  <IonLabel position="stacked">Display Name</IonLabel>
+                  <IonInput
+                    value={userProfile.display_name || userProfile.username || ''}
+                    placeholder="Enter your display name"
+                    data-testid="display-name-input"
+                    readonly={true}
+                  />
+                </IonItem>
+
+                <IonItem>
+                  <IonLabel position="stacked">Username</IonLabel>
+                  <IonInput
+                    value={userProfile.username || ''}
+                    placeholder="Username"
+                    readonly={true}
+                  />
+                </IonItem>
+
+                {userProfile.email && (
+                  <IonItem>
+                    <IonLabel position="stacked">Email</IonLabel>
+                    <IonInput
+                      value={userProfile.email}
+                      readonly={true}
+                    />
+                  </IonItem>
+                )}
+
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  disabled={true}
+                  data-testid="save-profile-button"
+                >
+                  <IonIcon icon={save} slot="start" />
+                  Save Profile (Coming Soon)
+                </IonButton>
+
+                <IonNote color="medium">
+                  <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    Profile editing functionality will be available in a future update.
+                  </p>
+                </IonNote>
+              </IonCardContent>
+            </IonCard>
+          )}
 
           {/* Account Management */}
           {userProfile && (

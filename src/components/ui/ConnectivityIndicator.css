@@ -1,0 +1,314 @@
+/**
+ * Connectivity Indicator Styles
+ */
+
+.connectivity-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+/* Size variants */
+.connectivity-indicator--small {
+  font-size: 0.875rem;
+}
+
+.connectivity-indicator--small .connectivity-indicator__icon {
+  font-size: 1rem;
+}
+
+.connectivity-indicator--medium {
+  font-size: 1rem;
+}
+
+.connectivity-indicator--medium .connectivity-indicator__icon {
+  font-size: 1.25rem;
+}
+
+.connectivity-indicator--large {
+  font-size: 1.125rem;
+}
+
+.connectivity-indicator--large .connectivity-indicator__icon {
+  font-size: 1.5rem;
+}
+
+/* Position variants */
+.connectivity-indicator--header {
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-light-rgb), 0.1);
+}
+
+.connectivity-indicator--footer {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(var(--ion-color-dark-rgb), 0.05);
+}
+
+.connectivity-indicator--floating {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: rgba(var(--ion-background-color-rgb), 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.connectivity-indicator--inline {
+  /* Default inline styling */
+}
+
+/* Status variants */
+.connectivity-indicator--syncing .connectivity-indicator__icon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.connectivity-indicator--error {
+  cursor: pointer;
+}
+
+.connectivity-indicator--error:hover {
+  opacity: 0.8;
+}
+
+.connectivity-indicator--error:active {
+  transform: scale(0.95);
+}
+
+/* Icon container */
+.connectivity-indicator__icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Badge for pending actions */
+.connectivity-indicator__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+
+/* Text content */
+.connectivity-indicator__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.connectivity-indicator__status {
+  font-weight: 500;
+  color: var(--ion-color-dark);
+}
+
+.connectivity-indicator__guest {
+  font-size: 0.75em;
+  color: var(--ion-color-medium);
+  font-weight: 400;
+}
+
+/* Sync Progress Component */
+.sync-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(var(--ion-color-light-rgb), 0.5);
+  border: 1px solid rgba(var(--ion-color-medium-rgb), 0.2);
+}
+
+.sync-progress__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sync-progress__spinner {
+  display: flex;
+  align-items: center;
+}
+
+.sync-progress__pending,
+.sync-progress__error,
+.sync-progress__success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.sync-progress__pending {
+  color: var(--ion-color-warning);
+}
+
+.sync-progress__error {
+  color: var(--ion-color-danger);
+}
+
+.sync-progress__success {
+  color: var(--ion-color-success);
+}
+
+.sync-progress__retry {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: var(--ion-color-danger);
+  color: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.sync-progress__retry:hover {
+  opacity: 0.8;
+}
+
+.sync-progress__retry:active {
+  transform: scale(0.95);
+}
+
+/* Offline Banner */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--ion-color-warning);
+  color: var(--ion-color-warning-contrast);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .connectivity-indicator--header {
+    background: rgba(var(--ion-color-dark-rgb), 0.2);
+  }
+  
+  .connectivity-indicator--footer {
+    background: rgba(var(--ion-color-light-rgb), 0.1);
+  }
+  
+  .connectivity-indicator--floating {
+    background: rgba(var(--ion-color-dark-rgb), 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .sync-progress {
+    background: rgba(var(--ion-color-dark-rgb), 0.3);
+    border-color: rgba(var(--ion-color-light-rgb), 0.2);
+  }
+  
+  .connectivity-indicator__status {
+    color: var(--ion-color-light);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .connectivity-indicator--floating {
+    top: 10px;
+    right: 10px;
+    padding: 6px 10px;
+  }
+  
+  .sync-progress {
+    padding: 10px;
+  }
+  
+  .offline-banner {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Accessibility */
+.connectivity-indicator[role="button"]:focus {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
+.sync-progress__retry:focus {
+  outline: 2px solid var(--ion-color-light);
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .connectivity-indicator--header,
+  .connectivity-indicator--footer,
+  .connectivity-indicator--floating {
+    border: 2px solid var(--ion-color-medium);
+  }
+  
+  .sync-progress {
+    border-width: 2px;
+  }
+  
+  .offline-banner {
+    border-top: 2px solid var(--ion-color-warning-shade);
+    border-bottom: 2px solid var(--ion-color-warning-shade);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .connectivity-indicator,
+  .connectivity-indicator__icon,
+  .sync-progress__retry {
+    transition: none;
+  }
+  
+  .connectivity-indicator--syncing .connectivity-indicator__icon {
+    animation: none;
+  }
+  
+  .offline-banner {
+    animation: none;
+  }
+}

@@ -18,6 +18,15 @@ import {
   SupportedLanguage
 } from './text-ids';
 
+// Helper function to safely access localStorage
+const getLocalStorage = (): any | null => {
+  try {
+    return typeof globalThis !== 'undefined' && (globalThis as any).localStorage ? (globalThis as any).localStorage : null;
+  } catch {
+    return null;
+  }
+};
+
 // ============================================================================
 // LOCALIZATION DATA INTERFACES
 // ============================================================================
@@ -191,6 +200,43 @@ export interface ILocalizationManager {
    * Get raw text by ID (fallback method)
    */
   getText(textId: string): string;
+
+  /**
+   * Batch operations for better performance
+   */
+  getBatchCardNames?(nameIds: string[]): Record<string, string>;
+  getBatchScientificNames?(scientificNameIds: string[]): Record<string, string>;
+  getBatchCardDescriptions?(descriptionIds: string[]): Record<string, string>;
+
+  /**
+   * Get complete card localization
+   */
+  getCardLocalization?(card: {
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId?: string;
+  }): {
+    name: string;
+    scientificName: string;
+    description: string;
+    taxonomy: string;
+  };
+
+  /**
+   * Preload localizations for better performance
+   */
+  preloadLocalizations?(cards: Array<{
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId: string;
+  }>): void;
+
+  /**
+   * Get cache statistics (for debugging/monitoring)
+   */
+  getCacheStats?(): { hits: number; misses: number; size: number; hitRate: number };
 }
 
 // ============================================================================
@@ -198,14 +244,58 @@ export interface ILocalizationManager {
 // ============================================================================
 
 /**
- * Default implementation of the localization manager
+ * Cache entry with metadata for localization
+ */
+interface LocalizationCacheEntry {
+  value: string;
+  timestamp: number;
+  accessCount: number;
+  lastAccessed: number;
+}
+
+/**
+ * Cache configuration for localization
+ */
+interface LocalizationCacheConfig {
+  maxSize: number;
+  ttl: number; // Time to live in milliseconds
+  enablePersistence: boolean;
+  storageKey: string;
+}
+
+/**
+ * Default implementation of the localization manager with integrated caching
  */
 export class LocalizationManager implements ILocalizationManager {
   private _currentLanguage: SupportedLanguage = SupportedLanguage.ENGLISH;
   private _availableLanguages: SupportedLanguage[] = [SupportedLanguage.ENGLISH, SupportedLanguage.SPANISH];
   private _languageData: LanguageData | null = null;
 
-  constructor(private dataLoader: ILocalizationDataLoader) {}
+  // Integrated caching system
+  private cache = new Map<string, LocalizationCacheEntry>();
+  private cacheConfig: LocalizationCacheConfig = {
+    maxSize: 1000,
+    ttl: 30 * 60 * 1000, // 30 minutes
+    enablePersistence: true,
+    storageKey: 'biomasters-localization-cache'
+  };
+  private cacheStats = { hits: 0, misses: 0, size: 0, hitRate: 0 };
+
+  constructor(private dataLoader: ILocalizationDataLoader, cacheConfig?: Partial<LocalizationCacheConfig>) {
+    if (cacheConfig) {
+      this.cacheConfig = { ...this.cacheConfig, ...cacheConfig };
+    }
+
+    // Load from localStorage if available and in browser environment
+    if (this.cacheConfig.enablePersistence && getLocalStorage()) {
+      this.loadCacheFromStorage();
+    }
+
+    // Set up periodic cleanup (only in browser environment)
+    if (typeof setInterval !== 'undefined') {
+      setInterval(() => this.cleanupExpiredCache(), 5 * 60 * 1000); // Every 5 minutes
+    }
+  }
 
   get currentLanguage(): SupportedLanguage {
     return this._currentLanguage;
@@ -222,26 +312,39 @@ export class LocalizationManager implements ILocalizationManager {
 
     this._languageData = await this.dataLoader.loadLanguageData(languageCode);
     this._currentLanguage = languageCode;
+
+    // Clear cache when language changes
+    this.clearCache();
   }
 
   getCardName(nameId: CardNameId): string {
-    return this._languageData?.cards.names[nameId] ?? `[${nameId}]`;
+    return this.getCachedLocalization(`name:${nameId}`, () =>
+      this._languageData?.cards.names[nameId] ?? `[${nameId}]`
+    );
   }
 
   getScientificName(scientificNameId: ScientificNameId): string {
-    return this._languageData?.cards.scientificNames[scientificNameId] ?? `[${scientificNameId}]`;
+    return this.getCachedLocalization(`scientific:${scientificNameId}`, () =>
+      this._languageData?.cards.scientificNames[scientificNameId] ?? `[${scientificNameId}]`
+    );
   }
 
   getCardDescription(descriptionId: CardDescriptionId): string {
-    return this._languageData?.cards.descriptions[descriptionId] ?? `[${descriptionId}]`;
+    return this.getCachedLocalization(`description:${descriptionId}`, () =>
+      this._languageData?.cards.descriptions[descriptionId] ?? `[${descriptionId}]`
+    );
   }
 
   getAbilityName(nameId: AbilityNameId): string {
-    return this._languageData?.abilities.names[nameId] ?? `[${nameId}]`;
+    return this.getCachedLocalization(`ability:${nameId}`, () =>
+      this._languageData?.abilities.names[nameId] ?? `[${nameId}]`
+    );
   }
 
   getAbilityDescription(descriptionId: AbilityDescriptionId): string {
-    return this._languageData?.abilities.descriptions[descriptionId] ?? `[${descriptionId}]`;
+    return this.getCachedLocalization(`abilityDesc:${descriptionId}`, () =>
+      this._languageData?.abilities.descriptions[descriptionId] ?? `[${descriptionId}]`
+    );
   }
 
   getAbilityFlavorText(nameId: AbilityNameId): string {
@@ -357,6 +460,289 @@ export class LocalizationManager implements ILocalizationManager {
 
     return `[${textId}]`;
   }
+
+  // ============================================================================
+  // INTEGRATED CACHING SYSTEM
+  // ============================================================================
+
+  /**
+   * Get cached localization or compute and cache it
+   */
+  private getCachedLocalization(key: string, computeFn: () => string): string {
+    // Check cache first
+    const cached = this.cache.get(key);
+    if (cached && this.isCacheEntryValid(cached)) {
+      // Update access metadata
+      cached.accessCount++;
+      cached.lastAccessed = Date.now();
+      this.cacheStats.hits++;
+      this.updateCacheHitRate();
+      return cached.value;
+    }
+
+    // Cache miss - compute new value
+    this.cacheStats.misses++;
+    this.updateCacheHitRate();
+
+    let value: string;
+    try {
+      value = computeFn();
+    } catch (error) {
+      console.warn(`Failed to get localization for key ${key}:`, error);
+      // Fallback to formatted key
+      value = this.formatFallbackValue(key);
+    }
+
+    // Store in cache
+    this.setCacheEntry(key, value);
+    return value;
+  }
+
+  /**
+   * Set value in cache
+   */
+  private setCacheEntry(key: string, value: string): void {
+    // Check if we need to evict entries
+    if (this.cache.size >= this.cacheConfig.maxSize) {
+      this.evictLRUEntry();
+    }
+
+    const now = Date.now();
+    this.cache.set(key, {
+      value,
+      timestamp: now,
+      accessCount: 1,
+      lastAccessed: now
+    });
+
+    this.cacheStats.size = this.cache.size;
+
+    // Persist if enabled
+    if (this.cacheConfig.enablePersistence) {
+      this.saveCacheToStorage();
+    }
+  }
+
+  /**
+   * Check if cache entry is valid (not expired)
+   */
+  private isCacheEntryValid(entry: LocalizationCacheEntry): boolean {
+    return Date.now() - entry.timestamp < this.cacheConfig.ttl;
+  }
+
+  /**
+   * Evict least recently used entry
+   */
+  private evictLRUEntry(): void {
+    let oldestKey: string | null = null;
+    let oldestTime = Date.now();
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.lastAccessed < oldestTime) {
+        oldestTime = entry.lastAccessed;
+        oldestKey = key;
+      }
+    }
+
+    if (oldestKey) {
+      this.cache.delete(oldestKey);
+    }
+  }
+
+  /**
+   * Clean up expired entries
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.cacheConfig.ttl) {
+        keysToDelete.push(key);
+      }
+    }
+
+    keysToDelete.forEach(key => this.cache.delete(key));
+    this.cacheStats.size = this.cache.size;
+
+    if (keysToDelete.length > 0 && this.cacheConfig.enablePersistence) {
+      this.saveCacheToStorage();
+    }
+  }
+
+  /**
+   * Update hit rate statistic
+   */
+  private updateCacheHitRate(): void {
+    const total = this.cacheStats.hits + this.cacheStats.misses;
+    this.cacheStats.hitRate = total > 0 ? this.cacheStats.hits / total : 0;
+  }
+
+  /**
+   * Format fallback value from key
+   */
+  private formatFallbackValue(key: string): string {
+    const textId = key.includes(':') ? (key.split(':')[1] || key) : key;
+    return textId
+      .replace(/^(CARD_|ABILITY_|TAXONOMY_)/, '')
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  /**
+   * Save cache to localStorage
+   */
+  private saveCacheToStorage(): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
+    try {
+      const serializable = Array.from(this.cache.entries())
+        .filter(([, entry]) => this.isCacheEntryValid(entry))
+        .map(([key, entry]) => [key, {
+          value: entry.value,
+          timestamp: entry.timestamp,
+          accessCount: entry.accessCount,
+          lastAccessed: entry.lastAccessed
+        }]);
+
+      storage.setItem(this.cacheConfig.storageKey, JSON.stringify(serializable));
+    } catch (error) {
+      console.warn('Failed to save localization cache:', error);
+    }
+  }
+
+  /**
+   * Load cache from localStorage
+   */
+  private loadCacheFromStorage(): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
+    try {
+      const stored = storage.getItem(this.cacheConfig.storageKey);
+      if (!stored) return;
+
+      const entries = JSON.parse(stored);
+      if (Array.isArray(entries)) {
+        for (const [key, entry] of entries) {
+          if (this.isCacheEntryValid(entry)) {
+            this.cache.set(key, entry);
+          }
+        }
+      }
+
+      this.cacheStats.size = this.cache.size;
+    } catch (error) {
+      console.warn('Failed to load localization cache:', error);
+      this.clearCacheStorage();
+    }
+  }
+
+  /**
+   * Clear localStorage
+   */
+  private clearCacheStorage(): void {
+    const storage = getLocalStorage();
+    if (!storage) return;
+
+    try {
+      storage.removeItem(this.cacheConfig.storageKey);
+    } catch (error) {
+      console.warn('Failed to clear localization cache storage:', error);
+    }
+  }
+
+  /**
+   * Clear all cache data
+   */
+  private clearCache(): void {
+    this.cache.clear();
+    this.cacheStats = { hits: 0, misses: 0, size: 0, hitRate: 0 };
+    this.clearCacheStorage();
+  }
+
+  /**
+   * Get cache statistics (for debugging/monitoring)
+   */
+  getCacheStats(): { hits: number; misses: number; size: number; hitRate: number } {
+    return { ...this.cacheStats };
+  }
+
+  /**
+   * Batch get multiple localizations
+   */
+  getBatchCardNames(nameIds: string[]): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const nameId of nameIds) {
+      result[nameId] = this.getCardName(nameId as CardNameId);
+    }
+    return result;
+  }
+
+  /**
+   * Batch get multiple scientific names
+   */
+  getBatchScientificNames(scientificNameIds: string[]): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const scientificNameId of scientificNameIds) {
+      result[scientificNameId] = this.getScientificName(scientificNameId as ScientificNameId);
+    }
+    return result;
+  }
+
+  /**
+   * Batch get multiple descriptions
+   */
+  getBatchCardDescriptions(descriptionIds: string[]): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const descriptionId of descriptionIds) {
+      result[descriptionId] = this.getCardDescription(descriptionId as CardDescriptionId);
+    }
+    return result;
+  }
+
+  /**
+   * Get complete card localization
+   */
+  getCardLocalization(card: {
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId?: string;
+  }): {
+    name: string;
+    scientificName: string;
+    description: string;
+    taxonomy: string;
+  } {
+    return {
+      name: this.getCardName(card.nameId as CardNameId),
+      scientificName: this.getScientificName(card.scientificNameId as ScientificNameId),
+      description: this.getCardDescription(card.descriptionId as CardDescriptionId),
+      taxonomy: card.taxonomyId ? this.formatFallbackValue(`taxonomy:${card.taxonomyId}`) : ''
+    };
+  }
+
+  /**
+   * Preload localizations for better performance
+   */
+  preloadLocalizations(cards: Array<{
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId: string;
+  }>): void {
+    cards.forEach(card => {
+      this.getCardName(card.nameId as CardNameId);
+      this.getScientificName(card.scientificNameId as ScientificNameId);
+      this.getCardDescription(card.descriptionId as CardDescriptionId);
+      // Note: getTaxonomy is not cached yet, but could be added if needed
+    });
+  }
+
+
 }
 
 // ============================================================================
@@ -407,4 +793,29 @@ export class JSONFileDataLoader implements ILocalizationDataLoader {
     }
     return response.json() as Promise<T>;
   }
+}
+
+// ============================================================================
+// CONVENIENCE EXPORTS AND FACTORY FUNCTIONS
+// ============================================================================
+
+/**
+ * Create a LocalizationManager with custom cache configuration
+ */
+export function createLocalizationManager(
+  dataLoader: ILocalizationDataLoader,
+  cacheConfig?: Partial<LocalizationCacheConfig>
+): LocalizationManager {
+  return new LocalizationManager(dataLoader, cacheConfig);
+}
+
+/**
+ * Create a default LocalizationManager with JSON file data loader
+ */
+export function createDefaultLocalizationManager(
+  baseUrl: string = '/data/localization',
+  cacheConfig?: Partial<LocalizationCacheConfig>
+): LocalizationManager {
+  const dataLoader = new JSONFileDataLoader(baseUrl);
+  return new LocalizationManager(dataLoader, cacheConfig);
 }

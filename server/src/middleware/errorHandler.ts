@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import { ApiError } from '../../../shared/types';
 
-export interface ApiError extends Error {
-  statusCode?: number;
-  code?: string;
-  details?: any;
-}
+// Use shared ApiError interface
 
 /**
  * Global error handling middleware

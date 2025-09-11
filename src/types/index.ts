@@ -386,6 +386,12 @@ export interface SpeciesData {
  * This makes the data flow predictable and easier to debug
  */
 export function transformCardDataToCard(cardData: CardData): Card {
+  // Handle both camelCase (from JSON) and snake_case (from DataLoader) formats
+  const rawData = cardData as any; // Type assertion to access both formats
+  const conservationStatus = rawData.conservationStatus || cardData.conservation_status || ConservationStatus.NOT_EVALUATED;
+
+
+
   return {
     ...cardData, // Include all shared CardData properties
     id: `card_${cardData.cardId}`, // Generate instance ID from cardId
@@ -393,7 +399,7 @@ export function transformCardDataToCard(cardData: CardData): Card {
     description: '', // Should be localized
 
     // Map shared properties to backward compatibility properties
-    conservationStatus: cardData.conservation_status || ConservationStatus.NOT_EVALUATED,
+    conservationStatus: conservationStatus,
     trophicRole: mapTrophicLevelToRole(cardData.trophicLevel),
     habitat: mapDomainToHabitat(cardData.taxoDomain),
     power: calculatePowerFromBiologicalData(cardData),

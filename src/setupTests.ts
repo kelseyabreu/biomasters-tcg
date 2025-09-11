@@ -65,6 +65,61 @@ vi.mock('@ionic/react', () => ({
   isPlatform: vi.fn(() => false),
 }));
 
+// Mock IndexedDB for testing
+const mockIndexedDB = {
+  open: vi.fn(() => {
+    const request = {
+      result: {
+        transaction: vi.fn(() => ({
+          objectStore: vi.fn(() => ({
+            get: vi.fn(() => ({ onsuccess: vi.fn(), onerror: vi.fn() })),
+            put: vi.fn(() => ({ onsuccess: vi.fn(), onerror: vi.fn() })),
+            delete: vi.fn(() => ({ onsuccess: vi.fn(), onerror: vi.fn() })),
+            clear: vi.fn(() => ({ onsuccess: vi.fn(), onerror: vi.fn() })),
+            getAllKeys: vi.fn(() => ({ onsuccess: vi.fn(), onerror: vi.fn() })),
+          })),
+        })),
+        createObjectStore: vi.fn(),
+      },
+      onsuccess: null as any,
+      onerror: null as any,
+      onupgradeneeded: null as any,
+    } as any;
+
+    // Simulate async success
+    setTimeout(() => {
+      if (request.onsuccess && typeof request.onsuccess === 'function') {
+        const event = { target: request } as any;
+        request.onsuccess(event);
+      }
+    }, 0);
+
+    return request;
+  }),
+  deleteDatabase: vi.fn(),
+};
+
+// Mock localStorage for fallback testing
+const mockLocalStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  key: vi.fn(),
+  length: 0,
+};
+
+// Set up global mocks
+Object.defineProperty(global, 'indexedDB', {
+  value: mockIndexedDB,
+  writable: true,
+});
+
+Object.defineProperty(global, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true,
+});
+
 // Mock environment variables
 process.env.VITE_FIREBASE_API_KEY = 'test-api-key';
 process.env.VITE_FIREBASE_AUTH_DOMAIN = 'test-auth-domain';

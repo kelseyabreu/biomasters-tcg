@@ -4,7 +4,7 @@
  * Handles online/offline switching and delegates to appropriate engines
  */
 
-import { ClientGameEngine } from './ClientGameEngine';
+import { ClientGameEngine, ClientGameState } from './ClientGameEngine';
 import { gameApi } from './apiClient';
 import { GameActionType } from '@shared/enums';
 
@@ -35,12 +35,17 @@ export interface StartGamePayload {
 /**
  * TCG Game Service
  * Stateless service that processes game actions using current state as input
+ * All methods are pure functions that take state and return new state
  */
 export class TCGGameService {
-  private clientEngine: ClientGameEngine;
+  // Remove instance state - engine will be created per operation or passed in
 
-  constructor() {
-    this.clientEngine = new ClientGameEngine();
+  /**
+   * Get or create a client engine instance
+   * This ensures we always have a fresh engine without persistent state
+   */
+  private getClientEngine(): ClientGameEngine {
+    return new ClientGameEngine();
   }
 
   /**
@@ -95,8 +100,11 @@ export class TCGGameService {
    */
   private async startOfflineGame(payload: StartGamePayload): Promise<ServiceResult> {
     try {
+      // Create fresh client engine instance
+      const clientEngine = this.getClientEngine();
+
       // Create the game
-      const gameState = await this.clientEngine.createGame(
+      const gameState = await clientEngine.createGame(
         payload.gameId,
         payload.players,
         payload.settings
@@ -105,7 +113,7 @@ export class TCGGameService {
       // Mark all players as ready to start the game
       let currentState = gameState;
       for (const player of payload.players) {
-        const readyResult = this.clientEngine.processAction({
+        const readyResult = clientEngine.processAction({
           type: GameActionType.PLAYER_READY,
           playerId: player.id,
           payload: {}
@@ -127,6 +135,46 @@ export class TCGGameService {
       return {
         isValid: false,
         errorMessage: error.message || 'Failed to start offline game'
+      };
+    }
+  }
+
+  /**
+   * Load game from saved state
+   */
+  async loadGame(
+    savedState: ClientGameState,
+    currentState: any
+  ): Promise<ServiceResult> {
+    try {
+      console.log('📂 [TCGGameService] Loading game from saved state:', savedState.gameId);
+
+      // Create fresh client engine instance
+      const clientEngine = this.getClientEngine();
+
+      // Load the saved state into the engine
+      clientEngine.loadState(savedState);
+
+      // Get the loaded state
+      const gameState = clientEngine.getState();
+      if (!gameState) {
+        return {
+          isValid: false,
+          errorMessage: 'Failed to load game state'
+        };
+      }
+
+      console.log('✅ [TCGGameService] Game loaded successfully');
+      return {
+        isValid: true,
+        newState: gameState
+      };
+
+    } catch (error) {
+      console.error('❌ [TCGGameService] Failed to load game:', error);
+      return {
+        isValid: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error loading game'
       };
     }
   }
@@ -170,7 +218,22 @@ export class TCGGameService {
         }
       } else {
         // Offline mode - use ClientGameEngine
-        const result = this.clientEngine.processAction({
+        // Note: For stateless operation, we need to pass the current state
+        // The engine should be initialized with the current game state
+        if (!currentState?.tcgGameState) {
+          return {
+            isValid: false,
+            errorMessage: 'No active game state available'
+          };
+        }
+
+        const clientEngine = this.getClientEngine();
+
+        // ✅ CRITICAL STEP: Load the current state into the engine instance
+        clientEngine.loadState(currentState.tcgGameState);
+
+        // Process the action on the correctly configured engine
+        const result = clientEngine.processAction({
           type: GameActionType.PLAY_CARD,
           playerId: payload.playerId,
           payload: {
@@ -192,8 +255,20 @@ export class TCGGameService {
   /**
    * Get valid positions for placing a card
    */
-  getValidPositions(cardId: number, playerId: string): { x: number; y: number }[] {
-    return this.clientEngine.getValidPositions(cardId, playerId);
+  getValidPositions(cardId: number, playerId: string, currentState?: any): { x: number; y: number }[] {
+    // For stateless operation, we need the current game state
+    if (!currentState?.tcgGameState) {
+      console.warn('No game state available for getValidPositions');
+      return [];
+    }
+
+    const clientEngine = this.getClientEngine();
+
+    // ✅ Load the current state into the engine instance
+    clientEngine.loadState(currentState.tcgGameState);
+
+    // Now we can get valid positions from the correctly configured engine
+    return clientEngine.getValidPositions(cardId, playerId);
   }
 
   /**
@@ -233,7 +308,20 @@ export class TCGGameService {
         }
       } else {
         // Offline mode - use ClientGameEngine
-        const result = this.clientEngine.processAction({
+        if (!currentState?.tcgGameState) {
+          return {
+            isValid: false,
+            errorMessage: 'No active game state available'
+          };
+        }
+
+        const clientEngine = this.getClientEngine();
+
+        // ✅ CRITICAL STEP: Load the current state into the engine instance
+        clientEngine.loadState(currentState.tcgGameState);
+
+        // Process the action on the correctly configured engine
+        const result = clientEngine.processAction({
           type: GameActionType.PASS_TURN,
           playerId: payload.playerId,
           payload: {}

@@ -1,1 +1,0 @@
-{"root":["./enums.ts","./game-data-loader.d.ts","./index.ts","./localization-manager.ts","./taxonomy-mapping.ts","./text-ids.ts","./types.ts","./data/datacache.ts","./data/dataloader.ts","./game-engine/biomastersengine.ts","./services/taxonomydisplay.ts","./services/taxonomyfilter.ts","./utils/cardidhelpers.ts"],"version":"5.8.3"}

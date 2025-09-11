@@ -328,18 +328,46 @@ export interface GameMetadata {
 
 /**
  * Base game action structure
+ * Universal interface for all game actions across TCG and Phylo modes
  */
-export interface GameAction {
+export interface BaseGameAction {
   type: GameActionType;
   playerId: string;
   payload: any;
   timestamp?: Date;
+  id?: string; // Optional for tracking and history
+}
+
+/**
+ * Standard TCG game action (extends base)
+ */
+export interface GameAction extends BaseGameAction {
+  // TCG-specific extensions can be added here
+}
+
+/**
+ * Phylo game action with additional tracking fields
+ */
+export interface PhyloGameAction extends Omit<BaseGameAction, 'type' | 'timestamp' | 'payload'> {
+  id: string; // Required for Phylo mode
+  timestamp: number; // Required as number for Phylo
+  type: 'place_card' | 'move_card' | 'play_event' | 'challenge' | 'pass_turn' | 'react_to_event' | 'drop_and_draw';
+  data: any; // Phylo uses 'data' instead of 'payload'
+  result?: 'success' | 'failure' | 'pending';
+  errorMessage?: string;
+}
+
+/**
+ * Client-side action interface (for frontend use)
+ */
+export interface ClientPlayerAction extends BaseGameAction {
+  // Inherits all base properties, no additional fields needed
 }
 
 /**
  * Play card action
  */
-export interface PlayCardAction extends GameAction {
+export interface PlayCardAction extends BaseGameAction {
   type: GameActionType.PLAY_CARD;
   payload: {
     cardId: string;
@@ -350,7 +378,7 @@ export interface PlayCardAction extends GameAction {
 /**
  * Activate ability action
  */
-export interface ActivateAbilityAction extends GameAction {
+export interface ActivateAbilityAction extends BaseGameAction {
   type: GameActionType.ACTIVATE_ABILITY;
   payload: {
     cardId: string;
@@ -363,7 +391,7 @@ export interface ActivateAbilityAction extends GameAction {
 /**
  * Pass turn action
  */
-export interface PassTurnAction extends GameAction {
+export interface PassTurnAction extends BaseGameAction {
   type: GameActionType.PASS_TURN;
   payload: {};
 }
@@ -371,7 +399,7 @@ export interface PassTurnAction extends GameAction {
 /**
  * Player ready action
  */
-export interface PlayerReadyAction extends GameAction {
+export interface PlayerReadyAction extends BaseGameAction {
   type: GameActionType.PLAYER_READY;
   payload: {};
 }
@@ -824,12 +852,41 @@ export interface ConservationEducation {
 
 /**
  * Standard API response
+ * Unified interface for all API responses across frontend and server
  */
 export interface ApiResponse<T = any> {
+  // Core response fields
   status: ApiStatus;
+  success: boolean; // For backward compatibility with frontend
   message?: string;
   data?: T;
   errors?: ValidationError[];
+  error?: string; // Alternative error field for simple errors
+
+  // Optional extensions for specific use cases
+  user?: any; // For authentication responses
+  auth?: {
+    token: string;
+    guestSecret?: string;
+    expiresIn?: string;
+  }; // For authentication responses
+  sync?: any; // For sync-related responses
+}
+
+/**
+ * Unified API error interface
+ * Compatible with both frontend and server error handling
+ */
+export interface ApiError extends Error {
+  // Core error fields
+  code: string;
+  message: string;
+  status?: number; // HTTP status code
+  statusCode?: number; // Alternative field name for compatibility
+
+  // Additional error context
+  details?: any;
+  errors?: ValidationError[]; // For validation errors
 }
 
 /**

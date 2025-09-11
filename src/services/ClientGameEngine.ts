@@ -9,6 +9,9 @@ import {
   TurnPhase,
   GameActionType
 } from '@shared/enums';
+import {
+  ClientPlayerAction
+} from '@shared/types';
 
 // Import the shared, authoritative game engine
 import {
@@ -96,11 +99,7 @@ export interface ClientGameSettings {
   startingEnergy?: number;
 }
 
-export interface ClientPlayerAction {
-  type: GameActionType;
-  playerId: string;
-  payload: any;
-}
+// ClientPlayerAction is now imported from shared types
 
 export interface ClientPlayCardPayload {
   cardId: string;
@@ -377,6 +376,22 @@ export class ClientGameEngine {
    */
   getGameState(): ClientGameState | null {
     return this.gameState;
+  }
+
+  /**
+   * Load game state from provided state object
+   */
+  loadState(state: ClientGameState): void {
+    console.log('📂 [ClientGameEngine] Loading game state:', state.gameId);
+    this.gameState = { ...state };
+    console.log('✅ [ClientGameEngine] Game state loaded successfully');
+  }
+
+  /**
+   * Get current state for persistence
+   */
+  getState(): ClientGameState | null {
+    return this.getGameState();
   }
 
   /**

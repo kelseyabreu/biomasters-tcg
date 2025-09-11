@@ -1,6 +1,6 @@
 import { Card, PhyloGameBoard, PhyloCardPosition, TrophicRole, Habitat, createCardWithDefaults } from '../types';
 import { ConservationStatus } from '@shared/enums';
-import { PhyloGameState, PhyloPlayer, PhyloGameSettings } from '@shared/types';
+import { PhyloGameState, PhyloPlayer, PhyloGameSettings, PhyloGameAction } from '@shared/types';
 import { validateCardPlacement } from './phyloCompatibility';
 import { placeCardOnBoard, removeCardFromBoard } from './ecosystemBuilder';
 import { executeCardMovement, validateCardMovement } from './cardMovement';
@@ -20,15 +20,8 @@ export type GameState = PhyloGameState;
 export type Player = PhyloPlayer;
 export type GameSettings = PhyloGameSettings;
 
-export interface GameAction {
-  id: string;
-  playerId: string;
-  type: 'place_card' | 'move_card' | 'play_event' | 'challenge' | 'pass_turn' | 'react_to_event' | 'drop_and_draw';
-  timestamp: number;
-  data: any;
-  result: 'success' | 'failure' | 'pending';
-  errorMessage?: string;
-}
+// Use shared PhyloGameAction instead of local interface
+export type GameAction = PhyloGameAction;
 
 export interface TurnAction {
   type: 'place_card' | 'move_card' | 'challenge' | 'pass_turn' | 'drop_and_draw';

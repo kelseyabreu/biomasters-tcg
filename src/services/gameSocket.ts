@@ -1,18 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import { useHybridGameStore } from '../state/hybridGameStore';
+import { PhyloGameAction } from '@shared/types';
 
-interface GameAction {
-  type: 'place_card' | 'move_card' | 'challenge' | 'pass_turn';
-  cardId?: string;
-  position?: { x: number; y: number };
-  targetPosition?: { x: number; y: number };
-  challengeData?: {
-    targetCardId: string;
-    targetPlayerId: string;
-    claimType: string;
-    evidence: string;
-  };
-}
+// Use shared PhyloGameAction instead of local interface
+type GameAction = PhyloGameAction;
 
 interface GameUpdate {
   type: 'game_state_update' | 'player_joined' | 'player_left' | 'player_ready' | 'game_started' | 'game_ended' | 'turn_change' | 'action_result';

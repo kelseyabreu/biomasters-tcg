@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "timestamp": 1757600817632,
+  "files": {
+    "abilities.json": {
+      "version": "1.0.0",
+      "checksum": "078b1ccbe41e4d3fa5cbaf1d5029d4947f2d9318e494ad5c1d1417a738e3348b",
+      "size": 4399,
+      "lastModified": 1757189675119
+    },
+    "cards.json": {
+      "version": "1.0.0",
+      "checksum": "1bbd82c92b62a6c1fc4c24e91f49100e1f88631429b5add4d7c66916bd755831",
+      "size": 87302,
+      "lastModified": 1757367928506
+    },
+    "keywords.json": {
+      "version": "1.0.0",
+      "checksum": "ddd7765b3c252fcc8b71017c2728a132af16f402a4ee86335d9e737bf72796d8",
+      "size": 4050,
+      "lastModified": 1757304055132
+    }
+  }
+}

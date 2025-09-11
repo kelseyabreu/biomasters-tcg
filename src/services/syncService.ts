@@ -23,25 +23,29 @@ export interface SyncResult {
 }
 
 class SyncService {
-  private isSyncing = false;
-  private lastSyncAttempt = 0;
   private readonly SYNC_COOLDOWN = 5000; // 5 seconds between sync attempts
 
   /**
    * Perform full synchronization with server
+   * Now stateless - sync state tracking moved to calling code
    */
-  async syncWithServer(collection: OfflineCollection, authToken?: string): Promise<SyncResult> {
-    if (this.isSyncing) {
+  async syncWithServer(
+    collection: OfflineCollection,
+    authToken?: string,
+    syncState?: { isSyncing: boolean; lastSyncAttempt: number }
+  ): Promise<SyncResult & { newSyncState: { isSyncing: boolean; lastSyncAttempt: number } }> {
+    const currentSyncState = syncState || { isSyncing: false, lastSyncAttempt: 0 };
+
+    if (currentSyncState.isSyncing) {
       throw new Error('Sync already in progress');
     }
 
     const now = Date.now();
-    if (now - this.lastSyncAttempt < this.SYNC_COOLDOWN) {
+    if (now - currentSyncState.lastSyncAttempt < this.SYNC_COOLDOWN) {
       throw new Error('Sync cooldown active. Please wait before syncing again.');
     }
 
-    this.isSyncing = true;
-    this.lastSyncAttempt = now;
+    const newSyncState = { isSyncing: true, lastSyncAttempt: now };
 
     try {
       // Prepare sync payload
@@ -72,7 +76,11 @@ class SyncService {
       const syncResponse = response.data.data || response.data;
 
       // Process sync response
-      return await this.processSyncResponse(collection, syncResponse);
+      const result = await this.processSyncResponse(collection, syncResponse);
+      return {
+        ...result,
+        newSyncState: { isSyncing: false, lastSyncAttempt: now }
+      };
 
     } catch (error) {
       console.error('Sync failed:', error);
@@ -81,10 +89,9 @@ class SyncService {
         conflicts: [],
         discarded_actions: [],
         updated_collection: collection,
-        error: error instanceof Error ? error.message : 'Unknown sync error'
+        error: error instanceof Error ? error.message : 'Unknown sync error',
+        newSyncState: { isSyncing: false, lastSyncAttempt: now }
       };
-    } finally {
-      this.isSyncing = false;
     }
   }
 
@@ -258,24 +265,28 @@ class SyncService {
   /**
    * Check if sync is currently in progress
    */
-  isSyncInProgress(): boolean {
-    return this.isSyncing;
+  isSyncInProgress(syncState: { isSyncing: boolean; lastSyncAttempt: number }): boolean {
+    return syncState.isSyncing;
   }
 
   /**
    * Get time until next sync is allowed
    */
-  getTimeUntilNextSync(): number {
-    const timeSinceLastAttempt = Date.now() - this.lastSyncAttempt;
+  getTimeUntilNextSync(syncState: { isSyncing: boolean; lastSyncAttempt: number }): number {
+    const timeSinceLastAttempt = Date.now() - syncState.lastSyncAttempt;
     return Math.max(0, this.SYNC_COOLDOWN - timeSinceLastAttempt);
   }
 
   /**
    * Force sync (bypasses cooldown) - use carefully
    */
-  async forceSyncWithServer(collection: OfflineCollection, authToken?: string): Promise<SyncResult> {
-    this.lastSyncAttempt = 0; // Reset cooldown
-    return this.syncWithServer(collection, authToken);
+  async forceSyncWithServer(
+    collection: OfflineCollection,
+    authToken?: string,
+    syncState?: { isSyncing: boolean; lastSyncAttempt: number }
+  ): Promise<SyncResult & { newSyncState: { isSyncing: boolean; lastSyncAttempt: number } }> {
+    const resetSyncState = { isSyncing: false, lastSyncAttempt: 0 }; // Reset cooldown
+    return this.syncWithServer(collection, authToken, resetSyncState);
   }
 
   /**

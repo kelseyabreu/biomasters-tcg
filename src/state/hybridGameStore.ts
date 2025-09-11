@@ -9,7 +9,6 @@ import { persist, subscribeWithSelector, createJSONStorage } from 'zustand/middl
 import { offlineSecurityService, OfflineCollection } from '../services/offlineSecurityService';
 import { starterPackService } from '../services/starterPackService';
 import { syncService, SyncResult } from '../services/syncService';
-import { dataLoader } from '@shared/data/DataLoader';
 import { initializeCardMapping } from '@shared/utils/cardIdHelpers';
 
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
@@ -21,7 +20,9 @@ import { createUserScopedIndexedDBStorage, clearUserData } from '../utils/userSc
 import { guestApi } from '../services/apiClient';
 import { tcgGameService } from '../services/TCGGameService';
 import { phyloGameService } from '../services/PhyloGameService';
-import { PhyloGameState as SharedPhyloGameState } from '@shared/types';
+import { staticDataManager } from '../services/StaticDataManager';
+import { gameStateManager } from '../services/GameStateManager';
+import { PhyloGameState as SharedPhyloGameState, CardData } from '@shared/types';
 import type { ClientGameState } from '../services/ClientGameEngine';
 import { nameIdToCardId } from '@shared/utils/cardIdHelpers';
 
@@ -157,15 +158,25 @@ export interface HybridGameState {
   lastSyncTime: number;
   syncError: string | null;
   pendingActions: number;
+
+  // Stateless sync service state
+  syncServiceState: {
+    isSyncing: boolean;
+    lastSyncAttempt: number;
+  };
   
   // UI State
   showSyncConflicts: boolean;
   syncConflicts: any[];
-  
+  hasPausedGame: boolean;
+  pausedGameMetadata: any;
+
   // Actions
   initializeOfflineCollection: () => void;
   loadOfflineCollection: () => void;
   saveOfflineCollection: (collection: OfflineCollection) => void;
+  recoverActiveGame: () => Promise<void>;
+  resumePausedGame: () => void;
 
   // User Profile Actions
   updateUserProfile: (profile: Partial<AuthenticatedUser>) => void;
@@ -781,6 +792,14 @@ export const useHybridGameStore = create<HybridGameState>()(
         pendingActions: 0,
         showSyncConflicts: false,
         syncConflicts: [],
+        hasPausedGame: false,
+        pausedGameMetadata: null,
+
+        // Stateless sync service state
+        syncServiceState: {
+          isSyncing: false,
+          lastSyncAttempt: 0
+        },
 
         // Initialize offline collection
         initializeOfflineCollection: async () => {
@@ -872,20 +891,32 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           try {
             console.log('🔄 Loading species data...');
-            const result = await dataLoader.loadAllCards();
+
+            // Use StaticDataManager for data loading with background updates
+            const result = await staticDataManager.getDataFile('cards.json');
             if (!result.success || !result.data) {
               throw new Error(result.error || 'Failed to load card data');
             }
 
+
+
             // Transform shared CardData to frontend Card format
-            const allCards: Card[] = result.data.map(cardData => transformCardDataToCard(cardData));
+            const allCards: Card[] = result.data.map((cardData: CardData) => transformCardDataToCard(cardData));
 
             console.log(`✅ Loaded ${allCards.length} species cards`);
             console.log('🔍 Sample cards:', allCards.slice(0, 3).map(card => ({
               cardId: card.cardId,
               nameId: card.nameId,
-              trophicRole: card.trophicRole
+              trophicRole: card.trophicRole,
+              conservationStatus: card.conservationStatus
             })));
+
+            // Debug: Log conservation status distribution
+            const conservationCounts = allCards.reduce((acc, card) => {
+              acc[card.conservationStatus] = (acc[card.conservationStatus] || 0) + 1;
+              return acc;
+            }, {} as Record<number, number>);
+            console.log('🔍 Conservation status distribution:', conservationCounts);
 
             // Initialize card mapping for nameId <-> cardId conversions
             initializeCardMapping(allCards.map(card => ({ cardId: card.cardId, nameId: card.nameId })));
@@ -1030,7 +1061,11 @@ export const useHybridGameStore = create<HybridGameState>()(
                       syncError: null,
                       pendingActions: 0,
                       showSyncConflicts: false,
-                      syncConflicts: []
+                      syncConflicts: [],
+                      syncServiceState: {
+                        isSyncing: false,
+                        lastSyncAttempt: 0
+                      }
                     });
                     await tokenManager.clearAllAuthData();
                   }
@@ -1386,6 +1421,10 @@ export const useHybridGameStore = create<HybridGameState>()(
                 pendingActions: 0,
                 showSyncConflicts: false,
                 syncConflicts: [],
+                syncServiceState: {
+                  isSyncing: false,
+                  lastSyncAttempt: 0
+                },
                 userProfile: null
               });
               console.log('✅ [SignOut] Guest state cleared');
@@ -1910,11 +1949,38 @@ export const useHybridGameStore = create<HybridGameState>()(
           return null;
         },
 
-        // Sync with server
+        // Sync with server - Enhanced with comprehensive edge case handling
         syncCollection: async (): Promise<SyncResult> => {
           const state = get();
-          if (!state.offlineCollection || !state.isOnline) {
-            throw new Error('Cannot sync: offline or no collection');
+
+          // Pre-sync validation
+          if (!state.offlineCollection) {
+            throw new Error('Cannot sync: no offline collection available');
+          }
+
+          if (!state.isOnline) {
+            throw new Error('Cannot sync: device is offline');
+          }
+
+          if (!state.isAuthenticated) {
+            throw new Error('Cannot sync: user not authenticated');
+          }
+
+          // Check if sync is already in progress
+          if (state.syncStatus === 'syncing') {
+            console.warn('⚠️ Sync already in progress, skipping duplicate request');
+            throw new Error('Sync already in progress');
+          }
+
+          // Validate collection integrity before sync
+          const validationResult = syncService.validateCollectionForSync(state.offlineCollection);
+          if (!validationResult.isValid) {
+            console.error('❌ Collection validation failed:', validationResult.errors);
+            set({
+              syncStatus: 'error',
+              syncError: `Collection integrity check failed: ${validationResult.errors.join(', ')}`
+            });
+            throw new Error('Collection validation failed');
           }
 
           // Handle guest registration first if needed
@@ -1927,7 +1993,7 @@ export const useHybridGameStore = create<HybridGameState>()(
               console.error('❌ Guest registration failed during sync:', error);
               set({
                 syncStatus: 'error',
-                syncError: 'Guest registration failed'
+                syncError: 'Guest registration failed. Please try again or contact support.'
               });
               throw error;
             }
@@ -1936,52 +2002,196 @@ export const useHybridGameStore = create<HybridGameState>()(
           set({ syncStatus: 'syncing', syncError: null });
 
           try {
-            // Use guest token for authentication if in guest mode
-            const authToken = state.isGuestMode ? state.guestToken : await auth.currentUser?.getIdToken();
+            // Get authentication token with retry logic
+            let authToken: string | null = null;
+            let tokenRetries = 0;
+            const maxTokenRetries = 3;
 
-            if (!authToken) {
-              throw new Error('No authentication token available');
+            while (!authToken && tokenRetries < maxTokenRetries) {
+              try {
+                if (state.isGuestMode) {
+                  authToken = state.guestToken;
+                  if (!authToken) {
+                    throw new Error('Guest token not available');
+                  }
+                } else {
+                  const currentUser = auth.currentUser;
+                  if (!currentUser) {
+                    throw new Error('Firebase user not available');
+                  }
+                  authToken = await currentUser.getIdToken(true); // Force refresh
+                }
+              } catch (tokenError) {
+                tokenRetries++;
+                console.warn(`⚠️ Token retrieval attempt ${tokenRetries} failed:`, tokenError);
+
+                if (tokenRetries >= maxTokenRetries) {
+                  throw new Error(`Failed to get authentication token after ${maxTokenRetries} attempts`);
+                }
+
+                // Wait before retry
+                await new Promise(resolve => setTimeout(resolve, 1000 * tokenRetries));
+              }
             }
 
-            const result = await syncService.syncWithServer(state.offlineCollection, authToken);
+            if (!authToken) {
+              throw new Error('No authentication token available after retries');
+            }
+
+            // Perform sync with comprehensive error handling
+            const result = await syncService.syncWithServer(
+              state.offlineCollection,
+              authToken,
+              state.syncServiceState
+            );
 
             if (result.success) {
+              // Validate the updated collection before applying
+              if (!result.updated_collection) {
+                throw new Error('Sync succeeded but no updated collection received');
+              }
+
+              // Verify collection integrity after sync
+              const postSyncValidation = syncService.validateCollectionForSync(result.updated_collection);
+              if (!postSyncValidation.isValid) {
+                console.error('❌ Post-sync collection validation failed:', postSyncValidation.errors);
+                throw new Error('Received invalid collection from server');
+              }
+
               // Update the collection and ensure pending actions are cleared
               const updatedCollection = {
                 ...result.updated_collection,
-                action_queue: [] // Clear the action queue after successful sync
+                action_queue: [], // Clear the action queue after successful sync
+                last_sync: Date.now() // Update sync timestamp
               };
 
-              get().saveOfflineCollection(updatedCollection);
+              // Save collection with error handling
+              try {
+                get().saveOfflineCollection(updatedCollection);
+              } catch (saveError) {
+                console.error('❌ Failed to save synced collection:', saveError);
+                throw new Error('Failed to save synced data locally');
+              }
+
+              // Update state with success
               set({
                 syncStatus: 'success',
                 lastSyncTime: Date.now(),
-                syncConflicts: result.conflicts,
-                showSyncConflicts: result.conflicts.length > 0,
-                pendingActions: 0 // Explicitly set pending actions to 0
+                syncConflicts: result.conflicts || [],
+                showSyncConflicts: (result.conflicts || []).length > 0,
+                pendingActions: 0, // Explicitly set pending actions to 0
+                syncServiceState: result.newSyncState, // Update sync service state
+                syncError: null // Clear any previous errors
               });
 
               // Force refresh the collection state to ensure UI updates
               setTimeout(() => {
-                get().refreshCollectionState();
+                try {
+                  get().refreshCollectionState();
+                } catch (refreshError) {
+                  console.warn('⚠️ Failed to refresh collection state after sync:', refreshError);
+                }
               }, 100);
 
-              console.log('✅ Sync completed successfully, pending actions cleared');
+              console.log('✅ Sync completed successfully:', {
+                conflictsResolved: (result.conflicts || []).length,
+                actionsProcessed: state.offlineCollection.action_queue.length,
+                newCredits: updatedCollection.eco_credits,
+                newXP: updatedCollection.xp_points
+              });
+
             } else {
+              // Handle sync failure with detailed error information
+              const errorMessage = result.error || 'Sync failed for unknown reason';
+              console.error('❌ Sync failed:', {
+                error: errorMessage,
+                conflicts: result.conflicts?.length || 0,
+                hasCollection: !!result.updated_collection
+              });
+
               set({
                 syncStatus: 'error',
-                syncError: result.error || 'Sync failed'
+                syncError: errorMessage,
+                syncServiceState: result.newSyncState, // Update sync service state even on error
+                syncConflicts: result.conflicts || [],
+                showSyncConflicts: (result.conflicts || []).length > 0
               });
             }
 
             return result;
 
           } catch (error) {
+            // Comprehensive error handling and recovery
             const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
+            console.error('❌ Sync failed with error:', error);
+
+            // Categorize error types for better user experience
+            let userFriendlyMessage = errorMessage;
+            let shouldRetry = false;
+
+            if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+              userFriendlyMessage = 'Network error. Please check your connection and try again.';
+              shouldRetry = true;
+            } else if (errorMessage.includes('authentication') || errorMessage.includes('token')) {
+              userFriendlyMessage = 'Authentication expired. Please sign in again.';
+              shouldRetry = false;
+
+              // Clear authentication state for token errors
+              if (state.isGuestMode) {
+                console.log('🔄 Guest token expired, clearing guest state');
+                set({
+                  guestToken: null,
+                  needsRegistration: true
+                });
+              }
+            } else if (errorMessage.includes('validation') || errorMessage.includes('integrity')) {
+              userFriendlyMessage = 'Data validation failed. Your local data may be corrupted.';
+              shouldRetry = false;
+            } else if (errorMessage.includes('already in progress')) {
+              userFriendlyMessage = 'Sync is already running. Please wait for it to complete.';
+              shouldRetry = false;
+            } else if (errorMessage.includes('offline')) {
+              userFriendlyMessage = 'Device is offline. Sync will resume when connection is restored.';
+              shouldRetry = true;
+            }
+
+            // Update state with error information
             set({
               syncStatus: 'error',
-              syncError: errorMessage
+              syncError: userFriendlyMessage,
+              // Preserve sync service state if available
+              syncServiceState: state.syncServiceState ? {
+                isSyncing: false,
+                lastSyncAttempt: Date.now()
+              } : state.syncServiceState
             });
+
+            // Log error details for debugging
+            console.error('🔍 Sync error details:', {
+              originalError: errorMessage,
+              userMessage: userFriendlyMessage,
+              shouldRetry,
+              isGuestMode: state.isGuestMode,
+              hasCollection: !!state.offlineCollection,
+              pendingActions: state.offlineCollection?.action_queue?.length || 0,
+              isOnline: state.isOnline,
+              isAuthenticated: state.isAuthenticated
+            });
+
+            // Schedule automatic retry for network errors if appropriate
+            if (shouldRetry && state.isOnline && state.isAuthenticated) {
+              console.log('🔄 Scheduling automatic sync retry in 30 seconds...');
+              setTimeout(() => {
+                const currentState = get();
+                if (currentState.isOnline && currentState.isAuthenticated && currentState.syncStatus === 'error') {
+                  console.log('🔄 Attempting automatic sync retry...');
+                  currentState.syncCollection().catch(retryError => {
+                    console.warn('⚠️ Automatic sync retry failed:', retryError);
+                  });
+                }
+              }, 30000); // 30 second delay
+            }
+
             throw error;
           }
         },
@@ -2022,6 +2232,67 @@ export const useHybridGameStore = create<HybridGameState>()(
         // Dismiss sync conflicts
         dismissSyncConflicts: () => {
           set({ showSyncConflicts: false, syncConflicts: [] });
+        },
+
+        // Recover active game from storage
+        recoverActiveGame: async () => {
+          try {
+            console.log('🔄 [Store] Checking for saved game state...');
+
+            const savedGame = await gameStateManager.loadActiveGame();
+            if (savedGame) {
+              console.log('📂 [Store] Found saved game:', {
+                gameId: savedGame.gameState.gameId,
+                gameMode: savedGame.gameMode,
+                turnNumber: savedGame.gameState.turnNumber
+              });
+
+              // Get metadata for UI
+              const metadata = await gameStateManager.getActiveGameMetadata();
+
+              // Set the paused game state
+              set({
+                hasPausedGame: true,
+                pausedGameMetadata: metadata,
+                battle: {
+                  ...get().battle,
+                  gameMode: savedGame.gameMode,
+                  tcgGameState: savedGame.gameMode === 'TCG' ? savedGame.gameState : null,
+                  phyloGameState: savedGame.gameMode === 'Phylo' ? savedGame.gameState as any : null
+                }
+              });
+
+              console.log('✅ [Store] Game state recovered and ready for resume prompt');
+            } else {
+              console.log('📂 [Store] No saved game state found');
+              set({ hasPausedGame: false, pausedGameMetadata: null });
+            }
+          } catch (error) {
+            console.error('❌ [Store] Failed to recover active game:', error);
+            set({ hasPausedGame: false, pausedGameMetadata: null });
+          }
+        },
+
+        // Resume paused game
+        resumePausedGame: () => {
+          const state = get();
+          const pausedMetadata = state.pausedGameMetadata;
+
+          if (pausedMetadata && state.hasPausedGame) {
+            console.log('🎮 [Store] Resuming paused game:', pausedMetadata.gameId);
+
+            // The actual game state should be loaded by the battle screen
+            // Here we just clear the pause state and set the game mode
+            set({
+              hasPausedGame: false,
+              pausedGameMetadata: null,
+              battle: {
+                ...state.battle,
+                gameMode: pausedMetadata.gameMode,
+                isLoading: true // Battle screen will load the actual state
+              }
+            });
+          }
         },
 
         // User Profile Management

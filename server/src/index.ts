@@ -33,6 +33,7 @@ import syncRoutes from './routes/sync';
 import gameRoutes from './routes/game';
 import adminRoutes from './routes/admin';
 import localizationRoutes from './routes/localization';
+import staticDataRoutes from './routes/staticData';
 import testRoutes from './routes/test';
 
 // Import unified data loader factory
@@ -172,6 +173,7 @@ app.use('/api/sync', syncRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/localization', localizationRoutes);
+app.use('/api/static-data', staticDataRoutes);
 
 // Test routes (only available in non-production environments)
 if (process.env['NODE_ENV'] !== 'production') {

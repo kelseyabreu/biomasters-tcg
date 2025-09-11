@@ -36,7 +36,15 @@ export type {
   GameState,
   Player,
   CardInstance,
+  // Consolidated GameAction types
+  BaseGameAction,
   GameAction,
+  PhyloGameAction,
+  ClientPlayerAction,
+  PlayCardAction,
+  ActivateAbilityAction,
+  PassTurnAction,
+  PlayerReadyAction,
   ActionResult,
   // New unified user types
   BaseUser,
@@ -57,6 +65,7 @@ export type {
   UserCard,
   UserDeck,
   ApiResponse,
+  ApiError,
   PaginatedResponse
 } from './types';
 

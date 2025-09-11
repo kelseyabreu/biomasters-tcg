@@ -1,8 +1,11 @@
 import { test, expect, Page } from '@playwright/test';
 import {
-  clearBrowserData,
+  clickIonButton,
   waitForAppInitialization,
-  safeCDPOperation
+  waitForModal,
+  clearBrowserData,
+  safeCDPOperation,
+  ensureModalsAreClosed
 } from './utils/test-helpers';
 
 test.describe('🎁 Pack Opening and Sync Investigation', () => {
@@ -35,12 +38,12 @@ test.describe('🎁 Pack Opening and Sync Investigation', () => {
     // Step 1: Navigate and start as guest
     console.log('📍 Step 1: Navigating to app and starting as guest...');
     await page.goto('http://localhost:5173');
-    await page.waitForSelector('ion-app', { timeout: 10000 });
+    await waitForAppInitialization(page);
 
     // Start as guest user
-    await page.click('[data-testid="signin-button"]');
-    await page.waitForSelector('[data-testid="auth-modal"]');
-    await page.click('[data-testid="guest-login-button"]');
+    await clickIonButton(page, 'signin-button');
+    await waitForModal(page, 'auth-modal');
+    await clickIonButton(page, 'guest-login-button');
 
     // Wait for guest setup to complete
     await page.waitForSelector('[data-testid="user-profile"]', { timeout: 15000 });
@@ -63,9 +66,12 @@ test.describe('🎁 Pack Opening and Sync Investigation', () => {
       console.log('🔍 [Investigation] Pack data:', packsKey ? localStorage.getItem(packsKey) : null);
       console.log('🔍 [Investigation] Sync data:', syncKey ? localStorage.getItem(syncKey) : null);
     });
-    
+
+    // Ensure modals are closed before navigation
+    await ensureModalsAreClosed(page);
+
     // Navigate to collection to see initial state
-    await page.click('text=View Collection');
+    await clickIonButton(page, 'collection-tab');
     await page.waitForSelector('text=Collection Progress', { timeout: 10000 });
     
     const initialCardCount = await page.evaluate(() => {

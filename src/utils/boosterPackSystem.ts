@@ -30,6 +30,15 @@ export class BoosterPackSystem {
 
   constructor(cards: Card[]) {
     this.allCards = cards;
+
+    // Debug: Log first few cards to see conservation status
+    console.log(`🎁 [BoosterPackSystem] Initializing with ${cards.length} cards`);
+    console.log(`🔍 [BoosterPackSystem] First 3 cards:`, cards.slice(0, 3).map(card => ({
+      cardId: card.cardId,
+      nameId: card.nameId,
+      conservationStatus: card.conservationStatus
+    })));
+
     this.organizeCardsByRarity();
   }
 

@@ -117,15 +117,33 @@ export async function clickIonButton(page: Page, testId: string, options?: {
 
       // Click the button
       await button.click();
+
+      // If this is a tab button, ensure modals are closed first
+      if (testId.includes('-tab')) {
+        await ensureModalsAreClosed(page);
+      }
+
       return; // Success
 
     } catch (error) {
+      // Check if page/context is closed
+      if (error.message.includes('Target page, context or browser has been closed')) {
+        throw new Error(`Page was closed during test execution: ${error.message}`);
+      }
+
       if (attempt === retries) {
         throw new Error(`Failed to click button [data-testid="${testId}"] after ${retries} attempts: ${error.message}`);
       }
 
-      // Wait before retry
-      await page.waitForTimeout(1000 * attempt);
+      // Wait before retry, but check if page is still available
+      try {
+        await page.waitForTimeout(500 * attempt);
+      } catch (timeoutError) {
+        if (timeoutError.message.includes('Target page, context or browser has been closed')) {
+          throw new Error(`Page was closed during retry wait: ${timeoutError.message}`);
+        }
+        throw timeoutError;
+      }
     }
   }
 }
@@ -168,6 +186,31 @@ export async function waitForModal(page: Page, testId: string, options?: {
       testId,
       { timeout }
     );
+  }
+}
+
+/**
+ * Ensure all modals are closed before proceeding
+ */
+export async function ensureModalsAreClosed(page: Page, timeout = 5000) {
+  try {
+    // Wait for all modals to be hidden
+    await page.waitForFunction(
+      () => {
+        const modals = document.querySelectorAll('ion-modal');
+        return Array.from(modals).every(modal =>
+          modal.getAttribute('aria-hidden') === 'true' ||
+          modal.classList.contains('overlay-hidden') ||
+          !modal.classList.contains('show-modal')
+        );
+      },
+      { timeout }
+    );
+
+    // Additional wait to ensure DOM is stable
+    await page.waitForTimeout(500);
+  } catch (error) {
+    console.log('Warning: Could not verify all modals are closed, continuing...');
   }
 }
 

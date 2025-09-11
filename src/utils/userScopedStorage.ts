@@ -2,24 +2,43 @@
  * User-Scoped Storage Adapter
  * Provides user-specific storage isolation to prevent data bleeding between accounts
  * on the same device. Each user gets their own storage namespace.
+ *
+ * Now uses the platform-aware storage adapter as the backend for optimal
+ * cross-platform performance and security.
  */
 
 import { StateStorage } from 'zustand/middleware';
+import { createStorageAdapter, StorageAdapter } from '../services/storageAdapter';
 
 export interface UserScopedStorageOptions {
   getUserId: () => string | null;
   fallbackStorage?: StateStorage;
+  // Platform-aware storage options
+  debug?: boolean;
+  keyPrefix?: string;
 }
 
 /**
  * Creates a user-scoped storage adapter that isolates data by userId
  * This prevents data bleeding when multiple users use the same device
+ * Now uses platform-aware storage for optimal cross-platform performance
  */
 export function createUserScopedStorage(options: UserScopedStorageOptions): StateStorage {
-  const { getUserId, fallbackStorage = localStorage } = options;
+  const {
+    getUserId,
+    fallbackStorage = localStorage,
+    debug = false,
+    keyPrefix = 'biomasters_'
+  } = options;
+
+  // Create platform-aware storage adapter
+  const platformStorage = createStorageAdapter({
+    keyPrefix,
+    debug
+  });
 
   return {
-    getItem: (name: string): string | null => {
+    getItem: async (name: string): Promise<string | null> => {
       try {
         const userId = getUserId();
         if (!userId) {
@@ -28,26 +47,38 @@ export function createUserScopedStorage(options: UserScopedStorageOptions): Stat
         }
 
         const scopedKey = `user_${userId}_${name}`;
-        const value = fallbackStorage.getItem(scopedKey);
+        const value = await platformStorage.getItem(scopedKey);
 
-        // Handle both sync and async storage
-        if (value instanceof Promise) {
-          console.warn('⚠️ Async storage detected, returning null for sync call');
-          return null;
-        }
-
-        if (value) {
+        if (value && debug) {
           console.log(`📦 Retrieved user-scoped data for ${userId}:`, { key: name, hasData: true });
         }
 
-        return value || null;
+        return value;
       } catch (error) {
         console.error('❌ Error retrieving user-scoped data:', error);
+
+        // Fallback to legacy storage if platform storage fails
+        try {
+          const userId = getUserId();
+          if (userId) {
+            const scopedKey = `user_${userId}_${name}`;
+            const fallbackValue = fallbackStorage.getItem(scopedKey);
+
+            // Handle both sync and async fallback storage
+            if (fallbackValue instanceof Promise) {
+              return await fallbackValue;
+            }
+            return fallbackValue;
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback storage also failed:', fallbackError);
+        }
+
         return null;
       }
     },
 
-    setItem: (name: string, value: string): void => {
+    setItem: async (name: string, value: string): Promise<void> => {
       try {
         const userId = getUserId();
         if (!userId) {
@@ -56,19 +87,34 @@ export function createUserScopedStorage(options: UserScopedStorageOptions): Stat
         }
 
         const scopedKey = `user_${userId}_${name}`;
-        fallbackStorage.setItem(scopedKey, value);
-        
-        console.log(`💾 Saved user-scoped data for ${userId}:`, { 
-          key: name, 
-          dataSize: value.length,
-          scopedKey 
-        });
+        await platformStorage.setItem(scopedKey, value);
+
+        if (debug) {
+          console.log(`💾 Saved user-scoped data for ${userId}:`, {
+            key: name,
+            dataSize: value.length,
+            scopedKey
+          });
+        }
       } catch (error) {
         console.error('❌ Error saving user-scoped data:', error);
+
+        // Fallback to legacy storage if platform storage fails
+        try {
+          const userId = getUserId();
+          if (userId) {
+            const scopedKey = `user_${userId}_${name}`;
+            fallbackStorage.setItem(scopedKey, value);
+            console.warn('⚠️ Used fallback storage for setItem');
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback storage setItem also failed:', fallbackError);
+          throw error; // Re-throw original error
+        }
       }
     },
 
-    removeItem: (name: string): void => {
+    removeItem: async (name: string): Promise<void> => {
       try {
         const userId = getUserId();
         if (!userId) {
@@ -77,11 +123,25 @@ export function createUserScopedStorage(options: UserScopedStorageOptions): Stat
         }
 
         const scopedKey = `user_${userId}_${name}`;
-        fallbackStorage.removeItem(scopedKey);
-        
-        console.log(`🗑️ Removed user-scoped data for ${userId}:`, { key: name, scopedKey });
+        await platformStorage.removeItem(scopedKey);
+
+        if (debug) {
+          console.log(`🗑️ Removed user-scoped data for ${userId}:`, { key: name, scopedKey });
+        }
       } catch (error) {
         console.error('❌ Error removing user-scoped data:', error);
+
+        // Fallback to legacy storage if platform storage fails
+        try {
+          const userId = getUserId();
+          if (userId) {
+            const scopedKey = `user_${userId}_${name}`;
+            fallbackStorage.removeItem(scopedKey);
+            console.warn('⚠️ Used fallback storage for removeItem');
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback storage removeItem also failed:', fallbackError);
+        }
       }
     }
   };

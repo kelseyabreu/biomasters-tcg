@@ -15,6 +15,30 @@ shared/node_modules
 server/dist
 shared/dist
 
+# TypeScript compiled output (build artifacts)
+# Frontend compiled output
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+src/**/*.d.ts.map
+
+# Server compiled output
+server/src/**/*.js
+server/src/**/*.d.ts
+server/src/**/*.js.map
+server/src/**/*.d.ts.map
+
+# Shared module compiled output (keep only TypeScript source files)
+shared/*.js
+shared/*.d.ts
+shared/*.js.map
+shared/*.d.ts.map
+shared/**/*.js
+shared/**/*.d.ts
+shared/**/*.js.map
+shared/**/*.d.ts.map
+shared/tsconfig.tsbuildinfo
+
 # misc
 .DS_Store
 #.env.local

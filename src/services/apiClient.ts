@@ -12,28 +12,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { auth } from '../config/firebase';
 import { tokenManager } from './tokenStorage';
+import { ApiResponse, ApiError } from '@shared/types';
 
-// API Response types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-  // Guest API specific fields
-  user?: any;
-  auth?: {
-    token: string;
-    guestSecret?: string;
-    expiresIn?: string;
-  };
-  sync?: any;
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-  status?: number;
-}
+// Use shared API types instead of local definitions
 
 // Create axios instance with base configuration
 const apiClient: AxiosInstance = axios.create({
@@ -172,11 +153,9 @@ apiClient.interceptors.response.use(
     }
     
     // Handle other error types
-    const apiError: ApiError = {
-      code: error.code || 'UNKNOWN_ERROR',
-      message: (error.response?.data as any)?.message || error.message || 'An unexpected error occurred',
-      status: error.response?.status
-    };
+    const apiError = new Error((error.response?.data as any)?.message || error.message || 'An unexpected error occurred') as ApiError;
+    apiError.code = error.code || 'UNKNOWN_ERROR';
+    apiError.status = error.response?.status;
     
     console.error('❌ API Error:', apiError);
     return Promise.reject(apiError);

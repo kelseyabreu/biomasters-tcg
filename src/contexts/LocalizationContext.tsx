@@ -14,6 +14,7 @@ import {
   SupportedLanguage,
   CardNameId,
   ScientificNameId,
+  CardDescriptionId,
   AbilityNameId,
   UITextId,
   LANGUAGE_CONFIG
@@ -24,17 +25,47 @@ interface LocalizationContextType {
   currentLanguage: SupportedLanguage;
   isLoading: boolean;
   error: string | null;
-  
+
   // Language management
   changeLanguage: (language: SupportedLanguage) => Promise<void>;
   availableLanguages: SupportedLanguage[];
-  
+
   // Text retrieval methods
   getCardName: (nameId: CardNameId) => string;
   getScientificName: (nameId: ScientificNameId) => string;
+  getCardDescription: (descriptionId: CardDescriptionId) => string;
   getAbilityName: (nameId: AbilityNameId) => string;
   getUIText: (textId: UITextId) => string;
-  
+
+  // Batch operations
+  getBatchCardNames: (nameIds: string[]) => Record<string, string>;
+  getBatchScientificNames: (scientificNameIds: string[]) => Record<string, string>;
+  getBatchCardDescriptions: (descriptionIds: string[]) => Record<string, string>;
+
+  // Complete card localization
+  getCardLocalization: (card: {
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId?: string;
+  }) => {
+    name: string;
+    scientificName: string;
+    description: string;
+    taxonomy?: string;
+  };
+
+  // Performance optimization
+  preloadLocalizations: (cards: Array<{
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId: string;
+  }>) => void;
+
+  // Cache management
+  getCacheStats: () => { hits: number; misses: number; size: number; hitRate: number };
+
   // Utility methods
   getLanguageInfo: (language: SupportedLanguage) => typeof LANGUAGE_CONFIG[SupportedLanguage];
   isLanguageSupported: (language: string) => language is SupportedLanguage;
@@ -128,6 +159,11 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({
     return localizationManager.getScientificName(nameId);
   };
 
+  const getCardDescription = (descriptionId: CardDescriptionId): string => {
+    if (!isInitialized) return `[${descriptionId}]`;
+    return localizationManager.getCardDescription(descriptionId);
+  };
+
   const getAbilityName = (nameId: AbilityNameId): string => {
     if (!isInitialized) return `[${nameId}]`;
     return localizationManager.getAbilityName(nameId);
@@ -136,6 +172,62 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({
   const getUIText = (textId: UITextId): string => {
     if (!isInitialized) return `[${textId}]`;
     return localizationManager.getUIText(textId);
+  };
+
+  // Batch operations
+  const getBatchCardNames = (nameIds: string[]): Record<string, string> => {
+    if (!isInitialized) return {};
+    return (localizationManager as any).getBatchCardNames?.(nameIds) || {};
+  };
+
+  const getBatchScientificNames = (scientificNameIds: string[]): Record<string, string> => {
+    if (!isInitialized) return {};
+    return (localizationManager as any).getBatchScientificNames?.(scientificNameIds) || {};
+  };
+
+  const getBatchCardDescriptions = (descriptionIds: string[]): Record<string, string> => {
+    if (!isInitialized) return {};
+    return (localizationManager as any).getBatchCardDescriptions?.(descriptionIds) || {};
+  };
+
+  // Complete card localization
+  const getCardLocalization = (card: {
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId?: string;
+  }) => {
+    if (!isInitialized) {
+      return {
+        name: `[${card.nameId}]`,
+        scientificName: `[${card.scientificNameId}]`,
+        description: `[${card.descriptionId}]`,
+        taxonomy: card.taxonomyId ? `[${card.taxonomyId}]` : undefined
+      };
+    }
+    return (localizationManager as any).getCardLocalization?.(card) || {
+      name: getCardName(card.nameId as CardNameId),
+      scientificName: getScientificName(card.scientificNameId as ScientificNameId),
+      description: getCardDescription(card.descriptionId as CardDescriptionId),
+      taxonomy: card.taxonomyId ? `[${card.taxonomyId}]` : undefined
+    };
+  };
+
+  // Performance optimization
+  const preloadLocalizations = (cards: Array<{
+    nameId: string;
+    scientificNameId: string;
+    descriptionId: string;
+    taxonomyId: string;
+  }>) => {
+    if (!isInitialized) return;
+    (localizationManager as any).preloadLocalizations?.(cards);
+  };
+
+  // Cache management
+  const getCacheStats = () => {
+    if (!isInitialized) return { hits: 0, misses: 0, size: 0, hitRate: 0 };
+    return (localizationManager as any).getCacheStats?.() || { hits: 0, misses: 0, size: 0, hitRate: 0 };
   };
 
   const getLanguageInfo = (language: SupportedLanguage) => {
@@ -154,8 +246,15 @@ export const LocalizationProvider: React.FC<LocalizationProviderProps> = ({
     availableLanguages: Object.values(SupportedLanguage),
     getCardName,
     getScientificName,
+    getCardDescription,
     getAbilityName,
     getUIText,
+    getBatchCardNames,
+    getBatchScientificNames,
+    getBatchCardDescriptions,
+    getCardLocalization,
+    preloadLocalizations,
+    getCacheStats,
     getLanguageInfo,
     isLanguageSupported
   };

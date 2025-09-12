@@ -161,8 +161,9 @@ BioMasters Engine (Authoritative TCG game logic)
     └── WebSocket (Real-time updates)
 
 Frontend Engines:
-├── ClientGameEngine (Wraps BioMastersEngine for offline TCG)
-└── PhyloGameService (Educational campaign mode)
+├── UnifiedGameService (Single service for both modes)
+│   ├── TCGEngine (Wraps BioMastersEngine for offline TCG)
+│   └── PhyloEngine (Educational campaign mode)
 ```
 
 ### **Database Role**

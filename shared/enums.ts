@@ -940,6 +940,7 @@ export enum SyncStatus {
  */
 export enum GameActionType {
   PLAY_CARD = 'PLAY_CARD',
+  DROP_AND_DRAW_THREE = 'DROP_AND_DRAW_THREE',
   ACTIVATE_ABILITY = 'ACTIVATE_ABILITY',
   PASS_TURN = 'PASS_TURN',
   MOVE_CARD = 'MOVE_CARD',

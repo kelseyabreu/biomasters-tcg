@@ -588,6 +588,17 @@ export class UnifiedDataLoaderAdapter implements IUnifiedDataLoader {
     }
   }
 
+  async loadKeywords(): Promise<UnifiedLoadResult<Array<{ id: number; name: string }>>> {
+    try {
+      const keywords = await this.dataLoader.loadKeywords();
+      // Convert Map to Array format expected by the interface
+      const keywordArray = Array.from(keywords.entries()).map(([id, name]) => ({ id, name }));
+      return { success: true, data: keywordArray };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  }
+
   async loadLocalizationData(languageCode: SupportedLanguage): Promise<UnifiedLoadResult<any>> {
     try {
       const localizationManager = await this.dataLoader.createLocalizationManager();

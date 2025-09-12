@@ -26,7 +26,7 @@ import {
   IonToast
 } from '@ionic/react';
 import { TaxonomyBrowser } from '../components/taxonomy/TaxonomyBrowser';
-import { sharedDataLoader } from '../services/ClientGameEngine';
+import { sharedDataLoader } from '@shared/data/UnifiedDataLoader';
 import { CardData } from '../../shared';
 
 // For now, let's use a simpler approach and load JSON directly

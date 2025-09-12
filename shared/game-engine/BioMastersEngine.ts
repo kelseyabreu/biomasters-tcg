@@ -110,7 +110,7 @@ export interface PlayerAction {
 }
 
 export interface PlayCardPayload {
-  cardId: number;
+  cardId: string | number;
   position: { x: number; y: number };
   connectionTargetId?: string;
   cost?: any;
@@ -241,6 +241,7 @@ export class BioMastersEngine {
         name: p.name,
         hand: [],
         deck: [],
+        discardPile: [],
         scorePile: [],
         energy: 0,
         isReady: false,
@@ -311,6 +312,73 @@ export class BioMastersEngine {
   // Game data is now loaded from JSON files via GameDataManager
 
   /**
+   * Validate if a card can be played at a specific position without actually playing it
+   */
+  public validateCardPlay(cardId: string, position: { x: number; y: number }, playerId: string): { isValid: boolean; errorMessage?: string } {
+    console.log(`🔍 BioMastersEngine: Validating card play - cardId: ${cardId}, position: (${position.x}, ${position.y}), playerId: ${playerId}`);
+
+    try {
+      const gameState = this.ensureGameInitialized();
+
+      // Find the player
+      const player = gameState.players.find(p => p.id === playerId);
+      if (!player) {
+        return { isValid: false, errorMessage: 'Player not found' };
+      }
+
+      // Check if the card is in the player's hand
+      if (!player.hand.includes(cardId)) {
+        return { isValid: false, errorMessage: 'Card not in hand' };
+      }
+
+      // Get card data
+      const actualCardId = parseInt(cardId.split('_')[0]) as CardId;
+      const cardData = this.cardDatabase.get(actualCardId);
+      if (!cardData) {
+        return { isValid: false, errorMessage: 'Card data not found' };
+      }
+
+      // Validate position bounds
+      if (!this.isValidPosition(position)) {
+        return { isValid: false, errorMessage: 'Invalid position' };
+      }
+
+      // Check if position is occupied (basic check)
+      const positionKey = `${position.x},${position.y}`;
+      const existingCard = gameState.grid.get(positionKey);
+
+      if (existingCard) {
+        // Allow attachment for Parasites and Mutualists
+        if (this.isParasite(cardData) || this.isMutualist(cardData)) {
+          // This is valid - attachment logic
+        } else if (existingCard.isDetritus && this.isSaprotroph(cardData)) {
+          // Allow saprotrophs to be placed on detritus cards
+        } else {
+          return { isValid: false, errorMessage: 'Position already occupied' };
+        }
+      }
+
+      // Validate card placement rules (domain and trophic compatibility)
+      const placementValidation = this.validateCardPlacement(cardData, position);
+      if (!placementValidation.isValid) {
+        return placementValidation;
+      }
+
+      // Validate cost requirements
+      const costValidation = this.validateCost(cardData, playerId, position);
+      if (!costValidation.isValid) {
+        return costValidation;
+      }
+
+      return { isValid: true };
+
+    } catch (error: any) {
+      console.error(`❌ BioMastersEngine: Error validating card play:`, error);
+      return { isValid: false, errorMessage: error.message || 'Validation error' };
+    }
+  }
+
+  /**
    * Core action processor - single entry point for all player actions
    */
   public processAction(action: PlayerAction): { isValid: boolean; newState?: GameState; errorMessage?: string } {
@@ -344,6 +412,9 @@ export class BioMastersEngine {
       switch (action.type) {
         case GameActionType.PLAY_CARD:
           result = this.handlePlayCard(action.payload as PlayCardPayload);
+          break;
+        case GameActionType.DROP_AND_DRAW_THREE:
+          result = this.handleDropAndDrawThree(this.gameState!, action.playerId, action.payload.cardIdToDiscard);
           break;
         case GameActionType.ACTIVATE_ABILITY:
           result = this.handleActivateAbility(action.payload as ActivateAbilityPayload);
@@ -419,24 +490,36 @@ export class BioMastersEngine {
     console.log(`🃏 Playing card ${cardId} at position (${position.x}, ${position.y})`);
     console.log(`🔍 cardId type: ${typeof cardId}, value: ${cardId}, isUndefined: ${cardId === undefined}`);
 
-    // Get card data
-    const cardData = this.getCardData(cardId);
+    // Get card data - handle both string and number cardId
+    let actualCardId: number;
+    if (typeof cardId === 'string') {
+      actualCardId = parseInt(cardId.split('_')[0]) as CardId;
+      console.log(`🔍 Converted string cardId "${cardId}" to number: ${actualCardId}`);
+    } else {
+      actualCardId = cardId;
+      console.log(`🔍 Using numeric cardId: ${actualCardId}`);
+    }
+
+    const cardData = this.getCardData(actualCardId);
     if (!cardData) {
-      console.log(`🚨 Card not found: ${cardId}`);
+      console.log(`🚨 Card not found: ${actualCardId} (original: ${cardId})`);
       console.log(`🔍 Available cards:`, Array.from(this.cardDatabase.keys()));
       return { isValid: false, errorMessage: 'Card not found' };
     }
     console.log(`✅ Found card data:`, cardData);
     console.log(`🔍 CHECKPOINT 1: After found card data`);
 
-    // Get the correct card ID - real data uses cardId, test data uses id
-    let actualCardId: number;
+    // Use the actualCardId we already determined above
     console.log(`🔍 CHECKPOINT 2: About to process card data`);
 
     try {
       console.log(`🔍 Card data properties:`, Object.keys(cardData));
 
-      actualCardId = (cardData as any).cardId || (cardData as any).id;
+      // actualCardId is already set above, just verify it matches the card data
+      const cardDataId = (cardData as any).cardId || (cardData as any).id;
+      if (cardDataId !== actualCardId) {
+        console.warn(`⚠️ Card ID mismatch: payload=${actualCardId}, cardData=${cardDataId}`);
+      }
       console.log(`🔍 cardData.id (legacy):`, (cardData as any).id);
       console.log(`🔍 cardData.cardId:`, (cardData as any).cardId);
       console.log(`🔍 Using card ID:`, actualCardId);
@@ -618,6 +701,66 @@ export class BioMastersEngine {
 
     // Process ON_PLAY abilities
     this.processOnPlayAbilities(newState, gridCard, cardData);
+
+    this.gameState = newState;
+    return { isValid: true, newState };
+  }
+
+  /**
+   * Handle drop and draw three action
+   */
+  public handleDropAndDrawThree(state: GameState, playerId: string, cardIdToDiscard: string): { isValid: boolean; newState?: GameState; errorMessage?: string } {
+    console.log(`🃏 handleDropAndDrawThree called for player ${playerId}, discarding card ${cardIdToDiscard}`);
+
+    // Find the player
+    const player = state.players.find(p => p.id === playerId);
+    if (!player) {
+      return { isValid: false, errorMessage: 'Player not found' };
+    }
+
+    // Check if it's the player's turn
+    const currentPlayer = state.players[state.currentPlayerIndex];
+    if (!currentPlayer || currentPlayer.id !== playerId) {
+      return { isValid: false, errorMessage: 'Not your turn' };
+    }
+
+    // Check if player has actions remaining
+    if (state.actionsRemaining <= 0) {
+      return { isValid: false, errorMessage: 'No actions remaining' };
+    }
+
+    // Check if card is in player's hand
+    const cardIndex = player.hand.indexOf(cardIdToDiscard);
+    if (cardIndex === -1) {
+      return { isValid: false, errorMessage: 'Card not in hand' };
+    }
+
+    // Check if deck has at least 3 cards
+    if (player.deck.length < 3) {
+      return { isValid: false, errorMessage: 'Not enough cards in deck to draw 3' };
+    }
+
+    // Create new state using proper cloning method that preserves Maps
+    const newState = this.cloneGameState();
+    const newPlayer = newState.players.find(p => p.id === playerId)!;
+
+    // Move card from hand to discard pile
+    const discardedCard = newPlayer.hand.splice(cardIndex, 1)[0];
+    newPlayer.discardPile.push(discardedCard);
+    console.log(`🗑️ Discarded card ${discardedCard} to discard pile`);
+
+    // Draw 3 cards from deck to hand
+    for (let i = 0; i < 3 && newPlayer.deck.length > 0; i++) {
+      const drawnCard = newPlayer.deck.pop()!;
+      newPlayer.hand.push(drawnCard);
+      console.log(`🃏 Drew card ${drawnCard} (${i + 1}/3)`);
+    }
+
+    // Consume 1 action
+    newState.actionsRemaining -= 1;
+    console.log(`⚡ Action consumed. ${newState.actionsRemaining} actions remaining.`);
+
+    console.log(`✅ Drop and draw three completed: Hand: ${newPlayer.hand.length}, Deck: ${newPlayer.deck.length}, Discard: ${newPlayer.discardPile.length}`);
 
     this.gameState = newState;
     return { isValid: true, newState };
@@ -2053,7 +2196,10 @@ export class BioMastersEngine {
     const player = context.gameState.players.find(p => p.id === context.actingCard.ownerId);
     if (!player) return { isValid: false, errorMessage: 'Player not found' };
 
+    console.log(`🃏 DRAW_CARD: ${player.name} deck before draw: ${player.deck.length} cards`);
+
     if (player.deck.length === 0) {
+      console.log(`🚫 DRAW_CARD: ${player.name} has no cards left in deck`);
       return { isValid: false, errorMessage: 'No cards left in deck' };
     }
 
@@ -2062,7 +2208,7 @@ export class BioMastersEngine {
       const drawnCard = player.deck.pop();
       if (drawnCard) {
         player.hand.push(drawnCard);
-        console.log(`🃏 ${player.name} drew a card`);
+        console.log(`🃏 DRAW_CARD: ${player.name} drew card ${drawnCard} (deck: ${player.deck.length}, hand: ${player.hand.length})`);
       }
     }
 
@@ -2482,9 +2628,10 @@ export class BioMastersEngine {
 
     state.turnPhase = TurnPhase.DRAW;
 
-    console.log(`🃏 Draw Phase: ${currentPlayer.name} draws a card`);
+    console.log(`🃏 Draw Phase: ${currentPlayer.name} draws a card (deck: ${currentPlayer.deck.length}, hand: ${currentPlayer.hand.length})`);
 
     if (currentPlayer.deck.length === 0) {
+      console.log(`🚫 DECK EMPTY: ${currentPlayer.name} has no cards left in deck!`);
       // Trigger final turn system instead of immediately ending game
       if (!state.finalTurnTriggeredBy) {
         // First player to run out of cards triggers final turn
@@ -2511,7 +2658,7 @@ export class BioMastersEngine {
     // Draw one card
     const drawnCard = currentPlayer.deck.pop()!;
     currentPlayer.hand.push(drawnCard);
-    console.log(`🃏 ${currentPlayer.name} drew a card (hand: ${currentPlayer.hand.length})`);
+    console.log(`🃏 CARD DRAWN: ${currentPlayer.name} drew card ${drawnCard} (deck: ${currentPlayer.deck.length}, hand: ${currentPlayer.hand.length})`);
 
     return { success: true };
   }
@@ -2961,6 +3108,88 @@ export class BioMastersEngine {
   }
 
   /**
+   * Get comprehensive player statistics
+   */
+  public getPlayerStats(playerId: string): {
+    playerId: string;
+    name: string;
+    deckCount: number;
+    handCount: number;
+    energy: number;
+    victoryPoints: number;
+    actionsRemaining: number;
+    isCurrentPlayer: boolean;
+  } {
+    const gameState = this.ensureGameInitialized();
+    const player = gameState.players.find(p => p.id === playerId);
+
+    if (!player) {
+      throw new Error(`Player ${playerId} not found`);
+    }
+
+    const isCurrentPlayer = gameState.players[gameState.currentPlayerIndex]?.id === playerId;
+    const actionsRemaining = isCurrentPlayer ? gameState.actionsRemaining : 0;
+
+    const stats = {
+      playerId: player.id,
+      name: player.name,
+      deckCount: player.deck.length,
+      handCount: player.hand.length,
+      energy: player.energy,
+      victoryPoints: this.calculateVictoryPoints(player),
+      actionsRemaining,
+      isCurrentPlayer
+    };
+
+    console.log(`📊 PLAYER STATS: ${player.name} - Deck: ${stats.deckCount}, Hand: ${stats.handCount}, Energy: ${stats.energy}, VP: ${stats.victoryPoints}`);
+
+    return stats;
+  }
+
+  /**
+   * Get current game progress information
+   */
+  public getGameProgress(): {
+    currentTurn: number;
+    currentPhase: string;
+    currentPlayerId: string;
+    currentPlayerName: string;
+    gamePhase: string;
+    actionsRemaining: number;
+    allPlayerStats: any[];
+    winner?: string;
+    finalScores?: any[];
+    isGameEnded: boolean;
+  } {
+    const gameState = this.ensureGameInitialized();
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+    const allPlayerStats = gameState.players.map(player => this.getPlayerStats(player.id));
+
+    let winner = undefined;
+    let finalScores = undefined;
+
+    if (gameState.gamePhase === 'ended' && gameState.metadata['gameResult']) {
+      const result = gameState.metadata['gameResult'];
+      winner = result.winner?.playerName;
+      finalScores = result.playerScores;
+    }
+
+    return {
+      currentTurn: gameState.turnNumber || 1,
+      currentPhase: gameState.turnPhase || 'action',
+      currentPlayerId: currentPlayer?.id || '',
+      currentPlayerName: currentPlayer?.name || '',
+      gamePhase: gameState.gamePhase,
+      actionsRemaining: gameState.actionsRemaining || 0,
+      allPlayerStats,
+      winner,
+      finalScores,
+      isGameEnded: gameState.gamePhase === 'ended'
+    };
+  }
+
+  /**
    * Check if game should end due to other conditions
    */
   public checkGameEndConditions(state: GameState): boolean {
@@ -2975,6 +3204,155 @@ export class BioMastersEngine {
     // Future: Add other end conditions like maximum turns, etc.
 
     return false;
+  }
+
+  /**
+   * Check if a player can make any valid moves
+   */
+  public canPlayerMakeMove(playerId: string): boolean {
+    const gameState = this.ensureGameInitialized();
+    const player = gameState.players.find(p => p.id === playerId);
+
+    if (!player || player.hand.length === 0) {
+      return false;
+    }
+
+    // Check if any card in hand has valid positions
+    for (const cardId of player.hand) {
+      const validPositions = this.getValidPositionsForCard(cardId, playerId);
+      if (validPositions.length > 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Get valid positions for a specific card and player
+   */
+  private getValidPositionsForCard(cardId: string, playerId: string): Array<{x: number, y: number}> {
+    const gameState = this.ensureGameInitialized();
+    const validPositions: Array<{x: number, y: number}> = [];
+
+    const gridWidth = gameState.gameSettings?.gridWidth || 9;
+    const gridHeight = gameState.gameSettings?.gridHeight || 10;
+
+    // Check each position on the grid
+    for (let x = 0; x < gridWidth; x++) {
+      for (let y = 0; y < gridHeight; y++) {
+        const result = this.validateCardPlay(cardId, { x, y }, playerId);
+        if (result.isValid) {
+          validPositions.push({ x, y });
+        }
+      }
+    }
+
+    return validPositions;
+  }
+
+  /**
+   * Get available action types for a player
+   */
+  public getAvailableActions(playerId: string): string[] {
+    const gameState = this.ensureGameInitialized();
+    const player = gameState.players.find(p => p.id === playerId);
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+    if (!player || !currentPlayer || currentPlayer.id !== playerId) {
+      return []; // Not player's turn
+    }
+
+    const actions: string[] = [];
+
+    // Can always pass turn
+    actions.push('PASS_TURN');
+
+    // Can play cards if has actions remaining and valid moves
+    if (gameState.actionsRemaining > 0 && this.canPlayerMakeMove(playerId)) {
+      actions.push('PLAY_CARD');
+    }
+
+    return actions;
+  }
+
+  /**
+   * Get formatted end game data for UI display
+   */
+  public getEndGameData(): {
+    isGameEnded: boolean;
+    winner?: string;
+    finalScores?: Array<{
+      playerId: string;
+      playerName: string;
+      victoryPoints: number;
+      deckCount: number;
+      handCount: number;
+      energy: number;
+      cardsPlayed: number;
+      isWinner: boolean;
+    }>;
+    gameStats?: {
+      totalTurns: number;
+      gameDuration?: string;
+      endReason: string;
+    };
+  } {
+    const gameState = this.ensureGameInitialized();
+
+    if (gameState.gamePhase !== 'ended') {
+      return { isGameEnded: false };
+    }
+
+    const gameResult = gameState.metadata['gameResult'];
+    if (!gameResult) {
+      return { isGameEnded: true };
+    }
+
+    // Format final scores
+    const finalScores = gameState.players.map(player => {
+      const playerScore = gameResult.playerScores?.find((score: any) => score.playerId === player.id);
+      const isWinner = gameResult.winner?.playerId === player.id;
+
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        victoryPoints: playerScore?.victoryPoints || this.calculateVictoryPoints(player),
+        deckCount: player.deck.length,
+        handCount: player.hand.length,
+        energy: player.energy,
+        cardsPlayed: player.field?.length || 0,
+        isWinner
+      };
+    });
+
+    // Determine end reason
+    let endReason = 'Game Complete';
+    if (gameResult.reason) {
+      switch (gameResult.reason) {
+        case 'deck_exhaustion':
+          endReason = 'Deck Exhausted';
+          break;
+        case 'final_turn':
+          endReason = 'Final Turn Complete';
+          break;
+        case 'forfeit':
+          endReason = 'Player Forfeit';
+          break;
+        default:
+          endReason = gameResult.reason;
+      }
+    }
+
+    return {
+      isGameEnded: true,
+      winner: gameResult.winner?.playerName,
+      finalScores,
+      gameStats: {
+        totalTurns: gameState.turnNumber || 1,
+        endReason
+      }
+    };
   }
 
   /**

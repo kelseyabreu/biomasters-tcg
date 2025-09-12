@@ -264,6 +264,16 @@ function createClientDataLoader(config: UnifiedDataConfig): IUnifiedDataLoader {
       }
     },
 
+    async loadKeywords() {
+      try {
+        const keywords = await loadJSON('game-config/keywords.json', 'keywords');
+        return { success: true, data: keywords };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: errorMessage };
+      }
+    },
+
     async loadLocalizationData(languageCode) {
       try {
         const localization = await loadJSON(`localization/${languageCode}/cards.json`, `localization_${languageCode}`);
@@ -534,6 +544,16 @@ function createServerDataLoader(config: UnifiedDataConfig): IUnifiedDataLoader {
       }
     },
 
+    async loadKeywords() {
+      try {
+        const keywords = await loadJSONFile('game-config/keywords.json', 'keywords');
+        return { success: true, data: keywords };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: errorMessage };
+      }
+    },
+
     async loadLocalizationData(languageCode) {
       try {
         const localization = await loadJSONFile(`localization/${languageCode}/cards.json`, `localization_${languageCode}`);
@@ -678,6 +698,30 @@ export function createClientDataLoader_Factory(baseUrl?: string): IUnifiedDataLo
     baseUrl: baseUrl || '/data'
   });
 }
+
+// ============================================================================
+// SHARED DATA LOADER INSTANCE
+// ============================================================================
+
+/**
+ * Shared unified data loader instance for client-side usage
+ * Relocated from src/services/ClientGameEngine.ts for better organization
+ */
+export const sharedDataLoader = createUnifiedDataLoader({
+  environment: 'client',
+  source: 'fetch',
+  baseUrl: '/data',
+  enableCaching: true,
+  cacheConfig: {
+    ttl: 300000, // 5 minutes
+    maxSize: 100
+  },
+  retryConfig: {
+    maxRetries: 3,
+    retryDelay: 1000,
+    backoffMultiplier: 2
+  }
+});
 
 export function createTestDataLoader(dataPath?: string): IUnifiedDataLoader {
   return createUnifiedDataLoader({

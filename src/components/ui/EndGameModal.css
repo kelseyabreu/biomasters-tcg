@@ -1,0 +1,307 @@
+/**
+ * EndGameModal Styles
+ * Cross-platform styles for end game results display
+ */
+
+/* Modal Container */
+.end-game-modal {
+  --width: 90%;
+  --max-width: 600px;
+  --height: 80%;
+  --border-radius: 16px;
+}
+
+.end-game-modal ion-content {
+  --padding-top: 0;
+  --padding-bottom: 20px;
+}
+
+/* Winner Card */
+.winner-card {
+  margin-bottom: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.winner-card.victory {
+  background: linear-gradient(135deg, var(--ion-color-success-tint), var(--ion-color-success-shade));
+  border: 2px solid var(--ion-color-success);
+}
+
+.winner-card.defeat {
+  background: linear-gradient(135deg, var(--ion-color-medium-tint), var(--ion-color-medium-shade));
+  border: 2px solid var(--ion-color-medium);
+}
+
+.winner-icon {
+  margin-bottom: 16px;
+}
+
+.winner-icon ion-icon {
+  font-size: 64px;
+  animation: bounceIn 0.8s ease;
+}
+
+.winner-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 16px 0 8px 0;
+  color: var(--ion-color-dark);
+}
+
+.winner-name {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 8px 0 16px 0;
+  color: var(--ion-color-dark);
+}
+
+.winner-score {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0;
+}
+
+.winner-message {
+  font-size: 16px;
+  margin: 16px 0 0 0;
+  color: var(--ion-color-dark);
+  opacity: 0.8;
+}
+
+/* Scores Card */
+.scores-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+}
+
+.scores-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.scores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--ion-color-light);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.score-item.winner-score-item {
+  background: linear-gradient(135deg, var(--ion-color-success-tint), var(--ion-color-light));
+  border-color: var(--ion-color-success);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-success-rgb), 0.2);
+}
+
+.score-rank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 16px;
+  min-width: 40px;
+}
+
+.score-rank ion-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.score-rank span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.score-player {
+  flex: 1;
+}
+
+.score-player h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.player-stats-summary {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.player-stats-summary ion-badge {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-stats-summary ion-badge ion-icon {
+  font-size: 12px;
+}
+
+.score-points {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.points-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+}
+
+.points-label {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+/* Stats Card */
+.stats-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+}
+
+.stats-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 14px;
+  color: var(--ion-color-dark);
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.action-button {
+  --border-radius: 12px;
+  font-weight: 600;
+  height: 48px;
+}
+
+/* Animations */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .end-game-modal {
+    --width: 95%;
+    --height: 85%;
+  }
+  
+  .winner-title {
+    font-size: 24px;
+  }
+  
+  .winner-name {
+    font-size: 20px;
+  }
+  
+  .score-item {
+    padding: 12px;
+  }
+  
+  .score-player h4 {
+    font-size: 16px;
+  }
+  
+  .player-stats-summary {
+    gap: 4px;
+  }
+  
+  .player-stats-summary ion-badge {
+    font-size: 10px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .winner-card.victory {
+    background: linear-gradient(135deg, var(--ion-color-success-shade), var(--ion-color-dark));
+  }
+  
+  .winner-card.defeat {
+    background: linear-gradient(135deg, var(--ion-color-medium-shade), var(--ion-color-dark));
+  }
+  
+  .winner-title,
+  .winner-name,
+  .winner-message {
+    color: var(--ion-color-light);
+  }
+  
+  .score-item {
+    background: var(--ion-color-dark-tint);
+  }
+  
+  .score-item.winner-score-item {
+    background: linear-gradient(135deg, var(--ion-color-success-shade), var(--ion-color-dark-tint));
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .winner-card,
+  .scores-card,
+  .stats-card {
+    border: 2px solid var(--ion-color-dark);
+  }
+  
+  .score-item {
+    border: 1px solid var(--ion-color-medium);
+  }
+}

@@ -87,6 +87,11 @@ export interface IUnifiedDataLoader {
   loadGameConfig(): Promise<LoadResult<any>>;
 
   /**
+   * Load keywords data
+   */
+  loadKeywords(): Promise<LoadResult<Array<{ id: number; name: string }>>>;
+
+  /**
    * Load localization data for a specific language
    */
   loadLocalizationData(languageCode: SupportedLanguage): Promise<LoadResult<any>>;

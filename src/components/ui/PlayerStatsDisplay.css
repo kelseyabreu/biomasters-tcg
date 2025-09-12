@@ -1,0 +1,284 @@
+/**
+ * PlayerStatsDisplay Styles
+ * Cross-platform styles for player statistics display
+ */
+
+/* Compact horizontal layout */
+.player-stats-compact {
+  background: linear-gradient(135deg, var(--ion-color-light-tint), var(--ion-color-medium-tint));
+  border-radius: 8px;
+  padding: 8px;
+  margin: 4px 0;
+}
+
+.player-stats-compact .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ion-color-dark);
+}
+
+.player-stats-compact .stat-item ion-icon {
+  font-size: 14px;
+  color: var(--ion-color-medium);
+}
+
+.player-stats-compact .stat-item span {
+  font-weight: 600;
+}
+
+/* Full card layout */
+.player-stats-card {
+  margin: 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  height: 100%;
+  min-height: 220px; /* Ensure consistent height */
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  --background: var(--ion-color-light, #ffffff);
+  --color: var(--ion-color-dark, #000000);
+}
+
+.player-stats-card.current-player {
+  border: 2px solid var(--ion-color-primary);
+  background: linear-gradient(135deg, var(--ion-color-primary-tint), white);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.player-stats-card .player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.player-stats-card .player-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+/* Vertical list layout for better mobile display */
+.player-stats-card .stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  flex: 1; /* Take up available space */
+}
+
+.player-stats-card .stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* Slightly reduced gap for tighter layout */
+  height: 100%; /* Ensure groups take full height */
+  justify-content: space-between; /* Distribute items evenly */
+}
+
+.player-stats-card .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-color-dark);
+  min-height: 36px;
+  padding: 8px 12px;
+  background: var(--ion-color-light-tint);
+  border-radius: 8px;
+  border: 1px solid var(--ion-color-light-shade);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.player-stats-card .stat-item ion-icon {
+  font-size: 16px;
+  min-width: 16px;
+  width: 16px; /* Fixed width for consistent alignment */
+}
+
+.player-stats-card .stat-item span {
+  flex: 1;
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-stats-card .stat-item ion-badge {
+  margin-left: auto;
+  flex-shrink: 0; /* Prevent badge from shrinking */
+}
+
+.player-stats-card .actions-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  margin-top: 8px;
+  border: 1px solid var(--ion-color-primary-tint);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.player-stats-card .actions-display ion-icon {
+  font-size: 18px;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .player-stats-compact .stat-item {
+    font-size: 10px;
+  }
+  
+  .player-stats-compact .stat-item ion-icon {
+    font-size: 12px;
+  }
+  
+  .player-stats-card .player-header h3 {
+    font-size: 16px;
+  }
+  
+  .player-stats-card .stat-item {
+    font-size: 13px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .player-stats-compact {
+    background: linear-gradient(135deg, var(--ion-color-dark-tint), var(--ion-color-medium-shade));
+  }
+  
+  .player-stats-compact .stat-item {
+    color: var(--ion-color-light);
+  }
+  
+  .player-stats-card.current-player {
+    background: linear-gradient(135deg, var(--ion-color-primary-shade), var(--ion-color-dark));
+  }
+  
+  .player-stats-card .player-header h3,
+  .player-stats-card .stat-item {
+    color: var(--ion-color-light);
+  }
+}
+
+/* Mobile optimizations for side-by-side layout */
+@media (max-width: 768px) {
+  .player-stats-card {
+    margin: 4px;
+  }
+
+  .player-stats-card .player-header h3 {
+    font-size: 16px;
+  }
+
+  .player-stats-card .stats-list {
+    gap: 4px;
+  }
+
+  .player-stats-card .stat-item {
+    font-size: 12px;
+    min-height: 28px;
+    padding: 3px 6px;
+    gap: 6px;
+  }
+
+  .player-stats-card .stat-item ion-icon {
+    font-size: 14px;
+    min-width: 14px;
+    width: 14px;
+  }
+
+  .player-stats-card .actions-display {
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .player-stats-card .actions-display ion-icon {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-stats-card .stats-list {
+    gap: 3px;
+  }
+
+  .player-stats-card .stat-item {
+    font-size: 11px;
+    min-height: 26px;
+    padding: 2px 4px;
+    gap: 4px;
+  }
+
+  .player-stats-card .stat-item ion-icon {
+    font-size: 12px;
+    min-width: 12px;
+    width: 12px;
+  }
+
+  .player-stats-card .player-header h3 {
+    font-size: 14px;
+  }
+
+  .player-stats-card .actions-display {
+    padding: 4px;
+    font-size: 11px;
+  }
+}
+
+/* Animation for stat changes */
+.player-stats-card .stat-item span {
+  transition: color 0.3s ease;
+}
+
+.player-stats-card .stat-item.stat-changed span {
+  color: var(--ion-color-success);
+  animation: statHighlight 0.6s ease;
+}
+
+@keyframes statHighlight {
+  0% { 
+    color: var(--ion-color-success);
+    transform: scale(1);
+  }
+  50% { 
+    color: var(--ion-color-success);
+    transform: scale(1.05);
+  }
+  100% { 
+    color: var(--ion-color-dark);
+    transform: scale(1);
+  }
+}
+
+/* Accessibility improvements */
+.player-stats-card .stat-item:focus,
+.player-stats-compact .stat-item:focus {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .player-stats-card {
+    border: 2px solid var(--ion-color-dark);
+  }
+  
+  .player-stats-card.current-player {
+    border: 3px solid var(--ion-color-primary);
+  }
+}

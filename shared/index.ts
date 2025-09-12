@@ -19,7 +19,25 @@ export * from './utils/cardIdHelpers';
 
 export * from './data/DataLoader';
 export * from './data/DataCache';
+export {
+  createUnifiedDataLoader,
+  sharedDataLoader,
+  createClientDataLoader_Factory,
+  createDevelopmentDataLoader,
+  createTestDataLoader
+} from './data/UnifiedDataLoader';
 export * from './taxonomy-mapping';
+
+// Export unified game engine system
+export type { IGameEngine, IGameEngineFactory, UnifiedGameSettings, UnifiedGameAction, UnifiedActionResult, GameEngineData } from './game-engine/IGameEngine';
+export { GameMode } from './game-engine/IGameEngine';
+export { BaseGameEngine } from './game-engine/BaseGameEngine';
+export { TCGEngine } from './game-engine/TCGEngine';
+export { PhyloEngine } from './game-engine/PhyloEngine';
+export { GameEngineFactory, gameEngineFactory, createTCGEngine, createPhyloEngine } from './game-engine/GameEngineFactory';
+
+// Export legacy engine for backward compatibility
+export { BioMastersEngine } from './game-engine/BioMastersEngine';
 
 // Export services
 export * from './services/TaxonomyFilter';

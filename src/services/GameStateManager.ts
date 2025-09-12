@@ -5,7 +5,7 @@
  */
 
 import { createStorageAdapter } from './storageAdapter';
-import type { ClientGameState } from './ClientGameEngine';
+import type { ClientGameState } from '../types/ClientGameTypes';
 
 export interface SerializedGameState {
   gameId: string;

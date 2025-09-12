@@ -200,6 +200,7 @@ export interface BasePlayer {
  * TCG Player - For BioMasters TCG mode
  */
 export interface TCGPlayer extends BasePlayer {
+  discardPile: string[]; // Card instance IDs in discard pile
   scorePile: string[]; // Card instance IDs
   energy: number;
   actionsRemaining: number;
@@ -394,6 +395,16 @@ export interface ActivateAbilityAction extends BaseGameAction {
 export interface PassTurnAction extends BaseGameAction {
   type: GameActionType.PASS_TURN;
   payload: {};
+}
+
+/**
+ * Drop and draw three action
+ */
+export interface DropAndDrawThreeAction extends BaseGameAction {
+  type: GameActionType.DROP_AND_DRAW_THREE;
+  payload: {
+    cardIdToDiscard: string;
+  };
 }
 
 /**

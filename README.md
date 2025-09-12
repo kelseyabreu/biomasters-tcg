@@ -157,9 +157,7 @@ biomasters-tcg/
 │   │   └── cards/      # Card rendering components
 │   ├── pages/          # Screen components
 │   ├── services/       # Game engines and API clients
-│   │   ├── ClientGameEngine.ts    # TCG offline engine
-│   │   ├── TCGGameService.ts      # TCG service layer
-│   │   └── PhyloGameService.ts    # Phylo service layer
+│   │   └── UnifiedGameService.ts  # Unified service for both TCG and Phylo
 │   └── state/          # Zustand hybrid game store
 ├── server/              # Backend (Express + PostgreSQL)
 │   ├── src/
@@ -177,17 +175,19 @@ biomasters-tcg/
 /public/data/*.json (Single Source)
     ↓
     ├── Frontend: Direct JSON loading (offline-first)
-    │   ├── ClientGameEngine (TCG offline mode)
-    │   └── PhyloGameService (Campaign mode)
+    │   └── UnifiedGameService (Both TCG and Phylo modes)
+    │       ├── TCGEngine (Wraps BioMastersEngine)
+    │       └── PhyloEngine (Campaign mode logic)
     ├── Server: GameDataManager reads same files
     │   └── BioMastersEngine (Authoritative online mode)
     └── Database: Synced via import script (API queries only)
 ```
 
 ### Game Engine Architecture
-- **🎯 TCG Mode**: Uses `shared/game-engine/BioMastersEngine.ts` as authoritative source
-- **🌱 Phylo Mode**: Uses `src/game-logic/gameStateManager.ts` for educational gameplay
-- **🔄 Client Engine**: `src/services/ClientGameEngine.ts` wraps BioMastersEngine for offline TCG
+- **🎯 TCG Mode**: Uses `shared/game-engine/TCGEngine.ts` (wraps BioMastersEngine)
+- **🌱 Phylo Mode**: Uses `shared/game-engine/PhyloEngine.ts` (wraps gameStateManager)
+- **🔄 Unified Service**: `src/services/UnifiedGameService.ts` provides single interface for both modes
+- **🏭 Engine Factory**: `shared/game-engine/GameEngineFactory.ts` creates and caches engines
 - **🌐 Hybrid Store**: `src/state/hybridGameStore.ts` manages both modes with seamless switching
 
 ## 🧬 Game Engine
@@ -259,7 +259,7 @@ The game engine is **completely data-driven** using three core files:
 - **Offline-first** design with online sync
 - **Type-safe enums** shared between frontend/backend
 - **Real-time** WebSocket support for multiplayer
-- **Dual Engine System**: BioMastersEngine (TCG) + PhyloGameService (Campaign)
+- **Unified Engine System**: Single interface with TCGEngine + PhyloEngine adapters
 - **Automatic Turn Management**: State machine with Ready→Draw→Action phases
 - **Cross-Platform Deployment**: Web, iOS, Android with offline capabilities
 

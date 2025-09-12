@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { configureMobileAuth } from './utils/mobileAuth';
+import useHybridGameStore from './state/hybridGameStore';
+import { unifiedGameService } from './services/UnifiedGameService';
 
 
 
@@ -20,6 +22,13 @@ if ('serviceWorker' in navigator) {
 
 // Configure mobile authentication
 configureMobileAuth();
+
+// Expose store and service to window for testing (development only)
+if (process.env.NODE_ENV === 'development') {
+  (window as any).useHybridGameStore = useHybridGameStore;
+  (window as any).unifiedGameService = unifiedGameService;
+  console.log('🧪 Development mode: Store and service exposed to window for testing');
+}
 
 
 

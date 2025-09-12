@@ -18,12 +18,12 @@ import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { tokenManager } from '../services/tokenStorage';
 import { createUserScopedIndexedDBStorage, clearUserData } from '../utils/userScopedStorage';
 import { guestApi } from '../services/apiClient';
-import { tcgGameService } from '../services/TCGGameService';
-import { phyloGameService } from '../services/PhyloGameService';
+import { unifiedGameService } from '../services/UnifiedGameService';
+import { GameMode } from '@shared/game-engine/IGameEngine';
 import { staticDataManager } from '../services/StaticDataManager';
 import { gameStateManager } from '../services/GameStateManager';
 import { PhyloGameState as SharedPhyloGameState, CardData } from '@shared/types';
-import type { ClientGameState } from '../services/ClientGameEngine';
+import type { ClientGameState } from '../types/ClientGameTypes';
 import { nameIdToCardId } from '@shared/utils/cardIdHelpers';
 
 // Import unified user types
@@ -100,7 +100,9 @@ export interface BattleSlice {
     // TCG Actions
     startTCGGame: (gameId: string, players: any[], settings?: any) => Promise<void>;
     playCard: (cardId: string, position: Position) => Promise<void>;
+    dropAndDrawThree: (cardIdToDiscard: string) => Promise<void>;
     passTurn: () => Promise<void>;
+    playerReady: () => Promise<void>;
 
     // Phylo Actions
     startCampaignLevel: (payload: { levelId: string; difficulty: 'easy' | 'medium' | 'hard'; playerDeck: any[] }) => Promise<void>;
@@ -278,16 +280,19 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = get().battle;
-                const result = await tcgGameService.startGame(
-                  { gameId, players, settings },
-                  currentState
-                );
+                const result = await unifiedGameService.createGame({
+                  gameId,
+                  players,
+                  mode: GameMode.TCG,
+                  settings,
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      tcgGameState: result.newState,
+                      tcgGameState: result.newState as unknown as TCGGameState,
                       isLoading: false,
                       error: null
                     }
@@ -315,31 +320,31 @@ export const useHybridGameStore = create<HybridGameState>()(
             playCard: async (cardId: string, position: Position) => {
               const state = get();
 
+              // Don't set loading state for card play - it should be immediate
               set((state) => ({
                 battle: {
                   ...state.battle,
-                  isLoading: true,
                   error: null
                 }
               }));
 
               try {
                 const currentState = state.battle;
-                const result = await tcgGameService.playCard(
-                  {
-                    cardId,
-                    position,
-                    playerId: state.userId || state.guestId || 'player1'
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'PLAY_CARD' as any,
+                    playerId: 'human', // Use the hardcoded player ID from game creation
+                    payload: { cardId, position }
                   },
-                  currentState
-                );
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      tcgGameState: result.newState,
-                      isLoading: false,
+                      tcgGameState: result.newState as unknown as TCGGameState,
                       error: null,
                       uiState: {
                         ...state.battle.uiState,
@@ -352,7 +357,6 @@ export const useHybridGameStore = create<HybridGameState>()(
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      isLoading: false,
                       error: result.errorMessage || 'Failed to play card'
                     }
                   }));
@@ -361,8 +365,60 @@ export const useHybridGameStore = create<HybridGameState>()(
                 set((state) => ({
                   battle: {
                     ...state.battle,
-                    isLoading: false,
                     error: error.message || 'Failed to play card'
+                  }
+                }));
+              }
+            },
+
+            dropAndDrawThree: async (cardIdToDiscard: string) => {
+              const state = get();
+
+              // Don't set loading state for immediate action
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = state.battle;
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'DROP_AND_DRAW_THREE' as any,
+                    playerId: 'human',
+                    payload: { cardIdToDiscard }
+                  },
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      tcgGameState: result.newState as unknown as TCGGameState,
+                      error: null,
+                      uiState: {
+                        ...state.battle.uiState,
+                        highlightedPositions: []
+                      }
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      error: result.errorMessage || 'Failed to drop and draw'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    error: error.message || 'Failed to drop and draw'
                   }
                 }));
               }
@@ -381,16 +437,21 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = state.battle;
-                const result = await tcgGameService.passTurn(
-                  { playerId: state.userId || state.guestId || 'player1' },
-                  currentState
-                );
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'PASS_TURN' as any,
+                    playerId: 'human', // Use the hardcoded player ID from game creation
+                    payload: {}
+                  },
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      tcgGameState: result.newState,
+                      tcgGameState: result.newState as unknown as TCGGameState,
                       isLoading: false,
                       error: null
                     }
@@ -415,6 +476,58 @@ export const useHybridGameStore = create<HybridGameState>()(
               }
             },
 
+            playerReady: async () => {
+              const state = get();
+
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  isLoading: true,
+                  error: null
+                }
+              }));
+
+              try {
+                const currentState = state.battle;
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'PLAYER_READY' as any,
+                    playerId: 'human', // Use the hardcoded player ID from game creation
+                    payload: {}
+                  },
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
+
+                if (result.isValid && result.newState) {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      tcgGameState: result.newState as unknown as TCGGameState,
+                      isLoading: false,
+                      error: null
+                    }
+                  }));
+                } else {
+                  set((state) => ({
+                    battle: {
+                      ...state.battle,
+                      isLoading: false,
+                      error: result.errorMessage || 'Failed to mark player as ready'
+                    }
+                  }));
+                }
+              } catch (error: any) {
+                set((state) => ({
+                  battle: {
+                    ...state.battle,
+                    isLoading: false,
+                    error: error.message || 'Failed to mark player as ready'
+                  }
+                }));
+              }
+            },
+
             // Phylo Actions
             startCampaignLevel: async (payload: { levelId: string; difficulty: 'easy' | 'medium' | 'hard'; playerDeck: any[] }) => {
               set((state) => ({
@@ -428,16 +541,25 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = get().battle;
-                const result = await phyloGameService.startCampaignLevel(
-                  payload,
-                  currentState
-                );
+                const result = await unifiedGameService.createGame({
+                  gameId: payload.levelId || `campaign-${Date.now()}`,
+                  players: [{ id: 'player1', name: 'Player' }],
+                  mode: GameMode.PHYLO,
+                  settings: {
+                    maxPlayers: 1,
+                    gridWidth: 9,
+                    gridHeight: 10,
+                    turnTimeLimit: 300,
+                    aiDifficulty: payload.difficulty as any
+                  },
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      phyloGameState: result.newState,
+                      phyloGameState: result.newState as unknown as PhyloGameState,
                       isLoading: false,
                       error: null
                     }
@@ -475,16 +597,21 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = state.battle;
-                const result = await phyloGameService.playCard(
-                  payload,
-                  currentState
-                );
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'PLAY_CARD' as any,
+                    playerId: payload.playerId || 'player1',
+                    payload: payload
+                  },
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      phyloGameState: result.newState,
+                      phyloGameState: result.newState as unknown as PhyloGameState,
                       isLoading: false,
                       error: null
                     }
@@ -520,16 +647,21 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = get().battle;
-                const result = await phyloGameService.handleAITurn(
-                  { currentState },
-                  currentState
-                );
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'AI_TURN' as any,
+                    playerId: 'ai',
+                    payload: { currentState }
+                  },
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      phyloGameState: result.newState,
+                      phyloGameState: result.newState as unknown as PhyloGameState,
                       isLoading: false,
                       error: null
                     }
@@ -565,16 +697,21 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = get().battle;
-                const result = await phyloGameService.endTurn(
-                  payload,
-                  currentState
-                );
+                const result = await unifiedGameService.executeAction({
+                  action: {
+                    type: 'END_TURN' as any,
+                    playerId: payload.playerId || 'player1',
+                    payload: payload
+                  },
+                  currentState,
+                  isOnline: currentState.isOnline
+                });
 
                 if (result.isValid && result.newState) {
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      phyloGameState: result.newState,
+                      phyloGameState: result.newState as unknown as PhyloGameState,
                       isLoading: false,
                       error: null
                     }
@@ -602,9 +739,10 @@ export const useHybridGameStore = create<HybridGameState>()(
             calculateValidMoves: async (cardId?: string) => {
               try {
                 const currentState = get().battle;
-                const result = await phyloGameService.calculateValidMoves(
-                  { cardId, playerId: 'human' },
-                  currentState
+                const result = await unifiedGameService.getValidMoves(
+                  currentState.phyloGameState?.gameId || 'current-game',
+                  'human',
+                  cardId
                 );
 
                 if (result.isValid && result.newState) {
@@ -613,7 +751,7 @@ export const useHybridGameStore = create<HybridGameState>()(
                       ...state.battle,
                       uiState: {
                         ...state.battle.uiState,
-                        highlightedPositions: result.newState.validPositions || []
+                        highlightedPositions: result.newState?.positions || []
                       }
                     }
                   }));
@@ -711,7 +849,8 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               try {
                 const currentState = get().battle;
-                const result = await tcgGameService.syncAndGoOnline({}, currentState);
+                // Sync functionality will be implemented in unified service later
+                const result = { isValid: true, newState: currentState.tcgGameState, errorMessage: undefined };
 
                 if (result.isValid) {
                   set((state) => ({
@@ -2368,16 +2507,19 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           try {
             const currentState = get().battle;
-            const result = await tcgGameService.startGame(
-              { gameId, players, settings },
-              currentState
-            );
+            const result = await unifiedGameService.createGame({
+              gameId,
+              players,
+              mode: GameMode.TCG,
+              settings,
+              isOnline: currentState.isOnline
+            });
 
             if (result.isValid && result.newState) {
               set((state) => ({
                 battle: {
                   ...state.battle,
-                  tcgGameState: result.newState,
+                  tcgGameState: result.newState as unknown as TCGGameState,
                   isLoading: false,
                   error: null
                 }
@@ -2405,31 +2547,31 @@ export const useHybridGameStore = create<HybridGameState>()(
         playCard: async (cardId: string, position: Position) => {
           const state = get();
 
+          // Don't set loading state for card play - it should be immediate
           set((state) => ({
             battle: {
               ...state.battle,
-              isLoading: true,
               error: null
             }
           }));
 
           try {
             const currentState = state.battle;
-            const result = await tcgGameService.playCard(
-              {
-                cardId,
-                position,
-                playerId: state.userId || state.guestId || 'player1'
+            const result = await unifiedGameService.executeAction({
+              action: {
+                type: 'PLAY_CARD' as any,
+                playerId: 'human', // Use the hardcoded player ID from game creation
+                payload: { cardId, position }
               },
-              currentState
-            );
+              currentState,
+              isOnline: currentState.isOnline
+            });
 
             if (result.isValid && result.newState) {
               set((state) => ({
                 battle: {
                   ...state.battle,
-                  tcgGameState: result.newState,
-                  isLoading: false,
+                  tcgGameState: result.newState as unknown as TCGGameState,
                   error: null,
                   uiState: {
                     ...state.battle.uiState,
@@ -2442,7 +2584,6 @@ export const useHybridGameStore = create<HybridGameState>()(
               set((state) => ({
                 battle: {
                   ...state.battle,
-                  isLoading: false,
                   error: result.errorMessage || 'Failed to play card'
                 }
               }));
@@ -2451,7 +2592,6 @@ export const useHybridGameStore = create<HybridGameState>()(
             set((state) => ({
               battle: {
                 ...state.battle,
-                isLoading: false,
                 error: error.message || 'Failed to play card'
               }
             }));
@@ -2471,16 +2611,21 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           try {
             const currentState = state.battle;
-            const result = await tcgGameService.passTurn(
-              { playerId: state.userId || state.guestId || 'player1' },
-              currentState
-            );
+            const result = await unifiedGameService.executeAction({
+              action: {
+                type: 'PASS_TURN' as any,
+                playerId: state.userId || state.guestId || 'player1',
+                payload: {}
+              },
+              currentState,
+              isOnline: currentState.isOnline
+            });
 
             if (result.isValid && result.newState) {
               set((state) => ({
                 battle: {
                   ...state.battle,
-                  tcgGameState: result.newState,
+                  tcgGameState: result.newState as unknown as TCGGameState,
                   isLoading: false,
                   error: null
                 }

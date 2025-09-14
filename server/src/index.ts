@@ -227,16 +227,7 @@ if (process.env['NODE_ENV'] !== 'test') {
 }
 app.use(requestLogger);
 
-// Debug middleware to log all requests
-app.use((req, res, next) => {
-  console.log(`🌐 [DEBUG] ${req.method} ${req.url} - ${req.ip}`);
-  if (req.method === 'PUT' && req.url.includes('/api/users/me')) {
-    console.log('🚨🚨🚨 [DEBUG] PUT /api/users/me request detected!');
-    console.log('🚨🚨🚨 [DEBUG] Headers:', req.headers);
-    console.log('🚨🚨🚨 [DEBUG] Body:', req.body);
-  }
-  next();
-});
+
 
 // Rate limiting
 app.use(rateLimiter);
@@ -524,10 +515,7 @@ app.post('/api/health/migrations/run', async (_req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/guest', guestAuthRoutes);
-app.use('/api/users', (req, res, next) => {
-  console.log('🔗 [Routes] /api/users route hit:', req.method, req.path);
-  next();
-}, userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api/decks', deckRoutes);
 app.use('/api/sync', syncRoutes);

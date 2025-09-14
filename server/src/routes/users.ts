@@ -5,7 +5,7 @@ import { apiRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
 import { CacheManager } from '../config/redis';
-import { adaptDatabaseUserToUnified } from '../database/types';
+
 import type {
   PublicUser
 } from '../../../shared/types';
@@ -39,8 +39,8 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
   // Get recent achievements - TODO: Implement achievements table
   const recentAchievements: any[] = [];
 
-  // Convert to unified user type for consistent API response
-  const unifiedUser = adaptDatabaseUserToUnified(user);
+  // User is already unified from auth middleware
+  const unifiedUser = user;
 
   res.json({
     user: {
@@ -108,6 +108,7 @@ router.get('/me', requireAuth, asyncHandler(async (req, res) => {
  * Update current user's profile
  */
 router.put('/me', requireRegisteredUser, apiRateLimiter, asyncHandler(async (req, res) => {
+  console.log('🔐 [Users] PUT /me route handler reached');
   const user = req.user!;
   const { displayName, bio, location, favoriteSpecies, isPublicProfile, emailNotifications, pushNotifications } = req.body;
 

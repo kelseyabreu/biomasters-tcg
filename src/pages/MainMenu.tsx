@@ -32,6 +32,7 @@ import { useHybridGameStore } from '../state/hybridGameStore';
 import { getCollectionStats } from '@shared/utils/cardIdHelpers';
 import { UserProfile } from '../components/UserProfile';
 import { GuestRegistrationCTA } from '../components/GuestRegistrationCTA';
+import { CollectionDebugPanel } from '../components/debug/CollectionDebugPanel';
 
 const MainMenu: React.FC = () => {
   const history = useHistory();
@@ -111,13 +112,13 @@ const MainMenu: React.FC = () => {
   // Removed pack opening functionality - moved to dedicated PackOpening page
 
   return (
-    <IonPage>
+    <IonPage data-testid="main-menu">
       <IonHeader>
         <IonToolbar>
           <IonTitle>🧬 Biomasters TCG</IonTitle>
         </IonToolbar>
       </IonHeader>
-      
+
       <IonContent className="ion-padding">
         {/* Enhanced User Profile Section */}
         <UserProfile showStats={false} />
@@ -295,6 +296,9 @@ const MainMenu: React.FC = () => {
             </IonCardContent>
           </IonCard>
         )}
+
+        {/* Debug Panel - Remove in production */}
+        <CollectionDebugPanel />
 
         <IonToast
           isOpen={showToast}

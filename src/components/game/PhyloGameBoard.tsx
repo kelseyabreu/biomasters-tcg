@@ -4,6 +4,7 @@ import { addOutline, removeOutline, refreshOutline, homeOutline } from 'ionicons
 import { Card, PhyloCardPosition } from '../../types';
 import type { PhyloGameBoard } from '../../types';
 import { validateCardPlacement } from '../../game-logic/phyloCompatibility';
+import { useLocalization } from '../../contexts/LocalizationContext';
 import './PhyloGameBoard.css';
 
 interface PhyloGameBoardProps {
@@ -38,6 +39,7 @@ export const PhyloGameBoardComponent: React.FC<PhyloGameBoardProps> = ({
   isPlayerTurn,
   currentPlayerId
 }) => {
+  const localization = useLocalization();
   const [viewport, setViewport] = useState<ViewportState>({
     scale: 1.0,
     offsetX: 0,
@@ -263,6 +265,9 @@ export const PhyloGameBoardComponent: React.FC<PhyloGameBoardProps> = ({
       const isPlayerCard = position.playerId === currentPlayerId;
       const canMove = isPlayerCard && isPlayerTurn && (card.phyloAttributes?.movementCapability.moveValue || 0) > 0;
 
+      // Get localized card name
+      const displayName = localization.getCardName(card.nameId as any);
+
       cardElements.push(
         <div
           key={position.cardId}
@@ -279,7 +284,7 @@ export const PhyloGameBoardComponent: React.FC<PhyloGameBoardProps> = ({
           onDragEnd={() => setDraggedCard(null)}
         >
           <div className="card-mini">
-            <div className="card-name">{card.nameId}</div>
+            <div className="card-name">{displayName}</div>
             <div className="card-stats">
               <span className="foodchain-level">FC{card.phyloAttributes?.foodchainLevel}</span>
               <span className="scale">S{card.phyloAttributes?.scale}</span>

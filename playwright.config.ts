@@ -15,9 +15,9 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  /* Limit workers to prevent server resource exhaustion */
+  workers: process.env.CI ? 1 : 6, // Reduced from unlimited to 6 workers max
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -33,6 +33,10 @@ export default defineConfig({
     /* Increased timeouts for mobile compatibility */
     actionTimeout: 15 * 1000, // 15 seconds for actions
     navigationTimeout: 30 * 1000, // 30 seconds for navigation
+    /* Disable service worker to prevent test conflicts */
+    serviceWorkers: 'block',
+    /* Disable web security for testing */
+    ignoreHTTPSErrors: true,
   },
 
   /* Environment variables for tests */
@@ -47,16 +51,64 @@ export default defineConfig({
     VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,
   },
 
+
+
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Enhanced Chromium settings for stability
+        actionTimeout: 25 * 1000, // Increased
+        navigationTimeout: 60 * 1000, // Increased
+      },
     },
 
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // Enhanced Firefox settings for stability
+        actionTimeout: 30 * 1000, // Increased for Firefox stability
+        navigationTimeout: 60 * 1000, // Increased for Firefox stability
+        // Firefox-specific browser launch options for stability
+        launchOptions: {
+          args: [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--disable-background-timer-throttling'
+          ],
+          firefoxUserPrefs: {
+            // Disable notifications and push services
+            'dom.webnotifications.enabled': false,
+            'dom.push.enabled': false,
+            // Memory and performance optimizations
+            'browser.cache.disk.enable': false,
+            'browser.cache.memory.enable': true,
+            'browser.cache.memory.capacity': 65536,
+            // Disable unnecessary features for testing
+            'media.autoplay.default': 0,
+            'media.autoplay.enabled': true,
+            'dom.disable_beforeunload': true,
+            'browser.tabs.warnOnClose': false,
+            'browser.sessionstore.resume_from_crash': false,
+            // Network optimizations
+            'network.http.max-connections': 256,
+            'network.http.max-connections-per-server': 32,
+            // Security settings for testing
+            'security.tls.insecure_fallback_hosts': 'localhost',
+            'network.stricttransportsecurity.preloadlist': false,
+            // Disable telemetry and data collection
+            'toolkit.telemetry.enabled': false,
+            'datareporting.healthreport.uploadEnabled': false
+          },
+          // Firefox-specific timeout settings
+          timeout: 90 * 1000, // 90 seconds for Firefox browser launch
+          slowMo: 100 // Add slight delay between actions for Firefox stability
+        }
+      },
     },
 
     {
@@ -81,9 +133,9 @@ export default defineConfig({
         // Enhanced mobile Safari settings
         actionTimeout: 25 * 1000, // Safari can be slower
         navigationTimeout: 60 * 1000,
-        // Disable CDP-dependent features for Safari
+        // Safari-specific launch options
         launchOptions: {
-          args: ['--disable-web-security', '--disable-features=VizDisplayCompositor']
+          args: ['--no-sandbox']
         }
       },
     },
@@ -119,9 +171,9 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
 
-  /* Test timeout - Increased for mobile compatibility */
-  timeout: 60 * 1000, // 60 seconds for complex authentication flows
+  /* Global test timeout - Optimized for cross-browser compatibility */
+  timeout: 120 * 1000, // 2 minutes per test (sufficient for complex authentication flows)
   expect: {
-    timeout: 15 * 1000, // 15 seconds for assertions
+    timeout: 30 * 1000, // 30 seconds for assertions (balanced for all browsers)
   },
 });

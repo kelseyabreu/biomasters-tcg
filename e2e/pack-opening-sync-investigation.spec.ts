@@ -104,10 +104,10 @@ test.describe('🎁 Pack Opening and Sync Investigation', () => {
     
     if (hasPacksToOpen) {
       console.log('🎁 Opening pack...');
-      await page.click('text=Open Pack');
-      
-      // Wait for pack opening animation/process
-      await page.waitForTimeout(3000);
+      await page.locator('text=Open Pack').click();
+
+      // Wait for pack opening animation/process to complete
+      await expect(page.locator('[data-testid="pack-opening-view"]')).toBeVisible({ timeout: 5000 });
       
       // Log pack opening results
       await page.evaluate(() => {
@@ -158,8 +158,8 @@ test.describe('🎁 Pack Opening and Sync Investigation', () => {
       await page.waitForSelector('[data-testid="pack-opening-view"]', { timeout: 10000 });
       
       if (await page.isVisible('text=Open Pack')) {
-        await page.click('text=Open Pack');
-        await page.waitForTimeout(3000);
+        await page.locator('text=Open Pack').click();
+        await expect(page.locator('[data-testid="pack-opening-view"]')).toBeVisible({ timeout: 5000 });
       }
     }
     

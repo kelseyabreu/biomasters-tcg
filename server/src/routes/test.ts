@@ -18,28 +18,50 @@ router.delete('/cleanup', asyncHandler(async (req, res): Promise<any> => {
     });
   }
 
-  const { testRun, userPattern } = req.body;
+  const {
+    testRun,
+    userPattern,
+    guestIds,
+    gameIds,
+    resourceTypes = ['users', 'firebase_users']
+  } = req.body;
 
   console.log(`🧹 Starting test cleanup for: ${testRun || 'all test data'}`);
+  console.log(`🎯 Resource types to clean: ${resourceTypes.join(', ')}`);
 
   try {
     let deletedUsers = 0;
+    let deletedGuests = 0;
+    let deletedGames = 0;
+    const cleanupResults: any = {};
 
-    // Define patterns for test users
-    const testPatterns = [
-      'test@example.com',
-      'playwright@test.com',
-      'e2e-test-%',
-      'test-user-%',
-      'converted@example.com',
-      'profile@example.com',
-      'network@example.com'
-    ];
+    // Handle user cleanup
+    if (resourceTypes.includes('users')) {
+      // Define patterns for test users
+      const testPatterns = [
+        'test@example.com',
+        'playwright@test.com',
+        'e2e-test-%',
+        'test-user-%',
+        'converted@example.com',
+        'profile@example.com',
+        'network@example.com'
+      ];
 
-    // Add custom pattern if provided
-    if (userPattern) {
-      testPatterns.push(userPattern);
-    }
+      // Add custom pattern if provided
+      if (userPattern) {
+        if (userPattern.includes(',')) {
+          // Multiple emails provided
+          testPatterns.push(...userPattern.split(',').map((p: string) => p.trim()));
+        } else {
+          testPatterns.push(userPattern);
+        }
+      }
+
+      // Add session-specific patterns
+      if (testRun) {
+        testPatterns.push(`%${testRun}%`);
+      }
 
     // Start database transaction for atomic cleanup
     await db.transaction().execute(async (trx) => {
@@ -106,15 +128,65 @@ router.delete('/cleanup', asyncHandler(async (req, res): Promise<any> => {
       }
     });
 
-    console.log(`✅ Test cleanup completed. Deleted ${deletedUsers} test users.`);
+    cleanupResults.deletedUsers = deletedUsers;
+    }
+
+    // Handle guest cleanup
+    if (resourceTypes.includes('guests') && guestIds && guestIds.length > 0) {
+      console.log(`🧹 Cleaning up ${guestIds.length} guest accounts`);
+
+      await db.transaction().execute(async (trx) => {
+        for (const guestId of guestIds) {
+          await trx
+            .deleteFrom('users')
+            .where('guest_id', '=', guestId)
+            .execute();
+          deletedGuests++;
+        }
+      });
+
+      cleanupResults.deletedGuests = deletedGuests;
+    }
+
+    // Handle game cleanup
+    if (resourceTypes.includes('games') && gameIds && gameIds.length > 0) {
+      console.log(`🧹 Cleaning up ${gameIds.length} game sessions`);
+
+      await db.transaction().execute(async (trx) => {
+        for (const gameId of gameIds) {
+          await trx
+            .deleteFrom('game_sessions')
+            .where('id', '=', gameId)
+            .execute();
+          deletedGames++;
+        }
+      });
+
+      cleanupResults.deletedGames = deletedGames;
+    }
+
+    // Handle session-specific cleanup
+    if (resourceTypes.includes('game_sessions') && testRun) {
+      console.log(`🧹 Cleaning up game sessions for test run: ${testRun}`);
+
+      const sessionCleanup = await db
+        .deleteFrom('game_sessions')
+        .where('created_at', '>', new Date(Date.now() - 24 * 60 * 60 * 1000)) // Last 24 hours
+        .executeTakeFirst();
+
+      cleanupResults.cleanedSessions = sessionCleanup.numDeletedRows || 0;
+    }
+
+    console.log(`✅ Test cleanup completed:`, cleanupResults);
 
     res.json({
       success: true,
       message: 'Test cleanup completed successfully',
       data: {
-        deletedUsers,
+        ...cleanupResults,
         cleanupTime: new Date().toISOString(),
-        testRun: testRun || 'general-cleanup'
+        testRun: testRun || 'general-cleanup',
+        resourceTypes
       }
     });
 

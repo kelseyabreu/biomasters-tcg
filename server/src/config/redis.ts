@@ -1,6 +1,7 @@
 import { Redis } from '@upstash/redis';
 
-let redisClient: Redis;
+let redisClient: Redis | null = null;
+let redisAvailable = false;
 
 /**
  * Redis configuration - Upstash Redis REST API
@@ -25,58 +26,147 @@ function getRedisConfig() {
 }
 
 /**
- * Initialize Redis connection
+ * Initialize Redis connection with retry logic and graceful fallback
  */
 export async function initializeRedis(): Promise<void> {
-  try {
-    const redisConfig = getRedisConfig();
+  const maxRetries = 3;
+  const retryDelay = 2000; // 2 seconds
 
-    // Create Upstash Redis client
-    redisClient = new Redis(redisConfig);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const redisConfig = getRedisConfig();
+      console.log(`🔴 [Redis] Attempt ${attempt}/${maxRetries} - Connecting to Redis...`);
 
-    // Test the connection
-    await redisClient.ping();
+      // Create Upstash Redis client
+      redisClient = new Redis(redisConfig);
 
-  } catch (error) {
-    console.error('❌ Failed to connect to Redis:', error);
-    // Don't throw error in test environment - make Redis optional
-    if (process.env['NODE_ENV'] !== 'test') {
-      throw error;
+      // Test the connection with timeout
+      const pingPromise = redisClient.ping();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis ping timeout')), 5000)
+      );
+
+      await Promise.race([pingPromise, timeoutPromise]);
+
+      redisAvailable = true;
+      console.log('✅ [Redis] Connected successfully');
+      return;
+
+    } catch (error) {
+      console.warn(`⚠️ [Redis] Attempt ${attempt}/${maxRetries} failed:`, error instanceof Error ? error.message : error);
+
+      if (attempt < maxRetries) {
+        console.log(`🔄 [Redis] Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
     }
+  }
+
+  // All attempts failed - set up fallback
+  redisClient = null;
+  redisAvailable = false;
+
+  const isTestOrDev = ['test', 'development'].includes(process.env['NODE_ENV'] || '');
+
+  if (isTestOrDev) {
+    console.warn('⚠️ [Redis] Redis unavailable, using memory-based fallback for caching and rate limiting');
+  } else {
+    console.error('❌ [Redis] Failed to connect to Redis after all retries');
+    throw new Error('Redis connection failed - required for production');
   }
 }
 
 /**
- * Get Redis client
+ * Get Redis client (returns null if Redis is not available)
  */
-export function getRedisClient(): Redis {
-  if (!redisClient) {
-    throw new Error('Redis not initialized. Call initializeRedis() first.');
-  }
+export function getRedisClient(): Redis | null {
   return redisClient;
 }
 
 /**
- * Cache utilities
+ * Check if Redis is available
+ */
+export function isRedisAvailable(): boolean {
+  return redisAvailable && redisClient !== null;
+}
+
+/**
+ * In-memory cache fallback for when Redis is unavailable
+ */
+class MemoryCache {
+  private static cache = new Map<string, { value: any; expires?: number }>();
+
+  static set(key: string, value: any, expirationSeconds?: number): void {
+    const expires = expirationSeconds ? Date.now() + (expirationSeconds * 1000) : undefined;
+    if (expires) {
+      this.cache.set(key, { value, expires });
+    } else {
+      this.cache.set(key, { value });
+    }
+  }
+
+  static get<T = any>(key: string): T | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+
+    if (item.expires && Date.now() > item.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return item.value as T;
+  }
+
+  static delete(key: string): boolean {
+    return this.cache.delete(key);
+  }
+
+  static exists(key: string): boolean {
+    const item = this.cache.get(key);
+    if (!item) return false;
+
+    if (item.expires && Date.now() > item.expires) {
+      this.cache.delete(key);
+      return false;
+    }
+
+    return true;
+  }
+
+  static clear(): void {
+    this.cache.clear();
+  }
+}
+
+/**
+ * Cache utilities with Redis and memory fallback
  */
 export class CacheManager {
-  private static client = () => getRedisClient();
+  private static getClient() {
+    return getRedisClient();
+  }
 
   /**
    * Set a value in cache with optional expiration
    */
   static async set(key: string, value: any, expirationSeconds?: number): Promise<void> {
+    const client = this.getClient();
+
+    if (!client || !isRedisAvailable()) {
+      // Use memory cache fallback
+      MemoryCache.set(key, value, expirationSeconds);
+      return;
+    }
+
     try {
       if (expirationSeconds) {
-        await this.client().setex(key, expirationSeconds, value);
+        await client.setex(key, expirationSeconds, value);
       } else {
-        await this.client().set(key, value);
+        await client.set(key, value);
       }
     } catch (error) {
-      if (process.env['NODE_ENV'] === 'test') {
-        return;
-      }
-      throw error;
+      console.warn('Redis cache set failed, using memory fallback:', error);
+      MemoryCache.set(key, value, expirationSeconds);
     }
   }
 
@@ -84,15 +174,19 @@ export class CacheManager {
    * Get a value from cache
    */
   static async get<T = any>(key: string): Promise<T | null> {
+    const client = this.getClient();
+
+    if (!client || !isRedisAvailable()) {
+      // Use memory cache fallback
+      return MemoryCache.get<T>(key);
+    }
+
     try {
-      const value = await this.client().get(key);
+      const value = await client.get(key);
       return value as T;
     } catch (error) {
-      if (process.env['NODE_ENV'] === 'test') {
-        return null;
-      }
-      console.error('❌ Failed to get cached value:', error);
-      return null;
+      console.warn('Redis cache get failed, using memory fallback:', error);
+      return MemoryCache.get<T>(key);
     }
   }
 
@@ -100,14 +194,19 @@ export class CacheManager {
    * Delete a key from cache
    */
   static async delete(key: string): Promise<boolean> {
+    const client = this.getClient();
+
+    if (!client || !isRedisAvailable()) {
+      // Use memory cache fallback
+      return MemoryCache.delete(key);
+    }
+
     try {
-      const result = await this.client().del(key);
+      const result = await client.del(key);
       return result > 0;
     } catch (error) {
-      if (process.env['NODE_ENV'] === 'test') {
-        return false;
-      }
-      throw error;
+      console.warn('Redis cache delete failed, using memory fallback:', error);
+      return MemoryCache.delete(key);
     }
   }
 
@@ -116,7 +215,10 @@ export class CacheManager {
    */
   static async exists(key: string): Promise<boolean> {
     try {
-      const result = await this.client().exists(key);
+      if (!redisClient || !redisAvailable) {
+        return false;
+      }
+      const result = await redisClient.exists(key);
       return result > 0;
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
@@ -131,7 +233,10 @@ export class CacheManager {
    */
   static async expire(key: string, seconds: number): Promise<boolean> {
     try {
-      const result = await this.client().expire(key, seconds);
+      if (!redisClient || !redisAvailable) {
+        return false;
+      }
+      const result = await redisClient.expire(key, seconds);
       return result === 1;
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
@@ -146,7 +251,10 @@ export class CacheManager {
    */
   static async ttl(key: string): Promise<number> {
     try {
-      return await this.client().ttl(key);
+      if (!redisClient || !redisAvailable) {
+        return -1;
+      }
+      return await redisClient.ttl(key);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return -1;
@@ -160,7 +268,10 @@ export class CacheManager {
    */
   static async increment(key: string, amount: number = 1): Promise<number> {
     try {
-      return await this.client().incrby(key, amount);
+      if (!redisClient || !redisAvailable) {
+        return 0;
+      }
+      return await redisClient.incrby(key, amount);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return 0;
@@ -174,7 +285,10 @@ export class CacheManager {
    */
   static async decrement(key: string, amount: number = 1): Promise<number> {
     try {
-      return await this.client().decrby(key, amount);
+      if (!redisClient || !redisAvailable) {
+        return 0;
+      }
+      return await redisClient.decrby(key, amount);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return 0;
@@ -190,7 +304,10 @@ export class CacheManager {
     if (keys.length === 0) return [];
 
     try {
-      const values = await this.client().mget(...keys);
+      if (!redisClient || !redisAvailable) {
+        return keys.map(() => null);
+      }
+      const values = await redisClient.mget(...keys);
       return values.map((value: any) => {
         if (!value) return null;
         return value as T;
@@ -208,7 +325,10 @@ export class CacheManager {
    */
   static async setMultiple(keyValuePairs: Record<string, any>): Promise<void> {
     try {
-      await this.client().mset(keyValuePairs);
+      if (!redisClient || !redisAvailable) {
+        return;
+      }
+      await redisClient.mset(keyValuePairs);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return;
@@ -223,10 +343,13 @@ export class CacheManager {
   static async deleteMultiple(keys: string[]): Promise<number> {
     if (keys.length === 0) return 0;
     try {
+      if (!redisClient || !redisAvailable) {
+        return 0;
+      }
       // Upstash del method takes individual keys, not an array
       let deletedCount = 0;
       for (const key of keys) {
-        const result = await this.client().del(key);
+        const result = await redisClient.del(key);
         deletedCount += result;
       }
       return deletedCount;
@@ -242,7 +365,10 @@ export class CacheManager {
    * Get all keys matching a pattern
    */
   static async getKeys(pattern: string): Promise<string[]> {
-    return await this.client().keys(pattern);
+    if (!redisClient || !redisAvailable) {
+      return [];
+    }
+    return await redisClient.keys(pattern);
   }
 
   /**
@@ -259,10 +385,13 @@ export class CacheManager {
    */
   static async addToSet(key: string, ...members: string[]): Promise<number> {
     try {
+      if (!redisClient || !redisAvailable) {
+        return 0;
+      }
       if (members.length === 1) {
-        return await this.client().sadd(key, members[0]);
+        return await redisClient.sadd(key, members[0]);
       } else {
-        return await this.client().sadd(key, members[0], ...members.slice(1));
+        return await redisClient.sadd(key, members[0], ...members.slice(1));
       }
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
@@ -277,7 +406,10 @@ export class CacheManager {
    */
   static async removeFromSet(key: string, ...members: string[]): Promise<number> {
     try {
-      return await this.client().srem(key, ...members);
+      if (!redisClient || !redisAvailable) {
+        return 0;
+      }
+      return await redisClient.srem(key, ...members);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return 0;
@@ -291,7 +423,10 @@ export class CacheManager {
    */
   static async isInSet(key: string, member: string): Promise<boolean> {
     try {
-      const result = await this.client().sismember(key, member);
+      if (!redisClient || !redisAvailable) {
+        return false;
+      }
+      const result = await redisClient.sismember(key, member);
       return result === 1;
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
@@ -306,7 +441,10 @@ export class CacheManager {
    */
   static async getSetMembers(key: string): Promise<string[]> {
     try {
-      return await this.client().smembers(key);
+      if (!redisClient || !redisAvailable) {
+        return [];
+      }
+      return await redisClient.smembers(key);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return [];
@@ -320,7 +458,10 @@ export class CacheManager {
    */
   static async getSetSize(key: string): Promise<number> {
     try {
-      return await this.client().scard(key);
+      if (!redisClient || !redisAvailable) {
+        return 0;
+      }
+      return await redisClient.scard(key);
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
         return 0;

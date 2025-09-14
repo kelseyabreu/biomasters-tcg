@@ -30,7 +30,9 @@ import { motion } from 'framer-motion';
 import {
   arrowBack,
   checkmarkCircle,
-  time
+  time,
+  chevronBackOutline,
+  chevronForwardOutline
 } from 'ionicons/icons';
 
 // Import the battle store instead of game engine
@@ -45,8 +47,13 @@ import { AIDifficulty } from '../../../shared/ai/AIStrategy';
 import { AIStrategyFactory } from '../../../shared/ai/AIStrategyFactory';
 import PlayerStatsDisplay from '../ui/PlayerStatsDisplay';
 import EndGameModal from '../ui/EndGameModal';
+import EcosystemGrid from '../game/EcosystemGrid';
+import PlayerHandDisplay from './PlayerHandDisplay';
+import PlayerCard from './PlayerCard';
 import '../ui/PlayerStatsDisplay.css';
 import '../ui/EndGameModal.css';
+import './PlayerHandDisplay.css';
+import './PlayerCard.css';
 
 interface TCGBattleScreenProps {
   onExit?: () => void;
@@ -82,6 +89,13 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
   const setHighlightedPositions = useHybridGameStore(state => state.battle.actions.setHighlightedPositions);
   const clearUIState = useHybridGameStore(state => state.battle.actions.clearUIState);
 
+  // Opposition hand state and actions
+  const oppositionHandState = useHybridGameStore(state => state.battle.uiState.oppositionHand);
+  const toggleOppositionHandVisibility = useHybridGameStore(state => state.battle.actions.toggleOppositionHandVisibility);
+  const toggleOppositionHandExpansion = useHybridGameStore(state => state.battle.actions.toggleOppositionHandExpansion);
+  const selectOpponent = useHybridGameStore(state => state.battle.actions.selectOpponent);
+  const toggleOppositionCardDetails = useHybridGameStore(state => state.battle.actions.toggleOppositionCardDetails);
+
   // Theme
   const { currentTheme } = useTheme();
 
@@ -89,6 +103,17 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
   const [showForfeitAlert, setShowForfeitAlert] = React.useState(false);
   const [showEndGameModal, setShowEndGameModal] = React.useState(false);
   const [endGameData, setEndGameData] = React.useState<any>(null);
+
+  // Card drawing animation state
+  const [isDrawingCards, setIsDrawingCards] = React.useState(false);
+  const [drawnCards, setDrawnCards] = React.useState<string[]>([]);
+
+  // Player cards navigation state (moved to top level to follow Rules of Hooks)
+  const [currentCardIndex, setCurrentCardIndex] = React.useState(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Get last drawn cards from store for animation
+  const lastDrawnCards = useHybridGameStore((state) => state.battle.lastDrawnCards);
 
   // Game settings (could be moved to store if needed)
   const gameSettings: TCGGameSettings = {
@@ -195,42 +220,21 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
 
   // Auto-play AI moves when it's AI's turn using AI Strategy
   useEffect(() => {
-    console.log(`🔍 [TCG] AI useEffect triggered - gameState exists: ${!!gameState}`);
-
-    if (gameState) {
-      console.log(`🔍 [TCG] Game phase: ${gameState.gamePhase}, currentPlayerIndex: ${gameState.currentPlayerIndex}`);
-    }
-
     if (gameState &&
         gameState.gamePhase === GamePhase.PLAYING &&
         gameState.currentPlayerIndex !== undefined) {
 
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-      console.log(`🔍 [TCG] Current player: ${currentPlayer?.name} (${currentPlayer?.id})`);
-      console.log(`🔍 [TCG] Player properties:`, Object.keys(currentPlayer || {}));
-      console.log(`🔍 [TCG] player.actionsRemaining: ${(currentPlayer as any)?.actionsRemaining}`);
-      console.log(`🔍 [TCG] gameState.actionsRemaining: ${(gameState as any)?.actionsRemaining}`);
-      console.log(`🔍 [TCG] actions: ${(currentPlayer as any)?.actions}`);
-      console.log(`🔍 [TCG] Full player object:`, currentPlayer);
-
-      // Check the raw game state from engine
-      console.log(`🔍 [TCG] Raw gameState:`, gameState);
-      console.log(`🔍 [TCG] Raw gameState players:`, gameState.players);
 
       if (currentPlayer && currentPlayer.id !== 'human' && (gameState as any).actionsRemaining > 0) {
-        console.log(`🤖 [TCG] AI turn detected for player: ${currentPlayer.name}`);
-
         // Create AI strategy (for now, always use EASY - will be configurable later)
         const aiStrategy = AIStrategyFactory.createStrategy(AIDifficulty.EASY);
         const thinkingDelay = aiStrategy.getThinkingDelay();
-
-        console.log(`🤖 [TCG] AI will think for ${Math.round(thinkingDelay)}ms`);
 
         setTimeout(async () => {
           try {
             // Check if AI should pass turn
             if (aiStrategy.shouldPassTurn(currentPlayer.hand, (gameState as any).actionsRemaining, gameState as any, currentPlayer.id)) {
-              console.log(`🤖 [TCG] AI decided to pass turn`);
 
               // AI needs to pass turn with its own player ID
               const currentBattleState = useHybridGameStore.getState().battle;
@@ -251,7 +255,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
                     tcgGameState: result.newState as any
                   }
                 }));
-                console.log(`✅ [TCG] AI successfully passed turn`);
               } else {
                 console.error(`❌ [TCG] AI failed to pass turn:`, result.errorMessage);
               }
@@ -260,7 +263,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
 
             // AI has no cards, must pass
             if (currentPlayer.hand.length === 0) {
-              console.log(`🤖 [TCG] AI has no cards, passing turn`);
 
               // AI needs to pass turn with its own player ID
               const currentBattleState = useHybridGameStore.getState().battle;
@@ -486,6 +488,42 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
         setShowEndGameModal(true);
       }
     }
+
+    // Additional check for final turn completion - check engine state directly
+    if (gameState && gameState.gamePhase === 'final_turn') {
+      console.log('🏁 [TCG] Game is in final turn phase, checking engine state');
+
+      try {
+        const engine = unifiedGameService.getEngine(gameState.gameId);
+        if (engine && typeof engine.getGameState === 'function') {
+          const engineState = engine.getGameState();
+          if (engineState) {
+            console.log('🏁 [TCG] Engine state check:', {
+              gamePhase: engineState.gamePhase,
+              finalTurnPlayersRemaining: engineState.finalTurnPlayersRemaining
+            });
+
+            // Check if final turn is complete in the engine
+            if (engineState.gamePhase === 'ended' ||
+                (engineState.finalTurnPlayersRemaining && engineState.finalTurnPlayersRemaining.length === 0)) {
+            console.log('🏁 [TCG] Final turn complete or game ended, checking end game data');
+
+            if (typeof engine.getEndGameData === 'function') {
+              const endData = engine.getEndGameData();
+              console.log('🏁 [TCG] End game data from engine:', endData);
+
+              if (endData.isGameEnded) {
+                setEndGameData(endData);
+                setShowEndGameModal(true);
+              }
+            }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ [TCG] Error in final turn check:', error);
+      }
+    }
   }, [gameState?.gamePhase, gameState?.gameId, gameState?.turnNumber]);
 
   // Handle card selection from hand
@@ -560,10 +598,52 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
 
   // Handle drop and draw three
   const handleDropAndDraw = useCallback(async () => {
-    if (!gameState || !selectedHandCardId) return;
+    if (!gameState || !selectedHandCardId) {
+      console.log('🚨 [UI] Drop and draw blocked: no card selected');
+      return;
+    }
 
-    await dropAndDrawThree(selectedHandCardId);
-  }, [gameState, selectedHandCardId, dropAndDrawThree]);
+    // Double-check that the selected card is still in hand
+    const currentPlayer = gameState.players.find(p => p.id === 'human');
+    if (!currentPlayer || !currentPlayer.hand.includes(selectedHandCardId)) {
+      console.log('🚨 [UI] Drop and draw blocked: selected card not in hand');
+      return;
+    }
+
+    // Execute the action and get the drawn cards directly
+    const result = await dropAndDrawThree(selectedHandCardId);
+
+    // Clear the selected card since it's been discarded
+    selectHandCard(null);
+    setHighlightedPositions([]);
+
+    // Get drawn cards from the result or fallback to store
+    const actualDrawnCards = (result as any)?.drawnCards || lastDrawnCards;
+    console.log('🃏 [Animation] Using drawn cards from action result:', actualDrawnCards);
+
+    // Only run animation if we actually drew cards
+    if (actualDrawnCards && actualDrawnCards.length > 0) {
+      // Start drawing animation
+      setIsDrawingCards(true);
+      setDrawnCards([]);
+
+      // Animate cards being drawn one by one with actual card data
+      setTimeout(() => setDrawnCards([actualDrawnCards[0]]), 200);
+      if (actualDrawnCards.length > 1) {
+        setTimeout(() => setDrawnCards([actualDrawnCards[0], actualDrawnCards[1]]), 400);
+      }
+      if (actualDrawnCards.length > 2) {
+        setTimeout(() => setDrawnCards([actualDrawnCards[0], actualDrawnCards[1], actualDrawnCards[2]]), 600);
+      }
+
+      setTimeout(() => {
+        setIsDrawingCards(false);
+        setDrawnCards([]);
+      }, 1200);
+    } else {
+      console.log('🚨 [Animation] No cards drawn, skipping animation');
+    }
+  }, [gameState, selectedHandCardId, dropAndDrawThree, lastDrawnCards]);
 
 
 
@@ -615,17 +695,37 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     }
   }, [speciesLoaded, loadSpeciesData]);
 
-  console.log('🎮 [TCG] Card data debug:', {
-    allSpeciesCardsCount: allSpeciesCards?.length || 0,
-    allSpeciesCardsLoaded: !!allSpeciesCards,
-    speciesLoaded,
-    sampleCards: allSpeciesCards?.slice(0, 3)?.map(card => ({ cardId: card.cardId, nameId: card.nameId })) || []
-  });
+
 
   // Helper function to get card data from the store (no hooks inside)
   const getCardData = (instanceId: string): any => {
-    // Extract card ID from instance ID (e.g., "1" from "1_0" or just "1")
-    const cardId = parseInt(instanceId.split('_')[0]);
+    // Extract card ID from instance ID - handle different formats:
+    // Format 1: Simple numbers like "89", "56" (from hand cards)
+    // Format 2: Complex instance IDs like "instance_1757687714762_nfettv6aa" (from grid cards)
+    let cardId: number = NaN;
+
+    if (instanceId.startsWith('instance_')) {
+      // For grid cards with complex instance IDs, we need to find the card differently
+      // Try to find the card in the game state grid by instance ID
+      if (gameState?.grid) {
+        for (const [_positionKey, gridCard] of gameState.grid.entries()) {
+          if (gridCard?.instanceId === instanceId) {
+            // Extract the actual card ID from the grid card data
+            if (gridCard.cardId) {
+              cardId = parseInt(gridCard.cardId.toString());
+              break;
+            }
+          }
+        }
+      }
+
+      if (!cardId || isNaN(cardId)) {
+        cardId = NaN;
+      }
+    } else {
+      // Simple format: extract from "1_0" or just "1"
+      cardId = parseInt(instanceId.split('_')[0]);
+    }
 
     // Find card data from the already-retrieved species cards
     const cardData = allSpeciesCards.find(card => card.cardId === cardId);
@@ -646,7 +746,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
 
       return result;
     }
-
     // Fallback for unknown cards
     return {
       nameId: 'CARD_UNKNOWN',
@@ -664,9 +763,45 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
 
   // Helper function to get localized card names for battle screen
   const getLocalizedCardName = (cardData: any): string => {
-    if (!cardData?.nameId) return 'Unknown';
-    // Use localization system to get proper card name
-    return localization.getCardName(cardData.nameId as any);
+    if (!cardData?.nameId) {
+      return 'Unknown';
+    }
+
+    try {
+      // Check if localization is available
+      if (!localization || typeof localization.getCardName !== 'function') {
+        const fallback = cardData.nameId
+          .replace('CARD_', '')
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, (l: string) => l.toUpperCase());
+        return fallback;
+      }
+
+      const localizedName = localization.getCardName(cardData.nameId as any);
+
+      // Check if localization failed (returns nameId or bracketed value)
+      if (!localizedName || localizedName.startsWith('[') || localizedName === cardData.nameId) {
+        // Create a readable fallback from nameId
+        const fallback = cardData.nameId
+          .replace('CARD_', '')
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, (l: string) => l.toUpperCase());
+        return fallback;
+      }
+
+      return localizedName;
+    } catch (error) {
+      console.error('🔍 [Localization] Error getting card name:', error);
+      // Create a readable fallback from nameId
+      const fallback = cardData.nameId
+        .replace('CARD_', '')
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (l: string) => l.toUpperCase());
+      return fallback;
+    }
   };
 
   const getLocalizedScientificName = (cardData: any): string => {
@@ -691,12 +826,8 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     console.log('✅ Match forfeited, returning to mode selection');
   };
 
-  // Render loading or error state
-  console.log('🎮 [TCG] Render check - isLoading:', isLoading, 'gameState:', !!gameState, 'error:', error);
-
   // Show error state if there's an error
   if (error) {
-    console.log('🎮 [TCG] Rendering error state');
     return (
       <IonPage>
         <IonHeader>
@@ -746,7 +877,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
 
   // Show loading state
   if (isLoading || !gameState) {
-    console.log('🎮 [TCG] Rendering loading state');
     return (
       <IonPage>
         <IonHeader>
@@ -775,16 +905,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
   const isPlayerTurn = currentPlayer?.id === 'human';
   // TODO: Get available actions from game state or calculate them
 
-  console.log('🎮 [TCG] Rendering main UI with:', {
-    currentPlayer: currentPlayer?.id,
-    isPlayerTurn,
-    gamePhase: gameState.gamePhase,
-    turnPhase: gameState.turnPhase,
-    gridSize: gameState.grid?.size || 0,
-    gridWidth: gameState.gameSettings?.gridWidth,
-    gridHeight: gameState.gameSettings?.gridHeight,
-    gridContents: gameState.grid && gameState.grid.entries ? Array.from(gameState.grid.entries()) : []
-  });
+
 
   return (
     <motion.div
@@ -838,33 +959,39 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
           try {
             // Get engine instance to access new methods
             const engine = unifiedGameService.getEngine(gameState.gameId);
-            console.log(`🔍 [TCG] Engine found:`, !!engine, `getGameProgress available:`, engine && typeof engine.getGameProgress === 'function');
-
             if (engine && typeof engine.getGameProgress === 'function') {
-              console.log(`🎯 [TCG] Getting game progress for enhanced stats display`);
               const gameProgress = engine.getGameProgress();
-              console.log(`📊 [TCG] Game progress retrieved:`, gameProgress);
 
               return (
-                <div className="enhanced-game-status">
-                  {/* Player Stats Cards - Side by Side */}
-                  <IonGrid className="player-stats-grid">
-                    <IonRow>
-                      {gameProgress.allPlayerStats.map((playerStats: any) => (
-                        <IonCol
-                          key={playerStats.playerId}
-                          size="6"
-                        >
-                          <PlayerStatsDisplay
-                            stats={playerStats}
-                            compact={false}
-                            showActions={true}
-                            className={playerStats.isCurrentPlayer ? 'current-player-stats' : ''}
-                          />
-                        </IonCol>
-                      ))}
-                    </IonRow>
-                  </IonGrid>
+                <div>
+                  {/* OLD: Commented out for reference - Player Stats Cards */}
+                  {/* <div className="enhanced-game-status">
+                    <IonGrid className="player-stats-grid">
+                      <IonRow>
+                        {gameProgress.allPlayerStats.map((playerStats: any) => (
+                          <IonCol
+                            key={playerStats.playerId}
+                            size="6"
+                          >
+                            <PlayerStatsDisplay
+                              stats={playerStats}
+                              compact={false}
+                              showActions={true}
+                              className={playerStats.isCurrentPlayer ? 'current-player-stats' : 'opponent-stats clickable'}
+                              onClick={!playerStats.isCurrentPlayer ? () => {
+                                // Show opposition hand when clicking on opponent stats
+                                selectOpponent(playerStats.playerId);
+                                if (!oppositionHandState.isVisible) {
+                                  toggleOppositionHandVisibility();
+                                }
+                              } : undefined}
+                            />
+                          </IonCol>
+                        ))}
+                      </IonRow>
+                    </IonGrid>
+                  </div> */}
+
                 </div>
               );
             } else {
@@ -875,7 +1002,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
           }
 
           // Fallback to simple message if enhanced stats not available
-          console.log('🔄 [TCG] Using fallback status display');
           return (
             <IonCard className="game-status-card">
               <IonCardContent>
@@ -966,210 +1092,275 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
             </IonCardContent>
           </IonCard>
         )}
-        {/* Game Grid */}
+        {/* Game Grid - NEW COMPONENT VERSION */}
         {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING) && gameState.gameSettings && (
-          <IonCard className="game-grid-card">
-            <IonCardHeader>
-              <IonCardTitle>Ecosystem Grid ({gameState.gameSettings.gridWidth}x{gameState.gameSettings.gridHeight})</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-
-              <div
-                className="ecosystem-board"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${gameState.gameSettings.gridWidth}, 60px)`,
-                  gridTemplateRows: `repeat(${gameState.gameSettings.gridHeight}, 60px)`,
-                  gap: '1px',
-                  margin: '0 auto',
-                  maxWidth: '90vw',
-                  maxHeight: '60vh',
-                  justifyContent: 'center'
-                }}
-              >
-
-                {Array.from({ length: gameState.gameSettings.gridHeight }, (_, y) =>
-                  Array.from({ length: gameState.gameSettings.gridWidth }, (_, x) => {
-                    const positionKey = `${x},${y}`;
-                    const card = gameState.grid && gameState.grid.get ? gameState.grid.get(positionKey) : null;
-                    const isValidPosition = highlightedPositions.some((pos: any) => pos.x === x && pos.y === y);
-                    const isHomePosition = card?.isHOME;
-
-
-
-                    return (
-                      <div
-                        key={positionKey}
-                        className={`grid-cell ${card ? 'occupied' : 'empty'} ${isValidPosition ? 'highlighted' : ''} ${isHomePosition ? 'home-position' : ''}`}
-                        onClick={() => handleGridPositionClick(x, y)}
-                        style={{
-                          width: '60px',
-                          height: '60px',
-                          border: '1px solid rgba(255, 255, 255, 0.05)',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          backdropFilter: 'blur(5px)',
-                          position: 'relative'
-                        }}
-                      >
-                        {card && (
-                          <div className={`ecosystem-card ${card.isHOME ? 'home-card' : ''}`}>
-                            {card.isHOME ? (
-                              <div style={{
-                                width: '100%',
-                                height: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                color: 'white',
-                                fontWeight: 'bold',
-                                fontSize: '14px',
-                                borderRadius: '12px'
-                              }}>
-                                🏠
-                              </div>
-                            ) : (
-                              <div style={{
-                                width: '100%',
-                                height: '100%',
-                                background: card.ownerId === 'human'
-                                  ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
-                                  : 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                color: 'white',
-                                borderRadius: '12px',
-                                padding: '4px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                fontSize: '8px',
-                                textAlign: 'center'
-                              }}>
-                                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
-                                  {getLocalizedCardName(getCardData(card.instanceId))?.slice(0, 6) || 'Card'}
-                                </div>
-                                <div style={{ fontSize: '6px', opacity: 0.8 }}>
-                                  VP: {getCardData(card.instanceId)?.VictoryPoints || 0}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {isValidPosition && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '2px',
-                            right: '2px',
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--ion-color-success)',
-                            border: '1px solid white'
-                          }} />
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </IonCardContent>
-          </IonCard>
+          <EcosystemGrid
+            gameSettings={gameState.gameSettings}
+            grid={gameState.grid}
+            allSpeciesCards={allSpeciesCards}
+            getCardData={getCardData}
+            onGridPositionClick={handleGridPositionClick}
+            highlightedPositions={highlightedPositions}
+            title="Ecosystem Grid"
+            cellSize={60}
+            showTitle={true}
+            enablePanZoom={true}
+          />
         )}
 
-        {/* Player Hand */}
-        {gameState.gamePhase === GamePhase.PLAYING && currentPlayer && (
-          <IonCard className="player-hand-card">
-            <IonCardHeader>
-              <IonCardTitle>Your Hand ({currentPlayer.hand.length})</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <div className="hand-cards" style={{
-                display: 'flex',
-                gap: '8px',
-                overflowX: 'auto',
-                padding: '8px 0'
-              }}>
-                {currentPlayer.hand.map((cardInstanceId: any) => {
-                  const cardData = getCardData(cardInstanceId);
-                  const isSelected = selectedHandCardId === cardInstanceId;
+
+
+
+
+        {/* NEW: Responsive Player Cards with Navigation */}
+        {gameState.gamePhase === GamePhase.PLAYING && (() => {
+          const allPlayers = gameState.players;
+
+          const scrollToCard = (index: number) => {
+            if (containerRef.current) {
+              const cardWidth = 320; // Approximate card width + gap
+              containerRef.current.scrollTo({
+                left: index * cardWidth,
+                behavior: 'smooth'
+              });
+            }
+            setCurrentCardIndex(index);
+          };
+
+          const nextCard = () => {
+            const nextIndex = (currentCardIndex + 1) % allPlayers.length;
+            scrollToCard(nextIndex);
+          };
+
+          const prevCard = () => {
+            const prevIndex = currentCardIndex === 0 ? allPlayers.length - 1 : currentCardIndex - 1;
+            scrollToCard(prevIndex);
+          };
+
+          return (
+            <div className="player-cards-wrapper">
+              {/* Scrollable Cards Container */}
+              <motion.div
+                ref={containerRef}
+                className="player-cards-container responsive"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5, staggerChildren: 0.1 }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  overflowX: 'auto',
+                  padding: '8px 0'
+                }}
+              >
+                {/* All Player Cards as Siblings */}
+                {allPlayers.map((player: any) => {
+                  const isCurrentPlayerCard = player.id === 'human';
+                  const isPlayerTurnCard = gameState.players[gameState.currentPlayerIndex]?.id === player.id;
+                  const playerActionsRemaining = isPlayerTurnCard ? (gameState.actionsRemaining || 0) : 0;
 
                   return (
+                    <PlayerCard
+                      key={player.id}
+                      player={player}
+                      cardVisibilityMode={isCurrentPlayerCard ? 'full' : (oppositionHandState.showCardDetails ? 'full' : 'hidden')}
+                      isCurrentPlayer={isCurrentPlayerCard}
+                      isPlayerTurn={isPlayerTurnCard}
+                      actionsRemaining={playerActionsRemaining}
+                      isCollapsible={!isCurrentPlayerCard}
+                      isExpanded={isCurrentPlayerCard || oppositionHandState.isExpanded}
+                      onToggleExpansion={!isCurrentPlayerCard ? toggleOppositionHandExpansion : undefined}
+                      onToggleCardVisibility={!isCurrentPlayerCard ? toggleOppositionCardDetails : undefined}
+                      onClick={!isCurrentPlayerCard ? () => {
+                        selectOpponent(player.id);
+                        if (!oppositionHandState.isVisible) {
+                          toggleOppositionHandVisibility();
+                        }
+                      } : undefined}
+                      isInteractive={isCurrentPlayerCard}
+                      selectedCardId={isCurrentPlayerCard ? selectedHandCardId : undefined}
+                      onCardSelect={isCurrentPlayerCard ? handleCardSelect : undefined}
+                      getCardData={getCardData}
+                      getLocalizedCardName={getLocalizedCardName}
+                      getLocalizedScientificName={getLocalizedScientificName}
+                      className={isCurrentPlayerCard ? 'current-player-card' : 'opponent-player-card'}
+                    />
+                  );
+                })}
+              </motion.div>
+
+              {/* Navigation Controls */}
+              <div className="player-cards-navigation">
+                <IonButton
+                  fill="clear"
+                  size="small"
+                  onClick={prevCard}
+                  disabled={allPlayers.length <= 1}
+                >
+                  <IonIcon icon={chevronBackOutline} />
+                </IonButton>
+
+                <div className="player-indicator">
+                  {allPlayers.map((_, index) => (
                     <div
-                      key={cardInstanceId}
-                      className={`hand-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleCardSelect(cardInstanceId)}
-                      style={{
-                        minWidth: '80px',
-                        width: '80px',
-                        height: '100px',
-                        border: isSelected
-                          ? '2px solid var(--ion-color-primary)'
-                          : '1px solid var(--ion-color-medium)',
-                        borderRadius: '8px',
-                        padding: '4px',
-                        cursor: 'pointer',
-                        backgroundColor: isSelected
-                          ? 'var(--ion-color-primary-tint)'
-                          : 'white',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '10px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      <div style={{ fontWeight: 'bold', fontSize: '9px' }}>
-                        {getLocalizedCardName(cardData) || 'Unknown'}
-                      </div>
+                      key={index}
+                      className={`indicator-dot ${index === currentCardIndex ? 'active' : ''}`}
+                      onClick={() => scrollToCard(index)}
+                    />
+                  ))}
+                </div>
 
-                      {/* Organism Visual */}
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        margin: '2px 0',
-                        border: '1px solid var(--ion-color-light)',
-                        borderRadius: '4px',
-                        overflow: 'hidden'
-                      }}>
-                        <OrganismRenderer
-                          card={cardData}
-                          size={40}
-                          className="battle-card-organism"
-                        />
-                      </div>
+                <IonButton
+                  fill="clear"
+                  size="small"
+                  onClick={nextCard}
+                  disabled={allPlayers.length <= 1}
+                >
+                  <IonIcon icon={chevronForwardOutline} />
+                </IonButton>
+              </div>
+            </div>
+          );
+        })()}
 
-                      <div style={{
-                        fontSize: '8px',
-                        color: 'var(--ion-color-medium)',
-                        fontStyle: 'italic'
-                      }}>
-                        {getLocalizedScientificName(cardData) || ''}
-                      </div>
-                      <div style={{
-                        display: 'flex',
-                        gap: '4px',
-                        fontSize: '8px'
-                      }}>
-                        <IonBadge color="success" style={{ fontSize: '8px' }}>
-                          VP: {cardData?.VictoryPoints || 0}
-                        </IonBadge>
-                        <IonBadge color="primary" style={{ fontSize: '8px' }}>
-                          T{cardData?.TrophicLevel || 0}
-                        </IonBadge>
-                      </div>
+        {/* OLD: Commented out for reference - Player Hand */}
+        {/* {gameState.gamePhase === GamePhase.PLAYING && currentPlayer && (
+          <PlayerHandDisplay
+            player={currentPlayer}
+            title={`Your Hand (${currentPlayer.hand.length})`}
+            visibilityMode="full"
+            isInteractive={true}
+            selectedCardId={selectedHandCardId}
+            onCardSelect={handleCardSelect}
+            getCardData={getCardData}
+            getLocalizedCardName={getLocalizedCardName}
+            getLocalizedScientificName={getLocalizedScientificName}
+          />
+        )} */}
+
+        {/* OLD: Commented out for reference - Opposition Hand */}
+        {/* {gameState.gamePhase === GamePhase.PLAYING && oppositionHandState.isVisible && (() => {
+          const opponents = gameState.players.filter((player: any) => player.id !== 'human');
+          const selectedOpponent = opponents.find((player: any) =>
+            player.id === oppositionHandState.selectedOpponentId
+          ) || opponents[0];
+
+          if (!selectedOpponent) return null;
+
+          return (
+            <PlayerHandDisplay
+              player={selectedOpponent}
+              title={`${selectedOpponent.name} Hand (${selectedOpponent.hand.length})`}
+              visibilityMode={oppositionHandState.showCardDetails ? 'full' : 'hidden'}
+              isCollapsible={true}
+              isExpanded={oppositionHandState.isExpanded}
+              onToggleExpansion={toggleOppositionHandExpansion}
+              onClose={toggleOppositionHandVisibility}
+              onToggleVisibility={toggleOppositionCardDetails}
+              isInteractive={false}
+              getCardData={getCardData}
+              getLocalizedCardName={getLocalizedCardName}
+              getLocalizedScientificName={getLocalizedScientificName}
+              className="opposition-hand"
+            />
+          );
+        })()*/} 
+
+        {/* Card Drawing Animation - Full Screen Overlay */}
+        {isDrawingCards && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10000,
+              background: 'rgba(0, 0, 0, 0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(5px)'
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '20px',
+                background: 'rgba(0, 0, 0, 0.9)',
+                padding: '30px',
+                borderRadius: '16px',
+                border: '2px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
+                minWidth: '280px',
+                maxWidth: '90vw'
+              }}
+            >
+              <div style={{
+                color: 'white',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                marginBottom: '10px'
+              }}>
+                Drawing Cards
+              </div>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                {drawnCards.map((cardId, index) => {
+                  const cardData = getCardData(cardId);
+                  const cardName = getLocalizedCardName(cardData);
+
+                  return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: -30, rotateY: 180 }}
+                    animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                    transition={{ delay: index * 0.2, duration: 0.4 }}
+                    style={{
+                      width: '80px',
+                      height: '100px',
+                      background: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
+                      borderRadius: '8px',
+                      border: '3px solid #fff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '10px',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                      padding: '4px',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: '8px', marginBottom: '4px' }}>
+                      {cardName?.slice(0, 8) || 'Card'}
                     </div>
+                    <div style={{
+                      fontSize: '12px',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {index + 1}
+                    </div>
+                  </motion.div>
                   );
                 })}
               </div>
-            </IonCardContent>
-          </IonCard>
+            </motion.div>
+          </div>
         )}
 
         {/* Action Buttons */}

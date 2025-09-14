@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "timestamp": 1757608461903,
+  "timestamp": 1757881406969,
   "files": {
     "abilities.json": {
       "version": "1.0.0",
@@ -10,9 +10,9 @@
     },
     "cards.json": {
       "version": "1.0.0",
-      "checksum": "1bbd82c92b62a6c1fc4c24e91f49100e1f88631429b5add4d7c66916bd755831",
-      "size": 87302,
-      "lastModified": 1757367928506
+      "checksum": "17d0f0d502e05f04478d937b890affde1abb43b688a9ac844a19f28d84a87c54",
+      "size": 87298,
+      "lastModified": 1757774824189
     },
     "keywords.json": {
       "version": "1.0.0",

@@ -40,13 +40,15 @@ interface PlayerStatsDisplayProps {
   compact?: boolean;
   showActions?: boolean;
   className?: string;
+  onClick?: () => void;
 }
 
 export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({
   stats,
   compact = false,
   showActions = true,
-  className = ''
+  className = '',
+  onClick
 }) => {
   const {
     name,
@@ -110,7 +112,11 @@ export const PlayerStatsDisplay: React.FC<PlayerStatsDisplayProps> = ({
 
   // Full card layout for detailed display
   return (
-    <IonCard className={`player-stats-card ${isCurrentPlayer ? 'current-player' : ''} ${className}`}>
+    <IonCard
+      className={`player-stats-card ${isCurrentPlayer ? 'current-player' : ''} ${className} ${onClick ? 'clickable' : ''}`}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
       <IonCardContent>
         <div className="player-header">
           <h3>{name}</h3>

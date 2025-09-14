@@ -12,9 +12,9 @@ function getDbConfig() {
     database: process.env['DB_NAME'] || 'biomasters_tcg',
     user: process.env['DB_USER'] || 'postgres',
     password: process.env['DB_PASSWORD'] || '',
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 5000, // Increased timeout for network issues
+    max: 30, // Increased for test load
+    idleTimeoutMillis: 60000, // Increased idle timeout for test stability
+    connectionTimeoutMillis: 10000, // Increased timeout for network issues
     ssl: (process.env['DB_HOST']?.includes('supabase.co') || process.env['NODE_ENV'] === 'production') ? { rejectUnauthorized: false } : false
   };
 
@@ -26,9 +26,9 @@ function getDbConfig() {
       return {
         connectionString: process.env['DATABASE_URL'],
         ssl: { rejectUnauthorized: false },
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000
+        max: 30, // Increased for test load
+        idleTimeoutMillis: 60000, // Increased for test stability
+        connectionTimeoutMillis: 10000 // Increased timeout
       };
     }
   }
@@ -37,29 +37,102 @@ function getDbConfig() {
 }
 
 /**
- * Initialize database connection pool
+ * Initialize database connection pool with retry logic
  */
 export async function initializeDatabase(): Promise<void> {
-  try {
-    const dbConfig = getDbConfig();
+  const maxRetries = 5;
+  const retryDelay = 3000; // 3 seconds
 
-    // Create connection pool
-    pool = new Pool(dbConfig);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const dbConfig = getDbConfig();
+      console.log(`🐘 [Database] Attempt ${attempt}/${maxRetries} - Connecting to PostgreSQL...`);
 
-    // Test the connection
-    const client = await pool.connect();
-    await client.query('SELECT NOW()');
-    client.release();
+      // Create connection pool with enhanced configuration
+      pool = new Pool({
+        ...dbConfig,
+        // Enhanced connection pool settings for Railway
+        max: 15, // Reduced from 20 to be more conservative
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000, // Increased from 5000
+        acquireTimeoutMillis: 60000, // Time to wait for a connection from pool
+        createTimeoutMillis: 30000, // Time to wait for new connection creation
+        destroyTimeoutMillis: 5000,
+        reapIntervalMillis: 1000,
+        createRetryIntervalMillis: 200,
+        // Connection validation
+        allowExitOnIdle: false,
+      });
 
-    // Set up error handling
-    pool.on('error', (err) => {
-      console.error('❌ Unexpected error on idle client:', err);
-    });
+      // Test the connection with timeout
+      const testConnection = async () => {
+        const client = await pool!.connect();
+        try {
+          const result = await client.query('SELECT NOW() as current_time, version() as db_version');
+          console.log(`✅ [Database] Connected to PostgreSQL at ${result.rows[0].current_time}`);
+          return result;
+        } finally {
+          client.release();
+        }
+      };
 
-  } catch (error) {
-    console.error('❌ Failed to connect to PostgreSQL:', error);
-    throw error;
+      // Test connection with timeout
+      const connectionPromise = testConnection();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database connection timeout')), 15000)
+      );
+
+      await Promise.race([connectionPromise, timeoutPromise]);
+
+      // Set up enhanced error handling
+      pool.on('error', (err) => {
+        console.error('❌ [Database] Unexpected error on idle client:', err);
+        // Don't crash the process, just log the error
+      });
+
+      pool.on('connect', (client) => {
+        console.log('🔗 [Database] New client connected');
+
+        // Set up client-level error handling
+        client.on('error', (err) => {
+          console.error('❌ [Database] Client error:', err);
+        });
+      });
+
+      pool.on('acquire', () => {
+        console.log('📤 [Database] Client acquired from pool');
+      });
+
+      pool.on('release', () => {
+        console.log('📥 [Database] Client released back to pool');
+      });
+
+      console.log('✅ [Database] PostgreSQL connection pool initialized successfully');
+      return;
+
+    } catch (error) {
+      console.warn(`⚠️ [Database] Attempt ${attempt}/${maxRetries} failed:`, error instanceof Error ? error.message : error);
+
+      // Clean up failed pool
+      if (pool) {
+        try {
+          await pool.end();
+        } catch (cleanupError) {
+          console.warn('Failed to clean up failed pool:', cleanupError);
+        }
+        pool = null;
+      }
+
+      if (attempt < maxRetries) {
+        console.log(`🔄 [Database] Retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
   }
+
+  // All attempts failed
+  console.error('❌ [Database] Failed to connect to PostgreSQL after all retries');
+  throw new Error('Database connection failed after all retry attempts');
 }
 
 /**
@@ -73,21 +146,64 @@ export function getDatabase(): Pool {
 }
 
 /**
- * Execute a query with automatic connection management
+ * Retry wrapper for database operations
  */
-export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
-  if (!pool) throw new Error('Database pool not initialized');
-  const client = await pool.connect();
-  try {
-    const result = await client.query(text, params);
-    return result.rows;
-  } finally {
-    client.release();
+async function withDatabaseRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+
+      // Check if it's a connection-related error that we should retry
+      const isRetryableError = error instanceof Error && (
+        error.message.includes('connection') ||
+        error.message.includes('timeout') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('ETIMEDOUT') ||
+        (error as any).code === 'ECONNRESET' ||
+        (error as any).code === 'ENOTFOUND' ||
+        (error as any).code === 'ETIMEDOUT'
+      );
+
+      if (!isRetryableError || attempt === maxRetries) {
+        throw error;
+      }
+
+      console.warn(`⚠️ [Database] Retryable error on attempt ${attempt}/${maxRetries}:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+    }
   }
+
+  throw lastError!;
 }
 
 /**
- * Execute a query and return a single row
+ * Execute a query with automatic connection management and retry logic
+ */
+export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
+  return withDatabaseRetry(async () => {
+    if (!pool) throw new Error('Database pool not initialized');
+
+    const client = await pool.connect();
+    try {
+      const result = await client.query(text, params);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  });
+}
+
+/**
+ * Execute a query and return a single row with retry logic
  */
 export async function queryOne<T = any>(text: string, params?: any[]): Promise<T | null> {
   const rows = await query<T>(text, params);
@@ -95,35 +211,69 @@ export async function queryOne<T = any>(text: string, params?: any[]): Promise<T
 }
 
 /**
- * Execute multiple queries in a transaction
+ * Execute multiple queries in a transaction with retry logic
  */
 export async function transaction<T>(
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
-  if (!pool) throw new Error('Database pool not initialized');
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  return withDatabaseRetry(async () => {
+    if (!pool) throw new Error('Database pool not initialized');
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Failed to rollback transaction:', rollbackError);
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
 }
 
 /**
- * Check if database connection is healthy
+ * Check if database connection is healthy with detailed diagnostics
  */
 export async function checkDatabaseHealth(): Promise<boolean> {
   try {
-    const result = await query('SELECT 1 as health_check');
-    return result.length > 0;
+    if (!pool) {
+      console.warn('❌ [Database Health] Pool not initialized');
+      return false;
+    }
+
+    // Check pool status
+    const poolInfo = {
+      totalCount: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount
+    };
+
+    console.log('🔍 [Database Health] Pool status:', poolInfo);
+
+    // Test query with timeout
+    const healthPromise = query('SELECT 1 as health_check, NOW() as timestamp');
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Health check timeout')), 5000)
+    );
+
+    const result = await Promise.race([healthPromise, timeoutPromise]) as any[];
+
+    if (result.length > 0) {
+      console.log('✅ [Database Health] Database is healthy');
+      return true;
+    } else {
+      console.warn('⚠️ [Database Health] Query returned no results');
+      return false;
+    }
   } catch (error) {
-    console.error('❌ Database health check failed:', error);
+    console.error('❌ [Database Health] Health check failed:', error instanceof Error ? error.message : error);
     return false;
   }
 }

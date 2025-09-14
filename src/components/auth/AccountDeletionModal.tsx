@@ -68,7 +68,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
   const [toastMessage, setToastMessage] = useState('');
   const [toastColor, setToastColor] = useState<'success' | 'danger' | 'warning'>('success');
 
-  const { userProfile, isGuestMode, signOutUser, firebaseUser } = useHybridGameStore();
+  const { userProfile, isGuestMode, signOutUser, firebaseUser, guestToken } = useHybridGameStore();
   const { getUIText } = useUILocalization();
 
   const deletionSteps: DeletionStep[] = [
@@ -191,15 +191,36 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
     console.log('🗑️ [AccountDeletion] Modal state updated, calling backend...');
 
     try {
-      // Get the ID token for authentication
-      console.log('🗑️ [AccountDeletion] Firebase user:', firebaseUser?.email);
-      console.log('🗑️ [AccountDeletion] Firebase user UID:', firebaseUser?.uid);
+      // Get the appropriate authentication token based on user type
+      let authToken: string;
 
-      const idToken = await firebaseUser?.getIdToken();
-      console.log('🗑️ [AccountDeletion] Got Firebase ID token:', idToken ? `Present (${idToken.substring(0, 50)}...)` : 'Missing');
+      if (isGuestMode) {
+        // For guest accounts, use the guest JWT token
+        console.log('🗑️ [AccountDeletion] Guest mode - using guest JWT token');
+        console.log('🗑️ [AccountDeletion] Guest token available:', guestToken ? 'Yes' : 'No');
 
-      if (!idToken) {
-        throw new Error('No authentication token available. Please sign in again.');
+        if (!guestToken) {
+          throw new Error('Guest authentication token not available. Please sign in again.');
+        }
+
+        authToken = guestToken;
+        console.log('🗑️ [AccountDeletion] Using guest JWT token:', `Present (${authToken.substring(0, 50)}...)`);
+      } else {
+        // For registered accounts, use Firebase ID token
+        console.log('🗑️ [AccountDeletion] Registered user mode - using Firebase ID token');
+        console.log('🗑️ [AccountDeletion] Firebase user:', firebaseUser?.email);
+        console.log('🗑️ [AccountDeletion] Firebase user UID:', firebaseUser?.uid);
+
+        if (!firebaseUser) {
+          throw new Error('Firebase user not available. Please sign in again.');
+        }
+
+        authToken = await firebaseUser.getIdToken();
+        console.log('🗑️ [AccountDeletion] Got Firebase ID token:', authToken ? `Present (${authToken.substring(0, 50)}...)` : 'Missing');
+
+        if (!authToken) {
+          throw new Error('Firebase authentication token not available. Please sign in again.');
+        }
       }
 
       // Call the backend deletion endpoint
@@ -208,7 +229,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
+          'Authorization': `Bearer ${authToken}`
         }
       });
 

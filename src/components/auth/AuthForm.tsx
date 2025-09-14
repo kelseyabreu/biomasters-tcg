@@ -134,7 +134,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       }
 
       if (onSuccess) {
-        setTimeout(onSuccess, 1500);
+        setTimeout(onSuccess, 2500);
       }
     } catch (error: any) {
       const authError = error as AuthError;

@@ -154,6 +154,21 @@ export class KyselyMigrator {
       const unifiedUserFieldsSql = readFileSync(unifiedUserFieldsPath, 'utf8');
       await this.executeMigration('012_add_unified_user_fields', unifiedUserFieldsSql);
 
+      // 013: Add matchmaking system
+      const matchmakingSystemPath = join(__dirname, 'migrations/013_add_matchmaking_system.sql');
+      const matchmakingSystemSql = readFileSync(matchmakingSystemPath, 'utf8');
+      await this.executeMigration('013_add_matchmaking_system', matchmakingSystemSql);
+
+      // 014: Add match history
+      const matchHistoryPath = join(__dirname, 'migrations/014_add_match_history.sql');
+      const matchHistorySql = readFileSync(matchHistoryPath, 'utf8');
+      await this.executeMigration('014_add_match_history', matchHistorySql);
+
+      // 015: Add quest system
+      const questSystemPath = join(__dirname, 'migrations/015_add_quest_system.sql');
+      const questSystemSql = readFileSync(questSystemPath, 'utf8');
+      await this.executeMigration('015_add_quest_system', questSystemSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

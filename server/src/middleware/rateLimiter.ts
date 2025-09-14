@@ -58,43 +58,50 @@ function initializeRateLimiters() {
     Strict: ${config.strict.points} requests per ${config.strict.duration}s`);
 
   try {
+    const { isRedisAvailable, getRedisClient } = require('../config/redis');
     const redisClient = getRedisClient();
 
-    // General API rate limiter
-    generalLimiter = new RateLimiterRedis({
-      storeClient: redisClient,
-      keyPrefix: 'rl_general',
-      points: config.general.points,
-      duration: config.general.duration,
-      blockDuration: config.general.blockDuration,
-    });
+    if (redisClient && isRedisAvailable()) {
+      console.log('✅ Using Redis-based rate limiting');
 
-    // Authentication rate limiter
-    authLimiter = new RateLimiterRedis({
-      storeClient: redisClient,
-      keyPrefix: 'rl_auth',
-      points: config.auth.points,
-      duration: config.auth.duration,
-      blockDuration: config.auth.blockDuration,
-    });
+      // General API rate limiter
+      generalLimiter = new RateLimiterRedis({
+        storeClient: redisClient,
+        keyPrefix: 'rl_general',
+        points: config.general.points,
+        duration: config.general.duration,
+        blockDuration: config.general.blockDuration,
+      });
 
-    // Pack opening rate limiter
-    packOpeningLimiter = new RateLimiterRedis({
-      storeClient: redisClient,
-      keyPrefix: 'rl_packs',
-      points: config.packs.points,
-      duration: config.packs.duration,
-      blockDuration: config.packs.blockDuration,
-    });
+      // Authentication rate limiter
+      authLimiter = new RateLimiterRedis({
+        storeClient: redisClient,
+        keyPrefix: 'rl_auth',
+        points: config.auth.points,
+        duration: config.auth.duration,
+        blockDuration: config.auth.blockDuration,
+      });
 
-    // API rate limiter (per user)
-    apiLimiter = new RateLimiterRedis({
-      storeClient: redisClient,
-      keyPrefix: 'rl_api',
-      points: config.api.points,
-      duration: config.api.duration,
-      blockDuration: config.api.blockDuration,
-    });
+      // Pack opening rate limiter
+      packOpeningLimiter = new RateLimiterRedis({
+        storeClient: redisClient,
+        keyPrefix: 'rl_packs',
+        points: config.packs.points,
+        duration: config.packs.duration,
+        blockDuration: config.packs.blockDuration,
+      });
+
+      // API rate limiter (per user)
+      apiLimiter = new RateLimiterRedis({
+        storeClient: redisClient,
+        keyPrefix: 'rl_api',
+        points: config.api.points,
+        duration: config.api.duration,
+        blockDuration: config.api.blockDuration,
+      });
+    } else {
+      throw new Error('Redis not available');
+    }
 
   } catch (error) {
     console.warn('⚠️ Redis not available, using memory-based rate limiting');
@@ -146,7 +153,7 @@ function createRateLimitMiddleware(
 
       // Check rate limit
       const result = await limiter.consume(key || 'anonymous');
-      
+
       // Add rate limit headers
       res.set({
         'X-RateLimit-Limit': limiter.points.toString(),
@@ -158,7 +165,7 @@ function createRateLimitMiddleware(
     } catch (rateLimiterRes) {
       // Rate limit exceeded
       const secs = Math.round((rateLimiterRes as any).msBeforeNext / 1000) || 1;
-      
+
       res.set({
         'X-RateLimit-Limit': limiter.points.toString(),
         'X-RateLimit-Remaining': '0',

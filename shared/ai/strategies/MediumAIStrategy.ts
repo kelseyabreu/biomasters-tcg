@@ -23,7 +23,7 @@ export class MediumAIStrategy extends BaseAIStrategy {
    * Medium AI: For now, uses random selection like Easy AI
    * TODO: Implement strategic card selection
    */
-  selectCard(hand: string[], gameState: GameState, playerId: string): string {
+  override selectCard(hand: string[], gameState: GameState, playerId: string): string {
     console.log(`🤖 [MEDIUM] AI selecting card (currently using random selection)`);
     
     // For now, use base class random selection
@@ -35,7 +35,7 @@ export class MediumAIStrategy extends BaseAIStrategy {
    * Medium AI: For now, uses random position like Easy AI
    * TODO: Implement strategic position selection
    */
-  selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
+  override selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
     console.log(`🤖 [MEDIUM] AI selecting position (currently using random selection)`);
     
     // For now, use base class random selection
@@ -47,7 +47,7 @@ export class MediumAIStrategy extends BaseAIStrategy {
    * Medium AI: Uses base class pass logic (15% chance)
    * TODO: Add strategic passing logic
    */
-  shouldPassTurn(hand: string[], actionsRemaining: number, gameState: GameState, playerId: string): boolean {
+  override shouldPassTurn(hand: string[], actionsRemaining: number, gameState: GameState, playerId: string): boolean {
     console.log(`🤖 [MEDIUM] AI considering pass turn (currently using base logic)`);
     
     // Uses base class logic with 15% pass chance
@@ -58,7 +58,7 @@ export class MediumAIStrategy extends BaseAIStrategy {
   /**
    * Medium AI: Moderate thinking time (1.5-2.5 seconds)
    */
-  getThinkingDelay(): number {
+  override getThinkingDelay(): number {
     const delay = super.getThinkingDelay();
     console.log(`🤖 [MEDIUM] AI thinking for ${Math.round(delay)}ms`);
     return delay;

@@ -58,7 +58,7 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <IonPage>
+    <IonPage data-testid="auth-page">
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">

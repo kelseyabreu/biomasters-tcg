@@ -1,0 +1,322 @@
+/* Online Multiplayer Page Styles */
+
+.multiplayer-tabs {
+  margin: 16px;
+  border-radius: 8px;
+  background: var(--ion-color-light);
+}
+
+.tab-content {
+  padding: 16px;
+}
+
+/* Authentication Required State */
+.auth-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+  gap: 16px;
+}
+
+.auth-required ion-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.auth-required h2 {
+  margin: 0;
+  color: var(--ion-color-dark);
+}
+
+.auth-required p {
+  color: var(--ion-color-medium);
+  margin: 8px 0;
+}
+
+/* Matchmaking Status */
+.matchmaking-status {
+  text-align: center;
+  padding: 24px 16px;
+  background: var(--ion-color-light);
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.matchmaking-status ion-spinner {
+  margin-bottom: 16px;
+}
+
+.matchmaking-status h3 {
+  margin: 0 0 16px 0;
+  color: var(--ion-color-primary);
+}
+
+.matchmaking-status p {
+  margin: 4px 0;
+  color: var(--ion-color-dark);
+  font-weight: 500;
+}
+
+.matchmaking-status ion-progress-bar {
+  margin: 16px 0;
+}
+
+.cancel-button {
+  margin-top: 16px;
+}
+
+.matchmaking-ready {
+  margin-top: 16px;
+}
+
+.matchmaking-ready ion-button {
+  margin-bottom: 16px;
+}
+
+/* Rating Display */
+.rating-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.rating-stat {
+  text-align: center;
+  padding: 16px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+}
+
+.rating-stat .stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.rating-stat .stat-label {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.rank-badge.gold {
+  background: var(--ion-color-warning-tint);
+  color: var(--ion-color-warning-contrast);
+}
+
+.rank-badge.silver {
+  background: var(--ion-color-secondary-tint);
+  color: var(--ion-color-secondary-contrast);
+}
+
+.rank-badge.bronze {
+  background: var(--ion-color-tertiary-tint);
+  color: var(--ion-color-tertiary-contrast);
+}
+
+/* Quest Cards */
+.quest-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.quest-card {
+  border-radius: 12px;
+  margin: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quest-card.completed {
+  border-left: 4px solid var(--ion-color-success);
+}
+
+.quest-card.claimed {
+  opacity: 0.7;
+  background: var(--ion-color-light);
+}
+
+.quest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quest-title {
+  font-weight: bold;
+  margin: 0;
+}
+
+.quest-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.quest-status.completed {
+  background: var(--ion-color-success-tint);
+  color: var(--ion-color-success);
+}
+
+.quest-status.claimed {
+  background: var(--ion-color-medium-tint);
+  color: var(--ion-color-medium);
+}
+
+.quest-progress {
+  margin: 12px 0;
+}
+
+.quest-progress-bar {
+  margin: 8px 0;
+}
+
+.quest-progress-text {
+  font-size: 14px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.quest-rewards {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--ion-color-primary-tint);
+  color: var(--ion-color-primary);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Leaderboard */
+.leaderboard-entry {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ion-color-light);
+}
+
+.leaderboard-entry:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-rank {
+  font-weight: bold;
+  font-size: 18px;
+  width: 40px;
+  text-align: center;
+  margin-right: 16px;
+}
+
+.leaderboard-rank.top-3 {
+  color: var(--ion-color-warning);
+}
+
+.leaderboard-player {
+  flex: 1;
+}
+
+.leaderboard-player-name {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.leaderboard-player-stats {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
+.leaderboard-rating {
+  font-weight: bold;
+  font-size: 16px;
+  text-align: right;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .rating-overview {
+    grid-template-columns: 1fr;
+  }
+  
+  .tab-content {
+    padding: 12px;
+  }
+  
+  .multiplayer-tabs {
+    margin: 12px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .matchmaking-status {
+    background: var(--ion-color-dark-tint);
+  }
+  
+  .rating-stat {
+    background: var(--ion-color-dark-tint);
+  }
+  
+  .quest-card.claimed {
+    background: var(--ion-color-dark-shade);
+  }
+}
+
+/* Animation for matchmaking spinner */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.matchmaking-status {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Smooth transitions */
+.quest-card,
+.rating-stat,
+.leaderboard-entry {
+  transition: all 0.2s ease-in-out;
+}
+
+.quest-card:hover,
+.rating-stat:hover,
+.leaderboard-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

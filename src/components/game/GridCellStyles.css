@@ -1,0 +1,220 @@
+/* Grid Cell Style Variants */
+
+/* Classic Style (Default) */
+.grid-cell.style-classic {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
+}
+
+.grid-cell.style-classic.empty:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Hexagon Style */
+.grid-cell.style-hexagon {
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+  backdrop-filter: blur(3px);
+}
+
+.grid-cell.style-hexagon.empty:hover {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
+}
+
+/* Rounded Style */
+.grid-cell.style-rounded {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(8px);
+}
+
+.grid-cell.style-rounded.empty:hover {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.05) 100%) !important;
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+}
+
+/* Minimal Style */
+.grid-cell.style-minimal {
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 2px;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.grid-cell.style-minimal.empty:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Neon Style */
+.grid-cell.style-neon {
+  border: 2px solid rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 0 10px rgba(0, 255, 255, 0.2),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+  backdrop-filter: blur(2px);
+}
+
+.grid-cell.style-neon.empty:hover {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border-color: rgba(0, 255, 255, 0.6);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.5),
+    inset 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+/* Organic Style */
+.grid-cell.style-organic {
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 20px 5px 15px 10px;
+  background: rgba(34, 197, 94, 0.03);
+  backdrop-filter: blur(6px);
+  position: relative;
+}
+
+.grid-cell.style-organic::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border-radius: 18px 3px 13px 8px;
+  background: linear-gradient(45deg, transparent 30%, rgba(34, 197, 94, 0.05) 50%, transparent 70%);
+  pointer-events: none;
+}
+
+.grid-cell.style-organic.empty:hover {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+  transform: rotate(1deg) scale(1.02);
+}
+
+/* Highlighted states for each style */
+.grid-cell.style-classic.highlighted {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.5) !important;
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.grid-cell.style-hexagon.highlighted {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  box-shadow: 0 0 35px rgba(34, 197, 94, 0.4);
+}
+
+.grid-cell.style-rounded.highlighted {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.1) 100%) !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.5);
+}
+
+.grid-cell.style-minimal.highlighted {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+  box-shadow: inset 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.grid-cell.style-neon.highlighted {
+  background: rgba(0, 255, 0, 0.15) !important;
+  border-color: rgba(0, 255, 0, 0.8) !important;
+  box-shadow: 
+    0 0 30px rgba(0, 255, 0, 0.6),
+    inset 0 0 20px rgba(0, 255, 0, 0.2);
+}
+
+.grid-cell.style-organic.highlighted {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+  transform: rotate(-1deg) scale(1.05);
+}
+
+/* Home position styles for each variant */
+.grid-cell.style-classic.home-position {
+  border-color: gold !important;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  background: rgba(255, 215, 0, 0.1) !important;
+}
+
+.grid-cell.style-hexagon.home-position {
+  border-color: gold !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+  background: rgba(255, 215, 0, 0.12) !important;
+}
+
+.grid-cell.style-rounded.home-position {
+  border-color: gold !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%) !important;
+}
+
+.grid-cell.style-minimal.home-position {
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3);
+  background: rgba(255, 215, 0, 0.08) !important;
+}
+
+.grid-cell.style-neon.home-position {
+  border-color: rgba(255, 215, 0, 0.8) !important;
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.7),
+    inset 0 0 15px rgba(255, 215, 0, 0.2);
+  background: rgba(255, 215, 0, 0.1) !important;
+}
+
+.grid-cell.style-organic.home-position {
+  border-color: rgba(255, 215, 0, 0.6) !important;
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
+  background: rgba(255, 215, 0, 0.12) !important;
+}
+
+/* Responsive adjustments for all styles */
+@media (max-width: 768px) {
+  .grid-cell.style-hexagon {
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+  
+  .grid-cell.style-rounded {
+    border-radius: 45%;
+  }
+  
+  .grid-cell.style-organic {
+    border-radius: 15px 4px 12px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-cell.style-neon {
+    border-width: 1px;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+  }
+  
+  .grid-cell.style-organic {
+    border-radius: 10px 3px 8px 5px;
+  }
+}
+
+/* Animation support for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .grid-cell.style-organic.empty:hover {
+    transform: none;
+  }
+  
+  .grid-cell.style-organic.highlighted {
+    transform: none;
+  }
+}

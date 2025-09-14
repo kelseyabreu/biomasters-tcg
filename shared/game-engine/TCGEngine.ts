@@ -106,7 +106,7 @@ export class TCGEngine extends BaseGameEngine {
       }
 
       // Convert result to unified format
-      return this.createActionResult(
+      const unifiedResult = this.createActionResult(
         result.isValid,
         result.newState,
         result.errorMessage,
@@ -115,6 +115,14 @@ export class TCGEngine extends BaseGameEngine {
           nextPlayer: this.getCurrentPlayer()?.id
         }
       );
+
+      // Pass through additional properties like drawnCards
+      if ((result as any).drawnCards) {
+        (unifiedResult as any).drawnCards = (result as any).drawnCards;
+        console.log('🃏 [TCGEngine] Passing through drawnCards:', (result as any).drawnCards);
+      }
+
+      return unifiedResult;
 
     } catch (error: any) {
       console.error(`❌ TCG Engine: Action processing failed:`, error);
@@ -204,7 +212,7 @@ export class TCGEngine extends BaseGameEngine {
         return !!(action.payload.cardId && action.payload.position);
 
       case GameActionType.DROP_AND_DRAW_THREE:
-        return !!(action.payload.cardIdToDiscard);
+        return !!(action.payload['cardIdToDiscard']);
 
       case GameActionType.PASS_TURN:
         return true;

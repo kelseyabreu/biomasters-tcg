@@ -3,7 +3,7 @@
  * Shows winner, final scores, and game statistics
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -33,6 +33,7 @@ import {
   flash,
   albums
 } from 'ionicons/icons';
+import { useHybridGameStore } from '../../state/hybridGameStore';
 
 interface PlayerFinalStats {
   playerId: string;
@@ -71,6 +72,21 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
   const winnerStats = finalScores.find(player => player.isWinner);
   const sortedScores = [...finalScores].sort((a, b) => b.victoryPoints - a.victoryPoints);
   const isPlayerWinner = winnerStats?.playerId === 'human';
+
+  // Get quest tracking function from store
+  const { trackGameCompletion, userId } = useHybridGameStore();
+
+  // Track quest progress when game ends
+  useEffect(() => {
+    if (isOpen && winner && userId) {
+      // Track game completion for quest progress
+      trackGameCompletion({
+        winner: isPlayerWinner ? userId : null,
+        gameMode: 'practice', // This could be passed as a prop in the future
+        playerId: userId
+      });
+    }
+  }, [isOpen, winner, isPlayerWinner, userId, trackGameCompletion]);
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} className="end-game-modal">

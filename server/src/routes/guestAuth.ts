@@ -85,7 +85,17 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
       // Missing required fields
       is_public_profile: false,
       email_notifications: false,
-      push_notifications: false
+      push_notifications: false,
+
+      // Online multiplayer defaults
+      current_rating: 1000,
+      peak_rating: 1000,
+      win_streak: 0,
+
+      // Quest system defaults
+      daily_quest_streak: 0,
+      last_daily_reset: new Date(),
+      total_quests_completed: 0
     };
 
     const users = await trx
@@ -220,7 +230,17 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
       // Missing required fields
       is_public_profile: false,
       email_notifications: false,
-      push_notifications: false
+      push_notifications: false,
+
+      // Online multiplayer defaults
+      current_rating: 1000,
+      peak_rating: 1000,
+      win_streak: 0,
+
+      // Quest system defaults
+      daily_quest_streak: 0,
+      last_daily_reset: new Date(),
+      total_quests_completed: 0
     };
 
     const users = await trx

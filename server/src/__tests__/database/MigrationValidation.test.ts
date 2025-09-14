@@ -81,7 +81,17 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
         push_notifications: true,
         preferences: null,
         last_reward_claimed_at: null,
-        last_login_at: null
+        last_login_at: null,
+
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0
       };
 
       // Test the adapter function
@@ -135,7 +145,17 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
         push_notifications: true,
         preferences: null,
         last_reward_claimed_at: null,
-        last_login_at: null
+        last_login_at: null,
+
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0
       };
 
       const unifiedUser = adaptDatabaseUserToUnified(mockGuestUser);
@@ -185,7 +205,16 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
         push_notifications: true,
         preferences: null,
         last_reward_claimed_at: null,
-        last_login_at: null
+        last_login_at: null,
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+        
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0,
       };
 
       await db.insertInto('users').values(testUser).execute();
@@ -249,7 +278,17 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
         push_notifications: true,
         preferences: '{"theme": "dark", "language": "en"}',
         last_reward_claimed_at: new Date('2024-01-01'),
-        last_login_at: new Date('2024-01-03')
+        last_login_at: new Date('2024-01-03'),
+
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0
       };
 
       // Insert user with all fields populated
@@ -361,7 +400,16 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
           push_notifications: true,
           preferences: null,
           last_reward_claimed_at: null,
-          last_login_at: null
+          last_login_at: null,
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+        
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0,
         };
 
         await db.insertInto('users').values(completeUser).execute();
@@ -433,7 +481,17 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
         push_notifications: true,
         preferences: '{"maxLevel": true, "achievements": ["collector", "winner"]}',
         last_reward_claimed_at: new Date('2024-01-01'),
-        last_login_at: new Date('2024-01-02')
+        last_login_at: new Date('2024-01-02'),
+
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0
       };
 
       await db.insertInto('users').values(numericTestUser).execute();
@@ -544,7 +602,16 @@ describe('🗄️ Database Migration Validation - User Types Standardization', (
         push_notifications: true,
         preferences: null,
         last_reward_claimed_at: null,
-        last_login_at: null
+        last_login_at: null,
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+        
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0,
       };
 
       await db.insertInto('users').values(firstUser).execute();

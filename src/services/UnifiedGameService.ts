@@ -33,6 +33,13 @@ export interface ServiceResult<T = any> {
     gameEnded?: boolean;
     nextPlayer?: string;
     winCondition?: any;
+    // Online multiplayer metadata
+    matchFound?: boolean;
+    matchCancelled?: boolean;
+    ratingEnabled?: boolean;
+    ratingUpdated?: boolean;
+    initialRatings?: { [playerId: string]: number };
+    leaderboardSize?: number;
   };
 }
 
@@ -54,6 +61,52 @@ export interface ExecuteActionPayload {
   action: UnifiedGameAction;
   currentState: any;
   isOnline?: boolean;
+}
+
+// ============================================================================
+// ONLINE MULTIPLAYER INTERFACES
+// ============================================================================
+
+/**
+ * Online game settings - extends UnifiedGameSettings
+ */
+export interface OnlineGameSettings extends UnifiedGameSettings {
+  gameMode: 'ranked_1v1' | 'casual_1v1' | 'team_2v2' | 'ffa_4p';
+  ratingEnabled: boolean;
+  tournamentId?: string;
+}
+
+/**
+ * Matchmaking action interface - separate from game actions
+ */
+export interface MatchmakingAction {
+  type: 'FIND_MATCH' | 'CANCEL_MATCHMAKING' | 'ACCEPT_MATCH';
+  playerId: string;
+  payload: {
+    gameMode: string;
+    preferences?: any;
+  };
+}
+
+/**
+ * Match result interface
+ */
+export interface MatchResult {
+  sessionId?: string;
+  players?: { id: string; name: string; rating: number }[];
+  estimatedWaitTime?: number;
+  matchFound?: boolean;
+}
+
+/**
+ * Rating update interface
+ */
+export interface RatingUpdate {
+  userId: string;
+  oldRating: number;
+  newRating: number;
+  ratingChange: number;
+  gameMode: string;
 }
 
 // ============================================================================
@@ -176,7 +229,7 @@ export class UnifiedGameService {
 
       if (isOnline) {
         // Online mode - delegate to server API
-        return this.createOnlineGame(payload);
+        return this.createOnlineGame({ ...payload, isRanked: false });
       } else {
         // Offline mode - use local engine
         return this.createOfflineGame(payload);
@@ -314,42 +367,20 @@ export class UnifiedGameService {
 
     // Execute the action
     const result = engine.processAction(action);
-    
+
+
+
     return {
       isValid: result.isValid,
       newState: result.newState,
       errorMessage: result.errorMessage,
-      metadata: result.metadata
+      metadata: result.metadata,
+      // Pass through any additional properties like drawnCards
+      ...(result as any).drawnCards && { drawnCards: (result as any).drawnCards }
     };
   }
 
-  /**
-   * Create online game via server API
-   */
-  private async createOnlineGame(payload: CreateGamePayload): Promise<ServiceResult<GameState>> {
-    try {
-      const response = await gameApi.createGame({
-        gameId: payload.gameId,
-        players: payload.players,
-        settings: payload.settings
-      });
 
-      if (response.data.success) {
-        return {
-          isValid: true,
-          newState: response.data.data
-        };
-      } else {
-        // Fallback to offline if online fails
-        console.warn('Online game creation failed, falling back to offline');
-        return this.createOfflineGame({ ...payload, isOnline: false });
-      }
-    } catch (error: any) {
-      // Fallback to offline if online fails
-      console.warn('Online game creation failed, falling back to offline:', error);
-      return this.createOfflineGame({ ...payload, isOnline: false });
-    }
-  }
 
   /**
    * Execute online action via server API
@@ -392,6 +423,153 @@ export class UnifiedGameService {
     } else {
       this.engines.clear();
       console.log(`🧹 UnifiedGameService: Cleaned up all engines`);
+    }
+  }
+
+  // ============================================================================
+  // ONLINE MULTIPLAYER METHODS
+  // ============================================================================
+
+  /**
+   * Find online match - integrates with existing service pattern
+   */
+  async findMatch(gameMode: string, preferences?: any): Promise<ServiceResult<MatchResult>> {
+    try {
+      console.log(`🔍 UnifiedGameService: Finding match for mode: ${gameMode}`);
+
+      // Use new gameApi matchmaking endpoint
+      const response = await gameApi.findMatch({
+        gameMode,
+        preferences
+      });
+
+      return {
+        isValid: true,
+        newState: response.data.data,
+        metadata: { matchFound: !!response.data.data?.sessionId }
+      };
+    } catch (error: any) {
+      console.error('❌ UnifiedGameService: Matchmaking failed:', error);
+      return {
+        isValid: false,
+        errorMessage: error.message || 'Matchmaking failed'
+      };
+    }
+  }
+
+  /**
+   * Cancel matchmaking
+   */
+  async cancelMatchmaking(): Promise<ServiceResult> {
+    try {
+      console.log('🚫 UnifiedGameService: Cancelling matchmaking');
+
+      await gameApi.cancelMatchmaking();
+
+      return {
+        isValid: true,
+        metadata: { matchCancelled: true }
+      };
+    } catch (error: any) {
+      console.error('❌ UnifiedGameService: Cancel matchmaking failed:', error);
+      return {
+        isValid: false,
+        errorMessage: error.message || 'Failed to cancel matchmaking'
+      };
+    }
+  }
+
+  /**
+   * Create online game - extends existing createGame method
+   */
+  async createOnlineGame(payload: CreateGamePayload & { isRanked: boolean }): Promise<ServiceResult> {
+    try {
+      console.log(`🌐 UnifiedGameService: Creating online game:`, payload);
+
+      // Leverage existing game creation logic
+      const result = await this.createGame(payload);
+
+      if (result.isValid && payload.isRanked) {
+        // Add rating tracking
+        result.metadata = {
+          ...result.metadata,
+          ratingEnabled: true,
+          initialRatings: await this.getPlayerRatings(payload.players)
+        };
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('❌ UnifiedGameService: Online game creation failed:', error);
+      return {
+        isValid: false,
+        errorMessage: error.message || 'Failed to create online game'
+      };
+    }
+  }
+
+  /**
+   * Get player ratings for matchmaking
+   */
+  async getPlayerRatings(players: { id: string; name: string }[]): Promise<{ [playerId: string]: number }> {
+    try {
+      const playerIds = players.map(p => p.id);
+      const response = await gameApi.getPlayerRatings({ playerIds });
+      return response.data.data || {};
+    } catch (error) {
+      console.warn('⚠️ UnifiedGameService: Failed to get player ratings:', error);
+      // Return default ratings
+      const defaultRatings: { [playerId: string]: number } = {};
+      players.forEach(player => {
+        defaultRatings[player.id] = 1000; // Default rating
+      });
+      return defaultRatings;
+    }
+  }
+
+  /**
+   * Update player rating after match
+   */
+  async updatePlayerRating(ratingUpdate: RatingUpdate): Promise<ServiceResult> {
+    try {
+      console.log(`📈 UnifiedGameService: Updating rating:`, ratingUpdate);
+
+      const response = await gameApi.updatePlayerRating(ratingUpdate);
+
+      return {
+        isValid: true,
+        newState: response.data.data,
+        metadata: { ratingUpdated: true }
+      };
+    } catch (error: any) {
+      console.error('❌ UnifiedGameService: Rating update failed:', error);
+      return {
+        isValid: false,
+        errorMessage: error.message || 'Failed to update rating'
+      };
+    }
+  }
+
+  /**
+   * Get leaderboard data
+   */
+  async getLeaderboard(gameMode: string, limit: number = 100): Promise<ServiceResult> {
+    try {
+      console.log(`🏆 UnifiedGameService: Getting leaderboard for ${gameMode}`);
+
+      const response = await gameApi.getLeaderboard(gameMode, limit);
+
+      return {
+        isValid: true,
+        newState: response.data.data,
+        metadata: { leaderboardSize: response.data.data?.length || 0 }
+      };
+    } catch (error: any) {
+      console.error('❌ UnifiedGameService: Leaderboard fetch failed:', error);
+      return {
+        isValid: false,
+        errorMessage: error.message || 'Failed to get leaderboard'
+      };
     }
   }
 }

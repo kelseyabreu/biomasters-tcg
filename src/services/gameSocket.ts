@@ -79,6 +79,69 @@ export class GameSocketService {
       this.emit('player_disconnected', update);
     });
 
+    // ============================================================================
+    // ONLINE MULTIPLAYER EVENT HANDLERS
+    // ============================================================================
+
+    // Matchmaking events
+    this.socket.on('match_found', (data: any) => {
+      console.log('🎯 Match found:', data);
+      this.emit('match_found', data);
+
+      // Update store using existing pattern
+      const gameStore = useHybridGameStore.getState();
+      if (data.sessionId) {
+        gameStore.acceptMatch(data.sessionId);
+      }
+    });
+
+    this.socket.on('matchmaking_cancelled', (data: any) => {
+      console.log('🚫 Matchmaking cancelled:', data);
+      this.emit('matchmaking_cancelled', data);
+    });
+
+    this.socket.on('queue_status', (data: any) => {
+      console.log('⏱️ Queue status update:', data);
+      this.emit('queue_status', data);
+
+      // Update queue time in store
+      const gameStore = useHybridGameStore.getState();
+      if (gameStore.online.matchmaking.isSearching) {
+        gameStore.online.matchmaking.queueTime = data.queueTime || 0;
+        gameStore.online.matchmaking.estimatedWait = data.estimatedWait || 0;
+      }
+    });
+
+    // Rating events
+    this.socket.on('rating_updated', (data: any) => {
+      console.log('📈 Rating updated:', data);
+      this.emit('rating_updated', data);
+
+      const gameStore = useHybridGameStore.getState();
+      if (data.ratingUpdate) {
+        gameStore.updateRating(data.ratingUpdate);
+      }
+    });
+
+    // Quest events
+    this.socket.on('quest_progress_updated', (data: any) => {
+      console.log('📋 Quest progress updated:', data);
+      this.emit('quest_progress_updated', data);
+
+      const gameStore = useHybridGameStore.getState();
+      if (data.questType && data.progress) {
+        gameStore.updateQuestProgress(data.questType, data.progress);
+      }
+    });
+
+    this.socket.on('daily_quests_reset', (data: any) => {
+      console.log('🔄 Daily quests reset:', data);
+      this.emit('daily_quests_reset', data);
+
+      const gameStore = useHybridGameStore.getState();
+      gameStore.refreshDailyQuests();
+    });
+
     this.socket.on('action_result', (update: GameUpdate) => {
       this.emit('action_result', update);
     });
@@ -167,6 +230,74 @@ export class GameSocketService {
     }
 
     this.socket.emit('spectate_session', sessionId);
+  }
+
+  // ============================================================================
+  // ONLINE MULTIPLAYER METHODS
+  // ============================================================================
+
+  /**
+   * Join matchmaking queue
+   */
+  joinMatchmaking(gameMode: string, preferences?: any) {
+    if (!this.socket || !this.socket.connected) {
+      console.error('Socket not connected');
+      return;
+    }
+
+    console.log(`🔍 Joining matchmaking for ${gameMode}`);
+    this.socket.emit('join_matchmaking', {
+      gameMode,
+      preferences: preferences || {},
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Cancel matchmaking
+   */
+  cancelMatchmaking() {
+    if (!this.socket || !this.socket.connected) {
+      console.error('Socket not connected');
+      return;
+    }
+
+    console.log('🚫 Cancelling matchmaking');
+    this.socket.emit('cancel_matchmaking', {
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Accept found match
+   */
+  acceptMatch(sessionId: string) {
+    if (!this.socket || !this.socket.connected) {
+      console.error('Socket not connected');
+      return;
+    }
+
+    console.log(`✅ Accepting match: ${sessionId}`);
+    this.socket.emit('accept_match', {
+      sessionId,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Update quest progress
+   */
+  updateQuestProgress(questType: string, progress: any) {
+    if (!this.socket || !this.socket.connected) {
+      console.error('Socket not connected');
+      return;
+    }
+
+    this.socket.emit('quest_progress', {
+      questType,
+      progress,
+      timestamp: Date.now()
+    });
   }
 
   // Event listener management

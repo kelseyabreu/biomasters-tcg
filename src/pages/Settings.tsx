@@ -46,8 +46,9 @@ import {
   person,
   sync
 } from 'ionicons/icons';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme, GridCellStyle, CardVisualStyle } from '../theme/ThemeProvider';
 import { ThemeConfig, PREDEFINED_THEMES } from '../theme/themeSystem';
+import EnhancedEcosystemCard from '../components/battle/EnhancedEcosystemCard';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { LanguageSelector } from '../components/localization/LanguageSelector';
 import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
@@ -56,6 +57,7 @@ import { useHybridGameStore } from '../state/hybridGameStore';
 import { useHistory } from 'react-router-dom';
 import './Settings.css';
 import '../components/auth/AccountDeletionModal.css';
+import '../components/game/GridCellStyles.css';
 
 const Settings: React.FC = () => {
   const history = useHistory();
@@ -68,8 +70,36 @@ const Settings: React.FC = () => {
     isDarkMode,
     toggleDarkMode,
     organismRenderMode,
-    setOrganismRenderMode
+    setOrganismRenderMode,
+    gridCellStyle,
+    setGridCellStyle,
+    cardVisualStyle,
+    setCardVisualStyle
   } = useTheme();
+
+  const localization = useLocalization();
+
+  // Sample card data for preview
+  const sampleGridCard = {
+    instanceId: 'preview-card',
+    cardId: 1,
+    ownerId: 'human',
+    position: { x: 0, y: 0 }
+  };
+
+  const sampleCardData = {
+    cardId: 1,
+    nameId: 'grass' as any,
+    scientificNameId: 'poaceae' as any,
+    trophicRole: 'producer' as any,
+    trophicLevel: 1,
+    victoryPoints: 2,
+    energyCost: 1,
+    domains: [0],
+    conservationStatus: 'least_concern' as any,
+    abilities: [],
+    attachments: []
+  };
 
   const {
     currentLanguage,
@@ -287,6 +317,239 @@ const Settings: React.FC = () => {
                     <strong>PNG/SVG Images:</strong> Static images for faster performance. Better for older devices or slower connections.
                   </IonNote>
                 )}
+              </div>
+            </IonCardContent>
+          </IonCard>
+
+          {/* Grid Cell & Card Visual Style Settings */}
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={settings} style={{ marginRight: '8px' }} />
+                Grid Cell & Card Visual Styles
+              </IonCardTitle>
+            </IonCardHeader>
+
+            <IonCardContent>
+              <IonList>
+                <IonItem>
+                  <IonLabel>
+                    <h3>Cell Style</h3>
+                    <p>Choose how grid cells appear in the game</p>
+                  </IonLabel>
+                  <IonSelect
+                    value={gridCellStyle}
+                    onIonChange={(e: any) => setGridCellStyle(e.detail.value)}
+                    interface="popover"
+                  >
+                    <IonSelectOption value="classic">Classic</IonSelectOption>
+                    <IonSelectOption value="hexagon">Hexagon</IonSelectOption>
+                    <IonSelectOption value="rounded">Rounded</IonSelectOption>
+                    <IonSelectOption value="minimal">Minimal</IonSelectOption>
+                    <IonSelectOption value="neon">Neon</IonSelectOption>
+                    <IonSelectOption value="organic">Organic</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+              </IonList>
+
+              {/* Grid Cell Style Preview */}
+              <div className="grid-cell-preview-section">
+                <h4>Preview</h4>
+                <div className="grid-cell-preview-container">
+                  <IonGrid>
+                    <IonRow>
+                      {(['classic', 'hexagon', 'rounded', 'minimal', 'neon', 'organic'] as GridCellStyle[]).map((style) => (
+                        <IonCol size="4" sizeMd="2" key={style}>
+                          <div className="grid-cell-preview-item">
+                            <div
+                              className={`grid-cell style-${style} empty ${gridCellStyle === style ? 'selected-preview' : ''}`}
+                              style={{
+                                width: '40px',
+                                height: '40px',
+                                margin: '0 auto 8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                position: 'relative'
+                              }}
+                              onClick={() => setGridCellStyle(style)}
+                            />
+                            <p style={{
+                              fontSize: '0.75rem',
+                              textAlign: 'center',
+                              margin: 0,
+                              fontWeight: gridCellStyle === style ? 'bold' : 'normal',
+                              color: gridCellStyle === style ? 'var(--ion-color-primary)' : 'inherit'
+                            }}>
+                              {style.charAt(0).toUpperCase() + style.slice(1)}
+                            </p>
+                          </div>
+                        </IonCol>
+                      ))}
+                    </IonRow>
+                  </IonGrid>
+                </div>
+
+                <div className="grid-cell-info">
+                  <IonNote color="medium">
+                    {gridCellStyle === 'classic' && <strong>Classic:</strong>}
+                    {gridCellStyle === 'hexagon' && <strong>Hexagon:</strong>}
+                    {gridCellStyle === 'rounded' && <strong>Rounded:</strong>}
+                    {gridCellStyle === 'minimal' && <strong>Minimal:</strong>}
+                    {gridCellStyle === 'neon' && <strong>Neon:</strong>}
+                    {gridCellStyle === 'organic' && <strong>Organic:</strong>}
+                    {' '}
+                    {gridCellStyle === 'classic' && 'Traditional rectangular cells with subtle borders and glass-like effects.'}
+                    {gridCellStyle === 'hexagon' && 'Hexagonal cells that create a honeycomb pattern, perfect for organic ecosystems.'}
+                    {gridCellStyle === 'rounded' && 'Circular cells with radial gradients for a modern, soft appearance.'}
+                    {gridCellStyle === 'minimal' && 'Clean, simple cells with minimal styling for distraction-free gameplay.'}
+                    {gridCellStyle === 'neon' && 'Cyberpunk-inspired cells with glowing neon borders and effects.'}
+                    {gridCellStyle === 'organic' && 'Irregular, nature-inspired shapes with subtle animations and organic curves.'}
+                  </IonNote>
+                </div>
+              </div>
+            </IonCardContent>
+          </IonCard>
+
+          {/* Card Visual Style Settings */}
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={settings} style={{ marginRight: '8px' }} />
+                Card Visual Style
+              </IonCardTitle>
+            </IonCardHeader>
+
+            <IonCardContent>
+              <IonList>
+                <IonItem>
+                  <IonLabel>
+                    <h3>Card Appearance</h3>
+                    <p>Choose how cards look in the ecosystem grid</p>
+                  </IonLabel>
+                  <IonSelect
+                    value={cardVisualStyle}
+                    onIonChange={(e: any) => setCardVisualStyle(e.detail.value)}
+                    interface="popover"
+                  >
+                    <IonSelectOption value="style1">Compact Info Card</IonSelectOption>
+                    <IonSelectOption value="style2">Minimalist View</IonSelectOption>
+                    <IonSelectOption value="style3">Data-Focused Grid</IonSelectOption>
+                    <IonSelectOption value="style4">Circular Design</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+              </IonList>
+
+              <div className="card-style-preview-section">
+                <h4>Preview</h4>
+                <div className="card-style-preview-container">
+                  <IonGrid>
+                    <IonRow>
+                      {(['style1', 'style2', 'style3', 'style4'] as CardVisualStyle[]).map((style) => (
+                        <IonCol size="3" key={style}>
+                          <div
+                            className={`card-style-preview-item ${cardVisualStyle === style ? 'selected' : ''}`}
+                            onClick={() => setCardVisualStyle(style)}
+                          >
+                            <div className={`card-preview card-preview-${style}`}>
+                              <div className="preview-content">
+                                {style === 'style1' && (
+                                  <div style={{
+                                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                                    borderRadius: '8px',
+                                    padding: '4px',
+                                    color: 'white',
+                                    fontSize: '8px',
+                                    textAlign: 'center',
+                                    width: '40px',
+                                    height: '40px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center'
+                                  }}>
+                                    <div>🌱</div>
+                                    <div>T1</div>
+                                  </div>
+                                )}
+                                {style === 'style2' && (
+                                  <div style={{
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    borderRadius: '4px',
+                                    padding: '4px',
+                                    fontSize: '8px',
+                                    textAlign: 'center',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    width: '40px',
+                                    height: '40px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center'
+                                  }}>
+                                    <div>🌱</div>
+                                    <div>Clean</div>
+                                  </div>
+                                )}
+                                {style === 'style3' && (
+                                  <div style={{
+                                    background: 'linear-gradient(45deg, #2a2a2a, #1a1a1a)',
+                                    borderRadius: '4px',
+                                    padding: '2px',
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '1px',
+                                    fontSize: '6px',
+                                    color: 'white',
+                                    width: '40px',
+                                    height: '40px',
+                                    border: '1px solid #22c55e'
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🌱</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>T1</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>VP</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>2</div>
+                                  </div>
+                                )}
+                                {style === 'style4' && (
+                                  <div style={{
+                                    background: 'radial-gradient(circle, #22c55e22, transparent 70%)',
+                                    borderRadius: '50%',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '2px solid #22c55e',
+                                    fontSize: '12px',
+                                    width: '40px',
+                                    height: '40px'
+                                  }}>
+                                    🌱
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="card-style-label">
+                              {style === 'style1' && 'Compact'}
+                              {style === 'style2' && 'Minimal'}
+                              {style === 'style3' && 'Data Grid'}
+                              {style === 'style4' && 'Circular'}
+                            </div>
+                          </div>
+                        </IonCol>
+                      ))}
+                    </IonRow>
+                  </IonGrid>
+                </div>
+
+                <div className="card-style-info">
+                  <IonNote color="primary">
+                    {cardVisualStyle === 'style1' && 'Compact Info Card: Enhanced design with gradients and detailed information display.'}
+                    {cardVisualStyle === 'style2' && 'Minimalist View: Clean, simple design with reduced visual elements for clarity.'}
+                    {cardVisualStyle === 'style3' && 'Data-Focused Grid: Grid layout optimized for displaying stats and data efficiently.'}
+                    {cardVisualStyle === 'style4' && 'Circular Design: Unique circular cards with radial gradients and modern aesthetics.'}
+                  </IonNote>
+                </div>
               </div>
             </IonCardContent>
           </IonCard>

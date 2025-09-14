@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ThemeConfig, ThemeManager, themeManager, PREDEFINED_THEMES } from './themeSystem';
 
+export type GridCellStyle = 'classic' | 'hexagon' | 'rounded' | 'minimal' | 'neon' | 'organic';
+export type CardVisualStyle = 'style1' | 'style2' | 'style3' | 'style4';
+
 interface ThemeContextType {
   currentTheme: ThemeConfig;
   availableThemes: ThemeConfig[];
@@ -10,6 +13,10 @@ interface ThemeContextType {
   toggleDarkMode: () => void;
   organismRenderMode: 'dom' | 'image';
   setOrganismRenderMode: (mode: 'dom' | 'image') => void;
+  gridCellStyle: GridCellStyle;
+  setGridCellStyle: (style: GridCellStyle) => void;
+  cardVisualStyle: CardVisualStyle;
+  setCardVisualStyle: (style: CardVisualStyle) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -23,6 +30,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [availableThemes, setAvailableThemes] = useState<ThemeConfig[]>(themeManager.getAllThemes());
   const [organismRenderMode, setOrganismRenderModeState] = useState<'dom' | 'image'>(() => {
     return (localStorage.getItem('biomasters-tcg-organism-render-mode') as 'dom' | 'image') || 'dom';
+  });
+  const [gridCellStyle, setGridCellStyleState] = useState<GridCellStyle>(() => {
+    return (localStorage.getItem('biomasters-tcg-grid-cell-style') as GridCellStyle) || 'classic';
+  });
+  const [cardVisualStyle, setCardVisualStyleState] = useState<CardVisualStyle>(() => {
+    return (localStorage.getItem('biomasters-tcg-card-visual-style') as CardVisualStyle) || 'style1';
   });
 
   useEffect(() => {
@@ -57,6 +70,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     localStorage.setItem('biomasters-tcg-organism-render-mode', mode);
   };
 
+  const setGridCellStyle = (style: GridCellStyle) => {
+    setGridCellStyleState(style);
+    localStorage.setItem('biomasters-tcg-grid-cell-style', style);
+  };
+
+  const setCardVisualStyle = (style: CardVisualStyle) => {
+    setCardVisualStyleState(style);
+    localStorage.setItem('biomasters-tcg-card-visual-style', style);
+  };
+
   const contextValue: ThemeContextType = {
     currentTheme,
     availableThemes,
@@ -65,7 +88,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     isDarkMode: currentTheme.isDark,
     toggleDarkMode,
     organismRenderMode,
-    setOrganismRenderMode
+    setOrganismRenderMode,
+    gridCellStyle,
+    setGridCellStyle,
+    cardVisualStyle,
+    setCardVisualStyle
   };
 
   return (

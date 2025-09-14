@@ -1,0 +1,149 @@
+/* EcosystemGrid Styles - Enhanced with Original Styling */
+.ecosystem-grid {
+  position: relative;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.1) 0%, transparent 50%);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: all 0.3s ease;
+  padding: 8px;
+}
+
+.ecosystem-grid:hover {
+  transform: scale(1.01);
+}
+
+/* Game Grid Card */
+.game-grid-card {
+  margin: 16px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+.game-grid-card ion-card-header {
+  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary));
+  color: white;
+}
+
+.game-grid-card ion-card-content {
+  padding: 16px;
+  background: white; /* White background for parent */
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ecosystem-grid {
+    max-width: 95vw;
+    max-height: 70vh; /* Increased from 50vh to 70vh */
+    /* Keep the beautiful gradient effects on mobile */
+    border-radius: 12px; /* Reduced but still rounded */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px); /* Slightly reduced but still present */
+    background:
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.15) 0%, transparent 50%);
+    box-shadow:
+      0 15px 30px -8px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .game-grid-card ion-card-content {
+    padding: 8px;
+    background: white; /* Ensure white background on mobile too */
+  }
+}
+
+@media (max-width: 480px) {
+  .ecosystem-grid {
+    gap: 0.5px;
+    max-height: 70vh; /* Ensure 70vh on small mobile too */
+  }
+}
+
+/* Pan and Zoom Container */
+.ecosystem-grid-container {
+  border-radius: 12px;
+  background: white;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.ecosystem-grid {
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+
+/* Mobile Zoom Controls - Reusing from EcosystemBoard */
+.mobile-zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 4px 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.mobile-zoom-controls ion-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  margin: 0 2px;
+  --color: #2c3e50;
+}
+
+.zoom-level {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Draggable grid cursor states */
+.ecosystem-grid[style*="cursor: grab"] {
+  cursor: grab !important;
+}
+
+.ecosystem-grid[style*="cursor: grabbing"] {
+  cursor: grabbing !important;
+}
+
+/* Ensure grid cells don't interfere with drag */
+.ecosystem-grid-container .grid-cell {
+  pointer-events: auto;
+}
+
+/* Hide zoom controls on desktop unless needed */
+@media (min-width: 769px) {
+  .mobile-zoom-controls {
+    display: none;
+  }
+}
+
+/* Show zoom controls on mobile */
+@media (max-width: 768px) {
+  .mobile-zoom-controls {
+    display: flex;
+  }
+
+  .ecosystem-grid-container {
+    touch-action: none; /* Prevent default touch behaviors */
+  }
+}

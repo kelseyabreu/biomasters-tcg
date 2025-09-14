@@ -1,0 +1,644 @@
+/**
+ * Unified Player Card Component Styles
+ * Compact design combining player stats, hand display, and all player information
+ */
+
+/* Player Cards Wrapper and Navigation */
+.player-cards-wrapper {
+  margin: 16px 0;
+}
+
+.hand-cards-container-container{
+  padding-top:0px;
+}
+
+.player-cards-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.player-indicator {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.indicator-dot.active {
+  background: var(--ion-color-primary);
+  transform: scale(1.2);
+}
+
+.indicator-dot:hover {
+  background: var(--ion-color-primary-tint);
+  transform: scale(1.1);
+}
+
+/* Player Cards Container */
+.player-cards-container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+
+.player-cards-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive Player Cards Container */
+.player-cards-container.responsive {
+  /* Desktop: Show multiple cards with negative margins to hide gaps */
+  gap: 0px;
+  margin: 0 -6px; /* Negative margin to extend cards to edges */
+}
+
+.player-cards-container.responsive .player-card-container {
+  margin: 0 6px; /* Restore spacing between cards */
+}
+
+@media (max-width: 1024px) {
+  .player-cards-container.responsive {
+    /* Tablet: Show 2 cards */
+    gap: 0px;
+    margin: 0 -4px;
+  }
+
+  .player-cards-container.responsive .player-card-container {
+    margin: 0 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .player-cards-container.responsive {
+    /* Mobile: Show 1 card fully, allow scroll */
+    gap: 0px;
+    margin: 0 -8px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .player-cards-container.responsive .player-card-container {
+    scroll-snap-align: center;
+    min-width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    flex-shrink: 0;
+    margin: 0 8px;
+  }
+
+  .player-cards-navigation {
+    display: flex; /* Show navigation on mobile */
+  }
+}
+
+@media (min-width: 769px) {
+  .player-cards-navigation {
+    display: none; /* Hide navigation on desktop */
+  }
+}
+
+.player-card-container {
+  margin: 8px 0; /* Only vertical margin, horizontal handled by responsive container */
+  flex: 1;
+  min-width: 320px;
+  max-width: 400px;
+  transition: all 0.3s ease;
+}
+
+.player-card-container.small {
+  margin: 4px 0; /* Only vertical margin, horizontal handled by responsive container */
+  min-width: 280px;
+  max-width: 350px;
+}
+
+/* Desktop: Multiple cards visible */
+@media (min-width: 1200px) {
+  .player-card-container {
+    min-width: 300px;
+    max-width: 350px;
+  }
+}
+
+/* Large tablets: 2-3 cards visible */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .player-card-container {
+    min-width: 280px;
+    max-width: 320px;
+  }
+}
+
+/* Mobile: 1 card fully visible with proper sizing */
+@media (max-width: 768px) {
+  .player-card-container {
+    min-width: calc(100vw - 48px);
+    max-width: calc(100vw - 48px);
+    margin: 8px 0;
+  }
+
+  /* Ensure cards have enough space for content */
+  .player-card {
+    min-height: auto; /* Allow natural height */
+  }
+
+}
+
+.player-card {
+  margin: 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--ion-color-light);
+  transition: all 0.3s ease;
+}
+
+.player-card.clickable {
+  cursor: pointer;
+}
+
+.player-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.player-card.current-player {
+  border-color: var(--ion-color-success);
+  background: linear-gradient(135deg, var(--ion-color-success-tint), white);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-success-rgb), 0.3);
+}
+
+.player-card.player-turn {
+  border-color: var(--ion-color-primary);
+  background: linear-gradient(135deg, var(--ion-color-primary-tint), white);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(var(--ion-color-primary-rgb), 0.5);
+  }
+}
+
+/* Header */
+.player-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  gap: 12px;
+}
+
+.player-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Status indicators removed for cleaner design */
+/* .status-indicators {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+} */
+
+.header-controls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Player Stats Row - Each stat as horizontal row */
+.player-stats-row {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ion-color-light);
+}
+
+.stats-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  background: rgba(var(--ion-color-light-rgb), 0.3);
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.stat-item:hover {
+  background: rgba(var(--ion-color-light-rgb), 0.5);
+}
+
+.stat-item ion-icon {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+.stat-item ion-badge {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.stat-item span {
+  font-size: 0.875rem;
+  color: var(--ion-color-dark);
+  font-weight: 500;
+  flex: 1;
+  text-align: left;
+}
+
+.hand-cards-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hand-cards-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Individual Hand Cards - Back to Original Size */
+.player-card-hand-card {
+  min-width: 80px;
+  width: 80px;
+  height: 100px;
+  border-radius: 8px;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  overflow: hidden;
+}
+
+.player-card-container.small .player-card-hand-card {
+  min-width: 70px;
+  width: 70px;
+  height: 90px;
+}
+
+.player-card-hand-card.interactive {
+  cursor: pointer;
+}
+
+.player-card-hand-card.interactive * {
+  cursor: pointer !important;
+}
+
+.player-card-hand-card.interactive:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.player-card-hand-card.selected {
+  border-color: var(--ion-color-primary);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+  background: var(--ion-color-primary) !important;
+  color: white !important;
+}
+
+.player-card-hand-card.selected .card-name,
+.player-card-hand-card.selected .card-scientific {
+  color: white !important;
+}
+
+.player-card-hand-card.selected .card-stats ion-badge {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.player-card-hand-card.selected::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--ion-color-primary), var(--ion-color-primary-tint));
+  border-radius: 10px;
+  z-index: -1;
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+/* Card Back */
+.player-card-hand-card.back {
+  background: linear-gradient(135deg, #1976D2, #0D47A1);
+  border-color: #0D47A1;
+  color: white;
+}
+
+.card-back-content {
+  text-align: center;
+  opacity: 0.9;
+}
+
+.card-back-content .biomasters-logo {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.card-back-title {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Generic Card */
+.player-card-hand-card.generic {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  border-color: #1B5E20;
+  color: white;
+  padding: 4px;
+}
+
+.card-generic-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.card-generic-content .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.card-generic-content .biomasters-logo {
+  font-size: 12px;
+}
+
+.card-generic-content .card-title {
+  font-size: 8px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.card-generic-content .card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 2px;
+}
+
+.card-generic-content .generic-organism {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+/* Full Card */
+.player-card-hand-card.full {
+  background: white;
+  border-color: var(--ion-color-medium);
+  padding: 4px;
+}
+
+.card-full-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.card-name {
+  font-size: 9px;
+  font-weight: bold;
+  color: var(--ion-color-dark);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.card-organism {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
+  cursor: inherit; /* Inherit cursor from parent card */
+}
+
+.card-organism * {
+  cursor: inherit !important; /* Force all children to inherit cursor */
+  pointer-events: none; /* Prevent organism renderer from intercepting clicks */
+}
+
+.player-card-hand-card.interactive .card-organism * {
+  pointer-events: none; /* Ensure clicks go to the card container */
+}
+
+.card-scientific {
+  font-size: 8px;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.card-stats ion-badge {
+  font-size: 8px !important;
+  min-height: 16px;
+  padding: 2px 6px;
+}
+
+/* No Cards Message */
+.no-cards-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--ion-color-medium);
+  width: 100%;
+}
+
+.no-cards-message p {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+}
+
+/* Responsive Design - Keep card sizes consistent */
+@media (max-width: 768px) {
+  /* Keep card sizes the same as desktop for readability */
+  .player-card-hand-card {
+    min-width: 80px;
+    width: 80px;
+    height: 100px;
+  }
+
+  .player-card-container.small .player-card-hand-card {
+    min-width: 70px;
+    width: 70px;
+    height: 90px;
+  }
+
+  .hand-cards-scroll {
+    gap: 8px; /* Maintain consistent gap */
+  }
+
+  .player-name {
+    font-size: 1rem;
+  }
+
+  /* Ensure card text stays readable on mobile */
+  .card-name {
+    font-size: 9px; /* Keep same as desktop */
+    line-height: 1.1;
+    max-height: 20px; /* Prevent overflow */
+    overflow: hidden;
+  }
+
+  .card-scientific {
+    font-size: 8px; /* Keep same as desktop */
+    line-height: 1.1;
+  }
+
+  .card-stats ion-badge {
+    font-size: 8px !important; /* Keep same as desktop */
+    min-height: 16px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-card-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .header-controls {
+    align-self: flex-end;
+  }
+
+  .player-stats-row {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  /* Extra small screens - ensure text is still readable */
+  .card-name {
+    font-size: 8px;
+    max-height: 18px;
+    -webkit-line-clamp: 2;
+  }
+
+  .card-scientific {
+    font-size: 7px;
+  }
+
+  .card-stats ion-badge {
+    font-size: 7px !important;
+    min-height: 14px;
+    padding: 1px 4px;
+  }
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+  .player-card {
+    border-color: var(--ion-color-dark);
+    background: var(--ion-color-step-50);
+  }
+  
+  .player-card.current-player {
+    background: linear-gradient(135deg, var(--ion-color-success-shade), var(--ion-color-dark));
+  }
+  
+  .player-card.player-turn {
+    background: linear-gradient(135deg, var(--ion-color-primary-shade), var(--ion-color-dark));
+  }
+  
+  .player-stats-row {
+    border-top-color: var(--ion-color-dark);
+  }
+  
+  .player-card-hand-card.full {
+    background: var(--ion-color-step-100);
+    border-color: var(--ion-color-dark);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .player-card,
+  .player-card-hand-card {
+    transition: none;
+  }
+  
+  .player-card.clickable:hover,
+  .player-card-hand-card.interactive:hover,
+  .player-card-hand-card.selected {
+    transform: none;
+  }
+  
+  .player-card.player-turn {
+    animation: none;
+  }
+}

@@ -11,7 +11,7 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { library, construct, flash, trophy, settings, leaf, water, sunny, snow, thermometer } from 'ionicons/icons';
+import { library, construct, flash, trophy, settings, leaf, water, sunny, snow, thermometer, people } from 'ionicons/icons';
 import { addIcons } from 'ionicons';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -20,6 +20,7 @@ import BattleModeSelector from './components/battle/BattleModeSelector';
 import MainMenu from './pages/MainMenu';
 import PackOpening from './pages/PackOpening';
 import AuthPage from './pages/AuthPage';
+import OnlineMultiplayer from './pages/OnlineMultiplayer';
 import { HybridCollectionView } from './components/collection/HybridCollectionView';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
@@ -33,6 +34,8 @@ import { staticDataManager } from './services/StaticDataManager';
 import { ConnectivityIndicator, OfflineBanner } from './components/ui/ConnectivityIndicator';
 import { ConflictResolutionModal } from './components/ui/ConflictResolutionModal';
 import { ResumeGamePrompt } from './components/ui/ResumeGamePrompt';
+import NotificationCenter from './components/ui/NotificationCenter';
+import { useOnlineNotifications } from './hooks/useOnlineNotifications';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -77,6 +80,7 @@ addIcons({
   flash,
   trophy,
   settings,
+  people,
   leaf,
   water,
   sunny,
@@ -153,6 +157,9 @@ const App: React.FC = () => {
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [showResumePrompt, setShowResumePrompt] = React.useState(false);
 
+  // Initialize online notifications monitoring
+  useOnlineNotifications();
+
   // Initialize auth, load species data, and setup mobile lifecycle on app start
   React.useEffect(() => {
     const initialize = async () => {
@@ -225,6 +232,7 @@ const App: React.FC = () => {
           {/* Global UI Components */}
           <OfflineBanner />
           <ConnectivityIndicator position="floating" showText />
+          <NotificationCenter position="top" maxVisible={3} />
 
           {/* Active Battle Indicator - shows when there's an active battle */}
           <ActiveBattleIndicator />
@@ -246,6 +254,9 @@ const App: React.FC = () => {
               </Route>
               <Route exact path="/packs">
                 <PackOpening />
+              </Route>
+              <Route exact path="/online">
+                <OnlineMultiplayer />
               </Route>
               <Route exact path="/auth">
                 <AuthPage />
@@ -274,6 +285,10 @@ const App: React.FC = () => {
             <IonTabButton tab="collection" href="/collection">
               <IonIcon aria-hidden="true" icon={library} />
               <IonLabel>Collection</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="online" href="/online">
+              <IonIcon aria-hidden="true" icon={people} />
+              <IonLabel>Online</IonLabel>
             </IonTabButton>
             <IonTabButton tab="deck-builder" href="/deck-builder">
               <IonIcon aria-hidden="true" icon={construct} />

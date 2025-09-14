@@ -6,6 +6,7 @@ import { PhyloGameBoard, PhyloCardPosition, Card } from '../../types';
 import { CardMovementAnimator } from './CardMovementAnimator';
 import { MovementAnimation } from '../../game-logic/cardMovement';
 import OrganismRenderer from '../OrganismRenderer';
+import { useLocalization } from '../../contexts/LocalizationContext';
 import './EcosystemBoard.css';
 
 interface EcosystemBoardProps {
@@ -411,6 +412,8 @@ export const EcosystemBoard: React.FC<EcosystemBoardProps> = ({
 
 // Helper component for card content
 const EcosystemCardContent: React.FC<{ card: Card | undefined }> = ({ card }) => {
+  const localization = useLocalization();
+
   if (!card) {
     return (
       <div className="card-content">
@@ -429,6 +432,9 @@ const EcosystemCardContent: React.FC<{ card: Card | undefined }> = ({ card }) =>
     );
   }
 
+  // Get localized card name
+  const displayName = localization.getCardName(card.nameId as any);
+
   return (
     <div className="card-content">
       <div className="card-image">
@@ -439,7 +445,7 @@ const EcosystemCardContent: React.FC<{ card: Card | undefined }> = ({ card }) =>
         />
       </div>
       <div className="card-info">
-        <h4>{card.nameId}</h4>
+        <h4>{displayName}</h4>
         <div className="card-stats">
           <span className="foodchain">FC: {card.phyloAttributes?.foodchainLevel}</span>
           <span className="scale">Scale: {card.phyloAttributes?.scale}</span>

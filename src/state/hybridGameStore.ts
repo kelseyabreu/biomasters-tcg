@@ -12,12 +12,13 @@ import { syncService, SyncResult } from '../services/syncService';
 import { initializeCardMapping } from '@shared/utils/cardIdHelpers';
 
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
+import { MatchResult, RatingUpdate, OnlineGameSettings } from '../services/UnifiedGameService';
 import { Card, transformCardDataToCard } from '../types';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { tokenManager } from '../services/tokenStorage';
 import { createUserScopedIndexedDBStorage, clearUserData } from '../utils/userScopedStorage';
-import { guestApi } from '../services/apiClient';
+import { guestApi, gameApi } from '../services/apiClient';
 import { unifiedGameService } from '../services/UnifiedGameService';
 import { GameMode } from '@shared/game-engine/IGameEngine';
 import { staticDataManager } from '../services/StaticDataManager';
@@ -34,6 +35,25 @@ import { SyncStatus, UserType } from '@shared/enums';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Check if quest is completed based on progress and target
+ */
+function checkQuestCompletion(progress: any, target: any): boolean {
+  if (!progress || !target) return false;
+
+  // Simple count-based completion check
+  if (typeof target.count === 'number' && typeof progress.count === 'number') {
+    return progress.count >= target.count;
+  }
+
+  // Add more complex completion logic as needed
+  return false;
+}
 
 // Helper function to get current user ID for storage scoping
 const getCurrentUserId = (): string | null => {
@@ -86,6 +106,9 @@ export interface BattleSlice {
   isLoading: boolean; // For async actions and AI turns
   error: string | null;
 
+  // Animation State
+  lastDrawnCards: string[]; // For card drawing animation
+
   // UI-specific state (separated from game logic)
   uiState: {
     selectedHandCardId: string | null;
@@ -93,6 +116,14 @@ export interface BattleSlice {
     highlightedPositions: Position[];
     showValidMoves: boolean;
     isCardDragging: boolean;
+
+    // Opposition Hand UI State
+    oppositionHand: {
+      isVisible: boolean;
+      isExpanded: boolean;
+      selectedOpponentId: string | null; // Which opponent to view
+      showCardDetails: boolean; // Toggle between card backs and generic fronts
+    };
   };
 
   // Battle Actions
@@ -100,7 +131,7 @@ export interface BattleSlice {
     // TCG Actions
     startTCGGame: (gameId: string, players: any[], settings?: any) => Promise<void>;
     playCard: (cardId: string, position: Position) => Promise<void>;
-    dropAndDrawThree: (cardIdToDiscard: string) => Promise<void>;
+    dropAndDrawThree: (cardIdToDiscard: string) => Promise<any>;
     passTurn: () => Promise<void>;
     playerReady: () => Promise<void>;
 
@@ -117,6 +148,12 @@ export interface BattleSlice {
     setHighlightedPositions: (positions: Position[]) => void;
     clearUIState: () => void;
 
+    // Opposition Hand Actions
+    toggleOppositionHandVisibility: () => void;
+    toggleOppositionHandExpansion: () => void;
+    selectOpponent: (opponentId: string | null) => void;
+    toggleOppositionCardDetails: () => void;
+
     // Mode Switching
     switchToTCGMode: () => void;
     switchToPhyloMode: () => void;
@@ -125,9 +162,101 @@ export interface BattleSlice {
   };
 }
 
+// ============================================================================
+// ONLINE MULTIPLAYER INTERFACES
+// ============================================================================
+
+/**
+ * Matchmaking state interface
+ */
+export interface MatchmakingState {
+  isSearching: boolean;
+  queueTime: number;
+  estimatedWait: number;
+  gameMode: string | null;
+  preferences: any;
+  lastSearchAttempt: number;
+}
+
+/**
+ * Rating and competitive state interface
+ */
+export interface RatingState {
+  current: number;
+  peak: number;
+  gamesPlayed: number;
+  gamesWon: number;
+  winRate: number;
+  winStreak: number;
+  rank: string;
+  season: string;
+}
+
+/**
+ * Quest progress interface
+ */
+export interface QuestState {
+  dailyQuests: {
+    [questType: string]: {
+      progress: any;
+      target: any;
+      isCompleted: boolean;
+      isClaimed: boolean;
+      rewards: any;
+    };
+  };
+  questStreak: number;
+  lastQuestReset: string;
+  totalQuestsCompleted: number;
+}
+
+/**
+ * Online multiplayer slice - extends existing store architecture
+ */
+export interface OnlineSlice {
+  // Matchmaking state
+  matchmaking: MatchmakingState;
+
+  // Rating and competitive state
+  rating: RatingState;
+
+  // Quest and progression state
+  quests: QuestState;
+
+  // Leaderboard cache
+  leaderboard: {
+    data: any[];
+    lastUpdated: number;
+    gameMode: string | null;
+  };
+
+  // Online actions that integrate with existing patterns
+  onlineActions: {
+    // Matchmaking actions
+    findMatch: (gameMode: string, preferences?: any) => Promise<void>;
+    cancelMatchmaking: () => Promise<void>;
+    acceptMatch: (sessionId: string) => Promise<void>;
+
+    // Rating actions
+    updateRating: (ratingUpdate: RatingUpdate) => Promise<void>;
+    refreshRating: () => Promise<void>;
+
+    // Quest actions
+    updateQuestProgress: (questType: string, progress: any) => Promise<void>;
+    claimQuestReward: (questType: string) => Promise<void>;
+    refreshDailyQuests: () => Promise<void>;
+
+    // Leaderboard actions
+    refreshLeaderboard: (gameMode: string) => Promise<void>;
+  };
+}
+
 export interface HybridGameState {
   // Battle State Slice
   battle: BattleSlice;
+
+  // Online Multiplayer Slice
+  online: OnlineSlice;
 
   // Offline State
   offlineCollection: OfflineCollection | null;
@@ -173,9 +302,12 @@ export interface HybridGameState {
   hasPausedGame: boolean;
   pausedGameMetadata: any;
 
+  // Store hydration state
+  isHydrated: boolean;
+
   // Actions
   initializeOfflineCollection: () => void;
-  loadOfflineCollection: () => void;
+  loadOfflineCollection: () => Promise<void>;
   saveOfflineCollection: (collection: OfflineCollection) => void;
   recoverActiveGame: () => Promise<void>;
   resumePausedGame: () => void;
@@ -224,6 +356,18 @@ export interface HybridGameState {
   resolveSyncConflicts: (conflicts: any[]) => void;
   dismissSyncConflicts: () => void;
 
+  // Online Multiplayer Actions
+  findMatch: (gameMode: string, preferences?: any) => Promise<void>;
+  cancelMatchmaking: () => Promise<void>;
+  acceptMatch: (sessionId: string) => Promise<void>;
+  updateRating: (ratingUpdate: RatingUpdate) => Promise<void>;
+  refreshRating: () => Promise<void>;
+  updateQuestProgress: (questType: string, progress: any) => Promise<void>;
+  claimQuestReward: (questType: string) => Promise<void>;
+  refreshDailyQuests: () => Promise<void>;
+  refreshLeaderboard: (gameMode: string) => Promise<void>;
+  trackGameCompletion: (gameResult: { winner: string | null; gameMode: string; playerId: string }) => Promise<void>;
+
   // Active battle tracking
   activeBattle: {
     sessionId: string | null;
@@ -259,12 +403,21 @@ export const useHybridGameStore = create<HybridGameState>()(
           isOnline: false,
           isLoading: false,
           error: null,
+          lastDrawnCards: [],
           uiState: {
             selectedHandCardId: null,
             selectedBoardCardId: null,
             highlightedPositions: [],
             showValidMoves: false,
             isCardDragging: false,
+
+            // Opposition Hand UI State
+            oppositionHand: {
+              isVisible: false,
+              isExpanded: false,
+              selectedOpponentId: null,
+              showCardDetails: false,
+            },
           },
           actions: {
             // TCG Actions
@@ -395,6 +548,13 @@ export const useHybridGameStore = create<HybridGameState>()(
                 });
 
                 if (result.isValid && result.newState) {
+                  console.log('🃏 [Store] Drop and draw result:', {
+                    isValid: result.isValid,
+                    hasNewState: !!result.newState,
+                    drawnCards: (result as any).drawnCards,
+                    resultKeys: Object.keys(result)
+                  });
+
                   set((state) => ({
                     battle: {
                       ...state.battle,
@@ -402,17 +562,47 @@ export const useHybridGameStore = create<HybridGameState>()(
                       error: null,
                       uiState: {
                         ...state.battle.uiState,
+                        selectedHandCardId: null,
                         highlightedPositions: []
-                      }
+                      },
+                      // Store drawn cards for animation
+                      lastDrawnCards: (result as any).drawnCards || []
                     }
                   }));
+
+                  // Return the result so UI can access drawn cards immediately
+                  return result;
                 } else {
+                  // Handle specific error cases more gracefully
+                  const errorMessage = result.errorMessage || 'Failed to drop and draw';
+                  console.warn('🚨 [Store] Drop and draw failed:', errorMessage);
+
+                  // Clear drawn cards on failure
                   set((state) => ({
                     battle: {
                       ...state.battle,
-                      error: result.errorMessage || 'Failed to drop and draw'
+                      lastDrawnCards: []
                     }
                   }));
+
+                  // Don't show harsh error modal for user input errors
+                  if (errorMessage.includes('Card not in hand') ||
+                      errorMessage.includes('No actions remaining') ||
+                      errorMessage.includes('Not enough cards in deck')) {
+                    // Just log these - they're user input issues, not system failures
+                    console.log('ℹ️ [Store] User action blocked:', errorMessage);
+                  } else {
+                    // Only show error modal for actual system errors
+                    set((state) => ({
+                      battle: {
+                        ...state.battle,
+                        error: errorMessage
+                      }
+                    }));
+                  }
+
+                  // Return the failed result
+                  return result;
                 }
               } catch (error: any) {
                 set((state) => ({
@@ -421,6 +611,9 @@ export const useHybridGameStore = create<HybridGameState>()(
                     error: error.message || 'Failed to drop and draw'
                   }
                 }));
+
+                // Return error result
+                return { isValid: false, errorMessage: error.message || 'Failed to drop and draw' };
               }
             },
 
@@ -809,9 +1002,79 @@ export const useHybridGameStore = create<HybridGameState>()(
                     selectedBoardCardId: null,
                     highlightedPositions: [],
                     showValidMoves: false,
-                    isCardDragging: false
+                    isCardDragging: false,
+
+                    // Reset opposition hand UI state
+                    oppositionHand: {
+                      isVisible: false,
+                      isExpanded: false,
+                      selectedOpponentId: null,
+                      showCardDetails: false,
+                    },
                   }
                 }
+              }));
+            },
+
+            // Opposition Hand Actions
+            toggleOppositionHandVisibility: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    oppositionHand: {
+                      ...state.battle.uiState.oppositionHand,
+                      isVisible: !state.battle.uiState.oppositionHand.isVisible,
+                    },
+                  },
+                },
+              }));
+            },
+
+            toggleOppositionHandExpansion: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    oppositionHand: {
+                      ...state.battle.uiState.oppositionHand,
+                      isExpanded: !state.battle.uiState.oppositionHand.isExpanded,
+                    },
+                  },
+                },
+              }));
+            },
+
+            selectOpponent: (opponentId: string | null) => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    oppositionHand: {
+                      ...state.battle.uiState.oppositionHand,
+                      selectedOpponentId: opponentId,
+                      isVisible: opponentId !== null, // Show when selecting an opponent
+                    },
+                  },
+                },
+              }));
+            },
+
+            toggleOppositionCardDetails: () => {
+              set((state) => ({
+                battle: {
+                  ...state.battle,
+                  uiState: {
+                    ...state.battle.uiState,
+                    oppositionHand: {
+                      ...state.battle.uiState.oppositionHand,
+                      showCardDetails: !state.battle.uiState.oppositionHand.showCardDetails,
+                    },
+                  },
+                },
               }));
             },
 
@@ -911,6 +1174,51 @@ export const useHybridGameStore = create<HybridGameState>()(
         speciesLoaded: false,
         packSystem: null,
 
+        // Online Multiplayer State
+        online: {
+          matchmaking: {
+            isSearching: false,
+            queueTime: 0,
+            estimatedWait: 0,
+            gameMode: null,
+            preferences: {},
+            lastSearchAttempt: 0
+          },
+          rating: {
+            current: 1000,
+            peak: 1000,
+            gamesPlayed: 0,
+            gamesWon: 0,
+            winRate: 0,
+            winStreak: 0,
+            rank: 'Bronze',
+            season: 'season_1'
+          },
+          quests: {
+            dailyQuests: {},
+            questStreak: 0,
+            lastQuestReset: new Date().toISOString().split('T')[0],
+            totalQuestsCompleted: 0
+          },
+          leaderboard: {
+            data: [],
+            lastUpdated: 0,
+            gameMode: null
+          },
+          onlineActions: {
+            // These will be replaced with actual implementations in the store actions
+            findMatch: async (gameMode: string, preferences?: any) => get().findMatch(gameMode, preferences),
+            cancelMatchmaking: async () => get().cancelMatchmaking(),
+            acceptMatch: async (sessionId: string) => get().acceptMatch(sessionId),
+            updateRating: async (ratingUpdate: RatingUpdate) => get().updateRating(ratingUpdate),
+            refreshRating: async () => get().refreshRating(),
+            updateQuestProgress: async (questType: string, progress: any) => get().updateQuestProgress(questType, progress),
+            claimQuestReward: async (questType: string) => get().claimQuestReward(questType),
+            refreshDailyQuests: async () => get().refreshDailyQuests(),
+            refreshLeaderboard: async (gameMode: string) => get().refreshLeaderboard(gameMode)
+          }
+        },
+
         isOnline: navigator.onLine,
         isAuthenticated: false,
         userId: null,
@@ -934,6 +1242,9 @@ export const useHybridGameStore = create<HybridGameState>()(
         hasPausedGame: false,
         pausedGameMetadata: null,
 
+        // Store hydration state
+        isHydrated: false,
+
         // Stateless sync service state
         syncServiceState: {
           isSyncing: false,
@@ -941,33 +1252,85 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Initialize offline collection
-        initializeOfflineCollection: async () => {
+        initializeOfflineCollection: () => {
           const state = get();
+          const userId = state.userId || state.guestId;
+
+          console.log('🔄 Initializing collection for user:', { userId, hasExisting: !!state.offlineCollection });
+
           if (!state.offlineCollection) {
-            const newCollection = offlineSecurityService.createInitialCollection(state.userId);
+            const newCollection = offlineSecurityService.createInitialCollection(userId);
             set({
               offlineCollection: newCollection,
               isFirstLaunch: false
             });
-            offlineSecurityService.saveOfflineCollection(newCollection);
+            offlineSecurityService.saveOfflineCollection(newCollection, userId);
+            console.log('✅ New collection initialized and saved');
           }
 
           // Also load species data if not already loaded
           if (!state.speciesLoaded) {
-            await get().loadSpeciesData();
+            get().loadSpeciesData().catch(console.error);
           }
 
           // Initialize Firebase auth if not already done
-          if (!state.firebaseUser) {
+          if (!state.firebaseUser && !state.isGuestMode) {
             get().initializeAuth().catch(console.error);
           }
         },
 
         // Load offline collection from storage
-        loadOfflineCollection: () => {
+        loadOfflineCollection: async () => {
           const state = get();
           const userId = state.userId || state.guestId;
-          const stored = offlineSecurityService.loadOfflineCollection(userId);
+
+          console.log('📦 [LoadCollection] Starting collection load...', {
+            userId,
+            hasUserId: !!userId,
+            isAuthenticated: state.isAuthenticated,
+            isGuestMode: state.isGuestMode,
+            hasExistingCollection: !!state.offlineCollection,
+            isHydrated: state.isHydrated
+          });
+
+          // If collection already loaded, skip
+          if (state.offlineCollection) {
+            console.log('📦 Collection already loaded, skipping');
+            return;
+          }
+
+          // If no userId yet, try to load from any available storage
+          let stored: OfflineCollection | null = null;
+
+          if (userId) {
+            // Load for specific user
+            stored = offlineSecurityService.loadOfflineCollection(userId);
+          } else {
+            // Fallback: try to load from default storage (for page refresh scenarios)
+            console.log('📦 No userId available, trying default storage...');
+            stored = offlineSecurityService.loadOfflineCollection(null);
+
+            // Also check for any stored collections in localStorage
+            if (!stored) {
+              const allKeys = Object.keys(localStorage);
+              const collectionKeys = allKeys.filter(key => key.includes('biomasters_offline_collection'));
+              console.log('📦 Found collection keys in localStorage:', collectionKeys);
+
+              if (collectionKeys.length > 0) {
+                // Try to load the most recent collection
+                try {
+                  const collectionData = localStorage.getItem(collectionKeys[0]);
+                  if (collectionData) {
+                    stored = JSON.parse(collectionData);
+                    console.log('📦 Loaded collection from fallback key:', collectionKeys[0]);
+                  }
+                } catch (error) {
+                  console.warn('⚠️ Failed to parse fallback collection:', error);
+                }
+              }
+            }
+          }
+
           if (stored) {
             // Handle migration from old species_owned to new cards_owned format
             let migratedCollection = stored;
@@ -991,7 +1354,7 @@ export const useHybridGameStore = create<HybridGameState>()(
                 cards_owned: newCardsOwned
               };
               // Save migrated collection
-              offlineSecurityService.saveOfflineCollection(migratedCollection);
+              offlineSecurityService.saveOfflineCollection(migratedCollection, userId);
             }
 
             const hasCards = Object.keys(migratedCollection.cards_owned || {}).length > 0;
@@ -1004,11 +1367,18 @@ export const useHybridGameStore = create<HybridGameState>()(
               cards_count: Object.keys(migratedCollection.cards_owned || {}).length,
               credits: migratedCollection.eco_credits,
               pending_actions: migratedCollection.action_queue.length,
-              has_starter_pack: hasCards
+              has_starter_pack: hasCards,
+              user_id: migratedCollection.user_id
             });
           } else {
-            console.log('📦 No stored collection found, initializing...');
-            get().initializeOfflineCollection();
+            console.log('📦 No stored collection found');
+            // Don't initialize immediately if we don't have a userId yet
+            if (userId) {
+              console.log('📦 Initializing new collection for user:', userId);
+              get().initializeOfflineCollection();
+            } else {
+              console.log('📦 Waiting for authentication before initializing collection...');
+            }
           }
         },
 
@@ -1077,7 +1447,22 @@ export const useHybridGameStore = create<HybridGameState>()(
         initializeAuth: async () => {
           console.log('🔥 Initializing Firebase auth...');
 
-          // First, try to recover authentication state from persisted data
+          // Wait for store hydration to complete before attempting recovery
+          console.log('⏳ Waiting for store hydration...');
+          let attempts = 0;
+          const maxAttempts = 50; // 5 seconds max wait
+          while (!get().isHydrated && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+
+          if (!get().isHydrated) {
+            console.warn('⚠️ Store hydration timeout, proceeding anyway');
+          } else {
+            console.log('✅ Store hydration completed');
+          }
+
+          // Now try to recover authentication state from persisted data
           await get().recoverAuthenticationState();
 
           // Firebase onAuthStateChanged now fires immediately if user was persisted
@@ -1121,6 +1506,10 @@ export const useHybridGameStore = create<HybridGameState>()(
               // Clear any guest credentials since we have a Firebase user
               await tokenManager.clearGuestCredentials();
 
+              // CRITICAL: Set the current user ID in the offline security service
+              console.log('🔑 Setting current user ID in offline security service for Firebase user...');
+              offlineSecurityService.setCurrentUserId(user.uid);
+
               // Handle user authentication (new or returning)
               if (!previousUser) {
                 console.log('👤 Firebase user authenticated - setting up...');
@@ -1133,6 +1522,12 @@ export const useHybridGameStore = create<HybridGameState>()(
                 } catch (error) {
                   console.error('❌ Failed to setup authenticated user:', error);
                 }
+              }
+
+              // Ensure collection is loaded for Firebase user
+              if (!get().offlineCollection) {
+                console.log('📦 Loading collection for Firebase user...');
+                get().loadOfflineCollection().catch(console.error);
               }
 
               // If user signs in and we have offline data, prepare for sync
@@ -1312,6 +1707,10 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
           });
 
+          // CRITICAL: Set the current user ID in the offline security service
+          console.log('🔑 Setting current user ID in offline security service for new guest...');
+          offlineSecurityService.setCurrentUserId(guestId);
+
           // Store guest ID immediately (secret will be stored after server registration)
           await tokenManager.storeGuestCredentials({
             guestId,
@@ -1320,7 +1719,7 @@ export const useHybridGameStore = create<HybridGameState>()(
           });
 
           // Initialize offline collection immediately
-          await get().initializeOfflineCollection();
+          get().initializeOfflineCollection();
 
           // Setup new guest user (including starter pack)
           await get().handleNewUser();
@@ -1449,18 +1848,29 @@ export const useHybridGameStore = create<HybridGameState>()(
             hasGuestId: !!state.guestId,
             hasGuestSecret: !!state.guestSecret,
             hasGuestToken: !!state.guestToken,
-            hasOfflineCollection: !!state.offlineCollection
+            hasOfflineCollection: !!state.offlineCollection,
+            isHydrated: state.isHydrated
           });
 
-          // If already authenticated, no need to recover
+          // If already authenticated, ensure collection is loaded
           if (state.isAuthenticated) {
-            console.log('✅ Already authenticated, no recovery needed');
+            console.log('✅ Already authenticated, checking collection...');
+            if (!state.offlineCollection) {
+              console.log('📦 Loading collection for authenticated user...');
+              await get().loadOfflineCollection();
+            }
             return;
           }
 
           // Try to recover guest credentials from secure storage
           console.log('🔍 Checking secure storage for guest credentials...');
           const storedCredentials = await tokenManager.getGuestCredentials();
+          console.log('🔍 Retrieved credentials from storage:', {
+            hasCredentials: !!storedCredentials,
+            hasGuestId: !!storedCredentials?.guestId,
+            hasGuestSecret: !!storedCredentials?.guestSecret,
+            hasGuestToken: !!storedCredentials?.guestToken
+          });
 
           if (storedCredentials) {
             console.log('🔄 Found guest credentials in secure storage, restoring session...');
@@ -1470,27 +1880,16 @@ export const useHybridGameStore = create<HybridGameState>()(
               hasGuestToken: !!storedCredentials.guestToken
             });
 
-            // Update state with stored credentials
+            // Update state with stored credentials FIRST
+            const guestUsername = `Guest-${storedCredentials.guestId.slice(-6).toUpperCase()}`;
             set({
               guestId: storedCredentials.guestId,
               guestSecret: storedCredentials.guestSecret,
-              guestToken: storedCredentials.guestToken || null
-            });
-
-            // Load the user's offline collection
-            const userCollection = offlineSecurityService.loadOfflineCollection(storedCredentials.guestId);
-            if (userCollection) {
-              console.log('📦 Loaded user collection from storage');
-              set({ offlineCollection: userCollection });
-            }
-
-            // Restore authentication state
-            const guestUsername = `Guest-${storedCredentials.guestId.slice(-6).toUpperCase()}`;
-            set({
+              guestToken: storedCredentials.guestToken || null,
               isAuthenticated: true,
               isGuestMode: true,
               userId: storedCredentials.guestId,
-              needsRegistration: !storedCredentials.guestSecret, // Need registration if no secret
+              needsRegistration: !storedCredentials.guestSecret || storedCredentials.guestSecret === '', // Need registration if no secret
               userProfile: {
                 id: storedCredentials.guestId,
                 username: guestUsername,
@@ -1505,11 +1904,24 @@ export const useHybridGameStore = create<HybridGameState>()(
               }
             });
 
+            // CRITICAL: Set the current user ID in the offline security service
+            console.log('🔑 Setting current user ID in offline security service...');
+            offlineSecurityService.setCurrentUserId(storedCredentials.guestId);
+
+            // Now load the user's offline collection with the correct userId
+            console.log('📦 Loading collection for recovered guest user...');
+            // Add a small delay to ensure state is fully updated
+            setTimeout(async () => {
+              await get().loadOfflineCollection();
+            }, 100);
+
             console.log('✅ Guest authentication state recovered successfully');
             return;
           }
 
-
+          // No stored credentials found, try to load any existing collection as fallback
+          console.log('ℹ️ No stored authentication found, trying fallback collection load...');
+          await get().loadOfflineCollection();
         },
 
         // Sign out user
@@ -1676,7 +2088,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
             // Initialize collection if needed
             if (!state.offlineCollection) {
-              await get().initializeOfflineCollection();
+              get().initializeOfflineCollection();
             }
 
             // Check if user already has starter pack by looking at actual collection
@@ -2459,7 +2871,11 @@ export const useHybridGameStore = create<HybridGameState>()(
 
         // Force refresh collection state from storage
         refreshCollectionState: () => {
-          const stored = offlineSecurityService.loadOfflineCollection();
+          const state = get();
+          const userId = state.userId || state.guestId;
+          console.log('🔄 Refreshing collection state for user:', userId);
+
+          const stored = offlineSecurityService.loadOfflineCollection(userId);
           if (stored) {
             const hasCards = Object.keys(stored.cards_owned).length > 0;
             set({
@@ -2468,10 +2884,15 @@ export const useHybridGameStore = create<HybridGameState>()(
               pendingActions: stored.action_queue.length
             });
             console.log('🔄 Collection state refreshed:', {
+              user_id: stored.user_id,
               cards_count: Object.keys(stored.cards_owned).length,
               credits: stored.eco_credits,
               pending_actions: stored.action_queue.length
             });
+          } else {
+            console.log('🔄 No collection found during refresh');
+            // Try fallback loading
+            get().loadOfflineCollection().catch(console.error);
           }
         },
 
@@ -2668,6 +3089,413 @@ export const useHybridGameStore = create<HybridGameState>()(
             guestToken: null,
             needsRegistration: false
           });
+        },
+
+        // ============================================================================
+        // ONLINE MULTIPLAYER ACTIONS IMPLEMENTATION
+        // ============================================================================
+
+        // Matchmaking Actions
+        findMatch: async (gameMode: string, preferences?: any) => {
+          const state = get();
+
+          if (!state.isAuthenticated) {
+            console.error('❌ Cannot find match: user not authenticated');
+            return;
+          }
+
+          if (state.online.matchmaking.isSearching) {
+            console.warn('⚠️ Already searching for match');
+            return;
+          }
+
+          console.log(`🔍 Starting matchmaking for ${gameMode}`);
+
+          set((state) => ({
+            online: {
+              ...state.online,
+              matchmaking: {
+                ...state.online.matchmaking,
+                isSearching: true,
+                gameMode,
+                preferences: preferences || {},
+                lastSearchAttempt: Date.now(),
+                queueTime: 0
+              }
+            }
+          }));
+
+          try {
+            const result = await unifiedGameService.findMatch(gameMode, preferences);
+
+            if (result.isValid && result.newState) {
+              console.log('✅ Match found:', result.newState);
+
+              set((state) => ({
+                online: {
+                  ...state.online,
+                  matchmaking: {
+                    ...state.online.matchmaking,
+                    isSearching: false
+                  }
+                }
+              }));
+
+              // If match found immediately, handle it
+              if (result.metadata?.matchFound) {
+                // This would typically trigger navigation to the game
+                console.log('🎮 Match ready, starting game...');
+              }
+            } else {
+              console.error('❌ Matchmaking failed:', result.errorMessage);
+              set((state) => ({
+                online: {
+                  ...state.online,
+                  matchmaking: {
+                    ...state.online.matchmaking,
+                    isSearching: false
+                  }
+                }
+              }));
+            }
+          } catch (error: any) {
+            console.error('❌ Matchmaking error:', error);
+            set((state) => ({
+              online: {
+                ...state.online,
+                matchmaking: {
+                  ...state.online.matchmaking,
+                  isSearching: false
+                }
+              }
+            }));
+          }
+        },
+
+        cancelMatchmaking: async () => {
+          const state = get();
+
+          if (!state.online.matchmaking.isSearching) {
+            console.warn('⚠️ Not currently searching for match');
+            return;
+          }
+
+          console.log('🚫 Cancelling matchmaking');
+
+          try {
+            await unifiedGameService.cancelMatchmaking();
+
+            set((state) => ({
+              online: {
+                ...state.online,
+                matchmaking: {
+                  ...state.online.matchmaking,
+                  isSearching: false,
+                  gameMode: null,
+                  queueTime: 0
+                }
+              }
+            }));
+
+            console.log('✅ Matchmaking cancelled');
+          } catch (error: any) {
+            console.error('❌ Failed to cancel matchmaking:', error);
+          }
+        },
+
+        acceptMatch: async (sessionId: string) => {
+          console.log(`✅ Accepting match: ${sessionId}`);
+
+          // Update active battle state using existing pattern
+          set((state) => ({
+            activeBattle: {
+              sessionId,
+              gameMode: 'online',
+              levelId: null,
+              isActive: true
+            },
+            online: {
+              ...state.online,
+              matchmaking: {
+                ...state.online.matchmaking,
+                isSearching: false,
+                gameMode: null
+              }
+            }
+          }));
+        },
+
+        // Rating Actions
+        updateRating: async (ratingUpdate: RatingUpdate) => {
+          console.log(`📈 Updating rating:`, ratingUpdate);
+
+          try {
+            const result = await unifiedGameService.updatePlayerRating(ratingUpdate);
+
+            if (result.isValid) {
+              set((state) => ({
+                online: {
+                  ...state.online,
+                  rating: {
+                    ...state.online.rating,
+                    current: ratingUpdate.newRating,
+                    peak: Math.max(state.online.rating.peak, ratingUpdate.newRating),
+                    gamesPlayed: state.online.rating.gamesPlayed + 1,
+                    gamesWon: ratingUpdate.ratingChange > 0 ? state.online.rating.gamesWon + 1 : state.online.rating.gamesWon,
+                    winStreak: ratingUpdate.ratingChange > 0 ? state.online.rating.winStreak + 1 : 0
+                  }
+                }
+              }));
+
+              // Update win rate
+              const state = get();
+              const winRate = state.online.rating.gamesPlayed > 0
+                ? (state.online.rating.gamesWon / state.online.rating.gamesPlayed) * 100
+                : 0;
+
+              set((state) => ({
+                online: {
+                  ...state.online,
+                  rating: {
+                    ...state.online.rating,
+                    winRate: Math.round(winRate * 100) / 100
+                  }
+                }
+              }));
+
+              console.log('✅ Rating updated successfully');
+            }
+          } catch (error: any) {
+            console.error('❌ Failed to update rating:', error);
+          }
+        },
+
+        refreshRating: async () => {
+          const state = get();
+
+          if (!state.isAuthenticated || !state.userId) {
+            console.warn('⚠️ Cannot refresh rating: user not authenticated');
+            return;
+          }
+
+          try {
+            // Get current user rating from server
+            const ratings = await unifiedGameService.getPlayerRatings([{ id: state.userId, name: state.userProfile?.username || 'Player' }]);
+            const userRating = ratings[state.userId] || 1000;
+
+            set((state) => ({
+              online: {
+                ...state.online,
+                rating: {
+                  ...state.online.rating,
+                  current: userRating
+                }
+              }
+            }));
+
+            console.log('✅ Rating refreshed:', userRating);
+          } catch (error: any) {
+            console.error('❌ Failed to refresh rating:', error);
+          }
+        },
+
+        // Quest Actions
+        updateQuestProgress: async (questType: string, progress: any) => {
+          console.log(`📋 Updating quest progress: ${questType}`, progress);
+
+          const state = get();
+          const currentQuest = state.online.quests.dailyQuests[questType];
+
+          if (!currentQuest) {
+            console.warn(`⚠️ Quest not found: ${questType}`);
+            return;
+          }
+
+          // Update local progress
+          const updatedProgress = { ...currentQuest.progress, ...progress };
+          const isCompleted = checkQuestCompletion(updatedProgress, currentQuest.target);
+
+          set((state) => ({
+            online: {
+              ...state.online,
+              quests: {
+                ...state.online.quests,
+                dailyQuests: {
+                  ...state.online.quests.dailyQuests,
+                  [questType]: {
+                    ...currentQuest,
+                    progress: updatedProgress,
+                    isCompleted
+                  }
+                }
+              }
+            }
+          }));
+
+          // Send to server
+          try {
+            if (state.isOnline && state.isAuthenticated) {
+              await gameApi.updateQuestProgress({
+                questType,
+                progress: updatedProgress
+              });
+            }
+          } catch (error: any) {
+            console.error('❌ Failed to update quest progress on server:', error);
+          }
+        },
+
+        // Automatic quest progress tracking
+        trackGameCompletion: async (gameResult: { winner: string | null; gameMode: string; playerId: string }) => {
+          console.log(`🎮 Tracking game completion for quest progress:`, gameResult);
+
+          const state = get();
+          if (!state.isAuthenticated || !state.isOnline) {
+            console.log('⚠️ Not tracking quest progress - user not authenticated or offline');
+            return;
+          }
+
+          // Track "play games" quest
+          const playGamesQuest = state.online.quests.dailyQuests['play_games'];
+          if (playGamesQuest && !playGamesQuest.isCompleted) {
+            const currentCount = playGamesQuest.progress?.count || 0;
+            await get().updateQuestProgress('play_games', { count: currentCount + 1 });
+            console.log(`📋 Updated play_games quest: ${currentCount + 1}/${playGamesQuest.target?.count || 3}`);
+          }
+
+          // Track "win matches" quest if player won
+          if (gameResult.winner === gameResult.playerId) {
+            const winMatchesQuest = state.online.quests.dailyQuests['win_matches'];
+            if (winMatchesQuest && !winMatchesQuest.isCompleted) {
+              const currentCount = winMatchesQuest.progress?.count || 0;
+              await get().updateQuestProgress('win_matches', { count: currentCount + 1 });
+              console.log(`📋 Updated win_matches quest: ${currentCount + 1}/${winMatchesQuest.target?.count || 2}`);
+            }
+          }
+        },
+
+        claimQuestReward: async (questType: string) => {
+          const state = get();
+          const quest = state.online.quests.dailyQuests[questType];
+
+          if (!quest || !quest.isCompleted || quest.isClaimed) {
+            console.warn(`⚠️ Cannot claim quest reward: ${questType}`);
+            return;
+          }
+
+          console.log(`🎁 Claiming quest reward: ${questType}`);
+
+          try {
+            // Mark as claimed locally
+            set((state) => ({
+              online: {
+                ...state.online,
+                quests: {
+                  ...state.online.quests,
+                  dailyQuests: {
+                    ...state.online.quests.dailyQuests,
+                    [questType]: {
+                      ...quest,
+                      isClaimed: true
+                    }
+                  },
+                  totalQuestsCompleted: state.online.quests.totalQuestsCompleted + 1
+                }
+              }
+            }));
+
+            // Apply rewards (eco_credits, xp_points, etc.)
+            if (quest.rewards.eco_credits) {
+              // This would integrate with existing collection system
+              console.log(`💰 Awarded ${quest.rewards.eco_credits} eco credits`);
+            }
+
+            if (quest.rewards.xp_points) {
+              console.log(`⭐ Awarded ${quest.rewards.xp_points} XP`);
+            }
+
+            // TODO: Create reward claim action for sync
+            // Reward sync will be implemented when server endpoints are ready
+            if (state.isOnline && state.isAuthenticated) {
+              console.log('🎁 Quest reward claimed (sync pending server implementation)');
+            }
+
+            console.log('✅ Quest reward claimed successfully');
+          } catch (error: any) {
+            console.error('❌ Failed to claim quest reward:', error);
+          }
+        },
+
+        // Daily Quest and Leaderboard Actions
+        refreshDailyQuests: async () => {
+          const state = get();
+
+          if (!state.isAuthenticated) {
+            console.warn('⚠️ Cannot refresh quests: user not authenticated');
+            return;
+          }
+
+          console.log('🔄 Refreshing daily quests');
+
+          try {
+            // This would call the quest API when implemented
+            // For now, create sample daily quests
+            const sampleQuests = {
+              'play_games': {
+                progress: { count: 0 },
+                target: { count: 3 },
+                isCompleted: false,
+                isClaimed: false,
+                rewards: { eco_credits: 50, xp_points: 25 }
+              },
+              'win_matches': {
+                progress: { count: 0 },
+                target: { count: 2 },
+                isCompleted: false,
+                isClaimed: false,
+                rewards: { eco_credits: 100, xp_points: 50 }
+              }
+            };
+
+            set((state) => ({
+              online: {
+                ...state.online,
+                quests: {
+                  ...state.online.quests,
+                  dailyQuests: sampleQuests
+                }
+              }
+            }));
+
+            console.log('✅ Daily quests refreshed');
+          } catch (error: any) {
+            console.error('❌ Failed to refresh daily quests:', error);
+          }
+        },
+
+        refreshLeaderboard: async (gameMode: string) => {
+          console.log(`🏆 Refreshing leaderboard for ${gameMode}`);
+
+          try {
+            const result = await unifiedGameService.getLeaderboard(gameMode, 100);
+
+            if (result.isValid && result.newState) {
+              set((state) => ({
+                online: {
+                  ...state.online,
+                  leaderboard: {
+                    data: result.newState,
+                    lastUpdated: Date.now(),
+                    gameMode
+                  }
+                }
+              }));
+
+              console.log('✅ Leaderboard refreshed');
+            }
+          } catch (error: any) {
+            console.error('❌ Failed to refresh leaderboard:', error);
+          }
         }
       }),
       {
@@ -2677,6 +3505,12 @@ export const useHybridGameStore = create<HybridGameState>()(
             getUserId: getCurrentUserId
           })
         ),
+        onRehydrateStorage: () => (state) => {
+          console.log('🔄 Store hydration completed');
+          if (state) {
+            state.isHydrated = true;
+          }
+        },
         partialize: (state) => ({
           // Only persist offline state, not UI state
           hasStarterPack: state.hasStarterPack,
@@ -2691,7 +3525,11 @@ export const useHybridGameStore = create<HybridGameState>()(
           guestToken: state.guestToken,
           needsRegistration: state.needsRegistration,
           // Persist user profile information
-          userProfile: state.userProfile
+          userProfile: state.userProfile,
+          // Persist collection state indicators to help with recovery
+          pendingActions: state.pendingActions,
+          syncStatus: state.syncStatus,
+          syncError: state.syncError
         })
       }
     )

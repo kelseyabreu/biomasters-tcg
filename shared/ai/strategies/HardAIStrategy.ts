@@ -25,7 +25,7 @@ export class HardAIStrategy extends BaseAIStrategy {
    * Hard AI: For now, uses random selection like Easy AI
    * TODO: Implement advanced strategic card selection
    */
-  selectCard(hand: string[], gameState: GameState, playerId: string): string {
+  override selectCard(hand: string[], gameState: GameState, playerId: string): string {
     console.log(`🤖 [HARD] AI selecting card (currently using random selection)`);
     
     // For now, use base class random selection
@@ -37,7 +37,7 @@ export class HardAIStrategy extends BaseAIStrategy {
    * Hard AI: For now, uses random position like Easy AI
    * TODO: Implement advanced strategic position selection
    */
-  selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
+  override selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
     console.log(`🤖 [HARD] AI selecting position (currently using random selection)`);
     
     // For now, use base class random selection
@@ -49,7 +49,7 @@ export class HardAIStrategy extends BaseAIStrategy {
    * Hard AI: Uses base class pass logic (5% chance)
    * TODO: Add advanced strategic passing logic
    */
-  shouldPassTurn(hand: string[], actionsRemaining: number, gameState: GameState, playerId: string): boolean {
+  override shouldPassTurn(hand: string[], actionsRemaining: number, gameState: GameState, playerId: string): boolean {
     console.log(`🤖 [HARD] AI considering pass turn (currently using base logic)`);
     
     // Uses base class logic with 5% pass chance
@@ -60,7 +60,7 @@ export class HardAIStrategy extends BaseAIStrategy {
   /**
    * Hard AI: Longer thinking time (2-3 seconds)
    */
-  getThinkingDelay(): number {
+  override getThinkingDelay(): number {
     const delay = super.getThinkingDelay();
     console.log(`🤖 [HARD] AI thinking for ${Math.round(delay)}ms`);
     return delay;

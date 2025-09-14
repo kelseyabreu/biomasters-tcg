@@ -1,0 +1,44 @@
+/* GridCell Base Styles - Common properties for all styles */
+.grid-cell {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Style-specific properties are defined in GridCellStyles.css */
+}
+
+/* Common states - these will be overridden by style-specific classes */
+.grid-cell.occupied {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Common animations - used by style-specific classes */
+@keyframes pulse-highlight {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .grid-cell {
+    transition: none;
+  }
+
+  @keyframes pulse-highlight {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+}

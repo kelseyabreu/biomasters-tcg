@@ -1,0 +1,207 @@
+/* Enhanced Ecosystem Card - Base Styling with Original Ecosystem Board Effects */
+.enhanced-ecosystem-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.enhanced-ecosystem-card:active {
+  cursor: grabbing;
+}
+
+/* Style 1: Compact Info Card */
+.enhanced-ecosystem-card.style-1 {
+  overflow: hidden;
+}
+
+.enhanced-ecosystem-card.style-1:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+  z-index: 100;
+}
+
+/* Style 2: Minimalist Clean */
+.enhanced-ecosystem-card.style-2 {
+  overflow: hidden;
+}
+
+.enhanced-ecosystem-card.style-2:hover {
+  transform: scale(1.03);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3) !important;
+  z-index: 100;
+}
+
+/* Style 3: Data-Focused Grid */
+.enhanced-ecosystem-card.style-3 {
+  overflow: hidden;
+}
+
+.enhanced-ecosystem-card.style-3:hover {
+  transform: scale(1.02);
+  box-shadow: 0 3px 14px rgba(0,0,0,0.5) !important;
+  z-index: 100;
+}
+
+/* Style 4: Circular/Radial Design */
+.enhanced-ecosystem-card.style-4 {
+  overflow: visible;
+}
+
+.enhanced-ecosystem-card.style-4:hover {
+  transform: scale(1.08);
+  z-index: 100;
+}
+
+.enhanced-ecosystem-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(255,255,255,0.1) 0%, 
+    transparent 50%, 
+    rgba(255,255,255,0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.enhanced-ecosystem-card:hover::before {
+  opacity: 1;
+}
+
+.trophic-badge {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.organism-container {
+  transition: all 0.3s ease;
+}
+
+.enhanced-ecosystem-card:hover .organism-container {
+  transform: scale(1.1);
+}
+
+.action-button {
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.action-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.card-name {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .enhanced-ecosystem-card:hover {
+    transform: scale(1.02);
+  }
+}
+
+/* Animation for button style changes */
+.button-container {
+  transition: all 0.3s ease;
+}
+
+/* Glow effect for trophic levels */
+.trophic-producer {
+  box-shadow: 0 0 8px rgba(34, 139, 34, 0.6);
+}
+
+.trophic-primary {
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+.trophic-secondary {
+  box-shadow: 0 0 8px rgba(255, 99, 71, 0.6);
+}
+
+.trophic-tertiary {
+  box-shadow: 0 0 8px rgba(220, 20, 60, 0.6);
+}
+
+.trophic-decomposer {
+  box-shadow: 0 0 8px rgba(139, 69, 19, 0.6);
+}
+
+/* Style-specific animations */
+.style-2 .grid-organism-large {
+  transition: transform 0.3s ease;
+}
+
+.style-2:hover .grid-organism-large {
+  transform: scale(1.1);
+}
+
+.style-3 > div {
+  transition: all 0.2s ease;
+}
+
+.style-3:hover > div {
+  transform: scale(1.02);
+}
+
+.style-4 {
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}
+
+/* Responsive adjustments for different styles */
+@media (max-width: 768px) {
+  .enhanced-ecosystem-card.style-1:hover {
+    transform: scale(1.02);
+  }
+
+  .enhanced-ecosystem-card.style-2:hover {
+    transform: scale(1.01);
+  }
+
+  .enhanced-ecosystem-card.style-3:hover {
+    transform: scale(1.01);
+  }
+
+  .enhanced-ecosystem-card.style-4:hover {
+    transform: scale(1.04);
+  }
+}

@@ -6,6 +6,45 @@
 import { Page, Locator, expect } from '@playwright/test';
 
 /**
+ * Firefox-specific error detection and handling
+ */
+export function isFirefoxError(error: Error): boolean {
+  const firefoxErrorPatterns = [
+    'Target page, context or browser has been closed',
+    'Test timeout of',
+    'browserContext.newPage',
+    'Protocol error',
+    'Connection closed',
+    'Browser has been closed'
+  ];
+
+  return firefoxErrorPatterns.some(pattern =>
+    error.message.includes(pattern)
+  );
+}
+
+/**
+ * Enhanced error handling for Firefox browser issues
+ */
+export async function handleFirefoxError(page: Page, error: Error, operation: string): Promise<void> {
+  if (isFirefoxError(error)) {
+    console.log(`🦊 [Firefox] ${operation} failed with Firefox-specific error:`, error.message);
+
+    // Check if page is still available
+    try {
+      await page.evaluate(() => document.readyState);
+      console.log(`🦊 [Firefox] Page is still available after ${operation} error`);
+    } catch (pageError) {
+      console.log(`🦊 [Firefox] Page is no longer available after ${operation} error:`, pageError.message);
+      throw new Error(`Firefox page became unavailable during ${operation}: ${error.message}`);
+    }
+  } else {
+    // Re-throw non-Firefox errors
+    throw error;
+  }
+}
+
+/**
  * Cross-platform input filling for Ion components
  * Handles both direct input elements and Ion-wrapped inputs
  */
@@ -32,11 +71,9 @@ export async function fillIonInput(page: Page, testId: string, value: string, op
           
           // Clear existing value first
           await element.clear();
-          await page.waitForTimeout(100); // Brief pause for stability
-          
+
           // Fill the value
           await element.fill(value);
-          await page.waitForTimeout(100); // Brief pause for value to register
           
           // Verify the value was set
           const actualValue = await element.inputValue();
@@ -60,9 +97,9 @@ export async function fillIonInput(page: Page, testId: string, value: string, op
       if (attempt === retries) {
         throw new Error(`Failed to fill ion input [data-testid="${testId}"] after ${retries} attempts: ${error.message}`);
       }
-      
-      // Wait before retry
-      await page.waitForTimeout(1000 * attempt);
+
+      // Wait before retry with exponential backoff
+      await page.waitForTimeout(500 * attempt);
     }
   }
 }
@@ -99,8 +136,9 @@ export async function clickIonButton(page: Page, testId: string, options?: {
       await button.waitFor({ state: 'visible', timeout });
 
       if (waitForStable) {
-        // Wait for button to be stable (not animating)
-        await page.waitForTimeout(500);
+        // Wait for button to be stable (not animating) using proper assertion
+        await expect(button).toBeVisible();
+        await expect(button).toBeEnabled();
       }
 
       // For tab buttons, check if they're clickable differently
@@ -126,24 +164,17 @@ export async function clickIonButton(page: Page, testId: string, options?: {
       return; // Success
 
     } catch (error) {
-      // Check if page/context is closed
-      if (error.message.includes('Target page, context or browser has been closed')) {
-        throw new Error(`Page was closed during test execution: ${error.message}`);
+      // Use Firefox-specific error handling
+      if (isFirefoxError(error as Error)) {
+        await handleFirefoxError(page, error as Error, `click button [data-testid="${testId}"]`);
       }
 
       if (attempt === retries) {
         throw new Error(`Failed to click button [data-testid="${testId}"] after ${retries} attempts: ${error.message}`);
       }
 
-      // Wait before retry, but check if page is still available
-      try {
-        await page.waitForTimeout(500 * attempt);
-      } catch (timeoutError) {
-        if (timeoutError.message.includes('Target page, context or browser has been closed')) {
-          throw new Error(`Page was closed during retry wait: ${timeoutError.message}`);
-        }
-        throw timeoutError;
-      }
+      // Wait before retry with exponential backoff
+      await page.waitForTimeout(300 * attempt);
     }
   }
 }
@@ -155,33 +186,56 @@ export async function waitForModal(page: Page, testId: string, options?: {
   timeout?: number;
   state?: 'visible' | 'hidden';
 }) {
-  const { timeout = 15000, state = 'visible' } = options || {};
-  
+  const { timeout = 20000, state = 'visible' } = options || {}; // Increased timeout
+
   const modal = page.locator(`[data-testid="${testId}"]`).last(); // Use .last() to handle multiple modals
-  
+
   if (state === 'visible') {
+    // First wait for the modal element to exist in DOM
+    await modal.waitFor({ state: 'attached', timeout });
+
+    // Then wait for it to be visible
     await modal.waitFor({ state: 'visible', timeout });
-    
-    // Additional check for Ion modal specific attributes
+
+    // Wait for Ion modal animation to complete
     await page.waitForFunction(
       (testId) => {
         const modals = document.querySelectorAll(`[data-testid="${testId}"]`);
-        return Array.from(modals).some(modal => 
-          modal.getAttribute('aria-hidden') !== 'true' &&
-          !modal.classList.contains('overlay-hidden')
-        );
+        return Array.from(modals).some(modal => {
+          const isVisible = modal.getAttribute('aria-hidden') !== 'true' &&
+                           !modal.classList.contains('overlay-hidden') &&
+                           !modal.classList.contains('ion-modal-hidden');
+
+          // Check if modal animation has completed
+          const computedStyle = window.getComputedStyle(modal);
+          const isAnimationComplete = computedStyle.opacity === '1' &&
+                                     computedStyle.visibility === 'visible';
+
+          return isVisible && isAnimationComplete;
+        });
       },
       testId,
-      { timeout }
+      { timeout: 10000 }
     );
+
+    // Ensure modal content is interactive
+    await expect(modal).toBeVisible();
+
   } else {
     await page.waitForFunction(
       (testId) => {
         const modals = document.querySelectorAll(`[data-testid="${testId}"]`);
-        return modals.length === 0 || !Array.from(modals).some(modal =>
-          modal.getAttribute('aria-hidden') !== 'true' &&
-          !modal.classList.contains('overlay-hidden')
-        );
+        return modals.length === 0 || !Array.from(modals).some(modal => {
+          const isVisible = modal.getAttribute('aria-hidden') !== 'true' &&
+                           !modal.classList.contains('overlay-hidden') &&
+                           !modal.classList.contains('ion-modal-hidden');
+
+          const computedStyle = window.getComputedStyle(modal);
+          const isAnimationComplete = computedStyle.opacity === '1' &&
+                                     computedStyle.visibility === 'visible';
+
+          return isVisible && isAnimationComplete;
+        });
       },
       testId,
       { timeout }
@@ -207,8 +261,9 @@ export async function ensureModalsAreClosed(page: Page, timeout = 5000) {
       { timeout }
     );
 
-    // Additional wait to ensure DOM is stable
-    await page.waitForTimeout(500);
+    // Verify DOM is stable by checking no modals are visible
+    const visibleModals = page.locator('ion-modal:visible');
+    await expect(visibleModals).toHaveCount(0);
   } catch (error) {
     console.log('Warning: Could not verify all modals are closed, continuing...');
   }
@@ -282,34 +337,57 @@ export async function waitForAppInitialization(page: Page, options?: {
   timeout?: number;
   skipCDPCheck?: boolean;
 }) {
-  const { timeout = 20000, skipCDPCheck = false } = options || {};
-  
+  const { timeout = 45000, skipCDPCheck = false } = options || {}; // Increased timeout
+
   // Wait for basic app structure
   await page.waitForSelector('ion-app', { timeout });
-  
+
+  // Wait for network idle state first to ensure resources are loaded
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
+  } catch (error) {
+    console.log('Network idle timeout, continuing...');
+  }
+
   // Wait for authentication state to stabilize
   await page.waitForFunction(
     () => {
       // Check if app has finished initial auth checks
       const authElements = document.querySelectorAll('[data-testid="signin-button"], [data-testid="signout-button"]');
-      return authElements.length > 0;
+      const mainMenu = document.querySelector('[data-testid="main-menu"]');
+      const authPage = document.querySelector('[data-testid="auth-page"]');
+
+      // Check if we have any content loaded (even if auth is still loading)
+      const ionContent = document.querySelector('ion-content');
+      const hasContent = ionContent && ionContent.children.length > 0;
+
+      // Check if React has finished hydrating
+      const reactReady = window.React !== undefined ||
+                        document.querySelector('[data-reactroot]') !== null ||
+                        document.querySelector('#root > *') !== null;
+
+      // App is ready if we have auth elements OR we're on a main page OR we have content AND React is ready
+      return (authElements.length > 0 || mainMenu !== null || authPage !== null || hasContent) && reactReady;
     },
     { timeout }
   );
-  
+
   // Wait for any loading indicators to disappear
   await page.waitForFunction(
     () => {
       const loadingElements = document.querySelectorAll('ion-loading, .loading, [data-testid*="loading"]');
-      return loadingElements.length === 0;
+      const initializingText = document.body.textContent?.includes('Initializing...') || false;
+      return loadingElements.length === 0 && !initializingText;
     },
-    { timeout: 5000 }
+    { timeout: 10000 }
   ).catch(() => {
     // Ignore timeout for loading indicators
   });
-  
-  // Brief pause for final stabilization
-  await page.waitForTimeout(1000);
+
+  // Verify app is fully initialized by checking for interactive elements
+  await expect(page.locator('ion-app')).toBeVisible();
+  // Use first() to handle multiple matching elements (strict mode compliance)
+  await expect(page.locator('ion-content, [data-testid="main-menu"], [data-testid="auth-page"]').first()).toBeVisible();
 }
 
 /**
@@ -324,4 +402,60 @@ export async function simulateNetworkError(page: Page, pattern: string) {
     // Fallback: Could implement other network simulation methods
     throw new Error('Network simulation not supported on this browser');
   }
+}
+
+/**
+ * Wait for authentication state to stabilize
+ */
+export async function waitForAuthState(page: Page, expectedState: 'authenticated' | 'unauthenticated', timeout = 15000) {
+  if (expectedState === 'authenticated') {
+    // Use first() to handle multiple matching elements (strict mode compliance)
+    await expect(page.locator('[data-testid="signout-button"], [data-testid="user-profile"]').first()).toBeVisible({ timeout });
+  } else {
+    await expect(page.locator('[data-testid="signin-button"]')).toBeVisible({ timeout });
+  }
+}
+
+/**
+ * Wait for navigation to complete
+ */
+export async function waitForNavigation(page: Page, expectedUrl?: string, timeout = 10000) {
+  if (expectedUrl) {
+    await expect(page).toHaveURL(expectedUrl, { timeout });
+  }
+  await page.waitForLoadState('networkidle', { timeout });
+  await expect(page.locator('ion-app')).toBeVisible({ timeout });
+}
+
+/**
+ * Wait for toast notification
+ */
+export async function waitForToast(page: Page, expectedText?: string, timeout = 10000) {
+  const toast = page.locator('ion-toast');
+  await expect(toast).toBeVisible({ timeout });
+
+  if (expectedText) {
+    await expect(toast).toContainText(expectedText, { timeout });
+  }
+
+  return toast;
+}
+
+/**
+ * Switch between authentication modes (sign-in/register)
+ */
+export async function switchAuthMode(page: Page, mode: 'signin' | 'register') {
+  const switchButton = mode === 'register'
+    ? page.locator('[data-testid="switch-to-register"]')
+    : page.locator('[data-testid="switch-to-signin"]');
+
+  await expect(switchButton).toBeVisible();
+  await switchButton.click();
+
+  // Verify the mode switched
+  const expectedButton = mode === 'register'
+    ? page.locator('[data-testid="register-button"]')
+    : page.locator('[data-testid="signin-button"]');
+
+  await expect(expectedButton).toBeVisible();
 }

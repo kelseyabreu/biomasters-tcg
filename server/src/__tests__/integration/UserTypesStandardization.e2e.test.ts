@@ -135,7 +135,16 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
         push_notifications: true,
         preferences: null,
         last_reward_claimed_at: null,
-        last_login_at: null
+        last_login_at: null,
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+        
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0,
       };
 
       await db.insertInto('users').values(testUser).execute();
@@ -194,7 +203,17 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
         push_notifications: true,
         preferences: '{"theme": "dark"}',
         last_reward_claimed_at: new Date('2024-01-01'),
-        last_login_at: new Date('2024-01-03')
+        last_login_at: new Date('2024-01-03'),
+
+        // Online multiplayer fields
+        current_rating: 1000,
+        peak_rating: 1000,
+        win_streak: 0,
+
+        // Quest system fields
+        daily_quest_streak: 0,
+        last_daily_reset: new Date(),
+        total_quests_completed: 0
       };
 
       await db.insertInto('users').values(dbUser).execute();
@@ -275,7 +294,26 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
 
   describe('👤 Profile Management API', () => {
     test('should update user profile with display_name', async () => {
-      // Assuming we have a test user from previous test
+      // Create a unique Firebase token for this test
+      const uniqueUid = randomUUID();
+      const uniqueEmail = `profile-test-${Date.now()}@example.com`;
+      const uniqueFirebaseToken = createTestFirebaseToken(uniqueUid, uniqueEmail);
+      const registrationData = {
+        username: 'profile_update_test_' + Date.now()
+      };
+
+      const regResponse = await request(app)
+        .post('/api/auth/register')
+        .set('Authorization', `Bearer ${uniqueFirebaseToken}`)
+        .send(registrationData);
+
+      if (regResponse.status !== 201) {
+        throw new Error(`Registration failed with status ${regResponse.status}: ${JSON.stringify(regResponse.body)}`);
+      }
+
+      const freshUserId = regResponse.body.data.user.id;
+      const freshUsername = regResponse.body.data.user.username;
+
       const profileUpdate = {
         displayName: 'Updated Display Name',
         bio: 'Updated bio text',
@@ -287,14 +325,16 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
 
       const response = await request(app)
         .put('/api/users/me')
-        .set('Authorization', `Bearer ${testFirebaseToken}`)
-        .send(profileUpdate)
-        .expect(200);
+        .set('Authorization', `Bearer ${uniqueFirebaseToken}`)
+        .send(profileUpdate);
+
+      expect(response.status).toBe(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.user.display_name).toBe(profileUpdate.displayName);
       expect(response.body.data.user.bio).toBe(profileUpdate.bio);
       expect(response.body.data.user.location).toBe(profileUpdate.location);
+      expect(response.body.data.user.username).toBe(freshUsername);
     });
 
     test('should get user profile with unified types', async () => {
@@ -382,13 +422,31 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
 
   describe('❌ Error Handling & Edge Cases', () => {
     test('should handle invalid display_name validation', async () => {
+      // Create a unique Firebase token for this test
+      const uniqueUid = randomUUID();
+      const uniqueEmail = `validation-test-${Date.now()}@example.com`;
+      const uniqueFirebaseToken = createTestFirebaseToken(uniqueUid, uniqueEmail);
+
+      const registrationData = {
+        username: 'validation_test_user_' + Date.now()
+      };
+
+      const regResponse = await request(app)
+        .post('/api/auth/register')
+        .set('Authorization', `Bearer ${uniqueFirebaseToken}`)
+        .send(registrationData)
+        .expect(201);
+
+      const freshUserId = regResponse.body.data.user.id;
+      const freshUsername = regResponse.body.data.user.username;
+
       const invalidUpdate = {
         displayName: 'A'.repeat(100) // Too long
       };
 
       const response = await request(app)
         .put('/api/users/me')
-        .set('Authorization', `Bearer ${testFirebaseToken}`)
+        .set('Authorization', `Bearer ${uniqueFirebaseToken}`)
         .send(invalidUpdate)
         .expect(400);
 

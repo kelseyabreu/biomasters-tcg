@@ -349,7 +349,7 @@ router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
       max_players: validatedData.maxPlayers || 2,
       current_players: 1,
       status: 'waiting',
-      game_state: JSON.stringify({
+      game_state: {
         phase: 'lobby',
         players: [{
           id: user.id,
@@ -357,8 +357,8 @@ router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
           isReady: false
         }],
         settings: gameSettings
-      }),
-      settings: JSON.stringify(gameSettings),
+      },
+      settings: gameSettings,
       created_at: new Date(),
       updated_at: new Date()
     })
@@ -374,8 +374,8 @@ router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
       maxPlayers: session.max_players,
       currentPlayers: session.current_players,
       status: session.status,
-      gameState: JSON.parse(session.game_state),
-      settings: JSON.parse(session.settings),
+      gameState: session.game_state,
+      settings: session.settings,
       createdAt: session.created_at,
       updatedAt: session.updated_at
     }
@@ -413,8 +413,8 @@ router.get('/sessions', requireAuth, asyncHandler(async (req, res) => {
       maxPlayers: session.max_players,
       currentPlayers: session.current_players,
       status: session.status,
-      gameState: JSON.parse(session.game_state),
-      settings: JSON.parse(session.settings),
+      gameState: session.game_state,
+      settings: session.settings,
       createdAt: session.created_at,
       updatedAt: session.updated_at
     }))

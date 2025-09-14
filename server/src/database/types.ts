@@ -47,9 +47,20 @@ export interface UsersTable {
   gems: number;
   coins: number;
   dust: number;
-  // Game statistics
+
+  // Online multiplayer fields (from migration 013)
+  current_rating: number;
+  peak_rating: number;
   games_played: number;
   games_won: number;
+  win_streak: number;
+
+  // Quest system fields (from migration 015)
+  daily_quest_streak: number;
+  last_daily_reset: Date;
+  total_quests_completed: number;
+
+  // Game statistics
   cards_collected: number;
   packs_opened: number;
   // Profile fields
@@ -316,10 +327,75 @@ export interface GameSessionsTable {
   max_players: number;
   current_players: number;
   status: 'waiting' | 'playing' | 'finished' | 'cancelled';
-  game_state: string; // JSON string
-  settings: string; // JSON string
+  game_state: object; // JSONB object
+  settings: object; // JSONB object
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
+}
+
+// Online multiplayer tables (from migrations 013-015)
+export interface MatchmakingQueueTable {
+  id: Generated<string>;
+  user_id: string;
+  game_mode: string;
+  rating: number;
+  preferences: string; // JSON string
+  expires_at: Date;
+  created_at: Generated<Date>;
+}
+
+export interface MatchResultsTable {
+  id: Generated<string>;
+  session_id: string;
+  player_user_id: string;
+  opponent_user_id: string;
+  result: 'win' | 'loss' | 'draw';
+  rating_before: number;
+  rating_after: number;
+  rating_change: number;
+  game_mode: string;
+  match_duration: number | null;
+  created_at: Generated<Date>;
+}
+
+export interface DailyQuestDefinitionsTable {
+  quest_type: string; // Primary key
+  name: string;
+  description: string;
+  requirements: any; // JSONB
+  rewards: any; // JSONB
+  is_active: boolean;
+  sort_order: number;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface UserDailyProgressTable {
+  id: Generated<string>;
+  user_id: string;
+  quest_date: Generated<Date>;
+  quest_type: string;
+  progress: any; // JSONB
+  target_progress: any; // JSONB
+  is_completed: boolean;
+  completed_at: Date | null;
+  is_claimed: boolean;
+  claimed_at: Date | null;
+  rewards_granted: any | null; // JSONB
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+// Leaderboard view (read-only)
+export interface LeaderboardView {
+  user_id: string;
+  username: string;
+  current_rating: number;
+  peak_rating: number;
+  games_played: number;
+  games_won: number;
+  win_rate: number;
+  rank: number;
 }
 
 // Database interface
@@ -350,6 +426,13 @@ export interface Database {
   localizations: LocalizationsTable;
   game_sessions: GameSessionsTable;
   conservation_statuses: ConservationStatusesTable;
+
+  // Online multiplayer tables
+  matchmaking_queue: MatchmakingQueueTable;
+  match_results: MatchResultsTable;
+  daily_quest_definitions: DailyQuestDefinitionsTable;
+  user_daily_progress: UserDailyProgressTable;
+  leaderboard_view: LeaderboardView;
 }
 
 // ============================================================================
@@ -457,3 +540,18 @@ export type LocalizationUpdate = Updateable<LocalizationsTable>;
 export type ConservationStatus = Selectable<ConservationStatusesTable>;
 export type NewConservationStatus = Insertable<ConservationStatusesTable>;
 export type ConservationStatusUpdate = Updateable<ConservationStatusesTable>;
+
+// Online multiplayer types
+export type MatchmakingQueue = Selectable<MatchmakingQueueTable>;
+export type NewMatchmakingQueue = Insertable<MatchmakingQueueTable>;
+
+export type MatchResult = Selectable<MatchResultsTable>;
+export type NewMatchResult = Insertable<MatchResultsTable>;
+
+export type DailyQuestDefinition = Selectable<DailyQuestDefinitionsTable>;
+export type NewDailyQuestDefinition = Insertable<DailyQuestDefinitionsTable>;
+export type DailyQuestDefinitionUpdate = Updateable<DailyQuestDefinitionsTable>;
+
+export type UserDailyProgress = Selectable<UserDailyProgressTable>;
+export type NewUserDailyProgress = Insertable<UserDailyProgressTable>;
+export type UserDailyProgressUpdate = Updateable<UserDailyProgressTable>;

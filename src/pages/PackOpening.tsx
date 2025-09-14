@@ -47,24 +47,6 @@ const PackOpening: React.FC = () => {
     hasStarterPack
   } = useHybridGameStore();
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('🎁 [PackOpening] Component mounted');
-    console.log('🎁 [PackOpening] isAuthenticated:', isAuthenticated);
-    console.log('🎁 [PackOpening] isGuestMode:', isGuestMode);
-    console.log('🎁 [PackOpening] hasStarterPack:', hasStarterPack);
-    console.log('🎁 [PackOpening] offlineCollection:', offlineCollection);
-    console.log('🎁 [PackOpening] localStorage keys:', Object.keys(localStorage));
-    console.log('🎁 [PackOpening] userCollection in localStorage:', localStorage.getItem('userCollection'));
-    console.log('🎁 [PackOpening] userPacks in localStorage:', localStorage.getItem('userPacks'));
-  }, [isAuthenticated, isGuestMode, hasStarterPack, offlineCollection]);
-  console.log('🔍 PackOpening state:', {
-    isAuthenticated,
-    isGuestMode,
-    hasOfflineCollection: !!offlineCollection,
-    hasStarterPack
-  });
-
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isOpening, setIsOpening] = useState<string | null>(null);

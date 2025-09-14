@@ -20,20 +20,30 @@ test.describe('Game Engine Integration', () => {
     await waitForModal(page, 'auth-modal');
     await clickIonButton(page, 'guest-login-button');
     await expect(page.locator('[data-testid="user-profile"]')).toBeVisible();
+
+    // Wait for collection to be created
+    await page.waitForFunction(
+      () => {
+        const keys = Object.keys(localStorage);
+        return keys.some(key => key.includes('_biomasters_offline_collection'));
+      },
+      { timeout: 10000 }
+    );
   });
 
   test('TCGGameService integration works correctly', async ({ page }) => {
     // Test basic service integration by checking collection
     await clickIonButton(page, 'collection-tab');
-    await page.waitForTimeout(2000);
 
     // Should show collection interface
     await expect(page.locator('text=Collection Progress')).toBeVisible();
 
     await test.step('Collection data is accessible', async () => {
-      // Verify collection data exists in localStorage
+      // Verify collection data exists in localStorage (user-scoped)
       const hasCollection = await page.evaluate(() => {
-        return localStorage.getItem('biomasters_offline_collection') !== null;
+        // Look for any user-scoped collection key
+        const keys = Object.keys(localStorage);
+        return keys.some(key => key.includes('_biomasters_offline_collection'));
       });
 
       expect(hasCollection).toBe(true);
@@ -42,8 +52,13 @@ test.describe('Game Engine Integration', () => {
     await test.step('Game state management works', async () => {
       // Verify that the game store is initialized
       const gameStoreInitialized = await page.evaluate(() => {
-        // Check if the hybrid game store has been initialized
-        return window.localStorage.getItem('biomasters_user_profile') !== null;
+        // Check if the hybrid game store has been initialized (user-scoped or global)
+        const keys = Object.keys(localStorage);
+        return keys.some(key =>
+          key.includes('_biomasters_offline_collection') ||
+          key.includes('biomasters_guest_id') ||
+          key.includes('biomasters-hybrid-game-store')
+        );
       });
 
       expect(gameStoreInitialized).toBe(true);
@@ -52,9 +67,13 @@ test.describe('Game Engine Integration', () => {
     await test.step('Static data is loaded for game engine', async () => {
       // Verify species data is available for the game engine
       const hasSpeciesData = await page.evaluate(() => {
-        // Check if species data is cached
-        return window.localStorage.getItem('biomasters_species_cache') !== null ||
-               window.sessionStorage.getItem('biomasters_species_cache') !== null;
+        // Check if species data is cached in the new static data cache
+        const keys = Object.keys(localStorage);
+        return keys.some(key =>
+          key.includes('static_data_data_cache') ||
+          key.includes('biomasters_species_cache') ||
+          key.includes('cards.json')
+        );
       });
 
       // Species data should be available either in localStorage or loaded in memory
@@ -66,7 +85,7 @@ test.describe('Game Engine Integration', () => {
     await test.step('Game state is saved to localStorage', async () => {
       // Navigate to collection to trigger some state changes
       await clickIonButton(page, 'collection-tab');
-      await page.waitForTimeout(1000);
+      await expect(page.locator('text=Collection Progress')).toBeVisible();
 
       // Check that game state is being persisted
       const gameStatePersisted = await page.evaluate(() => {
@@ -79,9 +98,11 @@ test.describe('Game Engine Integration', () => {
     });
 
     await test.step('Game state persists across page reload', async () => {
-      // Get current state
+      // Get current state (look for any collection data)
       const beforeReload = await page.evaluate(() => {
-        return localStorage.getItem('biomasters_user_profile');
+        const keys = Object.keys(localStorage);
+        const collectionKey = keys.find(key => key.includes('_biomasters_offline_collection'));
+        return collectionKey ? localStorage.getItem(collectionKey) : null;
       });
 
       // Reload page
@@ -90,7 +111,9 @@ test.describe('Game Engine Integration', () => {
 
       // Check state after reload
       const afterReload = await page.evaluate(() => {
-        return localStorage.getItem('biomasters_user_profile');
+        const keys = Object.keys(localStorage);
+        const collectionKey = keys.find(key => key.includes('_biomasters_offline_collection'));
+        return collectionKey ? localStorage.getItem(collectionKey) : null;
       });
 
       expect(afterReload).toBe(beforeReload);

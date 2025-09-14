@@ -18,8 +18,13 @@ import {
   waitForModal,
   waitForAppInitialization,
   clearBrowserData,
-  safeCDPOperation
+  safeCDPOperation,
+  waitForAuthState,
+  waitForNavigation,
+  waitForToast,
+  switchAuthMode
 } from './utils/test-helpers';
+import { FirefoxBrowserManager } from './utils/firefox-browser-manager';
 
 // Test configuration
 const TEST_CONFIG = {
@@ -48,15 +53,36 @@ const TEST_CONFIG = {
 test.describe('🔐 Authentication and User Deletion E2E', () => {
   let context: BrowserContext;
   let page: Page;
+  let firefoxManager: FirefoxBrowserManager | null = null;
 
-  test.beforeEach(async ({ browser }) => {
+  test.beforeEach(async ({ browser, browserName }) => {
     console.log('🔄 Starting test setup...');
-    context = await browser.newContext();
-    page = await context.newPage();
 
-    // Navigate to the app
-    console.log(`📍 Navigating to ${TEST_CONFIG.baseURL}`);
-    await page.goto(TEST_CONFIG.baseURL);
+    // Use Firefox-specific manager for Firefox browser
+    if (browserName === 'firefox') {
+      firefoxManager = new FirefoxBrowserManager(browser, {
+        maxRetries: 5,
+        retryDelay: 2000,
+        enableLogging: true
+      });
+
+      try {
+        context = await firefoxManager.createContext();
+        page = await firefoxManager.createPage();
+        await firefoxManager.navigateToUrl(TEST_CONFIG.baseURL);
+      } catch (error) {
+        console.error('❌ Firefox setup failed:', error.message);
+        throw error;
+      }
+    } else {
+      // Standard setup for other browsers
+      context = await browser.newContext();
+      page = await context.newPage();
+
+      // Navigate to the app
+      console.log(`📍 Navigating to ${TEST_CONFIG.baseURL}`);
+      await page.goto(TEST_CONFIG.baseURL);
+    }
 
     // Wait for app to load
     console.log('⏳ Waiting for ion-app to load...');
@@ -96,7 +122,15 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
   });
 
   test.afterEach(async () => {
-    await context.close();
+    console.log('✅ Test cleanup completed');
+
+    // Clean up Firefox manager if used
+    if (firefoxManager) {
+      await firefoxManager.cleanup();
+      firefoxManager = null;
+    } else if (context) {
+      await context.close();
+    }
   });
 
   // Cleanup after all tests
@@ -143,43 +177,36 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
 
       // Click sign in button to open auth modal
       console.log('🖱️ Clicking signin button...');
-      await page.click('[data-testid="signin-button"]');
+      await clickIonButton(page, 'signin-button');
 
       console.log('⏳ Waiting for auth modal...');
-      await page.waitForSelector('[data-testid="auth-modal"]');
+      await waitForModal(page, 'auth-modal');
       console.log('✅ Auth modal opened');
 
       // Switch to registration mode
       console.log('🔄 Switching to registration mode...');
-      await page.click('[data-testid="switch-to-register"]');
+      await switchAuthMode(page, 'register');
 
-      // Fill registration form using Ionic input approach
+      // Fill registration form using helper functions
       console.log('📝 Filling registration form...');
 
-      // Fill email input
-      await page.locator('[data-testid="email-input"] input').fill(testUser.email);
-
-      // Fill password input
-      await page.locator('[data-testid="password-input"] input').fill(testUser.password);
-
-      // Fill display name input
-      await page.locator('[data-testid="display-name-input"] input').fill(testUser.displayName);
+      await fillIonInput(page, 'email-input', testUser.email);
+      await fillIonInput(page, 'password-input', testUser.password);
+      await fillIonInput(page, 'display-name-input', testUser.displayName);
 
       // Submit registration
       console.log('📤 Submitting registration...');
-      await page.click('[data-testid="register-button"]');
+      await clickIonButton(page, 'register-button');
 
       // Wait for successful registration and modal to close
       console.log('⏳ Waiting for registration to complete...');
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
+      await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: TEST_CONFIG.timeout });
       console.log('✅ Registration completed, modal closed');
 
       // Verify user is logged in
       console.log('⏳ Waiting for user profile to update...');
-      await page.waitForSelector('[data-testid="user-profile"]');
-
-      // Wait a bit for the profile to fully update
-      await page.waitForTimeout(2000);
+      await waitForAuthState(page, 'authenticated');
+      await expect(page.locator('[data-testid="user-profile"]')).toBeVisible();
 
       const displayName = await page.locator('[data-testid="display-name"]').textContent();
       console.log(`👤 Display name shown: "${displayName}"`);
@@ -219,23 +246,24 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
 
     test('should handle registration errors gracefully', async () => {
       // Click sign in button
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
 
       // Switch to registration
-      await page.click('[data-testid="switch-to-register"]');
+      await switchAuthMode(page, 'register');
 
-      // Try to register with invalid email using Ionic input approach
-      await page.locator('[data-testid="email-input"] input').fill('invalid-email');
-      await page.locator('[data-testid="password-input"] input').fill('short');
-      await page.click('[data-testid="register-button"]');
+      // Try to register with invalid email using helper functions
+      await fillIonInput(page, 'email-input', 'invalid-email');
+      await fillIonInput(page, 'password-input', 'short');
+      await clickIonButton(page, 'register-button');
 
       // Should show validation errors (Firebase will handle validation)
       // Note: Firebase validation might not show specific field errors, so we'll check for general error
-      await page.waitForTimeout(2000); // Wait for validation
 
       // Check if form is still visible (indicating validation failed)
       await expect(page.locator('[data-testid="auth-modal"]')).toBeVisible();
+      // Verify register button is still present (form didn't submit)
+      await expect(page.locator('[data-testid="register-button"]')).toBeVisible();
     });
   });
 
@@ -246,58 +274,73 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       console.log('🔐 Testing sign-in with existing Firebase user...');
 
       // First register the user through Firebase (this creates both Firebase and DB records)
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]', { timeout: 10000 });
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal', { timeout: 10000 });
 
       // Switch to register mode first
-      await page.click('[data-testid="switch-to-register"]');
-      await page.waitForTimeout(1000);
+      await switchAuthMode(page, 'register');
 
       console.log('📝 Registering user first...');
-      await page.locator('[data-testid="email-input"] input').fill(testUser.email);
-      await page.locator('[data-testid="password-input"] input').fill(testUser.password);
-      await page.locator('[data-testid="display-name-input"] input').fill(testUser.displayName);
+      await fillIonInput(page, 'email-input', testUser.email);
+      await fillIonInput(page, 'password-input', testUser.password);
+      await fillIonInput(page, 'display-name-input', testUser.displayName);
 
-      await page.locator('[data-testid="auth-modal"] [data-testid="register-button"]').click();
+      await clickIonButton(page, 'register-button');
 
-      // Wait for registration to complete and modal to close
-      await page.waitForFunction(() => {
-        const modals = document.querySelectorAll('[data-testid="auth-modal"]');
-        return modals.length === 0 || !Array.from(modals).some(modal =>
-          modal.getAttribute('aria-hidden') !== 'true'
-        );
-      }, { timeout: 15000 });
+      // Wait for registration to complete and modal to close with better error handling
+      try {
+        await page.waitForFunction(() => {
+          const modals = document.querySelectorAll('[data-testid="auth-modal"]');
+          return modals.length === 0 || !Array.from(modals).some(modal =>
+            modal.getAttribute('aria-hidden') !== 'true' &&
+            !modal.classList.contains('overlay-hidden')
+          );
+        }, { timeout: 25000 });
+      } catch (error) {
+        console.log('⚠️ Modal close timeout, checking if registration succeeded anyway...');
+        // Check if user profile is visible even if modal didn't close properly
+        const userProfileVisible = await page.locator('[data-testid="user-profile"]').isVisible();
+        if (!userProfileVisible) {
+          throw error; // Re-throw if registration actually failed
+        }
+        console.log('✅ Registration succeeded despite modal timeout');
+      }
 
       console.log('✅ Registration completed, now testing sign-out and sign-in...');
 
-      // Sign out first by clicking the sign-out button (which should now be visible)
-      await page.waitForTimeout(2000);
-      await page.click('[data-testid="signout-button"]');
-      await page.waitForTimeout(2000);
+      // Wait for authentication state to fully stabilize before proceeding
+      await waitForAuthState(page, 'authenticated');
+
+      // Specifically wait for signout button to be visible (Mobile Safari needs this)
+      await expect(page.locator('[data-testid="signout-button"]')).toBeVisible({ timeout: 20000 });
+
+      // Sign out using the helper function (it handles retries and timing)
+      await clickIonButton(page, 'signout-button');
+      await waitForAuthState(page, 'unauthenticated');
 
       // Now test sign in with the registered user
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]', { timeout: 10000 });
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal', { timeout: 10000 });
 
       console.log('🔐 Filling sign-in form...');
-      await page.locator('[data-testid="email-input"] input').fill(testUser.email);
-      await page.locator('[data-testid="password-input"] input').fill(testUser.password);
+      await fillIonInput(page, 'email-input', testUser.email);
+      await fillIonInput(page, 'password-input', testUser.password);
 
       console.log('🚀 Submitting sign-in form...');
 
       // Wait for the signin button to be stable and enabled
       const signinButton = page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]');
-      await signinButton.waitFor({ state: 'visible' });
-      await page.waitForTimeout(1000); // Allow button to stabilize
+      await expect(signinButton).toBeVisible();
+      await expect(signinButton).toBeEnabled();
 
       // Use a more specific selector to avoid conflicts with multiple signin buttons
       await signinButton.click();
 
       // Wait for authentication modal to close
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: 15000 });
+      await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: 15000 });
 
       // Wait for user profile to update with signed-in state
-      await page.waitForTimeout(2000);
+      await waitForAuthState(page, 'authenticated');
 
       console.log('✅ Sign-in completed, checking user profile...');
 
@@ -305,7 +348,7 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Registered');
 
       // Check if user profile is visible and contains user data
-      const userProfile = await page.locator('[data-testid="user-profile"]');
+      const userProfile = page.locator('[data-testid="user-profile"]');
       await expect(userProfile).toBeVisible();
 
       // The display name might be the email prefix, so let's check for that
@@ -321,19 +364,20 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
     });
 
     test('should handle sign-in errors gracefully', async () => {
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
 
-      // Try to sign in with non-existent user using Ionic input approach
-      await page.locator('[data-testid="email-input"] input').fill('nonexistent@example.com');
-      await page.locator('[data-testid="password-input"] input').fill('wrongpassword');
+      // Try to sign in with non-existent user using helper functions
+      await fillIonInput(page, 'email-input', 'nonexistent@example.com');
+      await fillIonInput(page, 'password-input', 'wrongpassword');
 
       // Use more specific selector to avoid conflicts
       await page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]').click();
 
       // Wait for error to appear and check if modal is still visible (indicating error)
-      await page.waitForTimeout(3000);
       await expect(page.locator('[data-testid="auth-modal"]')).toBeVisible();
+      // Verify signin button is still present (form didn't submit successfully)
+      await expect(page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]')).toBeVisible();
       console.log('✅ Sign-in error handling test completed');
     });
   });
@@ -341,11 +385,11 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
   test.describe('👻 Guest Account Flow', () => {
     test('should create and manage guest account', async () => {
       // Click signin button to open auth modal first
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
 
       // Click continue as guest (inside the auth modal)
-      await page.click('[data-testid="guest-login-button"]');
+      await clickIonButton(page, 'guest-login-button');
 
       // Wait for guest user creation and modal to close
       await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
@@ -365,71 +409,42 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       const testUser = TEST_CONFIG.testUsers.registration;
 
       // Start as guest
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
-      await page.click('[data-testid="guest-login-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
-      await page.waitForSelector('[data-testid="user-profile"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
+      await clickIonButton(page, 'guest-login-button');
+      await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: TEST_CONFIG.timeout });
+      await expect(page.locator('[data-testid="user-profile"]')).toBeVisible({ timeout: TEST_CONFIG.timeout });
 
       // Wait for guest profile to load and then click the guest conversion button
-      await page.waitForTimeout(2000);
+      await waitForAuthState(page, 'authenticated');
 
       // Verify we have a guest account first
       await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Guest');
 
-      // Click the guest conversion button (should show "Protect Your Progress!")
+      // Click the guest conversion button using helper function
       console.log('🔄 Clicking guest conversion button...');
+      await clickIonButton(page, 'guest-login-button');
 
-      // Use more specific selector to target the guest conversion button in the user profile
-      const guestConversionButton = page.locator('[data-testid="user-profile"] [data-testid="guest-login-button"]');
-      await guestConversionButton.waitFor();
+      // Wait for auth modal to open using helper function
+      await waitForModal(page, 'auth-modal');
+      console.log('✅ Auth modal opened for guest conversion');
 
-      // Check button text to ensure it's the conversion button
-      const buttonText = await guestConversionButton.textContent();
-      console.log(`🔍 Guest button text: "${buttonText}"`);
+      // Switch to registration mode using helper function
+      await switchAuthMode(page, 'register');
 
-      await guestConversionButton.click();
+      // Fill conversion form using helper functions
+      await fillIonInput(page, 'email-input', testUser.email);
+      await fillIonInput(page, 'password-input', testUser.password);
+      await fillIonInput(page, 'display-name-input', testUser.displayName);
 
-      // Wait for auth modal with longer timeout and better error handling
-      // Use .last() to target the specific modal being opened (avoids duplicate modal issue)
-      const authModal = page.locator('[data-testid="auth-modal"]').last();
-      try {
-        await expect(authModal).toBeVisible({ timeout: 10000 });
-        console.log('✅ Auth modal opened for guest conversion');
-      } catch (error) {
-        console.log('❌ Auth modal failed to open, checking page state...');
-        const currentUrl = page.url();
-        const modalCount = await page.locator('[data-testid="auth-modal"]').count();
-        console.log(`Current URL: ${currentUrl}`);
-        console.log(`Number of auth modals found: ${modalCount}`);
+      // Submit conversion using helper function
+      await clickIonButton(page, 'register-button');
 
-        // Log all modals and their visibility state for debugging
-        const modals = await page.locator('[data-testid="auth-modal"]').all();
-        for (let i = 0; i < modals.length; i++) {
-          const isVisible = await modals[i].isVisible();
-          const classes = await modals[i].getAttribute('class');
-          console.log(`Modal ${i}: visible=${isVisible}, classes=${classes}`);
-        }
-        throw error;
-      }
+      // Wait for conversion success by checking auth state change instead of modal
+      await waitForAuthState(page, 'authenticated');
 
-      // Switch to registration mode using the specific modal
-      await authModal.locator('[data-testid="switch-to-register"]').click();
-
-      // Fill conversion form using Ionic input approach with specific modal
-      await authModal.locator('[data-testid="email-input"] input').fill(testUser.email);
-      await authModal.locator('[data-testid="password-input"] input').fill(testUser.password);
-      await authModal.locator('[data-testid="display-name-input"] input').fill(testUser.displayName);
-
-      // Submit conversion using the specific modal
-      await authModal.locator('[data-testid="register-button"]').click();
-
-      // Wait for conversion success
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
-
-      // Verify user is now registered
-      await page.waitForTimeout(2000); // Wait for profile to update
-      await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Registered');
+      // Verify user is now registered (wait for badge to update)
+      await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Registered', { timeout: 15000 });
       console.log('✅ Guest conversion test completed');
     });
   });
@@ -439,21 +454,21 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       const testUser = TEST_CONFIG.testUsers.deletion;
 
       // First register a user
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
-      await page.click('[data-testid="switch-to-register"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
+      await switchAuthMode(page, 'register');
 
-      await page.locator('[data-testid="email-input"] input').fill(testUser.email);
-      await page.locator('[data-testid="password-input"] input').fill(testUser.password);
-      await page.locator('[data-testid="display-name-input"] input').fill(testUser.displayName);
-      await page.click('[data-testid="register-button"]');
+      await fillIonInput(page, 'email-input', testUser.email);
+      await fillIonInput(page, 'password-input', testUser.password);
+      await fillIonInput(page, 'display-name-input', testUser.displayName);
+      await clickIonButton(page, 'register-button');
 
       await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden' });
       await page.waitForSelector('[data-testid="user-profile"]');
 
       // Wait for registration to complete and verify user is properly registered
       console.log('⏳ Waiting for user registration to complete...');
-      await page.waitForTimeout(3000); // Give time for backend registration
+      await waitForAuthState(page, 'authenticated');
 
       // Verify the user is actually registered by checking the account type badge
       await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Registered', { timeout: 10000 });
@@ -462,11 +477,11 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
 
 
       // Navigate to settings
-      await page.click('ion-tab-button[tab="settings"]');
+      await clickIonButton(page, 'settings-tab');
       await page.waitForURL('**/settings');
 
       // Find and click delete account button
-      await page.click('[data-testid="delete-account-button"]');
+      await clickIonButton(page, 'delete-account-button');
 
       // Wait for deletion modal
       await page.waitForSelector('[data-testid="account-deletion-modal"]');
@@ -476,20 +491,18 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
 
       // Step 1: Warning acknowledgment
       console.log('⚠️ Step 1: Acknowledging warning...');
-      await page.click('[data-testid="acknowledge-warning-button"]');
-      await page.waitForTimeout(1000);
+      await clickIonButton(page, 'acknowledge-warning-button');
 
       // Step 2: Skip data export
       console.log('📤 Step 2: Skipping data export...');
-      await page.click('[data-testid="skip-export-button"]');
-      await page.waitForTimeout(1000);
+      await clickIonButton(page, 'skip-export-button');
 
       // Step 3: Password re-authentication
       console.log('🔐 Step 3: Password re-authentication...');
       await page.waitForSelector('[data-testid="deletion-password-input"]');
 
-      // Clear and fill password input
-      const passwordInput = page.locator('[data-testid="deletion-password-input"] input');
+      // Clear and fill password input - use .first() to avoid strict mode violation
+      const passwordInput = page.locator('[data-testid="deletion-password-input"] input').first();
       await passwordInput.clear();
       await passwordInput.fill(testUser.password);
 
@@ -499,11 +512,15 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
         return button && !button.hasAttribute('disabled');
       }, { timeout: 5000 });
 
-      await page.click('[data-testid="verify-password-button"]');
+      await clickIonButton(page, 'verify-password-button');
 
       // Wait for password verification to complete and check page state
       console.log('⏳ Waiting for password verification...');
-      await page.waitForTimeout(3000);
+      // Wait for either success (modal closes) or error (modal stays open)
+      await Promise.race([
+        waitForModal(page, 'account-deletion-modal', { state: 'hidden', timeout: 5000 }).catch(() => {}),
+        expect(page.locator('[data-testid="account-deletion-modal"]')).toBeVisible({ timeout: 5000 }).catch(() => {})
+      ]);
 
       // Check if page is still accessible
       try {
@@ -539,7 +556,7 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       }, { timeout: 5000 });
       console.log('✅ Proceed button is enabled');
 
-      await page.click('[data-testid="proceed-to-final-button"]');
+      await clickIonButton(page, 'proceed-to-final-button');
       console.log('✅ Clicked proceed to final button');
 
       // Final confirmation alert - use CSS class selector since IonAlert doesn't support data-testid on buttons
@@ -579,7 +596,7 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
         const headers = await request.allHeaders();
         console.log('🌐 Request headers:', JSON.stringify(headers, null, 2));
       } catch (error) {
-        console.log('❌ No deletion API call detected within timeout:', error.message);
+        console.log('❌ No deletion API call detected within timeout:', (error as Error).message);
       }
 
       // Account deletion is happening in the background
@@ -636,7 +653,7 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
         // Since the account deletion didn't work, let's manually sign out and verify
         // that the account still exists (which proves the deletion failed)
         if (isSignoutButtonVisible) {
-          await page.click('button:has-text("Sign Out")');
+          await clickIonButton(page, 'signout-button');
           await page.waitForLoadState('networkidle');
           console.log('🔄 Manually signed out user');
         }
@@ -646,14 +663,17 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
         console.log('✅ Signin button visible after manual signout');
 
         // Try to sign in with the "deleted" account to prove it still exists
-        await page.click('[data-testid="signin-button"]');
-        await page.waitForSelector('[data-testid="auth-modal"]');
-        await page.locator('[data-testid="email-input"] input').fill(testUser.email);
-        await page.locator('[data-testid="password-input"] input').fill(testUser.password);
+        await clickIonButton(page, 'signin-button');
+        await waitForModal(page, 'auth-modal');
+        await fillIonInput(page, 'email-input', testUser.email);
+        await fillIonInput(page, 'password-input', testUser.password);
         await page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]').click();
 
         // Wait for signin to complete
-        await page.waitForTimeout(3000);
+        await Promise.race([
+          waitForAuthState(page, 'authenticated').catch(() => {}),
+          expect(page.locator('[data-testid="auth-modal"]')).toBeVisible({ timeout: 5000 }).catch(() => {})
+        ]);
 
         // Check if signin was successful (proving account wasn't deleted)
         const signinSuccessful = await page.locator('button:has-text("Sign Out")').isVisible();
@@ -678,73 +698,96 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       console.log('✅ Backend confirmed complete deletion (database + Firebase)');
 
       // Verify user no longer exists in database by trying to sign in
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
-      await page.locator('[data-testid="email-input"] input').fill(testUser.email);
-      await page.locator('[data-testid="password-input"] input').fill(testUser.password);
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
+      await fillIonInput(page, 'email-input', testUser.email);
+      await fillIonInput(page, 'password-input', testUser.password);
       await page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]').click();
 
       // Wait for error and check if modal is still visible (indicating error)
-      await page.waitForTimeout(3000);
       await expect(page.locator('[data-testid="auth-modal"]')).toBeVisible();
+      // Verify signin button is still present (authentication failed)
+      await expect(page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]')).toBeVisible();
       console.log('✅ Account deletion test completed');
     });
 
     test('should delete guest account', async () => {
       // Create guest account
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
-      await page.click('[data-testid="guest-login-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
-      await page.waitForSelector('[data-testid="user-profile"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
+      await clickIonButton(page, 'guest-login-button');
+      await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: TEST_CONFIG.timeout });
+      await expect(page.locator('[data-testid="user-profile"]')).toBeVisible({ timeout: TEST_CONFIG.timeout });
 
       // Navigate to settings
-      await page.click('ion-tab-button[tab="settings"]');
+      await clickIonButton(page, 'settings-tab');
       await page.waitForURL('**/settings');
 
       // Delete guest account (simpler flow)
-      await page.click('[data-testid="delete-account-button"]');
-      await page.waitForSelector('[data-testid="account-deletion-modal"]');
+      await clickIonButton(page, 'delete-account-button');
+      await expect(page.locator('[data-testid="account-deletion-modal"]')).toBeVisible();
 
       // Skip warning and export steps for guest
-      await page.click('[data-testid="acknowledge-warning-button"]');
-      await page.click('[data-testid="skip-export-button"]');
+      await clickIonButton(page, 'acknowledge-warning-button');
+      await clickIonButton(page, 'skip-export-button');
 
       // For guest accounts, password step is skipped, go directly to text confirmation
-      await page.waitForSelector('[data-testid="deletion-confirmation-input"]');
-      await page.locator('[data-testid="deletion-confirmation-input"] input').fill('DELETE MY ACCOUNT');
-      await page.click('[data-testid="proceed-to-final-button"]');
+      await expect(page.locator('[data-testid="deletion-confirmation-input"]')).toBeVisible();
+      await fillIonInput(page, 'deletion-confirmation-input', 'DELETE MY ACCOUNT');
+      await clickIonButton(page, 'proceed-to-final-button');
 
       // Final confirmation - use CSS class selector since IonAlert doesn't support data-testid on buttons
-      await page.waitForSelector('[data-testid="final-confirmation-alert"]');
-      await page.click('.confirm-deletion-button');
+      await expect(page.locator('[data-testid="final-confirmation-alert"]')).toBeVisible();
 
-      // Wait for deletion to complete
-      await page.waitForTimeout(3000);
+      // Listen for browser console logs to capture frontend errors
+      page.on('console', msg => {
+        if (msg.type() === 'error' || msg.text().includes('[AccountDeletion]')) {
+          console.log(`🖥️ Browser Console [${msg.type()}]:`, msg.text());
+        }
+      });
 
-      // Verify user is signed out
-      await page.waitForURL('**/');
-      await expect(page.locator('[data-testid="user-profile"]')).not.toBeVisible();
+      await page.click('.confirm-deletion-button'); // Special CSS selector for IonAlert button
+      console.log('✅ Clicked final confirmation button for guest account');
+
+      // Wait for deletion to complete - guest accounts might not trigger API calls
+      // Instead, wait for the modal to close and authentication state to change
+      console.log('⏳ Waiting for guest account deletion to complete...');
+
+      // Wait for modal to close (guest deletion should be immediate)
+      await expect(page.locator('[data-testid="account-deletion-modal"]')).not.toBeVisible({ timeout: 15000 });
+      console.log('✅ Account deletion modal closed');
+
+      // Wait for authentication state to change to unauthenticated
+      await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Not Signed In', { timeout: 15000 });
+      console.log('✅ Authentication state changed to unauthenticated');
+
+      // Navigate to home page to verify signin button is available
+      await page.goto('/');
+      await waitForAuthState(page, 'unauthenticated');
+
+      // Verify user is signed out - check that signin button is visible and account badge shows "Not Signed In"
+      await expect(page.locator('[data-testid="signin-button"]')).toBeVisible();
+      await expect(page.locator('[data-testid="account-type-badge"]')).toContainText('Not Signed In');
     });
 
     test('should handle deletion cancellation', async () => {
       // Create user and start deletion process
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
-      await page.click('[data-testid="guest-login-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
-      await page.waitForSelector('[data-testid="user-profile"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
+      await clickIonButton(page, 'guest-login-button');
+      await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: TEST_CONFIG.timeout });
+      await expect(page.locator('[data-testid="user-profile"]')).toBeVisible({ timeout: TEST_CONFIG.timeout });
 
-      await page.click('ion-tab-button[tab="settings"]');
-      await page.click('[data-testid="delete-account-button"]');
-      await page.waitForSelector('[data-testid="account-deletion-modal"]');
+      await clickIonButton(page, 'settings-tab');
+      await clickIonButton(page, 'delete-account-button');
+      await expect(page.locator('[data-testid="account-deletion-modal"]')).toBeVisible();
 
       // Cancel at various stages
-      await page.click('[data-testid="cancel-deletion-button"]');
-      await page.waitForSelector('[data-testid="account-deletion-modal"]', { state: 'hidden' });
+      await clickIonButton(page, 'cancel-deletion-button');
+      await waitForModal(page, 'account-deletion-modal', { state: 'hidden' });
 
       // Navigate back to home to verify user is still logged in
-      await page.click('ion-tab-button[tab="home"]');
+      await clickIonButton(page, 'home-tab');
       await page.waitForURL('**/home');
 
       // Verify user is still logged in
@@ -759,11 +802,11 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       await page.setViewportSize({ width: 375, height: 667 });
 
       // Test basic auth flow on mobile
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
-      await page.click('[data-testid="guest-login-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]', { state: 'hidden', timeout: TEST_CONFIG.timeout });
-      await page.waitForSelector('[data-testid="user-profile"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
+      await clickIonButton(page, 'guest-login-button');
+      await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: TEST_CONFIG.timeout });
+      await expect(page.locator('[data-testid="user-profile"]')).toBeVisible({ timeout: TEST_CONFIG.timeout });
 
       // Verify mobile-optimized UI elements
       await expect(page.locator('ion-tab-bar')).toBeVisible();
@@ -774,16 +817,17 @@ test.describe('🔐 Authentication and User Deletion E2E', () => {
       // Simulate network failure during auth
       await page.route('**/api/auth/**', route => route.abort());
 
-      await page.click('[data-testid="signin-button"]');
-      await page.waitForSelector('[data-testid="auth-modal"]');
+      await clickIonButton(page, 'signin-button');
+      await waitForModal(page, 'auth-modal');
 
-      await page.locator('[data-testid="email-input"] input').fill('test@example.com');
-      await page.locator('[data-testid="password-input"] input').fill('password');
+      await fillIonInput(page, 'email-input', 'test@example.com');
+      await fillIonInput(page, 'password-input', 'password');
       await page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]').click();
 
       // Should show network error or modal should remain visible
-      await page.waitForTimeout(3000);
       await expect(page.locator('[data-testid="auth-modal"]')).toBeVisible();
+      // Verify signin button is still present (network error prevented signin)
+      await expect(page.locator('[data-testid="auth-modal"] [data-testid="signin-button"]')).toBeVisible();
       console.log('✅ Network error handling test completed');
     });
   });

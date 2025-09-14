@@ -349,6 +349,53 @@ export const gameApi = {
   }) => api.post<ApiResponse>('/api/game/tcg/sync', syncData),
 
   getGameState: (gameId: string) => api.get<ApiResponse>(`/api/game/tcg/${gameId}/state`),
+
+  // ============================================================================
+  // ONLINE MULTIPLAYER ENDPOINTS
+  // ============================================================================
+
+  // Matchmaking endpoints
+  findMatch: (data: { gameMode: string; preferences?: any }) =>
+    api.post<ApiResponse>('/api/matchmaking/find', data),
+
+  cancelMatchmaking: () =>
+    api.delete<ApiResponse>('/api/matchmaking/cancel'),
+
+  getMatchmakingStatus: () =>
+    api.get<ApiResponse>('/api/matchmaking/status'),
+
+  // Rating and leaderboard endpoints
+  getPlayerRatings: (data: { playerIds: string[] }) =>
+    api.post<ApiResponse>('/api/users/ratings', data),
+
+  updatePlayerRating: (data: any) =>
+    api.post<ApiResponse>('/api/users/rating/update', data),
+
+  getLeaderboard: (gameMode: string, limit: number = 100) =>
+    api.get<ApiResponse>(`/api/leaderboard/${gameMode}?limit=${limit}`),
+
+  // Match history endpoints
+  getMatchHistory: (page: number = 1, limit: number = 20) =>
+    api.get<ApiResponse>(`/api/matches/history?page=${page}&limit=${limit}`),
+
+  forfeitMatch: (sessionId: string) =>
+    api.post<ApiResponse>(`/api/matches/${sessionId}/forfeit`),
+
+  // Quest endpoints
+  getDailyQuests: () =>
+    api.get<ApiResponse>('/api/quests/daily'),
+
+  updateQuestProgress: (data: any) =>
+    api.post<ApiResponse>('/api/quests/progress', data),
+
+  claimQuestReward: (questId: string) =>
+    api.post<ApiResponse>(`/api/quests/${questId}/claim`),
+
+  // Generic HTTP methods for flexibility
+  post: <T = any>(url: string, data?: any) => api.post<T>(url, data),
+  get: <T = any>(url: string) => api.get<T>(url),
+  put: <T = any>(url: string, data?: any) => api.put<T>(url, data),
+  delete: <T = any>(url: string) => api.delete<T>(url),
 };
 
 // Export the main client for custom requests

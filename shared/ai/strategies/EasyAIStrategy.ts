@@ -20,7 +20,7 @@ export class EasyAIStrategy extends BaseAIStrategy {
   /**
    * Override to use actual game engine validation
    */
-  protected canMakeAnyMove(hand: string[], gameState: any, playerId: string): boolean {
+  protected override canMakeAnyMove(hand: string[], _gameState: any, _playerId: string): boolean {
     // For Easy AI, we'll implement a simple check
     // In a real implementation, this would use the game engine's validation
     console.log(`🤖 [EASY] Checking if AI can make moves with ${hand.length} cards`);
@@ -41,7 +41,7 @@ export class EasyAIStrategy extends BaseAIStrategy {
    * Easy AI: Select card completely randomly
    * No strategic considerations
    */
-  selectCard(hand: string[], gameState: GameState, playerId: string): string {
+  override selectCard(hand: string[], gameState: GameState, playerId: string): string {
     console.log(`🤖 [EASY] AI has ${hand.length} cards in hand`);
     
     // Use base class random selection
@@ -55,7 +55,7 @@ export class EasyAIStrategy extends BaseAIStrategy {
    * Easy AI: Select position completely randomly
    * No strategic placement considerations
    */
-  selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
+  override selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
     console.log(`🤖 [EASY] AI has ${validPositions.length} valid positions for card ${cardId}`);
     
     // Use base class random selection
@@ -69,7 +69,7 @@ export class EasyAIStrategy extends BaseAIStrategy {
    * Easy AI: Pass turn randomly with 30% chance
    * No strategic passing considerations
    */
-  shouldPassTurn(hand: string[], actionsRemaining: number, gameState: GameState, playerId: string): boolean {
+  override shouldPassTurn(hand: string[], actionsRemaining: number, gameState: GameState, playerId: string): boolean {
     // Easy AI might pass even when it has cards and actions
     const shouldPass = super.shouldPassTurn(hand, actionsRemaining, gameState, playerId);
     
@@ -86,7 +86,7 @@ export class EasyAIStrategy extends BaseAIStrategy {
    * Easy AI: Quick thinking time
    * 1-2 seconds to make it feel natural but not slow
    */
-  getThinkingDelay(): number {
+  override getThinkingDelay(): number {
     const delay = super.getThinkingDelay();
     console.log(`🤖 [EASY] AI thinking for ${Math.round(delay)}ms`);
     return delay;

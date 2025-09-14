@@ -57,26 +57,28 @@ export abstract class BaseAIStrategy implements AIStrategy {
    * Default card selection - random choice
    * Override in subclasses for smarter selection
    */
-  selectCard(hand: string[], gameState: GameState, playerId: string): string {
+  selectCard(hand: string[], _gameState: GameState, _playerId: string): string {
     if (hand.length === 0) {
       throw new Error('Cannot select card from empty hand');
     }
-    
+
     console.log(`🤖 [${this.difficulty.toUpperCase()}] AI selecting random card from ${hand.length} cards`);
-    return hand[Math.floor(Math.random() * hand.length)];
+    const randomIndex = Math.floor(Math.random() * hand.length);
+    return hand[randomIndex]!; // Safe because we check for empty hand above
   }
 
   /**
    * Default position selection - random choice
    * Override in subclasses for strategic placement
    */
-  selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
+  selectPosition(validPositions: Position[], _gameState: GameState, _cardId: string, _playerId: string): Position {
     if (validPositions.length === 0) {
       throw new Error('Cannot select position from empty valid positions');
     }
-    
+
     console.log(`🤖 [${this.difficulty.toUpperCase()}] AI selecting random position from ${validPositions.length} options`);
-    return validPositions[Math.floor(Math.random() * validPositions.length)];
+    const randomIndex = Math.floor(Math.random() * validPositions.length);
+    return validPositions[randomIndex]!; // Safe because we check for empty positions above
   }
 
   /**
@@ -108,7 +110,7 @@ export abstract class BaseAIStrategy implements AIStrategy {
    * Check if AI can make any valid moves with current hand
    * Override in subclasses for game-specific logic
    */
-  protected canMakeAnyMove(hand: string[], gameState: GameState, playerId: string): boolean {
+  protected canMakeAnyMove(hand: string[], _gameState: GameState, _playerId: string): boolean {
     // Base implementation: assume moves are available if hand is not empty
     // Subclasses should implement actual move validation
     return hand.length > 0;
@@ -158,7 +160,7 @@ export abstract class BaseAIStrategy implements AIStrategy {
   /**
    * Protected helper: Get card data from game state
    */
-  protected getCardData(cardId: string, gameState: GameState): any {
+  protected getCardData(_cardId: string, _gameState: GameState): any {
     // Helper method for subclasses to access card data
     // Implementation depends on how card data is stored in gameState
     return null; // Placeholder - implement based on actual game state structure
@@ -167,7 +169,7 @@ export abstract class BaseAIStrategy implements AIStrategy {
   /**
    * Protected helper: Evaluate position strategic value
    */
-  protected evaluatePositionValue(position: Position, cardId: string, gameState: GameState): number {
+  protected evaluatePositionValue(_position: Position, _cardId: string, _gameState: GameState): number {
     // Base implementation returns random value
     // Override in subclasses for actual strategic evaluation
     return Math.random();
@@ -176,7 +178,7 @@ export abstract class BaseAIStrategy implements AIStrategy {
   /**
    * Protected helper: Check if card can form trophic chains
    */
-  protected canFormTrophicChain(cardId: string, position: Position, gameState: GameState): boolean {
+  protected canFormTrophicChain(_cardId: string, _position: Position, _gameState: GameState): boolean {
     // Base implementation returns false
     // Override in subclasses for actual trophic chain detection
     return false;

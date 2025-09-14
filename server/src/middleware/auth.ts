@@ -179,7 +179,11 @@ export const requireRegisteredUser = [
       });
       return;
     }
-    if (!req.user.email_verified) {
+    // Check email verification - in test mode, also check Firebase token
+    const isEmailVerified = req.user.email_verified ||
+      (process.env['NODE_ENV'] === 'test' && req.firebaseUser?.email_verified);
+
+    if (!isEmailVerified) {
       res.status(403).json({
         error: 'EMAIL_NOT_VERIFIED',
         message: 'Please verify your email address.'

@@ -332,7 +332,7 @@ export class BioMastersEngine {
       }
 
       // Get card data
-      const actualCardId = parseInt(cardId.split('_')[0]) as CardId;
+      const actualCardId = parseInt(cardId?.split('_')[0] || '0') as CardId;
       const cardData = this.cardDatabase.get(actualCardId);
       if (!cardData) {
         return { isValid: false, errorMessage: 'Card data not found' };
@@ -493,7 +493,7 @@ export class BioMastersEngine {
     // Get card data - handle both string and number cardId
     let actualCardId: number;
     if (typeof cardId === 'string') {
-      actualCardId = parseInt(cardId.split('_')[0]) as CardId;
+      actualCardId = parseInt(cardId?.split('_')[0] || '0') as CardId;
       console.log(`🔍 Converted string cardId "${cardId}" to number: ${actualCardId}`);
     } else {
       actualCardId = cardId;
@@ -709,7 +709,7 @@ export class BioMastersEngine {
   /**
    * Handle drop and draw three action
    */
-  public handleDropAndDrawThree(state: GameState, playerId: string, cardIdToDiscard: string): { isValid: boolean; newState?: GameState; errorMessage?: string } {
+  public handleDropAndDrawThree(state: GameState, playerId: string, cardIdToDiscard: string): { isValid: boolean; newState?: GameState; errorMessage?: string; drawnCards?: string[] } {
     console.log(`🃏 handleDropAndDrawThree called for player ${playerId}, discarding card ${cardIdToDiscard}`);
 
     // Find the player
@@ -746,13 +746,18 @@ export class BioMastersEngine {
 
     // Move card from hand to discard pile
     const discardedCard = newPlayer.hand.splice(cardIndex, 1)[0];
-    newPlayer.discardPile.push(discardedCard);
+    if (discardedCard) {
+      newPlayer.discardPile.push(discardedCard);
+    }
     console.log(`🗑️ Discarded card ${discardedCard} to discard pile`);
+    console.log(`🎒 Hand after removal: [${newPlayer.hand.join(', ')}] (${newPlayer.hand.length} cards)`);
 
-    // Draw 3 cards from deck to hand
+    // Draw 3 cards from deck to hand and track them
+    const drawnCards: string[] = [];
     for (let i = 0; i < 3 && newPlayer.deck.length > 0; i++) {
       const drawnCard = newPlayer.deck.pop()!;
       newPlayer.hand.push(drawnCard);
+      drawnCards.push(drawnCard);
       console.log(`🃏 Drew card ${drawnCard} (${i + 1}/3)`);
     }
 
@@ -761,9 +766,10 @@ export class BioMastersEngine {
     console.log(`⚡ Action consumed. ${newState.actionsRemaining} actions remaining.`);
 
     console.log(`✅ Drop and draw three completed: Hand: ${newPlayer.hand.length}, Deck: ${newPlayer.deck.length}, Discard: ${newPlayer.discardPile.length}`);
+    console.log(`🃏 Cards drawn: ${drawnCards.join(', ')}`);
 
     this.gameState = newState;
-    return { isValid: true, newState };
+    return { isValid: true, newState, drawnCards };
   }
 
   /**
@@ -2530,6 +2536,7 @@ export class BioMastersEngine {
       if (newState.finalTurnPlayersRemaining.length === 0) {
         console.log(`🏁 All final turns complete - ending game`);
         this.endGame(newState, 'deck_empty');
+        console.log(`🏁 Game state after endGame: ${newState.gamePhase}`);
         this.gameState = newState;
         return { isValid: true, newState };
       }

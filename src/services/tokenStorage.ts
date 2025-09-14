@@ -119,13 +119,13 @@ export const tokenManager = {
         tokenStorage.get(this.GUEST_TOKEN_KEY)
       ]);
 
-      if (!guestId || !guestSecret) {
+      if (!guestId) {
         return null;
       }
 
       return {
         guestId,
-        guestSecret,
+        guestSecret: guestSecret || '', // Allow empty secret for offline-only guests
         guestToken: guestToken || undefined
       };
     } catch (error) {

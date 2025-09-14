@@ -103,7 +103,17 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
       // Missing required fields
       is_public_profile: false,
       email_notifications: true,
-      push_notifications: true
+      push_notifications: true,
+
+      // Online multiplayer defaults
+      current_rating: 1000,
+      peak_rating: 1000,
+      win_streak: 0,
+
+      // Quest system defaults
+      daily_quest_streak: 0,
+      last_daily_reset: new Date(),
+      total_quests_completed: 0
     };
 
     const users = await trx
@@ -458,10 +468,14 @@ router.delete('/account', (req: Request, _res: Response, next: NextFunction) => 
   console.log('🌐 [Route] Headers:', req.headers['authorization'] ? 'Auth header present' : 'No auth header');
   next();
 }, authenticateToken, asyncHandler(async (req, res) => {
-  const firebaseUser = req.firebaseUser!;
+  const firebaseUser = req.firebaseUser;
+  const guestUser = req.guestUser;
   const user = req.user!;
 
-  console.log(`🗑️ Starting account deletion for user: ${user.id} (Firebase: ${firebaseUser.uid})`);
+  console.log(`🗑️ Starting account deletion for user: ${user.id}`);
+  console.log(`🗑️ User type: ${user.is_guest ? 'Guest' : 'Registered'}`);
+  console.log(`🗑️ Firebase UID: ${firebaseUser?.uid || 'N/A'}`);
+  console.log(`🗑️ Guest ID: ${guestUser?.guestId || 'N/A'}`);
 
   // Retry logic for database operations
   const maxRetries = 3;
@@ -542,13 +556,17 @@ router.delete('/account', (req: Request, _res: Response, next: NextFunction) => 
       console.log(`✅ Database deletion completed for user: ${deletedUser.username}`);
     });
 
-    // Clear user cache
-    console.log('🗑️ Clearing user cache...');
-    const cacheKey = `user:${firebaseUser.uid}`;
-    await CacheManager.delete(cacheKey);
+    // Clear user cache (only for Firebase users)
+    if (firebaseUser?.uid) {
+      console.log('🗑️ Clearing user cache...');
+      const cacheKey = `user:${firebaseUser.uid}`;
+      await CacheManager.delete(cacheKey);
+    } else {
+      console.log('ℹ️ Skipping cache clear for guest user (no Firebase UID)');
+    }
 
     // Delete from Firebase Auth (only for registered users)
-    if (firebaseUser.uid && !user.is_guest) {
+    if (firebaseUser?.uid && !user.is_guest) {
       console.log('🔥 Deleting user from Firebase Auth...');
       const { deleteFirebaseUser } = await import('../config/firebase');
       try {

@@ -61,7 +61,11 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
     isOnline,
     syncStatus,
     syncCollection,
-    loadOfflineCollection
+    loadOfflineCollection,
+    pendingActions,
+    lastSyncTime,
+    syncError,
+    isAuthenticated
   } = useHybridGameStore();
 
   // Load species data and collection on component mount
@@ -219,8 +223,24 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   };
 
   const handleSync = async () => {
+    console.log('🔄 [COLLECTION-UI] handleSync called:', {
+      isOnline,
+      syncStatus,
+      pendingActions,
+      isAuthenticated,
+      timestamp: new Date().toISOString()
+    });
+
     if (isOnline) {
-      await syncCollection();
+      console.log('🔄 [COLLECTION-UI] Triggering syncCollection...');
+      try {
+        await syncCollection();
+        console.log('✅ [COLLECTION-UI] syncCollection completed');
+      } catch (error) {
+        console.error('❌ [COLLECTION-UI] syncCollection failed:', error);
+      }
+    } else {
+      console.log('⚠️ [COLLECTION-UI] Cannot sync - device is offline');
     }
   };
 
@@ -286,10 +306,13 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
       
       <IonContent>
         {/* Sync Status */}
-        <SyncStatus 
+        <SyncStatus
           isOnline={isOnline}
           syncStatus={syncStatus}
           onSync={handleSync}
+          pendingActions={pendingActions}
+          lastSyncTime={lastSyncTime}
+          syncError={syncError}
         />
 
         {/* Collection Statistics */}

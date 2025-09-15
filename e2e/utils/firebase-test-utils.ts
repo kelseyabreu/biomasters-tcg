@@ -4,14 +4,15 @@
  */
 
 import { initializeApp, getApps, deleteApp } from 'firebase/app';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   deleteUser,
   User,
   connectAuthEmulator
 } from 'firebase/auth';
+import { getTestConfig } from '../config/test-config';
 
 // Firebase test configuration
 const FIREBASE_TEST_CONFIG = {
@@ -32,15 +33,69 @@ export interface TestUser {
   firebaseUser?: User;
 }
 
+// Global rate limiting manager
+class FirebaseRateLimitManager {
+  private static instance: FirebaseRateLimitManager;
+  private lastRequestTime = 0;
+  private requestCount = 0;
+  private config = getTestConfig().firebase.rateLimiting;
+
+  static getInstance(): FirebaseRateLimitManager {
+    if (!FirebaseRateLimitManager.instance) {
+      FirebaseRateLimitManager.instance = new FirebaseRateLimitManager();
+    }
+    return FirebaseRateLimitManager.instance;
+  }
+
+  async throttleRequest(): Promise<void> {
+    if (!this.config.enabled) {
+      return; // Rate limiting disabled
+    }
+
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+
+    // Reset counter if more than 1 second has passed
+    if (timeSinceLastRequest > 1000) {
+      this.requestCount = 0;
+    }
+
+    // If we've hit the rate limit, wait
+    if (this.requestCount >= this.config.maxRequestsPerSecond) {
+      const waitTime = 1000 - timeSinceLastRequest;
+      if (waitTime > 0) {
+        console.log(`🚦 Rate limiting: waiting ${waitTime}ms (${this.requestCount}/${this.config.maxRequestsPerSecond} requests)...`);
+        await this.sleep(waitTime);
+        this.requestCount = 0;
+      }
+    }
+
+    // Ensure minimum delay between requests
+    if (timeSinceLastRequest < this.config.minDelayMs) {
+      const waitTime = this.config.minDelayMs - timeSinceLastRequest;
+      await this.sleep(waitTime);
+    }
+
+    this.lastRequestTime = Date.now();
+    this.requestCount++;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
 // Firebase test manager class
 export class FirebaseTestManager {
   private app: any;
   private auth: any;
   private testUsers: TestUser[] = [];
   private useEmulator: boolean;
+  private rateLimitManager: FirebaseRateLimitManager;
 
   constructor(useEmulator = process.env.NODE_ENV === 'test') {
     this.useEmulator = useEmulator;
+    this.rateLimitManager = FirebaseRateLimitManager.getInstance();
     this.initializeFirebase();
   }
 
@@ -64,72 +119,117 @@ export class FirebaseTestManager {
   }
 
   /**
-   * Create a test user in Firebase Auth
+   * Create a test user in Firebase Auth with rate limiting protection
    */
   async createTestUser(testUser: TestUser): Promise<TestUser> {
-    try {
-      console.log(`🔥 Creating test user: ${testUser.email}`);
-      
-      const userCredential = await createUserWithEmailAndPassword(
-        this.auth,
-        testUser.email,
-        testUser.password
-      );
+    const config = getTestConfig();
+    const maxRetries = config.firebase.rateLimiting.retryAttempts;
+    let attempt = 0;
 
-      const firebaseUser = userCredential.user;
-      
-      // Update profile with display name
-      if (testUser.displayName) {
-        await firebaseUser.updateProfile({
-          displayName: testUser.displayName
-        });
+    while (attempt < maxRetries) {
+      try {
+        // Apply global rate limiting
+        await this.rateLimitManager.throttleRequest();
+
+        console.log(`🔥 Creating test user: ${testUser.email} (attempt ${attempt + 1}/${maxRetries})`);
+
+        const userCredential = await createUserWithEmailAndPassword(
+          this.auth,
+          testUser.email,
+          testUser.password
+        );
+
+        const firebaseUser = userCredential.user;
+
+        // Note: updateProfile is not available in Node.js Firebase Admin SDK
+        // Display name will be set on the client side if needed
+
+        const createdUser: TestUser = {
+          ...testUser,
+          uid: firebaseUser.uid,
+          firebaseUser
+        };
+
+        this.testUsers.push(createdUser);
+        console.log(`✅ Test user created: ${testUser.email} (${firebaseUser.uid})`);
+
+        return createdUser;
+      } catch (error: any) {
+        attempt++;
+
+        if (error.code === 'auth/too-many-requests') {
+          const delay = Math.min(
+            1000 * Math.pow(config.firebase.rateLimiting.exponentialBackoffBase, attempt),
+            config.firebase.rateLimiting.maxBackoffMs
+          );
+          console.log(`⏳ Rate limited, waiting ${delay}ms before retry ${attempt}/${maxRetries}...`);
+          await this.sleep(delay);
+          continue;
+        }
+
+        console.error(`❌ Failed to create test user ${testUser.email}:`, error);
+        throw new Error(`Firebase user creation failed: ${error.message}`);
       }
-
-      const createdUser: TestUser = {
-        ...testUser,
-        uid: firebaseUser.uid,
-        firebaseUser
-      };
-
-      this.testUsers.push(createdUser);
-      console.log(`✅ Test user created: ${testUser.email} (${firebaseUser.uid})`);
-      
-      return createdUser;
-    } catch (error: any) {
-      console.error(`❌ Failed to create test user ${testUser.email}:`, error);
-      throw new Error(`Firebase user creation failed: ${error.message}`);
     }
+
+    throw new Error(`Firebase user creation failed after ${maxRetries} attempts due to rate limiting`);
   }
 
   /**
-   * Sign in a test user
+   * Sleep utility for delays
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Sign in a test user with rate limiting protection
    */
   async signInTestUser(email: string, password: string): Promise<TestUser> {
-    try {
-      console.log(`🔑 Signing in test user: ${email}`);
-      
-      const userCredential = await signInWithEmailAndPassword(
-        this.auth,
-        email,
-        password
-      );
+    const maxRetries = 5;
+    let attempt = 0;
 
-      const firebaseUser = userCredential.user;
-      
-      const signedInUser: TestUser = {
-        email,
-        password,
-        displayName: firebaseUser.displayName || '',
-        uid: firebaseUser.uid,
-        firebaseUser
+    while (attempt < maxRetries) {
+      try {
+        // Apply global rate limiting
+        await this.rateLimitManager.throttleRequest();
+
+        console.log(`🔑 Signing in test user: ${email} (attempt ${attempt + 1}/${maxRetries})`);
+
+        const userCredential = await signInWithEmailAndPassword(
+          this.auth,
+          email,
+          password
+        );
+
+        const firebaseUser = userCredential.user;
+
+        const signedInUser: TestUser = {
+          email,
+          password,
+          displayName: firebaseUser.displayName || '',
+          uid: firebaseUser.uid,
+          firebaseUser
       };
 
-      console.log(`✅ Test user signed in: ${email} (${firebaseUser.uid})`);
-      return signedInUser;
-    } catch (error: any) {
-      console.error(`❌ Failed to sign in test user ${email}:`, error);
-      throw new Error(`Firebase sign in failed: ${error.message}`);
+        console.log(`✅ Test user signed in: ${email} (${firebaseUser.uid})`);
+        return signedInUser;
+      } catch (error: any) {
+        attempt++;
+
+        if (error.code === 'auth/too-many-requests') {
+          const delay = Math.min(1000 * Math.pow(2, attempt), 30000); // Exponential backoff, max 30s
+          console.log(`⏳ Rate limited, waiting ${delay}ms before retry ${attempt}/${maxRetries}...`);
+          await this.sleep(delay);
+          continue;
+        }
+
+        console.error(`❌ Failed to sign in test user ${email}:`, error);
+        throw new Error(`Firebase sign in failed: ${error.message}`);
+      }
     }
+
+    throw new Error(`Firebase sign in failed after ${maxRetries} attempts due to rate limiting`);
   }
 
   /**
@@ -243,28 +343,31 @@ export async function teardownFirebaseTest(manager: FirebaseTestManager): Promis
   await manager.destroy();
 }
 
-// Test user factory
-export function createTestUserData(suffix: string = Date.now().toString()): TestUser {
+// Test user factory with worker isolation support
+export function createTestUserData(suffix: string = Date.now().toString(), workerPrefix?: string): TestUser {
+  const finalSuffix = workerPrefix ? `${workerPrefix}-${suffix}` : suffix;
   return {
-    email: `e2e-test-${suffix}@example.com`,
-    password: `TestPassword${suffix}!`,
-    displayName: `E2E Test User ${suffix}`
+    email: `e2e-test-${finalSuffix}@example.com`,
+    password: `TestPassword${finalSuffix}!`,
+    displayName: `E2E Test User ${finalSuffix}`
   };
 }
 
-// Batch test user creation
+// Batch test user creation with worker isolation
 export async function createTestUsers(
-  manager: FirebaseTestManager, 
-  count: number
+  manager: FirebaseTestManager,
+  count: number,
+  workerPrefix?: string
 ): Promise<TestUser[]> {
   const users: TestUser[] = [];
-  
+  const timestamp = Date.now();
+
   for (let i = 0; i < count; i++) {
-    const userData = createTestUserData(`${Date.now()}-${i}`);
+    const userData = createTestUserData(`${timestamp}-${i}`, workerPrefix);
     const user = await manager.createTestUser(userData);
     users.push(user);
   }
-  
+
   return users;
 }
 

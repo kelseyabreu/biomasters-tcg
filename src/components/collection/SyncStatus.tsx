@@ -24,6 +24,17 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
   lastSyncTime,
   syncError
 }) => {
+  // Log sync status changes for debugging
+  React.useEffect(() => {
+    console.log('🔄 [SYNC-UI] SyncStatus component rendered with:', {
+      isOnline,
+      syncStatus,
+      pendingActions,
+      lastSyncTime,
+      syncError,
+      timestamp: new Date().toISOString()
+    });
+  }, [isOnline, syncStatus, pendingActions, lastSyncTime, syncError]);
   const formatLastSync = (timestamp?: number): string => {
     if (!timestamp) return 'Never';
     
@@ -117,9 +128,19 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
           <IonButton
             fill="outline"
             size="small"
-            onClick={onSync}
+            onClick={() => {
+              console.log('🔄 [SYNC-UI] Sync button clicked:', {
+                isOnline,
+                syncStatus,
+                pendingActions,
+                disabled: !isOnline || syncStatus === 'syncing',
+                timestamp: new Date().toISOString()
+              });
+              onSync();
+            }}
             disabled={!isOnline || syncStatus === 'syncing'}
             className="sync-button"
+            data-testid="sync-button"
           >
             <IonIcon icon={sync} slot="start" />
             Sync Now

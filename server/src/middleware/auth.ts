@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyIdToken, getFirebaseUser } from '../config/firebase';
+import { getFirebaseUser } from '../config/firebase';
+import { scalableFirebaseAuth } from '../utils/firebase-scaling';
 import { verifyGuestJWT, isGuestToken } from '../utils/guestAuth';
 import { db } from '../database/kysely';
 import { CacheManager } from '../config/redis';
@@ -66,17 +67,17 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
           } else {
             // Not a test token, try Firebase verification
             console.log('🔐 [Auth] Not a test token, trying Firebase verification');
-            decodedToken = await verifyIdToken(token);
+            decodedToken = await scalableFirebaseAuth.verifyIdToken(token);
           }
         } catch (testError) {
           // Test token verification failed, try Firebase
           console.log('🔐 [Auth] Test token verification failed, trying Firebase:', (testError as Error).message);
-          decodedToken = await verifyIdToken(token);
+          decodedToken = await scalableFirebaseAuth.verifyIdToken(token);
         }
       } else {
-        // Production: only use Firebase verification
-        console.log('🔐 [Auth] Production environment - using Firebase verification only');
-        decodedToken = await verifyIdToken(token);
+        // Production: only use Firebase verification with scaling
+        console.log('🔐 [Auth] Production environment - using scalable Firebase verification');
+        decodedToken = await scalableFirebaseAuth.verifyIdToken(token);
       }
 
       console.log('🔐 [Auth] Token decoded successfully, UID:', decodedToken.uid);

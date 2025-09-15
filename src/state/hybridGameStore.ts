@@ -348,10 +348,10 @@ export interface HybridGameState {
   loadDeck: (deckId: string) => any;
   
   // Sync Actions
-  syncCollection: () => Promise<SyncResult>;
+  syncCollection: (conflictResolutions?: Record<string, 'server_wins' | 'user_wins' | 'merge'>) => Promise<SyncResult>;
   setOnlineStatus: (online: boolean) => void;
   setAuthenticationStatus: (authenticated: boolean, userId?: string) => void;
-  
+
   // Conflict Resolution
   resolveSyncConflicts: (conflicts: any[]) => void;
   dismissSyncConflicts: () => void;
@@ -1514,11 +1514,13 @@ export const useHybridGameStore = create<HybridGameState>()(
               if (!previousUser) {
                 console.log('👤 Firebase user authenticated - setting up...');
                 try {
-                  // Always initialize signing key for any authenticated user
-                  await get().initializeOfflineKey();
-
-                  // Setup new user if needed
+                  // Setup new user first (this includes backend registration)
                   await get().handleNewUser();
+
+                  // IMPORTANT: Initialize device registration AFTER backend registration is complete
+                  // This ensures the backend knows about the user before device registration
+                  console.log('🔑 Backend setup complete, now initializing device registration...');
+                  await get().initializeOfflineKey();
                 } catch (error) {
                   console.error('❌ Failed to setup authenticated user:', error);
                 }
@@ -1862,6 +1864,37 @@ export const useHybridGameStore = create<HybridGameState>()(
             return;
           }
 
+          // Check if Firebase has a persisted user (for registered users)
+          console.log('🔍 Checking Firebase auth persistence...');
+          const currentFirebaseUser = auth.currentUser;
+          if (currentFirebaseUser) {
+            console.log('✅ Found persisted Firebase user:', currentFirebaseUser.uid);
+            // Restore Firebase user authentication state
+            set({
+              firebaseUser: currentFirebaseUser,
+              isAuthenticated: true,
+              isGuestMode: false,
+              userId: currentFirebaseUser.uid,
+              userProfile: {
+                id: currentFirebaseUser.uid,
+                username: currentFirebaseUser.displayName || currentFirebaseUser.email?.split('@')[0] || 'User',
+                display_name: currentFirebaseUser.displayName || undefined,
+                user_type: UserType.REGISTERED,
+                is_guest: false,
+                created_at: new Date(),
+                firebase_uid: currentFirebaseUser.uid,
+                email: currentFirebaseUser.email || undefined,
+                last_login: new Date(),
+                isOnline: true,
+              }
+            });
+
+            // Load collection for restored Firebase user
+            console.log('📦 Loading collection for restored Firebase user...');
+            await get().loadOfflineCollection();
+            return;
+          }
+
           // Try to recover guest credentials from secure storage
           console.log('🔍 Checking secure storage for guest credentials...');
           const storedCredentials = await tokenManager.getGuestCredentials();
@@ -2027,20 +2060,22 @@ export const useHybridGameStore = create<HybridGameState>()(
           }
 
           try {
-            console.log('🔑 Initializing offline signing key...');
+            console.log('🔑 [DEVICE_REG] Starting offline key initialization...');
             const deviceId = offlineSecurityService.getDeviceId();
+            console.log('🔑 [DEVICE_REG] Device ID:', deviceId, 'User ID:', state.userId);
 
             // Try to get signing key from server first (skip for guest mode)
             if (!state.isGuestMode) {
               try {
                 // Get Firebase ID token for server authentication
+                console.log('🔑 [DEVICE_REG] Getting Firebase ID token...');
                 const idToken = await auth.currentUser?.getIdToken();
                 if (!idToken) {
                   throw new Error('Failed to get authentication token');
                 }
 
                 // Call the server to register device and get signing key
-                console.log('🔑 Requesting offline signing key from server...');
+                console.log('🔑 [DEVICE_REG] Requesting offline signing key from server...');
                 const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/offline-key`, {
                   method: 'POST',
                   headers: {
@@ -2050,31 +2085,55 @@ export const useHybridGameStore = create<HybridGameState>()(
                   body: JSON.stringify({ device_id: deviceId })
                 });
 
+                console.log('🔑 [DEVICE_REG] Server response status:', response.status);
+
                 if (!response.ok) {
                   const errorData = await response.json();
+                  console.error('🔑 [DEVICE_REG] Server registration failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorData
+                  });
                   throw new Error(`Failed to get offline key: ${errorData.message || response.statusText}`);
                 }
 
-                const { signing_key } = await response.json();
-                await offlineSecurityService.initializeSigningKey(state.userId!, signing_key);
-                console.log('🔑 Offline signing key initialized from server');
+                const { signing_key, signing_key_version, expires_at } = await response.json();
+                console.log('🔑 [DEVICE_REG] Received signing key from server, initializing...', {
+                  hasKey: !!signing_key,
+                  keyVersion: signing_key_version,
+                  expiresAt: expires_at
+                });
+
+                // Calculate expiry timestamp
+                const expiresAtTimestamp = new Date(expires_at).getTime();
+
+                // Update signing key with version and expiry
+                offlineSecurityService.updateSigningKey(signing_key, signing_key_version || 1, expiresAtTimestamp);
+                console.log('🔑 [DEVICE_REG] ✅ Offline signing key initialized from server');
 
               } catch (serverError) {
-                console.warn('⚠️ Server unavailable, using local fallback key:', serverError);
+                console.warn('🔑 [DEVICE_REG] ⚠️ Server unavailable, using local fallback key:', serverError);
 
                 // Use the built-in fallback mechanism (no session key = derive from user ID)
                 await offlineSecurityService.initializeSigningKey(state.userId!);
-                console.log('🔑 Local fallback signing key initialized');
+                console.log('🔑 [DEVICE_REG] ✅ Local fallback signing key initialized');
               }
             } else {
               // Guest mode - always use local key
-              console.log('🔑 Guest mode - using local signing key');
+              console.log('🔑 [DEVICE_REG] Guest mode - using local signing key');
               await offlineSecurityService.initializeSigningKey(state.userId!);
-              console.log('🔑 Guest local signing key initialized');
+              console.log('🔑 [DEVICE_REG] ✅ Guest local signing key initialized');
+            }
+
+            // Verify initialization was successful
+            if (offlineSecurityService.isInitialized()) {
+              console.log('🔑 [DEVICE_REG] ✅ Device registration completed successfully');
+            } else {
+              throw new Error('Device registration verification failed - offline security service not initialized');
             }
 
           } catch (error) {
-            console.error('❌ Failed to initialize offline key:', error);
+            console.error('🔑 [DEVICE_REG] ❌ Failed to initialize offline key:', error);
             throw error;
           }
         },
@@ -2086,9 +2145,94 @@ export const useHybridGameStore = create<HybridGameState>()(
           try {
             console.log('🆕 Setting up new user...');
 
-            // Initialize collection if needed
+            // Initialize collection first (offline-first)
             if (!state.offlineCollection) {
               get().initializeOfflineCollection();
+            }
+
+            // For Firebase users, ensure backend registration before device registration
+            if (!state.isGuestMode && state.firebaseUser) {
+              console.log('🔄 [NEW_USER] Ensuring backend registration for Firebase user...', {
+                uid: state.firebaseUser.uid,
+                email: state.firebaseUser.email,
+                isAnonymous: state.firebaseUser.isAnonymous,
+                deviceId: offlineSecurityService.getDeviceId(),
+                hasOfflineKey: offlineSecurityService.isInitialized()
+              });
+
+              try {
+                // Call the backend registration endpoint
+                const idToken = await auth.currentUser?.getIdToken();
+                if (!idToken) {
+                  throw new Error('Failed to get Firebase ID token');
+                }
+
+                console.log('🔍 [NEW_USER] Making backend registration request...', {
+                  endpoint: '/api/auth/register',
+                  hasIdToken: !!idToken,
+                  tokenLength: idToken?.length || 0,
+                  username: state.firebaseUser.displayName || state.firebaseUser.email?.split('@')[0] || 'User'
+                });
+
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/auth/register`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                  },
+                  body: JSON.stringify({
+                    username: state.firebaseUser.displayName || state.firebaseUser.email?.split('@')[0] || 'User'
+                  })
+                });
+
+                console.log('🔍 [NEW_USER] Backend registration response:', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  ok: response.ok
+                });
+
+                if (response.ok) {
+                  const responseData = await response.json();
+                  console.log('🔄 [NEW_USER] ✅ Backend registration completed:', {
+                    userId: responseData.user?.id,
+                    username: responseData.user?.username,
+                    credits: responseData.user?.credits
+                  });
+
+                  // Now initialize device registration
+                  console.log('🔄 [NEW_USER] Initializing device registration...');
+                  await get().initializeOfflineKey();
+                  console.log('🔄 [NEW_USER] ✅ Device registration completed:', {
+                    deviceId: offlineSecurityService.getDeviceId(),
+                    hasOfflineKey: offlineSecurityService.isInitialized()
+                  });
+
+                } else if (response.status === 409) {
+                  console.log('🔄 [NEW_USER] ℹ️ User already registered, initializing device...');
+                  await get().initializeOfflineKey();
+                  console.log('🔄 [NEW_USER] ✅ Device registration for existing user:', {
+                    deviceId: offlineSecurityService.getDeviceId(),
+                    hasOfflineKey: offlineSecurityService.isInitialized()
+                  });
+                } else {
+                  const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                  console.error('❌ [NEW_USER] Backend registration failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorData
+                  });
+                  throw new Error(`Backend registration failed: ${errorData.message || response.statusText}`);
+                }
+
+              } catch (error: any) {
+                console.warn('🔄 [NEW_USER] ⚠️ Backend registration failed, continuing offline:', error.message);
+                // Still try device registration with local fallback
+                try {
+                  await get().initializeOfflineKey();
+                } catch (deviceError) {
+                  console.warn('🔄 [NEW_USER] ⚠️ Device registration also failed:', deviceError);
+                }
+              }
             }
 
             // Check if user already has starter pack by looking at actual collection
@@ -2501,8 +2645,15 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Sync with server - Enhanced with comprehensive edge case handling
-        syncCollection: async (): Promise<SyncResult> => {
+        syncCollection: async (conflictResolutions?: Record<string, 'server_wins' | 'user_wins' | 'merge'>): Promise<SyncResult> => {
           const state = get();
+
+          console.log('🔄 [SYNC] Starting sync with conflict resolutions:', {
+            hasResolutions: !!conflictResolutions,
+            resolutionCount: conflictResolutions ? Object.keys(conflictResolutions).length : 0,
+            resolutions: conflictResolutions,
+            timestamp: new Date().toISOString()
+          });
 
           // Pre-sync validation
           if (!state.offlineCollection) {
@@ -2550,7 +2701,18 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
           }
 
+          console.log('🔄 [SYNC] Starting sync process...', {
+            userId: state.userId,
+            isAuthenticated: state.isAuthenticated,
+            isOnline: state.isOnline,
+            pendingActions: state.pendingActions,
+            hasCollection: !!state.offlineCollection,
+            currentSyncStatus: state.syncStatus
+          });
+
           set({ syncStatus: 'syncing', syncError: null });
+
+          console.log('🔄 [SYNC] State updated to syncing, HTML should reflect this change');
 
           try {
             // Get authentication token with retry logic
@@ -2558,56 +2720,88 @@ export const useHybridGameStore = create<HybridGameState>()(
             let tokenRetries = 0;
             const maxTokenRetries = 3;
 
+            console.log('🔑 [SYNC] Getting authentication token...', {
+              isGuestMode: state.isGuestMode,
+              hasGuestToken: !!state.guestToken,
+              hasFirebaseUser: !!auth.currentUser,
+              firebaseUserUid: auth.currentUser?.uid
+            });
+
             while (!authToken && tokenRetries < maxTokenRetries) {
               try {
                 if (state.isGuestMode) {
                   authToken = state.guestToken;
                   if (!authToken) {
+                    console.error('❌ [SYNC] Guest token not available');
                     throw new Error('Guest token not available');
                   }
+                  console.log('✅ [SYNC] Using guest token');
                 } else {
                   const currentUser = auth.currentUser;
                   if (!currentUser) {
+                    console.error('❌ [SYNC] Firebase user not available');
                     throw new Error('Firebase user not available');
                   }
+                  console.log('🔑 [SYNC] Getting Firebase token (force refresh)...', {
+                    uid: currentUser.uid,
+                    email: currentUser.email
+                  });
                   authToken = await currentUser.getIdToken(true); // Force refresh
+                  console.log('✅ [SYNC] Firebase token obtained successfully');
                 }
               } catch (tokenError) {
                 tokenRetries++;
-                console.warn(`⚠️ Token retrieval attempt ${tokenRetries} failed:`, tokenError);
+                console.warn(`⚠️ [SYNC] Token retrieval attempt ${tokenRetries} failed:`, tokenError);
 
                 if (tokenRetries >= maxTokenRetries) {
+                  console.error('❌ [SYNC] Failed to get authentication token after multiple attempts');
                   throw new Error(`Failed to get authentication token after ${maxTokenRetries} attempts`);
                 }
 
                 // Wait before retry
+                console.log(`⏳ [SYNC] Waiting ${1000 * tokenRetries}ms before token retry...`);
                 await new Promise(resolve => setTimeout(resolve, 1000 * tokenRetries));
               }
             }
 
             if (!authToken) {
+              console.error('❌ [SYNC] No authentication token available after retries');
               throw new Error('No authentication token available after retries');
             }
+
+            console.log('✅ [SYNC] Authentication token ready, proceeding with sync...');
 
             // Perform sync with comprehensive error handling
             const result = await syncService.syncWithServer(
               state.offlineCollection,
               authToken,
-              state.syncServiceState
+              state.syncServiceState,
+              conflictResolutions
             );
 
             if (result.success) {
+              console.log('✅ [SYNC] Sync completed successfully, processing result...', {
+                conflicts: result.conflicts?.length || 0,
+                discardedActions: result.discarded_actions?.length || 0,
+                hasUpdatedCollection: !!result.updated_collection,
+                newCredits: result.updated_collection?.eco_credits,
+                newXP: result.updated_collection?.xp_points
+              });
+
               // Validate the updated collection before applying
               if (!result.updated_collection) {
+                console.error('❌ [SYNC] No updated collection received from server');
                 throw new Error('Sync succeeded but no updated collection received');
               }
 
               // Verify collection integrity after sync
               const postSyncValidation = syncService.validateCollectionForSync(result.updated_collection);
               if (!postSyncValidation.isValid) {
-                console.error('❌ Post-sync collection validation failed:', postSyncValidation.errors);
+                console.error('❌ [SYNC] Post-sync collection validation failed:', postSyncValidation.errors);
                 throw new Error('Received invalid collection from server');
               }
+
+              console.log('✅ [SYNC] Collection validation passed, updating local data...');
 
               // Update the collection and ensure pending actions are cleared
               const updatedCollection = {
@@ -2619,21 +2813,29 @@ export const useHybridGameStore = create<HybridGameState>()(
               // Save collection with error handling
               try {
                 get().saveOfflineCollection(updatedCollection);
+                console.log('✅ [SYNC] Collection saved locally successfully');
               } catch (saveError) {
-                console.error('❌ Failed to save synced collection:', saveError);
+                console.error('❌ [SYNC] Failed to save synced collection:', saveError);
                 throw new Error('Failed to save synced data locally');
               }
 
+              console.log('🔄 [SYNC] Updating state to success...');
+
               // Update state with success
-              set({
-                syncStatus: 'success',
+              const newState = {
+                syncStatus: 'success' as const,
                 lastSyncTime: Date.now(),
                 syncConflicts: result.conflicts || [],
                 showSyncConflicts: (result.conflicts || []).length > 0,
                 pendingActions: 0, // Explicitly set pending actions to 0
                 syncServiceState: result.newSyncState, // Update sync service state
                 syncError: null // Clear any previous errors
-              });
+              };
+
+              console.log('🔄 [SYNC] Setting new state:', newState);
+              set(newState);
+
+              console.log('✅ [SYNC] State updated to success, HTML should reflect this change');
 
               // Force refresh the collection state to ensure UI updates
               setTimeout(() => {
@@ -2654,19 +2856,27 @@ export const useHybridGameStore = create<HybridGameState>()(
             } else {
               // Handle sync failure with detailed error information
               const errorMessage = result.error || 'Sync failed for unknown reason';
-              console.error('❌ Sync failed:', {
+              console.error('❌ [SYNC] Sync failed:', {
                 error: errorMessage,
                 conflicts: result.conflicts?.length || 0,
-                hasCollection: !!result.updated_collection
+                hasCollection: !!result.updated_collection,
+                syncServiceState: result.newSyncState
               });
 
-              set({
-                syncStatus: 'error',
+              console.log('🔄 [SYNC] Setting state to error...');
+
+              const errorState = {
+                syncStatus: 'error' as const,
                 syncError: errorMessage,
                 syncServiceState: result.newSyncState, // Update sync service state even on error
                 syncConflicts: result.conflicts || [],
                 showSyncConflicts: (result.conflicts || []).length > 0
-              });
+              };
+
+              console.log('🔄 [SYNC] Setting error state:', errorState);
+              set(errorState);
+
+              console.log('❌ [SYNC] State updated to error, HTML should reflect this change');
             }
 
             return result;
@@ -2674,7 +2884,11 @@ export const useHybridGameStore = create<HybridGameState>()(
           } catch (error) {
             // Comprehensive error handling and recovery
             const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
-            console.error('❌ Sync failed with error:', error);
+            console.error('❌ [SYNC] Sync failed with exception:', {
+              error: errorMessage,
+              errorType: error instanceof Error ? error.constructor.name : typeof error,
+              stack: error instanceof Error ? error.stack : undefined
+            });
 
             // Categorize error types for better user experience
             let userFriendlyMessage = errorMessage;

@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import crypto from 'crypto';
+import { encrypt, generateSigningKey } from '../utils/encryption';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authRateLimiter } from '../middleware/rateLimiter';
 import { requireAuth } from '../middleware/auth';
@@ -111,16 +111,29 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
 
     // Create device sync state for offline sync if deviceId provided
     if (deviceId) {
-      const signingKey = crypto.randomBytes(32).toString('hex');
+      const signingKey = generateSigningKey();
       const keyExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
+      // Store signing key in historical storage
+      await trx
+        .insertInto('device_signing_keys')
+        .values({
+          device_id: deviceId,
+          user_id: user.id,
+          signing_key: encrypt(signingKey),
+          key_version: 1,
+          status: 'ACTIVE',
+          expires_at: keyExpiresAt
+        })
+        .execute();
+
+      // Create device sync state with key version pointer
       await trx
         .insertInto('device_sync_states')
         .values({
           device_id: deviceId,
           user_id: user.id,
-          signing_key: signingKey,
-          key_expires_at: keyExpiresAt,
+          current_key_version: 1,
           last_sync_timestamp: 0,
           last_used_at: new Date()
         })
@@ -288,24 +301,44 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
 
     // 3. Create or update device sync state for offline sync
     if (deviceId) {
-      const signingKey = crypto.randomBytes(32).toString('hex');
+      const signingKey = generateSigningKey();
       const keyExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
+      // Store signing key in historical storage
+      await trx
+        .insertInto('device_signing_keys')
+        .values({
+          device_id: deviceId,
+          user_id: user.id,
+          signing_key: encrypt(signingKey),
+          key_version: 1,
+          status: 'ACTIVE',
+          expires_at: keyExpiresAt
+        })
+        .onConflict((oc) => oc
+          .columns(['device_id', 'user_id', 'key_version'])
+          .doUpdateSet({
+            signing_key: encrypt(signingKey),
+            expires_at: keyExpiresAt,
+            updated_at: new Date()
+          })
+        )
+        .execute();
+
+      // Create or update device sync state with key version pointer
       await trx
         .insertInto('device_sync_states')
         .values({
           device_id: deviceId,
           user_id: user.id,
-          signing_key: signingKey,
-          key_expires_at: keyExpiresAt,
+          current_key_version: 1,
           last_sync_timestamp: 0,
           last_used_at: new Date()
         })
         .onConflict((oc) => oc
           .columns(['device_id', 'user_id'])
           .doUpdateSet({
-            signing_key: signingKey,
-            key_expires_at: keyExpiresAt,
+            current_key_version: 1,
             last_sync_timestamp: 0,
             last_used_at: new Date(),
             updated_at: new Date()

@@ -38,6 +38,7 @@ import testRoutes from './routes/test';
 import matchmakingRoutes from './routes/matchmaking';
 import ratingsRoutes from './routes/ratings';
 import questsRoutes from './routes/quests';
+import healthRoutes from './routes/health';
 
 // Import unified data loader factory
 import { createProductionDataLoader, createDevelopmentDataLoader } from '../../shared/data/UnifiedDataLoader';
@@ -456,7 +457,11 @@ app.get('/api/health/migrations', async (_req, res) => {
       '012_add_unified_user_fields',
       '013_add_matchmaking_system',
       '014_add_match_history',
-      '015_add_quest_system'
+      '015_add_quest_system',
+      '016_add_signing_key_version',
+      '017_refactor_signing_keys_historical',
+      '018_add_user_cards_metadata_columns',
+      '019_fix_species_name_constraint'
     ];
 
     const executedMigrationNames = executedMigrations.map(m => m.name);
@@ -511,6 +516,9 @@ app.post('/api/health/migrations/run', async (_req, res) => {
     });
   }
 });
+
+// Health check routes (before authentication)
+app.use('/health', healthRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);

@@ -32,30 +32,50 @@ class SyncService {
   async syncWithServer(
     collection: OfflineCollection,
     authToken?: string,
-    syncState?: { isSyncing: boolean; lastSyncAttempt: number }
+    syncState?: { isSyncing: boolean; lastSyncAttempt: number },
+    conflictResolutions?: Record<string, 'server_wins' | 'user_wins' | 'merge'>
   ): Promise<SyncResult & { newSyncState: { isSyncing: boolean; lastSyncAttempt: number } }> {
     const currentSyncState = syncState || { isSyncing: false, lastSyncAttempt: 0 };
+
+    console.log('🔄 [SYNC-SERVICE] Starting sync with server...', {
+      hasConflictResolutions: !!conflictResolutions,
+      resolutionCount: conflictResolutions ? Object.keys(conflictResolutions).length : 0,
+      resolutions: conflictResolutions,
+      timestamp: new Date().toISOString()
+    });
 
     if (currentSyncState.isSyncing) {
       throw new Error('Sync already in progress');
     }
 
     const now = Date.now();
-    if (now - currentSyncState.lastSyncAttempt < this.SYNC_COOLDOWN) {
+    const isTestEnvironment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (!isTestEnvironment && now - currentSyncState.lastSyncAttempt < this.SYNC_COOLDOWN) {
+      console.log('⏳ [SYNC] Sync cooldown active, waiting...', {
+        timeSinceLastAttempt: now - currentSyncState.lastSyncAttempt,
+        cooldownPeriod: this.SYNC_COOLDOWN,
+        isTestEnvironment
+      });
       throw new Error('Sync cooldown active. Please wait before syncing again.');
+    }
+
+    if (isTestEnvironment) {
+      console.log('🧪 [SYNC] Test environment detected, bypassing sync cooldown');
     }
 
     const newSyncState = { isSyncing: true, lastSyncAttempt: now };
 
+    // Prepare sync payload outside try block so it's available in catch
+    const syncPayload: SyncPayload = {
+      device_id: collection.device_id,
+      offline_actions: collection.action_queue,
+      collection_state: collection,
+      client_version: '1.0.0',
+      last_known_server_state: collection.last_sync.toString()
+    };
+
     try {
-      // Prepare sync payload
-      const syncPayload: SyncPayload = {
-        device_id: collection.device_id,
-        offline_actions: collection.action_queue,
-        collection_state: collection,
-        client_version: '1.0.0',
-        last_known_server_state: collection.last_sync.toString()
-      };
 
       console.log('🔄 Sending sync payload:', {
         device_id: syncPayload.device_id,
@@ -69,21 +89,77 @@ class SyncService {
       // Send to server for validation and processing
       console.log('🌐 Making sync HTTP request:', {
         payloadSize: JSON.stringify(syncPayload).length,
-        hasAuthToken: !!authToken
+        hasAuthToken: !!authToken,
+        syncPayloadDetails: {
+          device_id: syncPayload.device_id,
+          client_version: syncPayload.client_version,
+          offline_actions: syncPayload.offline_actions?.map(action => ({
+            action_id: action.id,
+            action_type: action.action,
+            timestamp: action.timestamp
+          })) || [],
+          collection_state: {
+            user_id: syncPayload.collection_state?.user_id,
+            device_id: syncPayload.collection_state?.device_id,
+            eco_credits: syncPayload.collection_state?.eco_credits,
+            xp_points: syncPayload.collection_state?.xp_points,
+            last_sync: syncPayload.collection_state?.last_sync,
+            collection_hash: syncPayload.collection_state?.collection_hash
+          },
+          conflict_resolutions: conflictResolutions
+        }
       });
+
+      console.log('🔍 [SYNC] Exact payload being sent to server:', {
+        payloadKeys: Object.keys(syncPayload),
+        device_id: syncPayload.device_id,
+        device_id_type: typeof syncPayload.device_id,
+        offline_actions_type: typeof syncPayload.offline_actions,
+        offline_actions_isArray: Array.isArray(syncPayload.offline_actions),
+        offline_actions_length: syncPayload.offline_actions?.length,
+        collection_state_type: typeof syncPayload.collection_state,
+        collection_state_keys: syncPayload.collection_state ? Object.keys(syncPayload.collection_state) : 'null',
+        client_version: syncPayload.client_version,
+        client_version_type: typeof syncPayload.client_version,
+        last_known_server_state: syncPayload.last_known_server_state,
+        last_known_server_state_type: typeof syncPayload.last_known_server_state
+      });
+
+      console.log('🔍 [SYNC] Full payload structure:', JSON.stringify(syncPayload, null, 2));
 
       const response = await gameApi.syncCollection(syncPayload);
       const syncResponse = response.data.data || response.data;
 
       // Process sync response
-      const result = await this.processSyncResponse(collection, syncResponse);
+      const result = await this.processSyncResponse(collection, syncResponse, conflictResolutions);
       return {
         ...result,
         newSyncState: { isSyncing: false, lastSyncAttempt: now }
       };
 
     } catch (error) {
-      console.error('Sync failed:', error);
+      console.error('❌ [SYNC] Sync failed with detailed error:', {
+        error: error instanceof Error ? error.message : 'Unknown sync error',
+        errorType: error?.constructor?.name,
+        errorStack: error instanceof Error ? error.stack : undefined,
+        isAxiosError: (error as any)?.isAxiosError,
+        responseStatus: (error as any)?.response?.status,
+        responseData: (error as any)?.response?.data,
+        requestConfig: (error as any)?.config ? {
+          url: (error as any).config.url,
+          method: (error as any).config.method,
+          headers: (error as any).config.headers
+        } : undefined,
+        syncPayload: typeof syncPayload !== 'undefined' ? {
+          device_id: syncPayload.device_id,
+          offline_actions_count: syncPayload.offline_actions?.length || 0,
+          collection_state_keys: syncPayload.collection_state ? Object.keys(syncPayload.collection_state) : [],
+          client_version: syncPayload.client_version,
+          last_known_server_state: syncPayload.last_known_server_state
+        } : 'syncPayload not yet defined - error occurred before payload creation',
+        timestamp: new Date().toISOString()
+      });
+
       return {
         success: false,
         conflicts: [],
@@ -101,31 +177,53 @@ class SyncService {
    * Process sync response and handle conflicts
    */
   private async processSyncResponse(
-    localCollection: OfflineCollection, 
-    response: SyncResponse
+    localCollection: OfflineCollection,
+    response: SyncResponse,
+    conflictResolutions?: Record<string, 'server_wins' | 'user_wins' | 'merge'>
   ): Promise<SyncResult> {
     const conflicts: SyncConflict[] = [];
     const discardedActions: string[] = [];
 
     // Handle conflicts
     if (response.conflicts && response.conflicts.length > 0) {
+      console.log('🔍 [SYNC-SERVICE] Processing conflicts...', {
+        conflictCount: response.conflicts.length,
+        hasUserResolutions: !!conflictResolutions,
+        userResolutions: conflictResolutions
+      });
+
       for (const conflict of response.conflicts) {
         const userAction = localCollection.action_queue.find(a => a.id === conflict.action_id);
-        
+
         if (userAction) {
+          // Use user-provided resolution if available, otherwise auto-resolve
+          const userResolution = conflictResolutions?.[conflict.action_id];
+          const finalResolution = userResolution || this.resolveConflict(conflict, userAction);
+
+          console.log('🔧 [SYNC-SERVICE] Resolving conflict:', {
+            actionId: conflict.action_id,
+            reason: conflict.reason,
+            userResolution,
+            finalResolution,
+            wasUserProvided: !!userResolution
+          });
+
           const resolvedConflict: SyncConflict = {
             action_id: conflict.action_id,
             reason: conflict.reason,
             server_state: conflict.server_state,
             user_action: userAction,
-            resolution: this.resolveConflict(conflict, userAction)
+            resolution: finalResolution
           };
 
           conflicts.push(resolvedConflict);
 
           // If server wins, discard the user action
           if (resolvedConflict.resolution === 'server_wins') {
+            console.log('📤 [SYNC-SERVICE] Discarding action (server wins):', conflict.action_id);
             discardedActions.push(conflict.action_id);
+          } else if (resolvedConflict.resolution === 'user_wins') {
+            console.log('📥 [SYNC-SERVICE] Keeping action (user wins):', conflict.action_id);
           }
         }
       }
@@ -257,6 +355,15 @@ class SyncService {
       case 'version_mismatch':
         return `Your game version is outdated. Please update to continue syncing.`;
 
+      case 'invalid_signature':
+        return `This action's security signature is invalid. This can happen when your device's security key has expired or been reset. Your signing key has been refreshed.`;
+
+      case 'missing_signature':
+        return `This action is missing a required security signature. This action has been discarded for security reasons.`;
+
+      case 'starter_pack_already_opened':
+        return `You've already opened your starter pack on another device. This duplicate action has been discarded.`;
+
       default:
         return `An unknown conflict occurred: ${conflict.reason}. Please contact support if this persists.`;
     }
@@ -283,10 +390,11 @@ class SyncService {
   async forceSyncWithServer(
     collection: OfflineCollection,
     authToken?: string,
-    syncState?: { isSyncing: boolean; lastSyncAttempt: number }
+    syncState?: { isSyncing: boolean; lastSyncAttempt: number },
+    conflictResolutions?: Record<string, 'server_wins' | 'user_wins' | 'merge'>
   ): Promise<SyncResult & { newSyncState: { isSyncing: boolean; lastSyncAttempt: number } }> {
     const resetSyncState = { isSyncing: false, lastSyncAttempt: 0 }; // Reset cooldown
-    return this.syncWithServer(collection, authToken, resetSyncState);
+    return this.syncWithServer(collection, authToken, resetSyncState, conflictResolutions);
   }
 
   /**
@@ -298,9 +406,29 @@ class SyncService {
   } {
     const errors: string[] = [];
 
-    // Check collection hash
-    const expectedHash = offlineSecurityService.calculateCollectionHash(collection);
+    // Check collection hash - exclude the collection_hash field from the calculation
+    const collectionForHashing = {
+      user_id: collection.user_id,
+      device_id: collection.device_id,
+      cards_owned: collection.cards_owned,
+      eco_credits: collection.eco_credits,
+      xp_points: collection.xp_points,
+      action_queue: collection.action_queue,
+      last_sync: collection.last_sync,
+      signing_key_version: collection.signing_key_version,
+      activeDeck: collection.activeDeck,
+      savedDecks: collection.savedDecks
+    };
+
+    const expectedHash = offlineSecurityService.calculateCollectionHash(collectionForHashing);
     if (collection.collection_hash !== expectedHash) {
+      console.error(`❌ Collection integrity check failed:`, {
+        expectedHash,
+        actualHash: collection.collection_hash,
+        signingKeyVersion: collection.signing_key_version,
+        deviceId: collection.device_id,
+        userId: collection.user_id
+      });
       errors.push('Collection integrity check failed');
     }
 

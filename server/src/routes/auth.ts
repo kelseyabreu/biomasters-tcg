@@ -6,7 +6,7 @@ import { db } from '../database/kysely';
 import { NewTransaction } from '../database/types';
 // import { getFirebaseUser } from '../config/firebase'; // Unused for now
 import { CacheManager } from '../config/redis';
-import crypto from 'crypto';
+import { encrypt, generateSigningKey } from '../utils/encryption';
 
 const router = Router();
 
@@ -15,12 +15,39 @@ const router = Router();
  * Register a new user or sync existing Firebase user with database
  */
 router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFirebaseAuth, asyncHandler(async (req, res) => {
+  console.log('🔄 [AUTH-REGISTER] Registration request received:', {
+    body: req.body,
+    firebaseUser: req.firebaseUser ? {
+      uid: req.firebaseUser.uid,
+      email: req.firebaseUser.email,
+      email_verified: req.firebaseUser.email_verified
+    } : null,
+    headers: {
+      authorization: req.headers.authorization ? 'Present' : 'Missing',
+      contentType: req.headers['content-type']
+    },
+    timestamp: new Date().toISOString()
+  });
+
   const { username } = req.body;
   const firebaseUid = req.firebaseUser?.uid;
   const email = req.firebaseUser?.email;
 
+  console.log('🔍 [AUTH-REGISTER] Validating input:', {
+    username,
+    usernameLength: username?.length,
+    firebaseUid,
+    email,
+    hasFirebaseUser: !!req.firebaseUser
+  });
+
   // Validate input
   if (!username || username.length < 3 || username.length > 50) {
+    console.log('❌ [AUTH-REGISTER] Invalid username:', {
+      username,
+      length: username?.length,
+      reason: !username ? 'missing' : 'invalid_length'
+    });
     return res.status(400).json({
       error: 'INVALID_USERNAME',
       message: 'Username must be between 3 and 50 characters'
@@ -28,13 +55,21 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
   }
 
   if (!firebaseUid || !email) {
+    console.log('❌ [AUTH-REGISTER] Missing Firebase authentication:', {
+      firebaseUid,
+      email,
+      hasFirebaseUser: !!req.firebaseUser
+    });
     return res.status(401).json({
       error: 'AUTHENTICATION_REQUIRED',
       message: 'Firebase authentication required'
     });
   }
 
+  console.log('✅ [AUTH-REGISTER] Input validation passed');
+
   // Check if user already exists in database
+  console.log('🔍 [AUTH-REGISTER] Checking for existing user...');
   const existingUser = await db
     .selectFrom('users')
     .select('id')
@@ -42,6 +77,10 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
     .executeTakeFirst();
 
   if (existingUser) {
+    console.log('❌ [AUTH-REGISTER] User already exists:', {
+      existingUserId: existingUser.id,
+      firebaseUid
+    });
     return res.status(409).json({
       success: false,
       error: 'USER_EXISTS',
@@ -49,7 +88,10 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
     });
   }
 
+  console.log('✅ [AUTH-REGISTER] No existing user found');
+
   // Check if username is taken
+  console.log('🔍 [AUTH-REGISTER] Checking username availability...');
   const usernameExists = await db
     .selectFrom('users')
     .select('id')
@@ -57,6 +99,10 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
     .executeTakeFirst();
 
   if (usernameExists) {
+    console.log('❌ [AUTH-REGISTER] Username already taken:', {
+      username,
+      existingUserId: usernameExists.id
+    });
     return res.status(409).json({
       success: false,
       error: 'USERNAME_TAKEN',
@@ -64,10 +110,15 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
     });
   }
 
+  console.log('✅ [AUTH-REGISTER] Username is available');
+
   // Create user in database with transaction
+  console.log('🔄 [AUTH-REGISTER] Creating user in database...');
   let result;
   try {
     result = await db.transaction().execute(async (trx) => {
+    console.log('🔄 [AUTH-REGISTER] Starting database transaction...');
+
     // Create user
     const userData = {
       firebase_uid: firebaseUid,
@@ -116,6 +167,12 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
       total_quests_completed: 0
     };
 
+    console.log('🔄 [AUTH-REGISTER] Inserting user into database...', {
+      firebaseUid: userData.firebase_uid,
+      username: userData.username,
+      email: userData.email
+    });
+
     const users = await trx
       .insertInto('users')
       .values(userData)
@@ -123,10 +180,18 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
       .execute();
     const user = users[0];
     if (!user) {
+      console.error('❌ [AUTH-REGISTER] Failed to create user - no user returned');
       throw new Error('Failed to create user');
     }
 
+    console.log('✅ [AUTH-REGISTER] User created successfully:', {
+      userId: user.id,
+      username: user.username,
+      email: user.email
+    });
+
     // Record initial currency transaction
+    console.log('🔄 [AUTH-REGISTER] Creating initial transaction...');
     const transactionData: NewTransaction = {
       user_id: user.id,
       type: 'reward',
@@ -139,10 +204,14 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
       .values(transactionData)
       .execute();
 
+    console.log('✅ [AUTH-REGISTER] Initial transaction created');
+    console.log('✅ [AUTH-REGISTER] Database transaction completed successfully');
+
     return user;
   });
 
   if (!result) {
+    console.error('❌ [AUTH-REGISTER] No result returned from transaction');
     res.status(500).json({
       error: 'Failed to create user',
       message: 'User registration failed'
@@ -150,7 +219,14 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
     return;
   }
   } catch (error) {
-    console.error('🚨 REGISTRATION ERROR:', error);
+    console.error('🚨 [AUTH-REGISTER] Registration transaction failed:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      firebaseUid,
+      username,
+      email,
+      timestamp: new Date().toISOString()
+    });
     res.status(500).json({
       error: 'REGISTRATION_FAILED',
       message: error instanceof Error ? error.message : 'User registration failed'
@@ -159,8 +235,16 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
   }
 
   // Cache the new user
+  console.log('🔄 [AUTH-REGISTER] Caching user data...');
   const cacheKey = `user:${firebaseUid}`;
   await CacheManager.set(cacheKey, result, 300);
+
+  console.log('✅ [AUTH-REGISTER] Registration completed successfully:', {
+    userId: result.id,
+    username: result.username,
+    firebaseUid,
+    timestamp: new Date().toISOString()
+  });
 
   res.status(201).json({
     success: true,
@@ -413,46 +497,133 @@ router.get('/status', optionalAuth, asyncHandler(async (req, res) => {
  * POST /api/auth/offline-key
  * Generate session-based signing key for offline actions
  */
-router.post('/offline-key', authenticateToken, asyncHandler(async (req, res) => {
+router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) => {
+  console.log('🔑 [OFFLINE-KEY] Device registration request received:', {
+    body: req.body,
+    firebaseUser: req.firebaseUser ? {
+      uid: req.firebaseUser.uid,
+      email: req.firebaseUser.email
+    } : null,
+    timestamp: new Date().toISOString()
+  });
+
   const { device_id } = req.body;
+  const firebaseUid = req.firebaseUser?.uid;
 
   if (!device_id) {
+    console.log('❌ [OFFLINE-KEY] Missing device_id');
     res.status(400).json({ error: 'device_id is required' });
     return;
   }
 
+  if (!firebaseUid) {
+    console.log('❌ [OFFLINE-KEY] Missing Firebase UID');
+    res.status(401).json({ error: 'Firebase authentication required' });
+    return;
+  }
 
+  // Get user from database using Firebase UID
+  console.log('🔍 [OFFLINE-KEY] Looking up user by Firebase UID:', firebaseUid);
+  const user = await db
+    .selectFrom('users')
+    .select(['id', 'username', 'firebase_uid'])
+    .where('firebase_uid', '=', firebaseUid)
+    .executeTakeFirst();
+
+  if (!user) {
+    console.log('❌ [OFFLINE-KEY] User not found in database for Firebase UID:', firebaseUid);
+    res.status(404).json({
+      error: 'USER_NOT_FOUND',
+      message: 'User not registered. Please complete registration first.'
+    });
+    return;
+  }
+
+  console.log('✅ [OFFLINE-KEY] User found:', { userId: user.id, username: user.username });
 
   // Generate cryptographically secure signing key
-  const signingKey = crypto.randomBytes(32).toString('hex');
+  console.log('🔑 [OFFLINE-KEY] Generating signing key...');
+  const signingKey = generateSigningKey();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-  // Store in database with user scoping and last_used_at timestamp
+  // Get current active key version for this device
+  console.log('🔑 [OFFLINE-KEY] Determining key version...');
+  const currentActiveKey = await db
+    .selectFrom('device_signing_keys')
+    .select(['key_version'])
+    .where('device_id', '=', device_id)
+    .where('user_id', '=', user.id)
+    .where('status', '=', 'ACTIVE')
+    .orderBy('key_version', 'desc')
+    .executeTakeFirst();
+
+  const newKeyVersion = (currentActiveKey?.key_version || 0) + 1;
+  console.log('🔑 [OFFLINE-KEY] Key version:', {
+    existingVersion: currentActiveKey?.key_version || 0,
+    newVersion: newKeyVersion
+  });
+
+  // Supersede the old active key if it exists
+  if (currentActiveKey) {
+    console.log('🔑 [OFFLINE-KEY] Superseding old active key...');
+    await db
+      .updateTable('device_signing_keys')
+      .set({
+        status: 'SUPERSEDED',
+        superseded_at: new Date(),
+        updated_at: new Date()
+      })
+      .where('device_id', '=', device_id)
+      .where('user_id', '=', user.id)
+      .where('status', '=', 'ACTIVE')
+      .execute();
+  }
+
+  // Store new signing key in historical storage
+  console.log('🔑 [OFFLINE-KEY] Storing new signing key...');
+  await db
+    .insertInto('device_signing_keys')
+    .values({
+      device_id,
+      user_id: user.id,
+      signing_key: encrypt(signingKey), // Encrypt before storage
+      key_version: newKeyVersion,
+      status: 'ACTIVE',
+      expires_at: expiresAt
+    })
+    .execute();
+
+  // Update or create device sync state with current key version pointer
+  console.log('🔑 [OFFLINE-KEY] Updating device sync state...');
   await db
     .insertInto('device_sync_states')
     .values({
       device_id,
-      user_id: req.user!.id,
-      signing_key: signingKey,
-      key_expires_at: expiresAt,
+      user_id: user.id,
+      current_key_version: newKeyVersion,
       last_sync_timestamp: 0,
       last_used_at: new Date()
     })
     .onConflict((oc) => oc
       .columns(['device_id', 'user_id'])
       .doUpdateSet({
-        signing_key: signingKey,
-        key_expires_at: expiresAt,
+        current_key_version: newKeyVersion,
         last_used_at: new Date(),
         updated_at: new Date()
       })
     )
     .execute();
 
-
+  console.log('✅ [OFFLINE-KEY] Device registration completed successfully:', {
+    deviceId: device_id,
+    userId: user.id,
+    keyVersion: newKeyVersion,
+    expiresAt: expiresAt.toISOString()
+  });
 
   res.json({
     signing_key: signingKey,
+    signing_key_version: newKeyVersion,
     expires_at: expiresAt.toISOString(),
     device_id
   });

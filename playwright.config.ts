@@ -1,8 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 import { config } from 'dotenv';
+import { getTestConfig } from './e2e/config/test-config';
 
 // Load environment variables from .env.local
 config({ path: '.env.local' });
+
+// Get test configuration
+const testConfig = getTestConfig();
 
 /**
  * Playwright Configuration for BioMasters TCG
@@ -16,8 +20,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 1,
-  /* Limit workers to prevent server resource exhaustion */
-  workers: process.env.CI ? 1 : 6, // Reduced from unlimited to 6 workers max
+  /* Limit workers to prevent Firebase rate limiting */
+  workers: process.env.CI ? 1 : testConfig.playwright.workers.maxConcurrent,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -30,9 +34,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     /* Record video on failure */
     video: 'retain-on-failure',
-    /* Increased timeouts for mobile compatibility */
-    actionTimeout: 15 * 1000, // 15 seconds for actions
-    navigationTimeout: 30 * 1000, // 30 seconds for navigation
+    /* Increased timeouts for Firebase rate limiting */
+    actionTimeout: testConfig.playwright.timeouts.actionMs,
+    navigationTimeout: testConfig.playwright.timeouts.navigationMs,
     /* Disable service worker to prevent test conflicts */
     serviceWorkers: 'block',
     /* Disable web security for testing */

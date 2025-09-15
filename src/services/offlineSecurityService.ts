@@ -16,6 +16,9 @@ export interface OfflineAction {
   timestamp: number;
   signature: string;
   api_version: string;
+  previous_hash: string | null; // Hash of the previous action in the chain (null for first action)
+  nonce: number; // Sequential number for this device/user combination
+  key_version: number; // The key version this action was signed with
 }
 
 export interface DeckCard {
@@ -144,6 +147,9 @@ class OfflineSecurityService {
   setCurrentUserId(userId: string | null): void {
     this.currentUserId = userId;
     console.log(`🔑 Set current user ID for offline storage: ${userId || 'null'}`);
+
+    // Reload signing key for the new user
+    this.loadSigningKey();
   }
 
   /**
@@ -169,10 +175,24 @@ class OfflineSecurityService {
   }
 
   /**
-   * Check if signing key is initialized
+   * Check if signing key is initialized and ready for creating actions
    */
   isInitialized(): boolean {
-    return !!this.signingKey;
+    return !!(this.signingKey && this.signingKeyVersion && this.signingKeyVersion > 0);
+  }
+
+  /**
+   * Check if signing key is ready for creating actions
+   */
+  isSigningKeyReady(): boolean {
+    return !!(this.signingKey && this.signingKeyVersion && this.signingKeyVersion > 0);
+  }
+
+  /**
+   * Get current signing key version
+   */
+  getCurrentKeyVersion(): number {
+    return this.signingKeyVersion;
   }
 
   /**
@@ -188,7 +208,47 @@ class OfflineSecurityService {
       expires_at: expiresAt
     };
 
-    localStorage.setItem(this.getUserScopedSigningKey(null), JSON.stringify(keyData));
+    // Use current user ID for scoped storage
+    localStorage.setItem(this.getUserScopedSigningKey(this.currentUserId), JSON.stringify(keyData));
+    console.log(`🔑 Updated signing key for user ${this.currentUserId}: version ${version}, expires ${new Date(expiresAt).toISOString()}`);
+
+    // Update existing collection's signing key version if it exists
+    this.updateCollectionSigningKeyVersion(version);
+  }
+
+  /**
+   * Update collection's signing key version and recalculate hash
+   */
+  private updateCollectionSigningKeyVersion(newVersion: number): void {
+    const existingCollection = this.loadOfflineCollection();
+    if (existingCollection && existingCollection.signing_key_version !== newVersion) {
+      console.log(`🔑 Updating collection signing key version from ${existingCollection.signing_key_version} to ${newVersion}`);
+
+      const updatedCollection = {
+        ...existingCollection,
+        signing_key_version: newVersion
+      };
+
+      // Recalculate hash with new signing key version - exclude the collection_hash field
+      const collectionForHashing = {
+        user_id: updatedCollection.user_id,
+        device_id: updatedCollection.device_id,
+        cards_owned: updatedCollection.cards_owned,
+        eco_credits: updatedCollection.eco_credits,
+        xp_points: updatedCollection.xp_points,
+        action_queue: updatedCollection.action_queue,
+        last_sync: updatedCollection.last_sync,
+        signing_key_version: updatedCollection.signing_key_version,
+        activeDeck: updatedCollection.activeDeck,
+        savedDecks: updatedCollection.savedDecks
+      };
+
+      updatedCollection.collection_hash = this.calculateCollectionHash(collectionForHashing);
+
+      // Save updated collection
+      this.saveOfflineCollection(updatedCollection);
+      console.log(`✅ Collection signing key version updated and hash recalculated`);
+    }
   }
 
   /**
@@ -205,22 +265,78 @@ class OfflineSecurityService {
     if (sessionKey) {
       // Use session-based key from server
       this.signingKey = sessionKey;
-      console.log(`🔑 Session-based signing key initialized for user: ${userId}`);
+      // For session keys, use a timestamp-based version to ensure uniqueness
+      this.signingKeyVersion = Date.now();
+      console.log(`🔑 Session-based signing key initialized for user: ${userId} with version: ${this.signingKeyVersion}`);
+
+      // Update existing collection's signing key version if it exists
+      this.updateCollectionSigningKeyVersion(this.signingKeyVersion);
     } else {
       // Fallback to derived key (for offline-only mode)
       this.signingKey = await this.deriveKeyFromUserId(userId);
-      console.log(`🔑 Derived signing key initialized for user: ${userId}`);
+      // Set fallback version to 1 for offline-only mode
+      this.signingKeyVersion = 1;
+      console.log(`🔑 Derived signing key initialized for user: ${userId} with fallback version 1`);
+
+      // Update existing collection's signing key version if it exists
+      this.updateCollectionSigningKeyVersion(1);
     }
   }
 
   /**
-   * Generate HMAC signature for action
+   * Get the hash of the last action in the chain for chain integrity
    */
-  private signAction(action: Omit<OfflineAction, 'signature'>): string {
+  private getLastActionHash(): string | null {
+    const collectionState = this.getCollectionState();
+    const actionQueue = collectionState.action_queue;
+
+    if (actionQueue.length === 0) {
+      return null; // First action in chain
+    }
+
+    // Get the last action and create its hash (without signature)
+    const lastAction = actionQueue[actionQueue.length - 1];
+    const lastActionPayload = JSON.stringify({
+      id: lastAction.id,
+      action: lastAction.action,
+      cardId: lastAction.cardId,
+      quantity: lastAction.quantity,
+      pack_type: lastAction.pack_type,
+      deck_id: lastAction.deck_id,
+      timestamp: lastAction.timestamp,
+      api_version: lastAction.api_version,
+      device_id: this.deviceId,
+      key_version: lastAction.key_version, // Use the key version the action was signed with
+      previous_hash: lastAction.previous_hash,
+      nonce: lastAction.nonce
+    });
+
+    return CryptoJS.SHA256(lastActionPayload).toString();
+  }
+
+  /**
+   * Generate HMAC signature for action with chain integrity
+   */
+  private signAction(action: Omit<OfflineAction, 'signature' | 'previous_hash' | 'nonce' | 'key_version'>): { signature: string; previous_hash: string | null; nonce: number; key_version: number } {
     if (!this.signingKey) {
       throw new Error('Signing key not initialized. User must be authenticated to perform offline actions.');
     }
 
+    // Get the hash of the previous action for chain integrity
+    const previousHash = this.getLastActionHash();
+
+    // Generate a nonce (sequential number for this device/user combination)
+    const collectionState = this.getCollectionState();
+    const nonce = collectionState.action_queue.length + 1;
+
+    // Capture the key version at the time of signing - ensure it's valid (> 0)
+    const keyVersion = this.signingKeyVersion;
+    if (!keyVersion || keyVersion === 0) {
+      throw new Error('Invalid signing key version. Please wait for server authentication to complete.');
+    }
+
+    // Create payload structure with chain integrity
+    // This must match the EXACT order and structure in server/src/routes/sync.ts verifyActionSignature function
     const payload = JSON.stringify({
       id: action.id,
       action: action.action,
@@ -231,20 +347,37 @@ class OfflineSecurityService {
       timestamp: action.timestamp,
       api_version: action.api_version,
       device_id: this.deviceId,
-      key_version: this.signingKeyVersion
+      key_version: keyVersion,
+      previous_hash: previousHash,
+      nonce: nonce
     });
 
-    return CryptoJS.HmacSHA256(payload, this.signingKey).toString();
+    const signature = CryptoJS.HmacSHA256(payload, this.signingKey).toString();
+
+    return { signature, previous_hash: previousHash, nonce, key_version: keyVersion };
   }
 
   /**
-   * Create signed offline action
+   * Get current collection state (helper method)
+   */
+  private getCollectionState(): OfflineCollection {
+    const existing = this.loadOfflineCollection();
+    if (existing) {
+      return existing;
+    }
+
+    // Return initial collection if none exists
+    return this.createInitialCollection(this.currentUserId);
+  }
+
+  /**
+   * Create signed offline action with chain integrity
    */
   createAction(
     action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened',
     data: Partial<OfflineAction>
   ): OfflineAction {
-    const actionData: Omit<OfflineAction, 'signature'> = {
+    const actionData: Omit<OfflineAction, 'signature' | 'previous_hash' | 'nonce' | 'key_version'> = {
       id: this.generateSecureId(),
       action,
       timestamp: Date.now(),
@@ -252,11 +385,14 @@ class OfflineSecurityService {
       ...data
     };
 
-    const signature = this.signAction(actionData);
+    const { signature, previous_hash, nonce, key_version } = this.signAction(actionData);
 
     return {
       ...actionData,
-      signature
+      signature,
+      previous_hash,
+      nonce,
+      key_version
     };
   }
 
@@ -269,7 +405,8 @@ class OfflineSecurityService {
       eco_credits: collection.eco_credits,
       xp_points: collection.xp_points,
       device_id: collection.device_id,
-      last_sync: collection.last_sync
+      last_sync: collection.last_sync,
+      signing_key_version: collection.signing_key_version
     };
 
     return CryptoJS.SHA256(JSON.stringify(hashData)).toString();
@@ -291,10 +428,28 @@ class OfflineSecurityService {
 
       const collection: OfflineCollection = JSON.parse(stored);
 
-      // Verify collection integrity
-      const expectedHash = this.calculateCollectionHash(collection);
+      // Verify collection integrity - exclude the collection_hash field from the calculation
+      const collectionForHashing = {
+        user_id: collection.user_id,
+        device_id: collection.device_id,
+        cards_owned: collection.cards_owned,
+        eco_credits: collection.eco_credits,
+        xp_points: collection.xp_points,
+        action_queue: collection.action_queue,
+        last_sync: collection.last_sync,
+        signing_key_version: collection.signing_key_version,
+        activeDeck: collection.activeDeck,
+        savedDecks: collection.savedDecks
+      };
+
+      const expectedHash = this.calculateCollectionHash(collectionForHashing);
       if (collection.collection_hash !== expectedHash) {
-        console.warn(`⚠️ Collection integrity check failed for user: ${userIdToUse}. Data may have been tampered with.`);
+        console.warn(`⚠️ Collection integrity check failed for user: ${userIdToUse}. Data may have been tampered with.`, {
+          expectedHash,
+          actualHash: collection.collection_hash,
+          signingKeyVersion: collection.signing_key_version,
+          deviceId: collection.device_id
+        });
         return null;
       }
 
@@ -337,6 +492,24 @@ class OfflineSecurityService {
    * Create initial collection for new user
    */
   createInitialCollection(userId: string | null = null): OfflineCollection {
+    // Ensure we have the correct user context and signing key loaded
+    if (userId && userId !== this.currentUserId) {
+      this.setCurrentUserId(userId);
+    }
+
+    // Wait for signing key to be properly initialized before creating collection
+    // This ensures the collection starts with the correct signing key version
+    let signingKeyVersion = this.signingKeyVersion;
+
+    // If no signing key is loaded yet, use 1 as the fallback version
+    // This prevents key version 0 issues and will be updated when proper key is initialized
+    if (!signingKeyVersion || signingKeyVersion === 0) {
+      signingKeyVersion = 1;
+      console.log(`📦 Creating initial collection with fallback signing key version: 1 (will be updated when proper key is initialized)`);
+    } else {
+      console.log(`📦 Creating initial collection with current signing key version: ${signingKeyVersion}`);
+    }
+
     const collection: Omit<OfflineCollection, 'collection_hash'> = {
       user_id: userId,
       device_id: this.deviceId,
@@ -345,7 +518,7 @@ class OfflineSecurityService {
       xp_points: 0,
       action_queue: [],
       last_sync: 0,
-      signing_key_version: this.signingKeyVersion
+      signing_key_version: signingKeyVersion
     };
 
     return {
@@ -363,9 +536,22 @@ class OfflineSecurityService {
       action_queue: [...collection.action_queue, action]
     };
 
-    // Update collection hash
-    updatedCollection.collection_hash = this.calculateCollectionHash(updatedCollection);
-    
+    // Update collection hash - exclude the collection_hash field from the calculation
+    const collectionForHashing = {
+      user_id: updatedCollection.user_id,
+      device_id: updatedCollection.device_id,
+      cards_owned: updatedCollection.cards_owned,
+      eco_credits: updatedCollection.eco_credits,
+      xp_points: updatedCollection.xp_points,
+      action_queue: updatedCollection.action_queue,
+      last_sync: updatedCollection.last_sync,
+      signing_key_version: updatedCollection.signing_key_version,
+      activeDeck: updatedCollection.activeDeck,
+      savedDecks: updatedCollection.savedDecks
+    };
+
+    updatedCollection.collection_hash = this.calculateCollectionHash(collectionForHashing);
+
     return updatedCollection;
   }
 

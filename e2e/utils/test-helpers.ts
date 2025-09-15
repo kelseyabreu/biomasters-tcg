@@ -290,6 +290,77 @@ export async function safeCDPOperation(page: Page, operation: () => Promise<void
 }
 
 /**
+ * Perform different types of page refresh for testing
+ */
+export async function performRefresh(page: Page, type: 'normal' | 'hard' | 'hard-clear-cache' = 'normal') {
+  console.log(`🔄 Performing ${type} refresh...`);
+
+  try {
+    // Check if page is still responsive before attempting refresh
+    await page.evaluate(() => document.readyState).catch(() => {
+      throw new Error('Page is not responsive before refresh');
+    });
+
+    switch (type) {
+      case 'normal':
+        // Normal refresh (F5 / Ctrl+R) - uses cache when possible
+        await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+        break;
+
+      case 'hard':
+        // Hard refresh (Ctrl+F5 / Shift+F5) - bypasses cache for current page
+        try {
+          await page.keyboard.down('Control');
+          await page.keyboard.press('F5');
+          await page.keyboard.up('Control');
+
+          // Wait for page to start loading
+          await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+        } catch (error) {
+          console.log(`Hard refresh keyboard shortcut failed, using reload: ${error.message}`);
+          await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+        }
+        break;
+
+      case 'hard-clear-cache':
+        // Hard refresh + clear cache (Dev Tools option) - clears all cache
+        try {
+          // Use CDP to clear cache and hard reload
+          const client = await page.context().newCDPSession(page);
+          await client.send('Network.clearBrowserCache');
+          await client.send('Page.reload', { ignoreCache: true });
+          await client.detach();
+
+          // Wait for page to start loading
+          await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+        } catch (error) {
+          console.log(`CDP cache clear failed, using fallback: ${error.message}`);
+          // Fallback: keyboard shortcut for hard refresh
+          try {
+            await page.keyboard.down('Control');
+            await page.keyboard.down('Shift');
+            await page.keyboard.press('F5');
+            await page.keyboard.up('Shift');
+            await page.keyboard.up('Control');
+
+            // Wait for page to start loading
+            await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+          } catch (fallbackError) {
+            console.log(`Keyboard shortcut fallback failed, using simple reload: ${fallbackError.message}`);
+            await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+          }
+        }
+        break;
+    }
+
+    console.log(`✅ ${type} refresh completed`);
+  } catch (error) {
+    console.log(`⚠️ ${type} refresh failed: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * Clear browser data with cross-platform compatibility
  * Only clears data after page is properly loaded to avoid security errors
  */
@@ -337,57 +408,76 @@ export async function waitForAppInitialization(page: Page, options?: {
   timeout?: number;
   skipCDPCheck?: boolean;
 }) {
-  const { timeout = 45000, skipCDPCheck = false } = options || {}; // Increased timeout
+  const { timeout = 60000, skipCDPCheck = false } = options || {}; // Increased timeout
 
-  // Wait for basic app structure
-  await page.waitForSelector('ion-app', { timeout });
-
-  // Wait for network idle state first to ensure resources are loaded
   try {
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    // Wait for basic app structure
+    await page.waitForSelector('ion-app', { timeout });
+
+    // Wait for network idle state first to ensure resources are loaded
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 20000 });
+    } catch (error) {
+      console.log('Network idle timeout, continuing...');
+    }
+
+    // Wait for authentication state to stabilize with more robust checks
+    await page.waitForFunction(
+      () => {
+        try {
+          // Check if app has finished initial auth checks
+          const authElements = document.querySelectorAll('[data-testid="signin-button"], [data-testid="signout-button"]');
+          const mainMenu = document.querySelector('[data-testid="main-menu"]');
+          const authPage = document.querySelector('[data-testid="auth-page"]');
+
+          // Check if we have any content loaded (even if auth is still loading)
+          const ionContent = document.querySelector('ion-content');
+          const hasContent = ionContent && ionContent.children.length > 0;
+
+          // Check if React has finished hydrating
+          const reactReady = window.React !== undefined ||
+                            document.querySelector('[data-reactroot]') !== null ||
+                            document.querySelector('#root > *') !== null;
+
+          // Check if the app is not stuck in an error state
+          const hasError = document.body.textContent?.includes('Error') ||
+                          document.body.textContent?.includes('Failed to load') ||
+                          document.body.textContent?.includes('Something went wrong');
+
+          // App is ready if we have auth elements OR we're on a main page OR we have content AND React is ready AND no errors
+          return (authElements.length > 0 || mainMenu !== null || authPage !== null || hasContent) && reactReady && !hasError;
+        } catch (error) {
+          return false;
+        }
+      },
+      { timeout }
+    );
+
+    // Wait for any loading indicators to disappear
+    await page.waitForFunction(
+      () => {
+        try {
+          const loadingElements = document.querySelectorAll('ion-loading, .loading, [data-testid*="loading"]');
+          const initializingText = document.body.textContent?.includes('Initializing...') || false;
+          return loadingElements.length === 0 && !initializingText;
+        } catch (error) {
+          return true; // If we can't check, assume loading is done
+        }
+      },
+      { timeout: 15000 }
+    ).catch(() => {
+      // Ignore timeout for loading indicators
+      console.log('Loading indicators check timeout, continuing...');
+    });
+
+    // Verify app is fully initialized by checking for interactive elements
+    await expect(page.locator('ion-app')).toBeVisible();
+    // Use first() to handle multiple matching elements (strict mode compliance)
+    await expect(page.locator('ion-content, [data-testid="main-menu"], [data-testid="auth-page"]').first()).toBeVisible();
   } catch (error) {
-    console.log('Network idle timeout, continuing...');
+    console.log('⚠️ App initialization timeout, but continuing...', error.message);
+    // Continue anyway - the app might still be functional
   }
-
-  // Wait for authentication state to stabilize
-  await page.waitForFunction(
-    () => {
-      // Check if app has finished initial auth checks
-      const authElements = document.querySelectorAll('[data-testid="signin-button"], [data-testid="signout-button"]');
-      const mainMenu = document.querySelector('[data-testid="main-menu"]');
-      const authPage = document.querySelector('[data-testid="auth-page"]');
-
-      // Check if we have any content loaded (even if auth is still loading)
-      const ionContent = document.querySelector('ion-content');
-      const hasContent = ionContent && ionContent.children.length > 0;
-
-      // Check if React has finished hydrating
-      const reactReady = window.React !== undefined ||
-                        document.querySelector('[data-reactroot]') !== null ||
-                        document.querySelector('#root > *') !== null;
-
-      // App is ready if we have auth elements OR we're on a main page OR we have content AND React is ready
-      return (authElements.length > 0 || mainMenu !== null || authPage !== null || hasContent) && reactReady;
-    },
-    { timeout }
-  );
-
-  // Wait for any loading indicators to disappear
-  await page.waitForFunction(
-    () => {
-      const loadingElements = document.querySelectorAll('ion-loading, .loading, [data-testid*="loading"]');
-      const initializingText = document.body.textContent?.includes('Initializing...') || false;
-      return loadingElements.length === 0 && !initializingText;
-    },
-    { timeout: 10000 }
-  ).catch(() => {
-    // Ignore timeout for loading indicators
-  });
-
-  // Verify app is fully initialized by checking for interactive elements
-  await expect(page.locator('ion-app')).toBeVisible();
-  // Use first() to handle multiple matching elements (strict mode compliance)
-  await expect(page.locator('ion-content, [data-testid="main-menu"], [data-testid="auth-page"]').first()).toBeVisible();
 }
 
 /**

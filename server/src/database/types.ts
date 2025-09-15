@@ -114,9 +114,16 @@ export interface UserCardsTable {
   user_id: string;
   card_id: number; // Foreign key to cards table
   quantity: number;
-  acquired_via: AcquisitionMethod;
+  acquisition_method: AcquisitionMethod; // Fixed field name
+  acquired_at: Generated<Date>; // Main acquisition timestamp
   first_acquired_at: Generated<Date>;
   last_acquired_at: Generated<Date>;
+
+  // Card metadata fields (from schema.sql) - optional for inserts
+  is_foil: Generated<boolean>;
+  variant: string | null;
+  condition: Generated<string>;
+  metadata: Generated<string>; // JSONB as string
 }
 
 export interface DecksTable {
@@ -162,10 +169,22 @@ export interface MigrationsTable {
 export interface DeviceSyncStatesTable {
   device_id: string; // Part of composite primary key
   user_id: string; // Part of composite primary key
-  signing_key: string;
-  key_expires_at: Date;
+  current_key_version: number; // Points to current active key version
   last_sync_timestamp: number;
   last_used_at: Generated<Date>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface DeviceSigningKeysTable {
+  id: Generated<number>;
+  device_id: string;
+  user_id: string;
+  signing_key: string; // Encrypted signing key
+  key_version: number;
+  status: 'ACTIVE' | 'SUPERSEDED' | 'EXPIRED';
+  expires_at: Date;
+  superseded_at: Date | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -409,6 +428,7 @@ export interface Database {
   transactions: TransactionsTable;
   migrations: MigrationsTable;
   device_sync_states: DeviceSyncStatesTable;
+  device_signing_keys: DeviceSigningKeysTable;
   sync_actions_log: SyncActionsLogTable;
   offline_action_queue: OfflineActionQueueTable;
 
@@ -490,6 +510,10 @@ export type NewTransaction = Insertable<TransactionsTable>;
 export type DeviceSyncState = Selectable<DeviceSyncStatesTable>;
 export type NewDeviceSyncState = Insertable<DeviceSyncStatesTable>;
 export type DeviceSyncStateUpdate = Updateable<DeviceSyncStatesTable>;
+
+export type DeviceSigningKey = Selectable<DeviceSigningKeysTable>;
+export type NewDeviceSigningKey = Insertable<DeviceSigningKeysTable>;
+export type DeviceSigningKeyUpdate = Updateable<DeviceSigningKeysTable>;
 
 export type SyncActionLog = Selectable<SyncActionsLogTable>;
 export type NewSyncActionLog = Insertable<SyncActionsLogTable>;

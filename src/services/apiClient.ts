@@ -39,7 +39,13 @@ apiClient.interceptors.request.use(
         const idToken = await firebaseUser.getIdToken();
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${idToken}`;
-        console.log('🔐 Attached Firebase token to request');
+        console.log('🔐 [API] Attached Firebase token to request:', {
+          url: config.url,
+          method: config.method,
+          uid: firebaseUser.uid,
+          tokenLength: idToken.length,
+          tokenPrefix: idToken.substring(0, 20) + '...'
+        });
       } else {
         // Check for guest authentication
         const guestCredentials = await tokenManager.getGuestCredentials();
@@ -79,8 +85,16 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized errors (token expired/invalid)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
-      console.log('🔄 Received 401, attempting token refresh...');
+
+      console.log('🔄 [API] Received 401, attempting token refresh...', {
+        url: originalRequest.url,
+        method: originalRequest.method,
+        hasAuthHeader: !!originalRequest.headers?.Authorization,
+        authHeaderPrefix: typeof originalRequest.headers?.Authorization === 'string'
+          ? originalRequest.headers.Authorization.substring(0, 20) + '...'
+          : 'N/A',
+        errorMessage: error.response?.data
+      });
       
       try {
         const firebaseUser = auth.currentUser;
@@ -211,8 +225,35 @@ export const authApi = {
   getStatus: () => api.get<ApiResponse>('/api/auth/status'),
 
   // Register new user
-  register: (userData: { username: string }) =>
-    api.post<ApiResponse>('/api/auth/register', userData),
+  register: async (userData: { username: string }) => {
+    console.log('🔄 [API-CLIENT] Calling registration endpoint...', {
+      userData,
+      timestamp: new Date().toISOString()
+    });
+    try {
+      const response = await api.post<ApiResponse>('/api/auth/register', userData);
+      console.log('✅ [API-CLIENT] Registration API call successful:', {
+        status: response.status,
+        data: response.data,
+        timestamp: new Date().toISOString()
+      });
+      return response;
+    } catch (error: any) {
+      console.error('❌ [API-CLIENT] Registration API call failed:', {
+        error: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers
+        },
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
+  },
 
   // Get user profile
   getProfile: () => api.get<ApiResponse>('/api/auth/profile'),

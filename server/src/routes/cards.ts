@@ -356,7 +356,7 @@ router.get('/collection', requireAuth, asyncHandler(async (req, res) => {
       'user_cards.card_id',
       'cards.card_name',
       'user_cards.quantity',
-      'user_cards.acquired_via',
+      'user_cards.acquisition_method',
       'user_cards.first_acquired_at'
     ])
     .where('user_cards.user_id', '=', req.user.id)
@@ -529,7 +529,7 @@ router.post('/open-pack', requireAuth, packOpeningRateLimiter, asyncHandler(asyn
             user_id: req.user!.id,
             card_id: card.cardId,
             quantity: 1,
-            acquired_via: 'pack'
+            acquisition_method: 'pack'
           })
           .execute();
       }
@@ -655,7 +655,7 @@ router.post('/redeem-physical', requireRegisteredUser, asyncHandler(async (req, 
           user_id: req.user!.id,
           card_id: redemption.card_id,
           quantity: 1,
-          acquired_via: 'redeem'
+          acquisition_method: 'redeem'
         })
         .execute();
     }

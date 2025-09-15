@@ -4,6 +4,7 @@ import App from './App';
 import { configureMobileAuth } from './utils/mobileAuth';
 import useHybridGameStore from './state/hybridGameStore';
 import { unifiedGameService } from './services/UnifiedGameService';
+import { offlineSecurityService } from './services/offlineSecurityService';
 
 
 
@@ -27,7 +28,8 @@ configureMobileAuth();
 if (process.env.NODE_ENV === 'development') {
   (window as any).useHybridGameStore = useHybridGameStore;
   (window as any).unifiedGameService = unifiedGameService;
-  console.log('🧪 Development mode: Store and service exposed to window for testing');
+  (window as any).offlineSecurityService = offlineSecurityService;
+  console.log('🧪 Development mode: Store and services exposed to window for testing');
 }
 
 

@@ -169,6 +169,26 @@ export class KyselyMigrator {
       const questSystemSql = readFileSync(questSystemPath, 'utf8');
       await this.executeMigration('015_add_quest_system', questSystemSql);
 
+      // 016: Add signing key version
+      const signingKeyVersionPath = join(__dirname, 'migrations/016_add_signing_key_version.sql');
+      const signingKeyVersionSql = readFileSync(signingKeyVersionPath, 'utf8');
+      await this.executeMigration('016_add_signing_key_version', signingKeyVersionSql);
+
+      // 017: Refactor signing keys to historical storage
+      const historicalSigningKeysPath = join(__dirname, 'migrations/017_refactor_signing_keys_historical.sql');
+      const historicalSigningKeysSql = readFileSync(historicalSigningKeysPath, 'utf8');
+      await this.executeMigration('017_refactor_signing_keys_historical', historicalSigningKeysSql);
+
+      // 018: Add user cards metadata columns
+      const userCardsMetadataPath = join(__dirname, 'migrations/018_add_user_cards_metadata_columns.sql');
+      const userCardsMetadataSql = readFileSync(userCardsMetadataPath, 'utf8');
+      await this.executeMigration('018_add_user_cards_metadata_columns', userCardsMetadataSql);
+
+      // 019: Fix species_name constraint
+      const speciesNameFixPath = join(__dirname, 'migrations/019_fix_species_name_constraint.sql');
+      const speciesNameFixSql = readFileSync(speciesNameFixPath, 'utf8');
+      await this.executeMigration('019_fix_species_name_constraint', speciesNameFixSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

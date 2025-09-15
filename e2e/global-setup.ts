@@ -5,9 +5,13 @@
 
 import { chromium, FullConfig } from '@playwright/test';
 import { firebaseEmulatorManager, validateTestEnvironment } from './config/firebase-test-config';
+import { logTestConfig } from './config/test-config';
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Setting up Playwright E2E test environment...');
+
+  // Log test configuration for debugging
+  logTestConfig();
 
   // Validate test environment and Firebase configuration
   validateTestEnvironment();

@@ -89,18 +89,63 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       let firebaseCredential;
 
       if (isSignUp) {
+        console.log('🔄 [AuthForm] Starting registration process...', {
+          email,
+          displayName,
+          timestamp: new Date().toISOString()
+        });
+
         // Step 1: Create Firebase user
+        console.log('🔄 [AuthForm] Step 1: Creating Firebase user...');
         firebaseCredential = await signUpWithEmail({ email, password, displayName });
+        console.log('✅ [AuthForm] Firebase user created successfully:', {
+          uid: firebaseCredential?.user?.uid,
+          email: firebaseCredential?.user?.email,
+          emailVerified: firebaseCredential?.user?.emailVerified,
+          displayName: firebaseCredential?.user?.displayName
+        });
 
         // Step 2: Register user in backend database
-        console.log('🔄 [AuthForm] Firebase user created, registering in backend...');
+        console.log('🔄 [AuthForm] Step 2: Registering user in backend database...', {
+          firebaseUid: firebaseCredential?.user?.uid,
+          email: firebaseCredential?.user?.email,
+          displayName,
+          timestamp: new Date().toISOString()
+        });
+
         try {
-          await authApi.register({ username: displayName });
-          console.log('✅ [AuthForm] Backend registration successful');
+          console.log('🔄 [AuthForm] Calling authApi.register...');
+          const registerResponse = await authApi.register({ username: displayName });
+          console.log('✅ [AuthForm] Backend registration successful:', {
+            response: registerResponse,
+            data: registerResponse?.data,
+            timestamp: new Date().toISOString()
+          });
           showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED));
         } catch (backendError: any) {
-          console.error('❌ [AuthForm] Backend registration failed:', backendError);
-          // If backend registration fails, we should still show success since Firebase user was created
+          console.error('❌ [AuthForm] Backend registration failed:', {
+            error: backendError,
+            message: backendError?.message,
+            response: backendError?.response?.data,
+            status: backendError?.response?.status,
+            statusText: backendError?.response?.statusText,
+            config: {
+              url: backendError?.config?.url,
+              method: backendError?.config?.method,
+              headers: backendError?.config?.headers
+            },
+            firebaseUser: firebaseCredential?.user?.uid,
+            timestamp: new Date().toISOString()
+          });
+
+          // Check if it's a validation error that we should show to the user
+          if (backendError?.response?.status === 400) {
+            const errorMessage = backendError?.response?.data?.message || 'Registration validation failed';
+            showError(errorMessage);
+            return;
+          }
+
+          // For other backend errors, show success since Firebase user was created
           // The user can still use the app, but some features might not work until backend sync
           showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED) + ' (Syncing with server...)');
         }

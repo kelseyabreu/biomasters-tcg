@@ -70,6 +70,18 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
     }
   }, [syncConflicts]);
 
+  // Log modal state changes for debugging
+  React.useEffect(() => {
+    console.log('🔄 [CONFLICT-UI] ConflictResolutionModal rendered with:', {
+      isOpen,
+      conflictsCount: syncConflicts?.length || 0,
+      conflicts: syncConflicts,
+      resolutions,
+      isResolving,
+      timestamp: new Date().toISOString()
+    });
+  }, [isOpen, syncConflicts, resolutions, isResolving]);
+
   const handleResolutionChange = (actionId: string, resolution: string) => {
     setResolutions(prev => ({
       ...prev,
@@ -78,25 +90,48 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
   };
 
   const handleResolveConflicts = async () => {
+    console.log('🔄 [CONFLICT-UI] Resolving conflicts...', {
+      conflictsCount: syncConflicts.length,
+      resolutions,
+      timestamp: new Date().toISOString()
+    });
+
     setIsResolving(true);
     try {
-      // Apply resolutions and retry sync
-      const resolvedConflicts = syncConflicts.map((conflict: SyncConflict) => ({
-        ...conflict,
-        resolution: resolutions[conflict.action_id] || 'server_wins'
-      }));
+      // Prepare conflict resolutions for sync service
+      const conflictResolutions: Record<string, 'server_wins' | 'user_wins' | 'merge'> = {};
 
-      // Store resolutions and dismiss modal
+      syncConflicts.forEach((conflict: SyncConflict) => {
+        const resolution = resolutions[conflict.action_id] || 'server_wins';
+        conflictResolutions[conflict.action_id] = resolution as 'server_wins' | 'user_wins' | 'merge';
+      });
+
+      console.log('✅ [CONFLICT-UI] Prepared conflict resolutions:', {
+        resolutions: conflictResolutions,
+        conflictCount: Object.keys(conflictResolutions).length
+      });
+
+      // Dismiss modal first to prevent UI issues
       dismissSyncConflicts();
       onDismiss();
 
-      // Trigger a new sync with the resolved conflicts
-      // The sync service will handle the resolutions
+      console.log('🔄 [CONFLICT-UI] Modal dismissed, triggering sync with resolutions...');
+
+      // Trigger sync with the user's conflict resolutions
       const store = useHybridGameStore.getState();
-      await store.syncCollection();
+      const result = await store.syncCollection(conflictResolutions);
+
+      console.log('✅ [CONFLICT-UI] Sync completed after conflict resolution:', {
+        success: result.success,
+        remainingConflicts: result.conflicts?.length || 0,
+        discardedActions: result.discarded_actions?.length || 0
+      });
 
     } catch (error) {
-      console.error('Failed to resolve conflicts:', error);
+      console.error('❌ [CONFLICT-UI] Failed to resolve conflicts:', error);
+      // Re-show conflicts if sync failed
+      const store = useHybridGameStore.getState();
+      store.resolveSyncConflicts(syncConflicts);
     } finally {
       setIsResolving(false);
     }
@@ -142,12 +177,12 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
   const autoConflicts = syncConflicts.filter((c: SyncConflict) => c.resolution !== 'manual');
 
   return (
-    <IonModal isOpen={isOpen} onDidDismiss={handleDismiss}>
+    <IonModal isOpen={isOpen} onDidDismiss={handleDismiss} data-testid="conflict-resolution-modal">
       <IonHeader>
         <IonToolbar>
           <IonTitle>Sync Conflicts</IonTitle>
           <IonButtons slot="end">
-            <IonButton fill="clear" onClick={handleDismiss}>
+            <IonButton fill="clear" onClick={handleDismiss} data-testid="conflict-modal-close">
               <IonIcon icon={closeOutline} />
             </IonButton>
           </IonButtons>
@@ -233,22 +268,22 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
                     value={resolutions[conflict.action_id] || 'server_wins'}
                     onIonChange={(e) => handleResolutionChange(conflict.action_id, e.detail.value)}
                   >
-                    <IonItem>
+                    <IonItem data-testid="conflict-option-server">
                       <IonIcon icon={serverOutline} slot="start" color="primary" />
                       <IonLabel>
                         <h3>Use Server Version</h3>
                         <p>Keep the server's data and discard your offline action</p>
                       </IonLabel>
-                      <IonRadio slot="end" value="server_wins" />
+                      <IonRadio slot="end" value="server_wins" data-testid="conflict-radio-server" />
                     </IonItem>
 
-                    <IonItem>
+                    <IonItem data-testid="conflict-option-user">
                       <IonIcon icon={phonePortraitOutline} slot="start" color="secondary" />
                       <IonLabel>
                         <h3>Use My Version</h3>
                         <p>Apply your offline action and override server data</p>
                       </IonLabel>
-                      <IonRadio slot="end" value="user_wins" />
+                      <IonRadio slot="end" value="user_wins" data-testid="conflict-radio-user" />
                     </IonItem>
 
                     {conflict.reason === 'version_mismatch' && (
@@ -274,16 +309,18 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
             expand="block"
             onClick={handleResolveConflicts}
             disabled={isResolving}
+            data-testid="conflict-apply-button"
           >
             {isResolving ? 'Resolving...' : 'Apply Resolutions & Sync'}
           </IonButton>
-          
+
           <IonButton
             expand="block"
             fill="outline"
             color="medium"
             onClick={handleDismiss}
             disabled={isResolving}
+            data-testid="conflict-dismiss-button"
           >
             Dismiss (Keep Offline)
           </IonButton>

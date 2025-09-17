@@ -40,6 +40,10 @@ export interface ServiceResult<T = any> {
     ratingUpdated?: boolean;
     initialRatings?: { [playerId: string]: number };
     leaderboardSize?: number;
+    // Game completion tracking
+    gameTracked?: boolean;
+    questsUpdated?: boolean;
+    isWin?: boolean;
   };
 }
 
@@ -569,6 +573,59 @@ export class UnifiedGameService {
       return {
         isValid: false,
         errorMessage: error.message || 'Failed to get leaderboard'
+      };
+    }
+  }
+
+  /**
+   * Track game completion for quest and achievement progress
+   */
+  async trackGameCompletion(gameResult: { winner: string | null; gameMode: string; playerId: string }): Promise<ServiceResult> {
+    try {
+      console.log(`🎯 UnifiedGameService: Tracking game completion:`, gameResult);
+
+      // Update "play_games" quest progress
+      const questUpdate = await gameApi.updateQuestProgress({
+        questType: 'play_games',
+        progress: { count: 1, gameMode: gameResult.gameMode }
+      });
+
+      // If player won, update win-related quests
+      if (gameResult.winner === gameResult.playerId) {
+        await gameApi.updateQuestProgress({
+          questType: 'win_matches',
+          progress: { count: 1, gameMode: gameResult.gameMode }
+        });
+
+        // Update ranked-specific quest if it's a ranked game
+        if (gameResult.gameMode.includes('ranked')) {
+          await gameApi.updateQuestProgress({
+            questType: 'play_ranked',
+            progress: { count: 1 }
+          });
+        }
+      }
+
+      // Track different game modes for variety quest
+      await gameApi.updateQuestProgress({
+        questType: 'play_different_modes',
+        progress: { modes_played: [gameResult.gameMode] }
+      });
+
+      return {
+        isValid: true,
+        newState: questUpdate.data.data,
+        metadata: {
+          gameTracked: true,
+          questsUpdated: true,
+          isWin: gameResult.winner === gameResult.playerId
+        }
+      };
+    } catch (error: any) {
+      console.error('❌ UnifiedGameService: Game completion tracking failed:', error);
+      return {
+        isValid: false,
+        errorMessage: error.message || 'Failed to track game completion'
       };
     }
   }

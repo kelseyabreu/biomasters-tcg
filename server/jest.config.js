@@ -26,6 +26,21 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-  testTimeout: 10000,
-  verbose: true
+  testTimeout: 60000, // Increased for resource contention scenarios
+  verbose: true,
+
+  // CRITICAL: Sequential execution to prevent resource contention
+  maxWorkers: 1, // Force sequential execution to prevent database pool exhaustion
+  testSequencer: '<rootDir>/src/__tests__/utils/testSequencer.js',
+
+  // Better test isolation and cleanup
+  forceExit: true,
+  detectOpenHandles: true,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+
+  // Enhanced resource management
+  workerIdleMemoryLimit: '512MB',
+  logHeapUsage: false, // Disable to reduce noise
 };

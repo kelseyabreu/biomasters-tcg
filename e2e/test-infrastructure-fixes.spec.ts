@@ -243,9 +243,12 @@ test.describe('Infrastructure Fixes Verification', () => {
       expect(email1).not.toBe(email2);
       expect(username1).not.toBe(username2);
       
-      // Should contain session ID
-      expect(email1).toContain('test-');
-      expect(username1).toContain('test');
+      // Should contain worker prefix and test identifier
+      expect(email1).toContain('test_w');
+      expect(email1).toContain('isolation');
+      // Username removes special characters, so test_w becomes testw
+      expect(username1).toContain('testw');
+      expect(username1).toContain('isolation');
       
       console.log('✅ Test isolation identifiers:', { email1, email2, username1, username2 });
     });

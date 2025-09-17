@@ -189,6 +189,16 @@ export class KyselyMigrator {
       const speciesNameFixSql = readFileSync(speciesNameFixPath, 'utf8');
       await this.executeMigration('019_fix_species_name_constraint', speciesNameFixSql);
 
+      // 020: Add Pub/Sub matchmaking tables
+      const pubsubMatchmakingPath = join(__dirname, 'migrations/020_add_pubsub_matchmaking.sql');
+      const pubsubMatchmakingSql = readFileSync(pubsubMatchmakingPath, 'utf8');
+      await this.executeMigration('020_add_pubsub_matchmaking', pubsubMatchmakingSql);
+
+      // 021: Standardize game_sessions schema
+      const standardizeGameSessionsPath = join(__dirname, 'migrations/021_standardize_game_sessions_schema.sql');
+      const standardizeGameSessionsSql = readFileSync(standardizeGameSessionsPath, 'utf8');
+      await this.executeMigration('021_standardize_game_sessions_schema', standardizeGameSessionsSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

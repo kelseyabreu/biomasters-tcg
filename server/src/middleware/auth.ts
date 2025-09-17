@@ -17,28 +17,34 @@ import type {
  * It intelligently handles both Firebase and custom Guest JWTs.
  */
 async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  console.log('🔐 [Auth] Authentication middleware called for:', req.method, req.path);
+  console.log('🔐 [AUTH MIDDLEWARE] Authentication middleware called for:', req.method, req.path);
+  console.log('🔐 [AUTH MIDDLEWARE] Request headers:', JSON.stringify(req.headers, null, 2));
 
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
 
-  console.log('🔐 [Auth] Authorization header:', authHeader ? 'Present' : 'Missing');
-  console.log('🔐 [Auth] Token extracted:', token ? `Present (${token.substring(0, 50)}...)` : 'Missing');
+  console.log('🔐 [AUTH MIDDLEWARE] Authorization header:', authHeader ? 'Present' : 'Missing');
+  console.log('🔐 [AUTH MIDDLEWARE] Token extracted:', token ? `Present (${token.substring(0, 50)}...)` : 'Missing');
 
   if (!token) {
-    console.log('🔐 [Auth] No token provided, continuing without authentication');
+    console.log('🔐 [AUTH MIDDLEWARE] No token provided, continuing without authentication');
     // No token, continue without authentication for public routes
     return next();
   }
 
   try {
+    console.log('🔍 [AUTH MIDDLEWARE] Starting token verification...');
+
     if (isGuestToken(token)) {
       // --- Handle Guest JWT ---
+      console.log('🔍 [AUTH MIDDLEWARE] Detected guest token');
       const guestPayload = verifyGuestJWT(token);
+      console.log('🔍 [AUTH MIDDLEWARE] Guest payload:', JSON.stringify(guestPayload, null, 2));
       req.guestUser = guestPayload;
       req.isGuestAuth = true;
 
       // Fetch guest user from DB using the ID from the trusted JWT
+      console.log('🔍 [AUTH MIDDLEWARE] Fetching guest user from database...');
       const guestDbUser = await db
         .selectFrom('users')
         .selectAll()
@@ -47,26 +53,30 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
 
       if (guestDbUser) {
         req.user = adaptDatabaseUserToUnified(guestDbUser);
+        console.log('✅ [AUTH MIDDLEWARE] Guest user found and set');
+      } else {
+        console.log('⚠️ [AUTH MIDDLEWARE] Guest user not found in database');
       }
 
     } else {
       // --- Handle Firebase JWT ---
-      console.log('🔐 [Auth] Processing Firebase JWT token');
+      console.log('🔍 [AUTH MIDDLEWARE] Processing Firebase JWT token');
       let decodedToken;
 
       // In test environment, allow test tokens signed with JWT_SECRET
       if (process.env['NODE_ENV'] === 'test' || process.env['NODE_ENV'] === 'development') {
-        console.log('🔐 [Auth] Development/test environment - checking for test tokens');
+        console.log('🔍 [AUTH MIDDLEWARE] Development/test environment - checking for test tokens');
         try {
           const jwt = require('jsonwebtoken');
           const testToken = jwt.verify(token, process.env['JWT_SECRET'] || 'test-secret');
+          console.log('🔍 [AUTH MIDDLEWARE] Test token verification result:', JSON.stringify(testToken, null, 2));
           if (testToken && typeof testToken === 'object' && testToken.test_token) {
             // This is a test token, use it directly
-            console.log('🔐 [Auth] Using test token');
+            console.log('✅ [AUTH MIDDLEWARE] Using test token');
             decodedToken = testToken;
           } else {
             // Not a test token, try Firebase verification
-            console.log('🔐 [Auth] Not a test token, trying Firebase verification');
+            console.log('🔍 [AUTH MIDDLEWARE] Not a test token, trying Firebase verification');
             decodedToken = await scalableFirebaseAuth.verifyIdToken(token);
           }
         } catch (testError) {
@@ -80,7 +90,8 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
         decodedToken = await scalableFirebaseAuth.verifyIdToken(token);
       }
 
-      console.log('🔐 [Auth] Token decoded successfully, UID:', decodedToken.uid);
+      console.log('✅ [AUTH MIDDLEWARE] Token decoded successfully, UID:', decodedToken.uid);
+      console.log('🔍 [AUTH MIDDLEWARE] Decoded token details:', JSON.stringify(decodedToken, null, 2));
 
       req.firebaseUser = {
         uid: decodedToken.uid,
@@ -88,14 +99,18 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
         ...(decodedToken.email_verified !== undefined && { email_verified: decodedToken.email_verified })
       };
       req.isGuestAuth = false;
+      console.log('🔍 [AUTH MIDDLEWARE] Firebase user set on request:', JSON.stringify(req.firebaseUser, null, 2));
 
       // Check cache first (skip in test environment if Redis not available)
       const cacheKey = `user:${decodedToken.uid}`;
       let dbUser: DatabaseUser | null = null;
 
+      console.log('🔍 [AUTH MIDDLEWARE] Checking cache for user:', cacheKey);
       try {
         dbUser = await CacheManager.get<DatabaseUser>(cacheKey);
+        console.log('🔍 [AUTH MIDDLEWARE] Cache result:', dbUser ? 'User found in cache' : 'User not in cache');
       } catch (cacheError) {
+        console.log('⚠️ [AUTH MIDDLEWARE] Cache error:', (cacheError as Error).message);
         if (process.env['NODE_ENV'] === 'test') {
           dbUser = null;
         } else {
@@ -104,6 +119,7 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
       }
 
       if (!dbUser) {
+        console.log('🔍 [AUTH MIDDLEWARE] Fetching user from database by firebase_uid:', decodedToken.uid);
         const fetchedUser = await db
           .selectFrom('users')
           .selectAll()

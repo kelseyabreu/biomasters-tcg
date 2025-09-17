@@ -407,10 +407,10 @@ export const gameApi = {
 
   // Rating and leaderboard endpoints
   getPlayerRatings: (data: { playerIds: string[] }) =>
-    api.post<ApiResponse>('/api/users/ratings', data),
+    api.post<ApiResponse>('/api/ratings/players', data),
 
   updatePlayerRating: (data: any) =>
-    api.post<ApiResponse>('/api/users/rating/update', data),
+    api.post<ApiResponse>('/api/ratings/update', data),
 
   getLeaderboard: (gameMode: string, limit: number = 100) =>
     api.get<ApiResponse>(`/api/leaderboard/${gameMode}?limit=${limit}`),

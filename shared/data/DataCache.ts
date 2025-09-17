@@ -52,6 +52,7 @@ export class DataCache {
     totalRequests: 0,
     hitRate: 0
   };
+  private cleanupInterval?: NodeJS.Timeout;
 
   constructor(config: CacheConfig = {}) {
     this.config = {
@@ -67,8 +68,10 @@ export class DataCache {
       this.loadFromPersistence();
     }
 
-    // Set up periodic cleanup
-    setInterval(() => this.cleanup(), 5 * 60 * 1000); // Every 5 minutes
+    // Set up periodic cleanup only if not in test environment
+    if (process.env['NODE_ENV'] !== 'test') {
+      this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000); // Every 5 minutes
+    }
   }
 
   /**
@@ -232,6 +235,17 @@ export class DataCache {
     if (keysToDelete.length > 0 && this.config.enablePersistence) {
       this.saveToPersistence();
     }
+  }
+
+  /**
+   * Destroy the cache and clear all intervals
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined as any;
+    }
+    this.cache.clear();
   }
 
   /**

@@ -187,6 +187,11 @@ router.post('/update', authenticateToken, async (req: Request, res: Response) =>
         max_players: gameMode === 'ranked_1v1' || gameMode === 'casual_1v1' ? 2 : 4,
         current_players: 1,
         status: 'finished',
+        players: [{
+          playerId: playerId,
+          username: 'Test Player',
+          ready: true
+        }],
         game_state: {},
         settings: {},
         created_at: new Date(),

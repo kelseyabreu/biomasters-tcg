@@ -541,6 +541,25 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
 
   console.log('✅ [OFFLINE-KEY] User found:', { userId: user.id, username: user.username });
 
+  // Double-check that user.id exists in users table (prevent foreign key violations)
+  console.log('🔍 [OFFLINE-KEY] Validating user ID exists in users table:', user.id);
+  const userIdExists = await db
+    .selectFrom('users')
+    .select('id')
+    .where('id', '=', user.id)
+    .executeTakeFirst();
+
+  if (!userIdExists) {
+    console.error(`❌ [OFFLINE-KEY] User ID ${user.id} does not exist in users table - data inconsistency detected`);
+    res.status(500).json({
+      error: 'DATA_INCONSISTENCY',
+      message: 'User data inconsistency detected. Please contact support.'
+    });
+    return;
+  }
+
+  console.log('✅ [OFFLINE-KEY] User ID validation passed');
+
   // Generate cryptographically secure signing key
   console.log('🔑 [OFFLINE-KEY] Generating signing key...');
   const signingKey = generateSigningKey();

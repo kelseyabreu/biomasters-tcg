@@ -38,6 +38,8 @@ import testRoutes from './routes/test';
 import matchmakingRoutes from './routes/matchmaking';
 import ratingsRoutes from './routes/ratings';
 import questsRoutes from './routes/quests';
+import matchesRoutes from './routes/matches';
+import leaderboardRoutes from './routes/leaderboard';
 import healthRoutes from './routes/health';
 
 // Import unified data loader factory
@@ -45,6 +47,11 @@ import { createProductionDataLoader, createDevelopmentDataLoader } from '../../s
 
 // Import WebSocket setup
 import { setupGameSocket } from './websocket/gameSocket';
+
+// Import Pub/Sub and matchmaking services
+import { initializePubSub } from './config/pubsub';
+import { MatchmakingWorker } from './workers/MatchmakingWorker';
+import { MatchNotificationService } from './services/MatchNotificationService';
 
 // Import game data manager
 // DataLoader import removed - using direct file system loading instead
@@ -183,6 +190,16 @@ async function initializeServices() {
       console.error('❌ Failed to initialize server data loader:', error);
       console.error('   Game engine will not function without game data');
       // Don't exit - let server run without game data for now
+    }
+
+    // Initialize Google Cloud Pub/Sub (optional)
+    try {
+      console.log('☁️ Initializing Google Cloud Pub/Sub...');
+      await initializePubSub();
+      console.log('✅ Google Cloud Pub/Sub initialized successfully');
+    } catch (error) {
+      console.warn('⚠️  Google Cloud Pub/Sub not available, matchmaking will use basic mode');
+      console.warn('   Configure GOOGLE_CLOUD_PROJECT_ID and GOOGLE_CLOUD_KEY_FILE for full functionality');
     }
 
     console.log('✅ Core services initialized successfully');
@@ -461,7 +478,9 @@ app.get('/api/health/migrations', async (_req, res) => {
       '016_add_signing_key_version',
       '017_refactor_signing_keys_historical',
       '018_add_user_cards_metadata_columns',
-      '019_fix_species_name_constraint'
+      '019_fix_species_name_constraint',
+      '020_add_pubsub_matchmaking',
+      '021_standardize_game_sessions_schema'
     ];
 
     const executedMigrationNames = executedMigrations.map(m => m.name);
@@ -534,6 +553,8 @@ app.use('/api/static-data', staticDataRoutes);
 app.use('/api/matchmaking', matchmakingRoutes);
 app.use('/api/ratings', ratingsRoutes);
 app.use('/api/quests', questsRoutes);
+app.use('/api/matches', matchesRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Test routes (only available in non-production environments)
 if (process.env['NODE_ENV'] !== 'production') {
@@ -564,22 +585,72 @@ if (io) {
   console.log('⚠️ WebSocket server disabled');
 }
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
-});
+// Global variables for matchmaking services
+let matchmakingWorker: MatchmakingWorker | null = null;
+let matchNotificationService: MatchNotificationService | null = null;
 
-process.on('SIGINT', () => {
-  console.log('🛑 SIGINT received, shutting down gracefully...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
-});
+// Initialize matchmaking services
+async function initializeMatchmakingServices() {
+  try {
+    // Skip matchmaking services in test environment to avoid conflicts with test workers
+    if (process.env['NODE_ENV'] === 'test') {
+      console.log('⚠️ Matchmaking services disabled in test environment (test workers will be used instead)');
+      return;
+    }
+
+    // Only initialize if Pub/Sub is available and WebSocket is enabled
+    if (io && process.env['GOOGLE_CLOUD_PROJECT_ID']) {
+      console.log('🎯 Initializing matchmaking services...');
+
+      // Initialize matchmaking worker
+      matchmakingWorker = new MatchmakingWorker();
+      await matchmakingWorker.start();
+      console.log('✅ MatchmakingWorker started');
+
+      // Initialize match notification service
+      matchNotificationService = new MatchNotificationService(io);
+      await matchNotificationService.start();
+      console.log('✅ MatchNotificationService started');
+
+      console.log('🎯 Matchmaking services initialized successfully');
+    } else {
+      console.log('⚠️ Matchmaking services disabled (requires Pub/Sub and WebSocket)');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize matchmaking services:', error);
+    console.warn('⚠️ Matchmaking will operate in basic mode without Pub/Sub');
+  }
+}
+
+// Graceful shutdown
+async function gracefulShutdown(signal: string) {
+  console.log(`🛑 ${signal} received, shutting down gracefully...`);
+
+  try {
+    // Stop matchmaking services
+    if (matchmakingWorker) {
+      console.log('🛑 Stopping MatchmakingWorker...');
+      await matchmakingWorker.stop();
+    }
+
+    if (matchNotificationService) {
+      console.log('🛑 Stopping MatchNotificationService...');
+      await matchNotificationService.stop();
+    }
+
+    // Close server
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle unhandled promise rejections (like database connection errors)
 process.on('unhandledRejection', (reason, promise) => {
@@ -602,12 +673,15 @@ process.on('uncaughtException', (error) => {
 async function startServer() {
   try {
     await initializeServices();
-    
-    server.listen(PORT, () => {
+
+    server.listen(PORT, async () => {
       console.log(`🚀 Biomasters TCG API Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env['NODE_ENV'] || 'development'}`);
       console.log(`🌐 Health check: http://localhost:${PORT}/health`);
       console.log(`📚 API Base URL: http://localhost:${PORT}/api`);
+
+      // Initialize matchmaking services after server is running
+      await initializeMatchmakingServices();
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

@@ -46,8 +46,8 @@ export const STARTER_PACK_SPECIES: StarterPackCard[] = [
     unlock_order: 2
   },
   {
-    cardId: 53, // RED_FOX - represents "fox"
-    educational_purpose: 'Explore secondary consumers and predation',
+    cardId: 5, // SOCKEYE_SALMON - represents aquatic predator (replacing fox)
+    educational_purpose: 'Explore aquatic ecosystems and predation',
     unlock_order: 3
   },
   {
@@ -56,8 +56,8 @@ export const STARTER_PACK_SPECIES: StarterPackCard[] = [
     unlock_order: 4
   },
   {
-    cardId: 34, // MONARCH_BUTTERFLY - represents "butterfly"
-    educational_purpose: 'Learn about pollinators and metamorphosis',
+    cardId: 9, // TURKEY_VULTURE - represents scavenger (replacing butterfly)
+    educational_purpose: 'Learn about decomposers and nutrient cycling',
     unlock_order: 5
   }
 ];
@@ -238,10 +238,10 @@ class StarterPackService {
       },
       {
         step: 3,
-        cardId: 53, // RED_FOX
-        title: 'Secondary Consumers',
-        description: 'Foxes are predators that hunt smaller animals. They help control herbivore populations.',
-        objective: 'Learn hunting mechanics with your fox'
+        cardId: 5, // SOCKEYE_SALMON
+        title: 'Aquatic Predators',
+        description: 'Salmon are important predators in aquatic ecosystems. They help maintain balance in water environments.',
+        objective: 'Learn aquatic hunting mechanics with your salmon'
       },
       {
         step: 4,
@@ -252,10 +252,10 @@ class StarterPackService {
       },
       {
         step: 5,
-        cardId: 34, // MONARCH_BUTTERFLY
-        title: 'Pollinators & Symbiosis',
-        description: 'Butterflies pollinate flowers while feeding on nectar. This is a win-win relationship called mutualism.',
-        objective: 'Create pollination chains with your butterfly'
+        cardId: 9, // TURKEY_VULTURE
+        title: 'Scavengers & Decomposition',
+        description: 'Vultures are scavengers that clean up dead animals. They play a crucial role in nutrient cycling.',
+        objective: 'Learn about decomposition and nutrient cycling with your vulture'
       }
     ];
   }

@@ -26,34 +26,61 @@ function getRedisConfig() {
 }
 
 /**
- * Initialize Redis connection with retry logic and graceful fallback
+ * Initialize Redis connection with retry logic and detailed logging
  */
 export async function initializeRedis(): Promise<void> {
   const maxRetries = 3;
   const retryDelay = 2000; // 2 seconds
 
+  console.log('🔴 [Redis] Starting Redis initialization...');
+  console.log('🔴 [Redis] Environment variables check:');
+  console.log('🔴 [Redis] UPSTASH_REDIS_REST_URL:', process.env['UPSTASH_REDIS_REST_URL'] ? 'SET' : 'NOT SET');
+  console.log('🔴 [Redis] UPSTASH_REDIS_REST_TOKEN:', process.env['UPSTASH_REDIS_REST_TOKEN'] ? 'SET (length: ' + (process.env['UPSTASH_REDIS_REST_TOKEN']?.length || 0) + ')' : 'NOT SET');
+  console.log('🔴 [Redis] REDIS_URL:', process.env['REDIS_URL'] ? 'SET' : 'NOT SET');
+  console.log('🔴 [Redis] NODE_ENV:', process.env['NODE_ENV']);
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const redisConfig = getRedisConfig();
       console.log(`🔴 [Redis] Attempt ${attempt}/${maxRetries} - Connecting to Redis...`);
+      console.log(`🔴 [Redis] Config:`, {
+        url: redisConfig.url ? redisConfig.url.substring(0, 50) + '...' : 'undefined',
+        token: redisConfig.token ? 'SET (length: ' + redisConfig.token.length + ')' : 'undefined'
+      });
 
       // Create Upstash Redis client
       redisClient = new Redis(redisConfig);
+      console.log('🔴 [Redis] Redis client created successfully');
 
       // Test the connection with timeout
+      console.log('🔴 [Redis] Testing connection with ping...');
+      const startTime = Date.now();
+
       const pingPromise = redisClient.ping();
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Redis ping timeout')), 5000)
+        setTimeout(() => reject(new Error('Redis ping timeout after 5000ms')), 5000)
       );
 
-      await Promise.race([pingPromise, timeoutPromise]);
+      const result = await Promise.race([pingPromise, timeoutPromise]);
+      const endTime = Date.now();
+
+      console.log(`🔴 [Redis] Ping result: ${result} (took ${endTime - startTime}ms)`);
 
       redisAvailable = true;
       console.log('✅ [Redis] Connected successfully');
       return;
 
     } catch (error) {
-      console.warn(`⚠️ [Redis] Attempt ${attempt}/${maxRetries} failed:`, error instanceof Error ? error.message : error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      console.error(`❌ [Redis] Attempt ${attempt}/${maxRetries} failed:`);
+      console.error(`❌ [Redis] Error message: ${errorMessage}`);
+      if (errorStack) {
+        console.error(`❌ [Redis] Error stack: ${errorStack}`);
+      }
+      console.error(`❌ [Redis] Error type: ${typeof error}`);
+      console.error(`❌ [Redis] Error constructor: ${error?.constructor?.name}`);
 
       if (attempt < maxRetries) {
         console.log(`🔄 [Redis] Retrying in ${retryDelay}ms...`);

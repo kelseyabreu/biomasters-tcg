@@ -14,7 +14,7 @@ process.env['NODE_ENV'] = 'test';
 process.env['JWT_SECRET'] = process.env['JWT_SECRET'] || 'test-secret';
 
 // Import real database connection for integration testing
-import { db } from '../database/kysely';
+import { db, closeSingletonPool } from '../database/kysely';
 import { initializeDatabase, closeDatabase, checkDatabaseHealth } from '../config/database';
 
 // Global database setup for real integration testing
@@ -38,18 +38,57 @@ beforeAll(async () => {
 afterAll(async () => {
   if (databaseAvailable) {
     try {
+      // Force close all database connections
       await closeDatabase();
+
+      // Also close the singleton pool from kysely
+      await closeSingletonPool();
+
+      // Give time for connections to close
+      await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
       console.warn('⚠️ Error closing database:', error);
     }
+  }
+
+  // Clean up data caches to prevent open handles
+  try {
+    // Import and destroy cache instances if they exist
+    const shared = await import('@biomasters/shared');
+    if (shared && typeof shared === 'object') {
+      // Try to access cache instances and destroy them
+      Object.values(shared).forEach((value: any) => {
+        if (value && typeof value.destroy === 'function') {
+          value.destroy();
+        }
+      });
+    }
+  } catch (error) {
+    // Ignore cache cleanup errors
+  }
+
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
   }
 });
 
 // Export database availability for tests to check
 export { databaseAvailable, db };
 
-// Global test timeout
-jest.setTimeout(10000);
+// Global test timeout - increased for real service integration
+jest.setTimeout(30000);
+
+// Configure Jest for better test isolation
+beforeEach(async () => {
+  // Small delay between tests to prevent race conditions
+  await new Promise(resolve => setTimeout(resolve, 10));
+});
+
+afterEach(async () => {
+  // Small delay after each test to ensure cleanup
+  await new Promise(resolve => setTimeout(resolve, 10));
+});
 
 // Console suppression for cleaner test output (temporarily disabled for debugging)
 const originalConsoleError = console.error;

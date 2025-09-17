@@ -501,9 +501,48 @@ export async function waitForAuthState(page: Page, expectedState: 'authenticated
   if (expectedState === 'authenticated') {
     // Use first() to handle multiple matching elements (strict mode compliance)
     await expect(page.locator('[data-testid="signout-button"], [data-testid="user-profile"]').first()).toBeVisible({ timeout });
+
+    // Also wait for the store state to be properly updated
+    await page.waitForFunction(
+      () => {
+        const storeState = window.useHybridGameStore?.getState();
+        return storeState?.isAuthenticated === true && storeState?.userId;
+      },
+      { timeout }
+    );
   } else {
     await expect(page.locator('[data-testid="signin-button"]')).toBeVisible({ timeout });
+
+    // Also wait for the store state to be properly updated
+    await page.waitForFunction(
+      () => {
+        const storeState = window.useHybridGameStore?.getState();
+        return storeState?.isAuthenticated === false;
+      },
+      { timeout }
+    );
   }
+}
+
+/**
+ * Wait for Firebase authentication to complete and store state to update
+ */
+export async function waitForFirebaseAuth(page: Page, timeout = 20000) {
+  console.log('⏳ Waiting for Firebase authentication to complete...');
+
+  await page.waitForFunction(
+    () => {
+      const storeState = window.useHybridGameStore?.getState();
+      return storeState?.isAuthenticated === true &&
+             storeState?.firebaseUser &&
+             storeState?.userId &&
+             storeState?.userProfile &&
+             storeState?.isGuestMode === false;
+    },
+    { timeout }
+  );
+
+  console.log('✅ Firebase authentication completed');
 }
 
 /**

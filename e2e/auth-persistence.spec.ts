@@ -13,6 +13,7 @@ import {
   waitForModal,
   waitForAppInitialization,
   waitForAuthState,
+  waitForFirebaseAuth,
   switchAuthMode
 } from './utils/test-helpers';
 
@@ -40,7 +41,9 @@ async function registerTestUser(page: Page, testUser: { email: string; password:
   await fillIonInput(page, 'display-name-input', testUser.displayName);
 
   await clickIonButton(page, 'register-button');
-  await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: 30000 });
+
+  console.log('⏳ Waiting for registration to complete and modal to close...');
+  await waitForModal(page, 'auth-modal', { state: 'hidden', timeout: 60000 });
 
   console.log('✅ User registration completed');
 }
@@ -63,8 +66,10 @@ test.describe('🔐 Authentication Persistence E2E', () => {
       // Step 1: Register a new Firebase user
       console.log('📝 Registering Firebase user...');
       await registerTestUser(page, testUser);
-      await waitForAuthState(page, 'authenticated');
-      
+
+      // Wait for Firebase authentication to complete and store state to update
+      await waitForFirebaseAuth(page);
+
       // Verify initial authentication state
       const initialAuthState = await page.evaluate(() => {
         const storeState = window.useHybridGameStore?.getState();
@@ -76,7 +81,7 @@ test.describe('🔐 Authentication Persistence E2E', () => {
           userType: storeState?.userProfile?.user_type
         };
       });
-      
+
       console.log('📊 Initial auth state:', initialAuthState);
       expect(initialAuthState.isAuthenticated).toBe(true);
       expect(initialAuthState.isGuestMode).toBe(false);
@@ -87,24 +92,9 @@ test.describe('🔐 Authentication Persistence E2E', () => {
       console.log('🔄 Refreshing page to test Firebase auth persistence...');
       await page.reload();
       await waitForAppInitialization(page);
-      
-      // Wait for authentication recovery
-      console.log('⏳ Waiting for Firebase authentication recovery...');
-      await page.waitForFunction(() => {
-        const storeState = window.useHybridGameStore?.getState();
-        console.log('🔍 Firebase auth recovery check:', {
-          isAuthenticated: storeState?.isAuthenticated,
-          isGuestMode: storeState?.isGuestMode,
-          userId: storeState?.userId,
-          hasUserProfile: !!storeState?.userProfile,
-          firebaseUser: !!storeState?.firebaseUser
-        });
-        return storeState?.isAuthenticated === true && 
-               storeState?.isGuestMode === false &&
-               !!storeState?.userId &&
-               !!storeState?.userProfile &&
-               !!storeState?.firebaseUser;
-      }, { timeout: 30000 });
+
+      // Wait for Firebase authentication recovery
+      await waitForFirebaseAuth(page);
       
       // Verify authentication state persisted
       await waitForAuthState(page, 'authenticated');

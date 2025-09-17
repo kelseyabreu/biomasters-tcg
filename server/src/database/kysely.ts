@@ -14,46 +14,53 @@ function getDbConfig() {
   // Use connection string if available (for Railway and other hosted services)
   if (process.env['DATABASE_URL']) {
     console.log('🔍 Using DATABASE_URL for connection');
+
+    // Optimize pool size for test environment
+    const isTestEnv = process.env['NODE_ENV'] === 'test';
+    const maxConnections = isTestEnv ? 2 : 3; // Even smaller for tests
+
     const config = {
       connectionString: process.env['DATABASE_URL'],
       ssl: { rejectUnauthorized: false }, // Always use SSL for Railway
-      // Robust pool configuration for Railway
-      max: 3, // Reduced for Railway limits
+      // Optimized pool configuration for Railway with test considerations
+      max: maxConnections, // Reduced for Railway limits and test isolation
       min: 0, // Allow pool to scale to zero
-      idleTimeoutMillis: 30000, // Keep connections longer
-      connectionTimeoutMillis: 15000, // Longer timeout for Railway
-      acquireTimeoutMillis: 20000,
-      createTimeoutMillis: 15000,
+      idleTimeoutMillis: isTestEnv ? 10000 : 30000, // Shorter for tests
+      connectionTimeoutMillis: isTestEnv ? 10000 : 15000, // Shorter for tests
+      acquireTimeoutMillis: isTestEnv ? 15000 : 20000,
+      createTimeoutMillis: isTestEnv ? 10000 : 15000,
       destroyTimeoutMillis: 5000,
       reapIntervalMillis: 1000,
-      createRetryIntervalMillis: 2000, // Longer retry interval
+      createRetryIntervalMillis: isTestEnv ? 1000 : 2000, // Faster retry for tests
     };
     console.log('🔍 Database config:', {
       connectionString: config.connectionString.substring(0, 50) + '...',
       ssl: config.ssl,
-      max: config.max
+      max: config.max,
+      environment: process.env['NODE_ENV']
     });
     return config;
   }
 
   // Fallback to individual config values
+  const isTestEnv = process.env['NODE_ENV'] === 'test';
+  const maxConnections = isTestEnv ? 2 : 3; // Even smaller for tests
+
   return {
     host: process.env['DB_HOST'] || 'localhost',
     port: parseInt(process.env['DB_PORT'] || '5432'),
     database: process.env['DB_NAME'] || 'biomasters_tcg',
     user: process.env['DB_USER'] || 'postgres',
     password: process.env['DB_PASSWORD'] || '',
-    max: 3, // Conservative limit for local development
+    max: maxConnections, // Conservative limit optimized for environment
     min: 0, // Allow pool to scale to zero
-    idleTimeoutMillis: 30000, // Keep connections longer
-    connectionTimeoutMillis: 15000, // Longer timeout for network issues
-    acquireTimeoutMillis: 20000,
-    createTimeoutMillis: 15000,
+    idleTimeoutMillis: isTestEnv ? 10000 : 30000, // Shorter for tests
+    connectionTimeoutMillis: isTestEnv ? 10000 : 15000, // Shorter for tests
+    acquireTimeoutMillis: isTestEnv ? 15000 : 20000,
+    createTimeoutMillis: isTestEnv ? 10000 : 15000,
     destroyTimeoutMillis: 5000,
     reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 2000, // Longer retry interval
-    query_timeout: 30000,
-    statement_timeout: 30000,
+    createRetryIntervalMillis: isTestEnv ? 1000 : 2000, // Faster retry for tests
     ssl: (process.env['DB_HOST']?.includes('rlwy.net') || process.env['NODE_ENV'] === 'production') ? { rejectUnauthorized: false } : false
   };
 }
@@ -64,20 +71,32 @@ function getDbConfig() {
  */
 
 /**
- * Create PostgreSQL pool with error handling
+ * Singleton pool manager to prevent multiple pool creation
+ */
+let globalPool: Pool | null = null;
+
+/**
+ * Create PostgreSQL pool with error handling (singleton pattern)
  */
 function createPool() {
+  // Return existing pool if already created
+  if (globalPool) {
+    console.log('♻️ Reusing existing PostgreSQL pool');
+    return globalPool;
+  }
+
   const config = getDbConfig();
-  const pool = new Pool(config);
+  console.log('🔗 Creating new PostgreSQL pool...');
+  globalPool = new Pool(config);
 
   // Add comprehensive error handling for the pool
-  pool.on('error', (err) => {
+  globalPool.on('error', (err) => {
     console.error('🚨 PostgreSQL pool error:', err.message);
     console.log('🔌 PostgreSQL connection error detected:', err.message);
     // Don't crash the server on pool errors
   });
 
-  pool.on('connect', (client) => {
+  globalPool.on('connect', (client) => {
     console.log('🔗 New PostgreSQL connection established');
 
     // Handle client errors to prevent crashes
@@ -86,30 +105,30 @@ function createPool() {
     });
   });
 
-  pool.on('remove', () => {
-    console.log('🔌 PostgreSQL connection removed from pool');
+  globalPool.on('remove', () => {
+    // Suppress logging during tests to prevent "Cannot log after tests are done" errors
+    if (process.env['NODE_ENV'] !== 'test') {
+      console.log('🔌 PostgreSQL connection removed from pool');
+    }
   });
 
-  pool.on('acquire', () => {
+  globalPool.on('acquire', () => {
     console.log('📥 PostgreSQL connection acquired from pool');
   });
 
-  pool.on('release', () => {
+  globalPool.on('release', () => {
     console.log('📤 PostgreSQL connection released to pool');
   });
 
-  return pool;
+  return globalPool;
 }
 
 /**
- * Create Kysely database instance with truly lazy pool creation
+ * Create Kysely database instance with singleton pool
  */
 export const db = new Kysely<Database>({
   dialect: new PostgresDialect({
-    pool: async () => {
-      console.log('🔗 Creating new PostgreSQL pool...');
-      return createPool();
-    },
+    pool: () => Promise.resolve(createPool()), // Use singleton pool with Promise wrapper
   }),
 });
 
@@ -141,6 +160,21 @@ export async function initializeKysely(): Promise<void> {
   } catch (error) {
     console.error('❌ Failed to connect to PostgreSQL with Kysely:', error);
     throw error;
+  }
+}
+
+/**
+ * Close the singleton pool (for test cleanup)
+ */
+export async function closeSingletonPool(): Promise<void> {
+  if (globalPool) {
+    try {
+      await globalPool.end();
+      globalPool = null;
+      console.log('✅ Singleton PostgreSQL pool closed');
+    } catch (error) {
+      console.error('❌ Error closing singleton pool:', error);
+    }
   }
 }
 

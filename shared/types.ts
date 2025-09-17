@@ -927,6 +927,85 @@ export interface CardSearchFilters {
 }
 
 // ============================================================================
+// MATCHMAKING & PUB/SUB TYPES
+// ============================================================================
+
+/**
+ * Matchmaking request for Pub/Sub system
+ */
+export interface MatchmakingRequest {
+  playerId: string;
+  gameMode: string;
+  rating: number;
+  preferences: {
+    maxWaitTime?: number;
+    regionPreference?: string;
+  };
+  requestId: string;
+  timestamp: number;
+}
+
+/**
+ * Match found notification
+ */
+export interface MatchFound {
+  sessionId: string;
+  players: Array<{
+    playerId: string;
+    rating: number;
+  }>;
+  gameMode: string;
+  estimatedStartTime: number;
+}
+
+/**
+ * Matchmaking queue entry for Redis
+ */
+export interface MatchmakingQueueEntry {
+  playerId: string;
+  gameMode: string;
+  rating: number;
+  timestamp: number;
+  preferences: Record<string, any>;
+}
+
+/**
+ * Match notification payload for WebSocket
+ */
+export interface MatchNotification {
+  sessionId: string;
+  gameMode: string;
+  estimatedStartTime: number;
+
+  // For 1v1 modes
+  opponent?: {
+    playerId: string;
+    rating: number;
+    name?: string;
+  };
+
+  // For team-based modes (2v2)
+  teamAssignment?: string;
+  teammates?: Array<{
+    playerId: string;
+    rating: number;
+    name?: string;
+  }>;
+  enemies?: Array<{
+    playerId: string;
+    rating: number;
+    name?: string;
+  }>;
+
+  // For FFA modes
+  opponents?: Array<{
+    playerId: string;
+    rating: number;
+    name?: string;
+  }>;
+}
+
+// ============================================================================
 // SYNC & OFFLINE TYPES
 // ============================================================================
 

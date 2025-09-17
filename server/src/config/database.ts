@@ -78,11 +78,13 @@ export async function initializeDatabase(): Promise<void> {
 
       // Test connection with timeout
       const connectionPromise = testConnection();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database connection timeout')), 15000)
-      );
+      let timeoutId: NodeJS.Timeout;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Database connection timeout')), 15000);
+      });
 
       await Promise.race([connectionPromise, timeoutPromise]);
+      clearTimeout(timeoutId!); // Clear timeout to prevent open handle
 
       // Set up enhanced error handling
       pool.on('error', (err) => {
@@ -283,7 +285,16 @@ export async function checkDatabaseHealth(): Promise<boolean> {
  */
 export async function closeDatabase(): Promise<void> {
   if (pool) {
-    await pool.end();
+    try {
+      await pool.end();
+      // Clear the pool reference to prevent reuse
+      pool = null as any;
+    } catch (error) {
+      // Suppress logging during tests to prevent "Cannot log after tests are done" errors
+      if (process.env['NODE_ENV'] !== 'test') {
+        console.error('❌ Error closing PostgreSQL pool:', error);
+      }
+    }
   }
 }
 

@@ -56,6 +56,137 @@ const createGameSessionSchema = z.object({
 // });
 
 /**
+ * PATCH /api/game/sessions/:sessionId/ready
+ * Mark player as ready in a game session
+ */
+router.patch('/sessions/:sessionId/ready', requireAuth, asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const { ready } = req.body;
+  const userId = req.user!.id;
+
+  console.log(`🚨🚨🚨 [READY ENDPOINT] CALLED!!! sessionId: ${sessionId}, userId: ${userId}, ready: ${ready}`);
+  console.log(`🚨🚨🚨 [READY ENDPOINT] Request method: ${req.method}, URL: ${req.url}`);
+  console.log(`🚨🚨🚨 [READY ENDPOINT] Headers:`, JSON.stringify(req.headers, null, 2));
+  console.log(`🔧 [READY ENDPOINT] Request headers:`, JSON.stringify(req.headers, null, 2));
+  console.log(`🔧 [READY ENDPOINT] Request body:`, JSON.stringify(req.body, null, 2));
+
+  // Validate sessionId
+  if (!sessionId) {
+    console.log(`🔧 [READY ENDPOINT] ERROR: Missing session ID`);
+    return res.status(400).json({
+      error: 'INVALID_SESSION_ID',
+      message: 'Session ID is required'
+    });
+  }
+
+  // Validate input
+  if (typeof ready !== 'boolean') {
+    return res.status(400).json({
+      error: 'INVALID_READY_STATE',
+      message: 'Ready state must be a boolean'
+    });
+  }
+
+  // Get game session
+  console.log(`🔧 [READY ENDPOINT] Fetching session ${sessionId} from database...`);
+  const gameSession = await db
+    .selectFrom('game_sessions')
+    .selectAll()
+    .where('id', '=', sessionId)
+    .executeTakeFirst();
+
+  if (!gameSession) {
+    console.log(`🔧 [READY ENDPOINT] ERROR: Session ${sessionId} not found in database`);
+    return res.status(404).json({
+      error: 'SESSION_NOT_FOUND',
+      message: 'Game session not found'
+    });
+  }
+
+  console.log(`🔧 [READY ENDPOINT] Session found:`, {
+    id: gameSession.id,
+    status: gameSession.status,
+    host_user_id: gameSession.host_user_id,
+    game_mode: gameSession.game_mode,
+    current_players: gameSession.current_players,
+    max_players: gameSession.max_players,
+    players_type: typeof gameSession.players,
+    players_length: Array.isArray(gameSession.players) ? gameSession.players.length : 'not array'
+  });
+
+  // Parse players (handle case where players field might not exist)
+  if (!gameSession.players) {
+    return res.status(400).json({
+      error: 'INVALID_SESSION',
+      message: 'Session has no player data'
+    });
+  }
+
+  const players = Array.isArray(gameSession.players) ? gameSession.players : JSON.parse(gameSession.players as unknown as string);
+  const playerIndex = players.findIndex((p: any) => p.playerId === userId);
+
+  if (playerIndex === -1) {
+    return res.status(403).json({
+      error: 'NOT_IN_SESSION',
+      message: 'You are not a player in this session'
+    });
+  }
+
+  // Update player ready state
+  players[playerIndex].ready = ready;
+
+  // Check if all players are ready
+  const allReady = players.every((p: any) => p.ready === true);
+  const newStatus: 'waiting' | 'active' = allReady ? 'active' : 'waiting';
+
+  // Update game session
+  console.log(`🔧 [Game] Updating session ${sessionId} with players:`, JSON.stringify(players, null, 2));
+  console.log(`🔧 [Game] All ready check: ${allReady} (${players.filter((p: any) => p.ready).length}/${players.length} ready)`);
+  console.log(`🔧 [Game] New status: ${newStatus}`);
+
+  // Convert to JSON string like MatchmakingWorker does
+  const playersJson = JSON.stringify(players);
+  console.log(`🔧 [Game] Players JSON string:`, playersJson);
+
+  // Try updating without the players column first to isolate the issue
+  console.log(`🔧 [Game] Attempting database update...`);
+
+  try {
+    await db
+      .updateTable('game_sessions')
+      .set({
+        status: newStatus,
+        updated_at: new Date()
+      })
+      .where('id', '=', sessionId)
+      .execute();
+
+    console.log(`✅ [Game] Status update successful, now updating players...`);
+
+    // Now update players separately
+    await db
+      .updateTable('game_sessions')
+      .set({
+        players: playersJson as any
+      })
+      .where('id', '=', sessionId)
+      .execute();
+
+    console.log(`✅ [Game] Players update successful`);
+  } catch (error) {
+    console.error(`❌ [Game] Database update failed:`, error);
+    throw error;
+  }
+
+  return res.json({
+    success: true,
+    ready,
+    allPlayersReady: allReady,
+    sessionStatus: newStatus
+  });
+}));
+
+/**
  * GET /api/game/decks
  * Get user's saved decks
  */
@@ -349,6 +480,11 @@ router.post('/sessions', requireAuth, asyncHandler(async (req, res) => {
       max_players: validatedData.maxPlayers || 2,
       current_players: 1,
       status: 'waiting',
+      players: [{
+        playerId: user.id,
+        username: user.display_name || user.email,
+        ready: false
+      }],
       game_state: {
         phase: 'lobby',
         players: [{

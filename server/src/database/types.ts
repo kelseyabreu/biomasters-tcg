@@ -341,13 +341,32 @@ export interface LocalizationsTable {
 export interface GameSessionsTable {
   id: string; // UUID
   host_user_id: string;
-  game_mode: 'campaign' | 'online' | 'scenarios' | 'tutorial';
+
+  // Player management (flexible JSONB + individual columns for performance)
+  players?: object; // JSONB array of player objects with ratings and metadata
+  player1_id?: string; // Auto-synced from players JSONB
+  player2_id?: string; // Auto-synced from players JSONB
+  player3_id?: string; // Auto-synced from players JSONB for team/FFA games
+  player4_id?: string; // Auto-synced from players JSONB for FFA games
+
+  // Game configuration
+  game_mode: 'campaign' | 'online' | 'scenarios' | 'tutorial' | 'standard' | 'ranked' | 'casual' | 'tournament' | 'ai' | 'ranked_1v1' | 'casual_1v1' | 'team_2v2' | 'ffa_4p';
   is_private: boolean;
   max_players: number;
   current_players: number;
-  status: 'waiting' | 'playing' | 'finished' | 'cancelled';
+
+  // Game state
+  status: 'waiting' | 'playing' | 'active' | 'finished' | 'completed' | 'cancelled' | 'abandoned' | 'error';
+  winner_id?: string; // ID of the winning player
+
+  // Game data
   game_state: object; // JSONB object
   settings: object; // JSONB object
+
+  // Timing
+  started_at?: Date; // When the actual game started
+  ended_at?: Date; // When the game ended
+  duration_seconds?: number; // Total game duration
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -361,6 +380,9 @@ export interface MatchmakingQueueTable {
   preferences: string; // JSON string
   expires_at: Date;
   created_at: Generated<Date>;
+  request_id: string | null; // For Pub/Sub tracking
+  priority: number | null; // For queue prioritization
+  retry_count: number | null; // For retry tracking
 }
 
 export interface MatchResultsTable {
@@ -417,6 +439,57 @@ export interface LeaderboardView {
   rank: number;
 }
 
+// Pub/Sub Matchmaking tables
+export interface MatchHistoryTable {
+  id: Generated<string>;
+  session_id: string;
+  game_mode: string;
+  players: any; // JSONB
+  match_duration_seconds: number | null;
+  winner_id: string | null;
+  match_data: any | null; // JSONB
+  created_at: Generated<Date>;
+  ended_at: Date | null;
+}
+
+export interface MatchmakingAnalyticsTable {
+  id: Generated<string>;
+  game_mode: string;
+  date: Generated<Date>;
+  total_requests: number;
+  successful_matches: number;
+  average_wait_time_seconds: number;
+  peak_queue_size: number;
+  timeout_count: number;
+  cancellation_count: number;
+  created_at: Generated<Date>;
+}
+
+export interface PubsubMessageLogTable {
+  id: Generated<string>;
+  topic_name: string;
+  player_id: string;
+  message_type: string;
+  payload: any; // JSONB
+  status: string;
+  error_message: string | null;
+  created_at: Generated<Date>;
+  processed_at: Date | null;
+  message_id: string | null;
+}
+
+export interface RedisQueueStateTable {
+  id: Generated<string>;
+  queue_name: string;
+  game_mode: string;
+  current_size: number;
+  peak_size: number;
+  last_activity: Generated<Date>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+  last_processed_at: Date | null;
+}
+
 // Database interface
 export interface Database {
   users: UsersTable;
@@ -453,6 +526,12 @@ export interface Database {
   daily_quest_definitions: DailyQuestDefinitionsTable;
   user_daily_progress: UserDailyProgressTable;
   leaderboard_view: LeaderboardView;
+
+  // Pub/Sub Matchmaking tables
+  match_history: MatchHistoryTable;
+  matchmaking_analytics: MatchmakingAnalyticsTable;
+  pubsub_message_log: PubsubMessageLogTable;
+  redis_queue_state: RedisQueueStateTable;
 }
 
 // ============================================================================

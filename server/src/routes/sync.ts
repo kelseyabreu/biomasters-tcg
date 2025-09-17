@@ -672,13 +672,13 @@ router.post('/',
                 continue;
               }
 
-              // Add starter pack species
+              // Add starter pack species (using valid card IDs from database)
               const starterSpecies = [
-                { species: 'grass', cardId: 3 },
-                { species: 'rabbit', cardId: 4 },
-                { species: 'fox', cardId: 53 },
-                { species: 'oak-tree', cardId: 1 },
-                { species: 'butterfly', cardId: 34 }
+                { species: 'grass', cardId: 3 },      // Riverbank Grass
+                { species: 'rabbit', cardId: 4 },     // European Rabbit
+                { species: 'salmon', cardId: 5 },     // Sockeye Salmon (replacing fox)
+                { species: 'oak-tree', cardId: 1 },   // Oak Tree
+                { species: 'vulture', cardId: 9 }     // Turkey Vulture (replacing butterfly)
               ];
               for (const { species, cardId } of starterSpecies) {
                 serverCollection.set(species, {
@@ -773,12 +773,58 @@ router.post('/',
       // Update database with final state using CardId system
       await db.transaction().execute(async (trx) => {
 
+        // Validate user exists in the users table
+        const userExists = await trx
+          .selectFrom('users')
+          .select('id')
+          .where('id', '=', req.user!.id)
+          .executeTakeFirst();
+
+        if (!userExists) {
+          console.error(`❌ User ID ${req.user!.id} does not exist in users table`);
+          throw new Error(`User ${req.user!.id} not found in database`);
+        }
+
+        // Validate all card IDs exist in the cards table first
+        const cardIds = Array.from(serverCollection.values())
+          .map(card => card.card_id)
+          .filter(id => id && id > 0);
+
+        if (cardIds.length > 0) {
+          const existingCards = await trx
+            .selectFrom('cards')
+            .select('id')
+            .where('id', 'in', cardIds)
+            .execute();
+
+          const existingCardIds = new Set(existingCards.map(card => card.id));
+
+          // Log any missing cards
+          const missingCardIds = cardIds.filter(id => !existingCardIds.has(id));
+          if (missingCardIds.length > 0) {
+            console.error(`❌ Missing card IDs in database: ${missingCardIds.join(', ')}`);
+            console.error(`Available card IDs: ${Array.from(existingCardIds).sort((a, b) => a - b).join(', ')}`);
+          }
+        }
+
         // Upsert each card individually using CardId system
         for (const [cardKey, card] of serverCollection) {
           const cardId = card.card_id;
 
           if (!cardId || cardId <= 0) {
             console.warn(`Invalid cardId in sync: ${cardKey} (cardId: ${cardId}) - skipping`);
+            continue;
+          }
+
+          // Verify card exists in database before inserting
+          const cardExists = await trx
+            .selectFrom('cards')
+            .select('id')
+            .where('id', '=', cardId)
+            .executeTakeFirst();
+
+          if (!cardExists) {
+            console.error(`❌ Card ID ${cardId} does not exist in cards table - skipping`);
             continue;
           }
 

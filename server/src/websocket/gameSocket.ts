@@ -2,8 +2,110 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
 import { sql } from 'kysely';
+import { randomUUID } from 'crypto';
 import { db } from '../database/kysely';
 import { PhyloGameAction } from '../../../shared/types';
+
+// Global WebSocket server instance
+let globalIo: SocketIOServer | null = null;
+
+export function getGlobalIo(): SocketIOServer | null {
+  return globalIo;
+}
+
+/**
+ * Utility functions for game state serialization
+ * Handles Map objects that don't serialize properly over WebSocket
+ */
+function serializeGameStateForTransmission(gameState: any): any {
+  if (!gameState) return gameState;
+
+  console.log('🔄 [SERIALIZATION] Starting serialization for game state:', {
+    hasGameState: !!gameState,
+    hasGrid: !!gameState.grid,
+    hasEngineState: !!gameState.engineState,
+    hasEngineGrid: !!(gameState.engineState?.grid),
+    gridType: gameState.grid ? gameState.grid.constructor.name : 'undefined',
+    engineGridType: gameState.engineState?.grid ? gameState.engineState.grid.constructor.name : 'undefined'
+  });
+
+  const serialized = { ...gameState };
+
+  // Convert Map objects to plain objects for transmission
+  if (gameState.grid && gameState.grid instanceof Map) {
+    console.log('🔄 [SERIALIZATION] Converting grid Map to object for transmission, entries:', gameState.grid.size);
+    serialized.grid = Object.fromEntries(gameState.grid.entries());
+    console.log('🔄 [SERIALIZATION] Grid converted, result keys:', Object.keys(serialized.grid));
+  }
+
+  // Handle engineState if it exists
+  if (gameState.engineState && gameState.engineState.grid && gameState.engineState.grid instanceof Map) {
+    console.log('🔄 [SERIALIZATION] Converting engineState grid Map to object for transmission, entries:', gameState.engineState.grid.size);
+    serialized.engineState = {
+      ...gameState.engineState,
+      grid: Object.fromEntries(gameState.engineState.grid.entries())
+    };
+    console.log('🔄 [SERIALIZATION] EngineState grid converted, result keys:', Object.keys(serialized.engineState.grid));
+  }
+
+  console.log('🔄 [SERIALIZATION] Serialization complete');
+  return serialized;
+}
+
+/**
+ * Filter game state to only show appropriate information to each player
+ * Each player should only see their own cards and silhouettes/counts for opponents
+ */
+function filterGameStateForPlayer(gameState: any, requestingPlayerId: string): any {
+  console.log('🔒 [PRIVACY FILTER] Starting filter for player:', requestingPlayerId, {
+    hasGameState: !!gameState,
+    hasEngineState: !!gameState?.engineState,
+    hasEngineGrid: !!(gameState?.engineState?.grid),
+    engineGridType: gameState?.engineState?.grid ? gameState.engineState.grid.constructor.name : 'undefined'
+  });
+
+  if (!gameState || !gameState.engineState) {
+    console.log('🔒 [PRIVACY FILTER] No game state or engine state, returning as-is');
+    return gameState;
+  }
+
+  const filtered = { ...gameState };
+
+  // Filter engineState players to hide opponent card details
+  if (gameState.engineState.players) {
+    filtered.engineState = {
+      ...gameState.engineState,
+      players: gameState.engineState.players.map((player: any) => {
+        if (player.id === requestingPlayerId) {
+          // Current player: show all their cards
+          console.log(`🔒 [PRIVACY] Showing full hand to current player ${requestingPlayerId}: ${player.hand?.length || 0} cards`);
+          return player;
+        } else {
+          // Opponent: hide card details, show only counts and silhouettes
+          console.log(`🔒 [PRIVACY] Hiding opponent cards for player ${player.id}: ${player.hand?.length || 0} cards → silhouettes only`);
+          return {
+            ...player,
+            hand: player.hand ? player.hand.map(() => ({
+              instanceId: 'hidden-card',
+              cardId: 0,
+              isHidden: true,
+              cardType: 'HIDDEN'
+            })) : [],
+            // Keep deck count but hide actual cards
+            deck: player.deck ? new Array(player.deck.length).fill({
+              instanceId: 'hidden-deck-card',
+              cardId: 0,
+              isHidden: true,
+              cardType: 'HIDDEN'
+            }) : []
+          };
+        }
+      })
+    };
+  }
+
+  return filtered;
+}
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -20,10 +122,157 @@ type GameAction = PhyloGameAction;
 //   timestamp: number;
 // }
 
+/**
+ * Initialize BioMasters game engine with selected decks
+ */
+export async function initializeBioMastersGame(sessionId: string, gameState: any, players: any[]) {
+  try {
+    console.log(`🎮 [WEBSOCKET] Initializing BioMasters engine for session ${sessionId}`);
+
+    // Get the global server data loader
+    const serverDataLoader = (global as any).serverDataLoader;
+    if (!serverDataLoader) {
+      throw new Error('Server data loader not initialized');
+    }
+
+    // Load game data using unified data loader
+    const [cardsResult, abilitiesResult, keywordsResult] = await Promise.all([
+      serverDataLoader.loadCards(),
+      serverDataLoader.loadAbilities(),
+      serverDataLoader.loadKeywords()
+    ]);
+
+    if (!cardsResult.success || !abilitiesResult.success || !keywordsResult.success) {
+      throw new Error('Failed to load game data');
+    }
+
+    // Convert to Maps as expected by BioMasters engine
+    const cardDatabase = new Map();
+    cardsResult.data?.forEach((card: any) => {
+      cardDatabase.set(card.cardId || card.id, card);
+    });
+
+    const abilityDatabase = new Map();
+    abilitiesResult.data?.forEach((ability: any) => {
+      abilityDatabase.set(ability.id, ability);
+    });
+
+    const keywordDatabase = new Map();
+    keywordsResult.data?.forEach((keyword: any) => {
+      keywordDatabase.set(keyword.id, keyword.name);
+    });
+
+    // Use the existing MockLocalizationManager
+    const { MockLocalizationManager } = await import('../utils/mockLocalizationManager');
+    const localizationManager = new MockLocalizationManager();
+
+    // Import and initialize engine
+    const { BioMastersEngine } = await import('../../../shared/game-engine/BioMastersEngine');
+    const engine = new BioMastersEngine(
+      cardDatabase,
+      abilityDatabase,
+      keywordDatabase,
+      localizationManager
+    );
+
+    // Initialize game with basic player info
+    const gameSettings = {
+      maxPlayers: players.length,
+      gridWidth: 9,
+      gridHeight: 10,
+      startingHandSize: 5,
+      maxHandSize: 7,
+      startingEnergy: 10,
+      turnTimeLimit: 300
+    };
+
+    console.log(`🔍 [PLAYER-NAMES] Players data:`, players.map(p => ({
+      id: p.playerId || p.id,
+      name: p.name,
+      username: p.username,
+      allKeys: Object.keys(p)
+    })));
+
+    const basicPlayers = players.map((player: any) => ({
+      id: player.playerId || player.id,
+      name: player.name || player.username || `Player ${player.playerId?.slice(-4) || 'Unknown'}`
+    }));
+
+    const initialGameState = engine.initializeNewGame(sessionId, basicPlayers, gameSettings);
+
+    // 🏠 DEBUG: Check HOME cards creation
+    console.log('🏠 [GAME INIT] HOME cards analysis after engine initialization:', {
+      gridSize: initialGameState.grid.size,
+      gridEntries: Array.from(initialGameState.grid.entries()).map(([key, card]) => ({
+        position: key,
+        cardId: card.cardId,
+        instanceId: card.instanceId,
+        ownerId: card.ownerId,
+        isHOME: card.isHOME,
+        cardType: card.isHOME ? 'HOME' : 'REGULAR'
+      })),
+      homeCardsCount: Array.from(initialGameState.grid.values()).filter(card => card.isHOME).length,
+      playersCount: basicPlayers.length,
+      gameSettings: {
+        gridWidth: gameSettings.gridWidth,
+        gridHeight: gameSettings.gridHeight
+      }
+    });
+
+    // Load and set up deck cards for each player
+    for (const player of players) {
+      if (!player.selectedDeckId) {
+        throw new Error(`Player ${player.playerId || player.id} has no selected deck`);
+      }
+
+      console.log(`🔍 [DECK-LOADING] Loading deck for player ${player.playerId || player.id}, deckId: ${player.selectedDeckId}`);
+
+      // Get deck cards from deck_cards table
+      const deckCards = await db
+        .selectFrom('deck_cards')
+        .select(['species_name', 'position_in_deck'])
+        .where('deck_id', '=', player.selectedDeckId)
+        .orderBy('position_in_deck', 'asc')
+        .execute();
+
+      console.log(`🔍 [DECK-LOADING] Found ${deckCards.length} cards for deck ${player.selectedDeckId}:`, deckCards.map(dc => dc.species_name));
+
+      // Find the player in the game state
+      const gamePlayer = initialGameState.players.find(p => p.id === (player.playerId || player.id));
+      if (gamePlayer) {
+        // Set up the player's deck with actual card IDs
+        gamePlayer.deck = deckCards.map(dc => `card-${dc.species_name}-${Date.now()}-${Math.random()}`);
+        gamePlayer.energy = gameSettings.startingEnergy;
+
+        // Draw starting hand
+        for (let i = 0; i < gameSettings.startingHandSize && gamePlayer.deck.length > 0; i++) {
+          const cardId = gamePlayer.deck.pop();
+          if (cardId) {
+            gamePlayer.hand.push(cardId);
+          }
+        }
+      }
+    }
+
+    // Store engine state and settings in session
+    gameState.engineState = initialGameState;
+    gameState.gameSettings = gameSettings;
+    gameState.engineInitialized = true;
+    gameState.initializedAt = new Date();
+
+    console.log(`✅ [WEBSOCKET] BioMasters engine initialized for session ${sessionId}`);
+    console.log(`🔍 [WEBSOCKET] Game state: ${initialGameState.gamePhase}, Players: ${initialGameState.players.length}`);
+
+  } catch (error) {
+    console.error(`❌ [WEBSOCKET] Failed to initialize BioMasters engine:`, error);
+    throw error;
+  }
+}
+
 export function setupGameSocket(server: HTTPServer) {
   const io = new SocketIOServer(server, {
     cors: {
-      origin: process.env['FRONTEND_URL'] || "http://localhost:3000",
+      origin: process.env['FRONTEND_URL'] || ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"],
       methods: ["GET", "POST"],
       credentials: true
     }
@@ -89,17 +338,87 @@ export function setupGameSocket(server: HTTPServer) {
         }
       }
 
-      // Regular token processing
+      // Regular token processing - check if it's a Firebase token or local token
       console.log(`🔍 [WebSocket] Processing regular token`);
-      const decoded = jwt.verify(token, process.env['JWT_SECRET']!) as any;
-      console.log(`🔍 [WebSocket] Regular token decoded:`, { userId: decoded.userId, guestId: decoded.guestId, isGuest: decoded.isGuest });
+      console.log(`🔍 [WebSocket] Token length: ${token.length}`);
+      console.log(`🔍 [WebSocket] Token starts with: ${token.substring(0, 50)}...`);
 
-      // Get user from database
-      const user = await db
-        .selectFrom('users')
-        .selectAll()
-        .where('id', '=', decoded.userId)
-        .executeTakeFirst();
+      let decoded: any;
+      let user: any;
+
+      // Try Firebase token verification first (Firebase tokens use RS256 algorithm)
+      // Decode the header to check the algorithm
+      let isFirebaseToken = false;
+      console.log(`🔍 [WebSocket] Starting token header analysis...`);
+
+      try {
+        const tokenParts = token.split('.');
+        console.log(`🔍 [WebSocket] Token parts count: ${tokenParts.length}`);
+
+        if (tokenParts.length === 3) {
+          console.log(`🔍 [WebSocket] Decoding header part: ${tokenParts[0].substring(0, 20)}...`);
+          const headerBuffer = Buffer.from(tokenParts[0], 'base64');
+          const headerString = headerBuffer.toString();
+          console.log(`🔍 [WebSocket] Header string: ${headerString}`);
+
+          const header = JSON.parse(headerString);
+          isFirebaseToken = header.alg === 'RS256';
+          console.log(`🔍 [WebSocket] Token header parsed:`, header);
+          console.log(`🔍 [WebSocket] Is Firebase token (RS256): ${isFirebaseToken}`);
+        } else {
+          console.log(`🔍 [WebSocket] Invalid token format, parts: ${tokenParts.length}`);
+        }
+      } catch (e) {
+        console.log(`🔍 [WebSocket] Failed to decode token header:`, e instanceof Error ? e.message : String(e));
+        console.log(`🔍 [WebSocket] Error stack:`, e instanceof Error ? e.stack : 'No stack');
+      }
+
+      console.log(`🔍 [WebSocket] About to check token type - isFirebaseToken: ${isFirebaseToken}`);
+
+      if (isFirebaseToken) {
+        console.log(`🔍 [WebSocket] Detected Firebase token, using Firebase Admin SDK`);
+        try {
+          console.log(`🔍 [WebSocket] Importing Firebase Admin Auth...`);
+          const { getAuth } = await import('firebase-admin/auth');
+          console.log(`🔍 [WebSocket] Calling getAuth().verifyIdToken()...`);
+          decoded = await getAuth().verifyIdToken(token);
+          console.log(`🔍 [WebSocket] Firebase token decoded successfully:`, { uid: decoded.uid, email: decoded.email });
+
+          // Get user by Firebase UID
+          console.log(`🔍 [WebSocket] Looking up user by firebase_uid: ${decoded.uid}`);
+          user = await db
+            .selectFrom('users')
+            .selectAll()
+            .where('firebase_uid', '=', decoded.uid)
+            .executeTakeFirst();
+          console.log(`🔍 [WebSocket] User lookup result:`, user ? { id: user.id, username: user.username } : 'Not found');
+        } catch (firebaseError) {
+          console.log(`❌ [WebSocket] Firebase token verification failed:`, firebaseError);
+          console.log(`❌ [WebSocket] Firebase error type:`, firebaseError instanceof Error ? firebaseError.constructor.name : typeof firebaseError);
+          console.log(`❌ [WebSocket] Firebase error message:`, firebaseError instanceof Error ? firebaseError.message : String(firebaseError));
+          throw firebaseError;
+        }
+      } else {
+        console.log(`🔍 [WebSocket] Detected local token, using JWT_SECRET`);
+        console.log(`🔍 [WebSocket] JWT_SECRET exists: ${!!process.env['JWT_SECRET']}`);
+        try {
+          // Local token (guest or test)
+          decoded = jwt.verify(token, process.env['JWT_SECRET']!) as any;
+          console.log(`🔍 [WebSocket] Local token decoded:`, { userId: decoded.userId, guestId: decoded.guestId, isGuest: decoded.isGuest });
+
+          // Get user from database
+          console.log(`🔍 [WebSocket] Looking up user by id: ${decoded.userId}`);
+          user = await db
+            .selectFrom('users')
+            .selectAll()
+            .where('id', '=', decoded.userId)
+            .executeTakeFirst();
+          console.log(`🔍 [WebSocket] User lookup result:`, user ? { id: user.id, username: user.username } : 'Not found');
+        } catch (localError) {
+          console.log(`❌ [WebSocket] Local token verification failed:`, localError);
+          throw localError;
+        }
+      }
 
       if (!user) {
         console.error(`❌ [WebSocket] User not found for ID: ${decoded.userId}`);
@@ -134,6 +453,11 @@ export function setupGameSocket(server: HTTPServer) {
     console.log(`🔌 [WebSocket] Socket connected: ${socket.connected}`);
     console.log(`🔌 [WebSocket] Socket authenticated: ${!!socket.userId}`);
 
+    // Initialize matchmaking state for new connection
+    (socket as any).isWaitingForMatch = false;
+    (socket as any).gameMode = null;
+    console.log(`🔄 [WebSocket] Matchmaking state initialized for user ${socket.userId}`);
+
     // Join user to their personal room for notifications
     const userRoom = `user:${socket.userId}`;
     socket.join(userRoom);
@@ -167,10 +491,12 @@ export function setupGameSocket(server: HTTPServer) {
 
         console.log(`✅ Found session: ${sessionId}, status: ${session.status}`);
         const gameState = session.game_state as any; // JSONB is already an object
-        console.log(`🔍 Game state players:`, gameState.players.map((p: any) => ({ id: p.id, name: p.name })));
+        console.log(`🔍 Game state players:`, gameState.players.map((p: any) => ({ id: p.id, playerId: p.playerId, name: p.name })));
         console.log(`🔍 Socket user ID: ${socket.userId}`);
+        console.log(`🔍 Socket user ID type: ${typeof socket.userId}`);
+        console.log(`🔍 Player IDs in game:`, gameState.players.map((p: any) => ({ id: p.id, type: typeof p.id, playerId: p.playerId, playerIdType: typeof p.playerId })));
 
-        const isPlayerInGame = gameState.players.some((p: any) => p.id === socket.userId);
+        const isPlayerInGame = gameState.players.some((p: any) => p.id === socket.userId || p.playerId === socket.userId);
         console.log(`🔍 Is player in game: ${isPlayerInGame}`);
 
         if (!isPlayerInGame) {
@@ -182,7 +508,8 @@ export function setupGameSocket(server: HTTPServer) {
         socket.sessionId = sessionId;
         socket.join(sessionId);
 
-        // Send current game state
+        // Send current game state (filtered for this player)
+        const filteredGameState = filterGameStateForPlayer(session.game_state, socket.userId || 'unknown');
         socket.emit('game_state_update', {
           type: 'game_state_update',
           sessionId,
@@ -195,7 +522,7 @@ export function setupGameSocket(server: HTTPServer) {
               maxPlayers: session.max_players,
               currentPlayers: session.current_players,
               status: session.status,
-              gameState: session.game_state,
+              gameState: serializeGameStateForTransmission(filteredGameState),
               settings: session.settings,
               createdAt: session.created_at,
               updatedAt: session.updated_at
@@ -248,27 +575,31 @@ export function setupGameSocket(server: HTTPServer) {
             .where('id', '=', sessionId)
             .execute();
 
-          // Notify all players that the game has started
-          io.to(sessionId).emit('game_state_update', {
-            type: 'game_state_update',
-            sessionId,
-            data: {
-              session: {
-                id: session.id,
-                hostUserId: session.host_user_id,
-                gameMode: session.game_mode,
-                isPrivate: session.is_private,
-                maxPlayers: session.max_players,
-                currentPlayers: session.current_players,
-                status: 'playing',
-                gameState: updatedGameState,
-                settings: session.settings,
-                createdAt: session.created_at,
-                updatedAt: new Date()
-              }
-            },
-            timestamp: Date.now()
-          });
+          // Notify all players that the game has started (send personalized state to each)
+          const socketsInRoom = await io.in(sessionId).fetchSockets();
+          for (const playerSocket of socketsInRoom) {
+            const filteredGameState = filterGameStateForPlayer(updatedGameState, (playerSocket as any).userId || 'unknown');
+            playerSocket.emit('game_state_update', {
+              type: 'game_state_update',
+              sessionId,
+              data: {
+                session: {
+                  id: session.id,
+                  hostUserId: session.host_user_id,
+                  gameMode: session.game_mode,
+                  isPrivate: session.is_private,
+                  maxPlayers: session.max_players,
+                  currentPlayers: session.current_players,
+                  status: 'playing',
+                  gameState: serializeGameStateForTransmission(filteredGameState),
+                  settings: session.settings,
+                  createdAt: session.created_at,
+                  updatedAt: new Date()
+                }
+              },
+              timestamp: Date.now()
+            });
+          }
 
           console.log(`✅ Game started for session ${sessionId}`);
         }
@@ -669,6 +1000,145 @@ export function setupGameSocket(server: HTTPServer) {
       }
     });
 
+    // Handle deck selection
+    socket.on('deck_selected', async (data: { deckId: string }) => {
+      if (!socket.sessionId) {
+        socket.emit('error', { message: 'You must join a session first' });
+        return;
+      }
+
+      try {
+        console.log(`🎯 [WEBSOCKET] Deck selection event - Session: ${socket.sessionId}, User: ${socket.userId}, Deck: ${data.deckId}`);
+
+        // Verify deck belongs to user and is valid
+        const deck = await db
+          .selectFrom('decks')
+          .leftJoin('deck_cards', 'decks.id', 'deck_cards.deck_id')
+          .select([
+            'decks.id',
+            'decks.name',
+            'decks.user_id',
+            db.fn.count('deck_cards.species_name').as('card_count')
+          ])
+          .where('decks.id', '=', data.deckId)
+          .where('decks.user_id', '=', socket.userId!)
+          .groupBy(['decks.id', 'decks.name', 'decks.user_id'])
+          .executeTakeFirst();
+
+        if (!deck) {
+          socket.emit('error', { message: 'Deck not found or access denied' });
+          return;
+        }
+
+        if (Number(deck.card_count) < 30) {
+          socket.emit('error', { message: 'Deck must have at least 30 cards' });
+          return;
+        }
+
+        // Get current session
+        const session = await db
+          .selectFrom('game_sessions')
+          .selectAll()
+          .where('id', '=', socket.sessionId)
+          .executeTakeFirst();
+
+        if (!session) {
+          socket.emit('error', { message: 'Session not found' });
+          return;
+        }
+
+        const gameState = session.game_state as any;
+        const players = gameState.players || [];
+        const playerIndex = players.findIndex((p: any) => p.playerId === socket.userId || p.id === socket.userId);
+
+        if (playerIndex === -1) {
+          socket.emit('error', { message: 'Player not found in session' });
+          return;
+        }
+
+        // Update player's deck selection
+        players[playerIndex].selectedDeckId = data.deckId;
+        players[playerIndex].hasDeckSelected = true;
+        players[playerIndex].deckSelectedAt = new Date();
+
+        console.log(`✅ [WEBSOCKET] Player ${socket.userId} selected deck: ${data.deckId}`);
+
+        // Check if all players have selected decks
+        const allPlayersSelected = players.every((p: any) => p.hasDeckSelected === true);
+        console.log(`🔍 [WEBSOCKET] Deck selection status: ${players.filter((p: any) => p.hasDeckSelected).length}/${players.length} players selected`);
+
+        // Update game state
+        gameState.players = players;
+
+        if (allPlayersSelected) {
+          console.log(`🎮 [WEBSOCKET] All players selected decks! Initializing game for session ${socket.sessionId}`);
+
+          // Note: We don't need to clear the timer here since it's a setTimeout, not stored
+          // The timer will check if deck selection is still in progress before executing
+
+          // Initialize BioMasters game engine with selected decks
+          await initializeBioMastersGame(socket.sessionId, gameState, players);
+
+          // Transition to playing phase
+          gameState.gamePhase = 'playing';
+          gameState.deckSelectionCompleted = true;
+          gameState.deckSelectionCompletedAt = new Date();
+
+          // Clear deck selection timing
+          delete gameState.deckSelectionTimeRemaining;
+          delete gameState.deckSelectionDeadline;
+        }
+
+        // Update database
+        await db
+          .updateTable('game_sessions')
+          .set({
+            game_state: gameState,
+            updated_at: new Date()
+          })
+          .where('id', '=', socket.sessionId)
+          .execute();
+
+        // Broadcast deck selection update to all players
+        io.to(socket.sessionId).emit('deck_selection_update', {
+          type: 'deck_selection_update',
+          sessionId: socket.sessionId,
+          data: {
+            playerId: socket.userId,
+            deckSelected: true,
+            deckId: data.deckId,
+            deckName: deck.name,
+            allPlayersSelected,
+            gamePhase: gameState.gamePhase,
+            players: players.map((p: any) => ({
+              id: p.playerId || p.id,
+              name: p.name || p.username,
+              hasDeckSelected: p.hasDeckSelected || false,
+              selectedDeckId: p.selectedDeckId
+            }))
+          },
+          timestamp: Date.now()
+        });
+
+        if (allPlayersSelected) {
+          // Broadcast game initialization
+          io.to(socket.sessionId).emit('game_initialized', {
+            type: 'game_initialized',
+            sessionId: socket.sessionId,
+            data: {
+              gameState: gameState,
+              message: 'All decks selected! Game initialized.'
+            },
+            timestamp: Date.now()
+          });
+        }
+
+      } catch (error) {
+        console.error(`❌ [WEBSOCKET] Error handling deck selection:`, error);
+        socket.emit('error', { message: 'Failed to select deck' });
+      }
+    });
+
     // Handle player ready status
     socket.on('player_ready', async (data: { ready: boolean }) => {
       if (!socket.sessionId) {
@@ -764,27 +1234,31 @@ export function setupGameSocket(server: HTTPServer) {
         if (allReady && newStatus === 'active') {
           console.log(`🎉 [WEBSOCKET] All players ready! Game transitioning to active status`);
 
-          // Send updated game state to all players
-          io.to(socket.sessionId).emit('game_state_update', {
-            type: 'game_state_update',
-            sessionId: socket.sessionId,
-            data: {
-              session: {
-                id: session.id,
-                hostUserId: session.host_user_id,
-                gameMode: session.game_mode,
-                isPrivate: session.is_private,
-                maxPlayers: session.max_players,
-                currentPlayers: session.current_players,
-                status: 'active',
-                gameState: session.game_state,
-                settings: session.settings,
-                createdAt: session.created_at,
-                updatedAt: new Date()
-              }
-            },
-            timestamp: Date.now()
-          });
+          // Send updated game state to all players (personalized for each)
+          const socketsInRoom = await io.in(socket.sessionId).fetchSockets();
+          for (const playerSocket of socketsInRoom) {
+            const filteredGameState = filterGameStateForPlayer(session.game_state, (playerSocket as any).userId || 'unknown');
+            playerSocket.emit('game_state_update', {
+              type: 'game_state_update',
+              sessionId: socket.sessionId,
+              data: {
+                session: {
+                  id: session.id,
+                  hostUserId: session.host_user_id,
+                  gameMode: session.game_mode,
+                  isPrivate: session.is_private,
+                  maxPlayers: session.max_players,
+                  currentPlayers: session.current_players,
+                  status: 'active',
+                  gameState: serializeGameStateForTransmission(filteredGameState),
+                  settings: session.settings,
+                  createdAt: session.created_at,
+                  updatedAt: new Date()
+                }
+              },
+              timestamp: Date.now()
+            });
+          }
 
           console.log(`✅ [WEBSOCKET] Game state update sent - Session ${socket.sessionId} is now ACTIVE!`);
         }
@@ -849,6 +1323,26 @@ export function setupGameSocket(server: HTTPServer) {
       try {
         console.log(`🔍 User ${socket.userId} joining matchmaking for ${data.gameMode}`);
 
+        // Mark this player as waiting for a match
+        (socket as any).isWaitingForMatch = true;
+        (socket as any).gameMode = data.gameMode;
+
+        // Set a timeout to reset waiting state if no match is found
+        if ((socket as any).matchmakingTimeout) {
+          clearTimeout((socket as any).matchmakingTimeout);
+        }
+        (socket as any).matchmakingTimeout = setTimeout(() => {
+          if ((socket as any).isWaitingForMatch) {
+            console.log(`⏰ Matchmaking timeout for user ${socket.userId}, resetting waiting state`);
+            (socket as any).isWaitingForMatch = false;
+            (socket as any).gameMode = null;
+            socket.emit('matchmaking_timeout', {
+              message: 'No match found within timeout period',
+              timestamp: Date.now()
+            });
+          }
+        }, 60000); // 60 second timeout
+
         // Add to matchmaking queue (this would call the matchmaking logic)
         // For now, just acknowledge the request
         socket.emit('matchmaking_joined', {
@@ -856,19 +1350,268 @@ export function setupGameSocket(server: HTTPServer) {
           timestamp: Date.now()
         });
 
-        // Simulate finding a match after a delay (for testing)
-        setTimeout(() => {
-          const sessionId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          socket.emit('match_found', {
-            sessionId,
-            gameMode: data.gameMode,
-            players: [
-              { id: socket.userId, rating: 1000 },
-              { id: 'opponent_' + Math.random().toString(36).substr(2, 9), rating: 1050 }
-            ],
+        // Check if there are other players waiting for a match
+        const allSockets = Array.from(io.sockets.sockets.values());
+        console.log(`🔍 Total connected sockets: ${allSockets.length}`);
+
+        const waitingPlayers = allSockets
+          .filter(s => {
+            const hasUserId = !!(s as any).userId;
+            const isDifferentUser = (s as any).userId !== socket.userId;
+            const isWaiting = !!(s as any).isWaitingForMatch;
+            const sameGameMode = (s as any).gameMode === data.gameMode;
+
+            console.log(`🔍 Socket ${(s as any).userId}: hasUserId=${hasUserId}, isDifferentUser=${isDifferentUser}, isWaiting=${isWaiting}, sameGameMode=${sameGameMode}`);
+
+            return hasUserId && isDifferentUser && isWaiting && sameGameMode;
+          });
+
+        console.log(`🔍 Found ${waitingPlayers.length} waiting players for ${data.gameMode}`);
+
+        if (waitingPlayers.length > 0) {
+          // Found a real opponent
+          const opponentSocket = waitingPlayers[0] as any;
+          const sessionId = randomUUID();
+
+          console.log(`🎯 Creating real match session: ${sessionId} between ${socket.userId} and ${opponentSocket.userId}`);
+
+          // Mark both players as no longer waiting
+          (socket as any).isWaitingForMatch = false;
+          (opponentSocket as any).isWaitingForMatch = false;
+
+          // Clear matchmaking timeouts
+          if ((socket as any).matchmakingTimeout) {
+            clearTimeout((socket as any).matchmakingTimeout);
+            (socket as any).matchmakingTimeout = null;
+          }
+          if ((opponentSocket as any).matchmakingTimeout) {
+            clearTimeout((opponentSocket as any).matchmakingTimeout);
+            (opponentSocket as any).matchmakingTimeout = null;
+          }
+
+          // Create the game session in the database
+          try {
+            const { default: db } = await import('../database/kysely');
+
+            const players = [
+              { playerId: socket.userId, rating: 1000, ready: false },
+              { playerId: opponentSocket.userId, rating: 1050, ready: false }
+            ];
+
+            // Start deck selection phase with 60-second timer
+            const deckSelectionDeadline = Date.now() + 60000; // 60 seconds from now
+
+            const gameState = {
+              gamePhase: 'setup', // Start in setup phase for deck selection
+              players: players.map(p => ({
+                ...p,
+                hasDeckSelected: false,
+                selectedDeckId: null
+              })),
+              createdAt: new Date(),
+              gameMode: data.gameMode,
+              deckSelectionDeadline,
+              deckSelectionTimeRemaining: 60
+            };
+
+            // Set up 60-second auto-selection timer
+            setTimeout(async () => {
+              try {
+                console.log(`⏰ [DECK SELECTION] 60-second timer expired for session ${sessionId}`);
+
+                // Get current session state
+                const currentSession = await db
+                  .selectFrom('game_sessions')
+                  .selectAll()
+                  .where('id', '=', sessionId)
+                  .executeTakeFirst();
+
+                if (!currentSession) {
+                  console.log(`⚠️ [DECK SELECTION] Session ${sessionId} not found during auto-selection`);
+                  return;
+                }
+
+                const currentGameState = currentSession.game_state as any;
+
+                // Check if deck selection is still in progress
+                if (currentGameState.gamePhase !== 'setup' || currentGameState.deckSelectionCompleted) {
+                  console.log(`⚠️ [DECK SELECTION] Session ${sessionId} no longer in deck selection phase`);
+                  return;
+                }
+
+                const currentPlayers = currentGameState.players || [];
+                let autoSelectionsNeeded = false;
+
+                // Auto-select first deck for players who haven't selected
+                for (const player of currentPlayers) {
+                  if (!player.hasDeckSelected) {
+                    console.log(`🎯 [DECK SELECTION] Auto-selecting first deck for player ${player.playerId}`);
+
+                    // Get player's first valid deck (minimum 20 cards for starter decks)
+                    const firstDeck = await db
+                      .selectFrom('decks')
+                      .leftJoin('deck_cards', 'decks.id', 'deck_cards.deck_id')
+                      .select([
+                        'decks.id',
+                        'decks.name',
+                        db.fn.count('deck_cards.id').as('card_count')
+                      ])
+                      .where('decks.user_id', '=', player.playerId)
+                      .groupBy(['decks.id', 'decks.name'])
+                      .having(db.fn.count('deck_cards.id'), '>=', 20)
+                      .orderBy('decks.created_at', 'asc')
+                      .executeTakeFirst();
+
+                    if (firstDeck) {
+                      player.selectedDeckId = firstDeck.id;
+                      player.hasDeckSelected = true;
+                      player.deckSelectedAt = new Date();
+                      player.autoSelected = true; // Mark as auto-selected
+                      autoSelectionsNeeded = true;
+
+                      console.log(`✅ [DECK SELECTION] Auto-selected deck "${firstDeck.name}" for player ${player.playerId}`);
+                    } else {
+                      console.error(`❌ [DECK SELECTION] No valid decks found for player ${player.playerId}`);
+                    }
+                  }
+                }
+
+                if (autoSelectionsNeeded) {
+                  // All players now have decks selected, initialize the game
+                  console.log(`🎮 [DECK SELECTION] Auto-selection complete, initializing game for session ${sessionId}`);
+
+                  // Initialize BioMasters game engine
+                  await initializeBioMastersGame(sessionId, currentGameState, currentPlayers);
+
+                  // Transition to playing phase
+                  currentGameState.gamePhase = 'playing';
+                  currentGameState.deckSelectionCompleted = true;
+                  currentGameState.deckSelectionCompletedAt = new Date();
+                  currentGameState.autoSelectionOccurred = true;
+
+                  // Clear deck selection timing
+                  delete currentGameState.deckSelectionTimeRemaining;
+                  delete currentGameState.deckSelectionDeadline;
+
+                  // Update database
+                  await db
+                    .updateTable('game_sessions')
+                    .set({
+                      game_state: currentGameState,
+                      status: 'playing',
+                      updated_at: new Date()
+                    })
+                    .where('id', '=', sessionId)
+                    .execute();
+
+                  // Broadcast auto-selection and game initialization to all players
+                  io.to(sessionId).emit('deck_selection_timeout', {
+                    type: 'deck_selection_timeout',
+                    sessionId,
+                    data: {
+                      message: 'Deck selection time expired. Auto-selecting first valid decks.',
+                      autoSelections: currentPlayers
+                        .filter((p: any) => p.autoSelected)
+                        .map((p: any) => ({ playerId: p.playerId, deckId: p.selectedDeckId }))
+                    },
+                    timestamp: Date.now()
+                  });
+
+                  io.to(sessionId).emit('game_initialized', {
+                    type: 'game_initialized',
+                    sessionId,
+                    data: {
+                      gameState: currentGameState,
+                      message: 'Game initialized with auto-selected decks!'
+                    },
+                    timestamp: Date.now()
+                  });
+
+                  console.log(`✅ [DECK SELECTION] Session ${sessionId} auto-selection and initialization complete`);
+                }
+
+              } catch (error) {
+                console.error(`❌ [DECK SELECTION] Error during auto-selection for session ${sessionId}:`, error);
+              }
+            }, 60000); // 60 seconds
+
+            await db
+              .insertInto('game_sessions')
+              .values({
+                id: sessionId,
+                host_user_id: socket.userId!,
+                status: 'waiting' as const,
+                game_mode: data.gameMode as any,
+                is_private: false,
+                max_players: 2,
+                current_players: 2,
+                players: sql`${JSON.stringify(players)}::jsonb`,
+                game_state: sql`${JSON.stringify(gameState)}::jsonb`,
+                settings: sql`${JSON.stringify({})}::jsonb`,
+                created_at: new Date(),
+                updated_at: new Date()
+              })
+              .execute();
+
+            console.log(`✅ Game session created in database: ${sessionId}`);
+
+            // Emit match_found to both players
+            const matchData1 = {
+              sessionId,
+              opponent: {
+                id: opponentSocket.userId,
+                username: (opponentSocket as any).username || 'Unknown Player',
+                rating: 1050
+              },
+              gameMode: data.gameMode,
+              estimatedWaitTime: 0
+            };
+
+            const matchData2 = {
+              sessionId,
+              opponent: {
+                id: socket.userId,
+                username: (socket as any).username || 'Unknown Player',
+                rating: 1000
+              },
+              gameMode: data.gameMode,
+              estimatedWaitTime: 0
+            };
+
+            console.log(`📤 Emitting match_found to player 1: ${socket.userId}`);
+            socket.emit('match_found', matchData1);
+
+            console.log(`📤 Emitting match_found to player 2: ${opponentSocket.userId}`);
+            opponentSocket.emit('match_found', matchData2);
+
+            console.log(`✅ Match found events sent to both players for session: ${sessionId}`);
+
+          } catch (error) {
+            console.error('❌ Error creating game session:', error);
+            socket.emit('error', { message: 'Failed to create match session' });
+            opponentSocket.emit('error', { message: 'Failed to create match session' });
+          }
+        } else {
+          // No opponent found - player stays in queue waiting for real opponents
+          console.log(`⏳ Player ${socket.userId} waiting in queue for real opponents (no simulated matches)`);
+
+          // Emit queue status to let the client know they're waiting
+          socket.emit('queue_status', {
+            position: 1, // Could implement proper queue position tracking
+            estimatedWait: 30000, // 30 seconds estimated wait
+            playersInQueue: 1,
             timestamp: Date.now()
           });
-        }, 5000); // 5 second delay for testing
+
+          // Direct player to use proper matchmaking API instead of creating fake matches
+          console.log(`🔄 Directing player ${socket.userId} to use proper matchmaking API`);
+
+          socket.emit('use_matchmaking_api', {
+            message: 'Please use the /api/matchmaking/find endpoint to join the queue',
+            gameMode: data.gameMode,
+            endpoint: '/api/matchmaking/find'
+          });
+        }
 
       } catch (error) {
         console.error('Error joining matchmaking:', error);
@@ -904,6 +1647,41 @@ export function setupGameSocket(server: HTTPServer) {
         socket.sessionId = data.sessionId;
         socket.join(data.sessionId);
 
+        // Get the game session from database
+        const { default: db } = await import('../database/kysely');
+        const session = await db
+          .selectFrom('game_sessions')
+          .selectAll()
+          .where('id', '=', data.sessionId)
+          .executeTakeFirst();
+
+        if (!session) {
+          socket.emit('error', { message: 'Game session not found' });
+          return;
+        }
+
+        // Update player acceptance status in the game state
+        const gameState = session.game_state as any;
+        if (gameState && gameState.players) {
+          const playerIndex = gameState.players.findIndex((p: any) => p.playerId === socket.userId);
+          if (playerIndex !== -1) {
+            gameState.players[playerIndex].ready = true;
+            console.log(`✅ Player ${socket.userId} marked as ready in game state`);
+          } else {
+            console.log(`⚠️ Player ${socket.userId} not found in game state players`);
+          }
+        }
+
+        // Update the database with the new game state
+        await db
+          .updateTable('game_sessions')
+          .set({
+            game_state: gameState,
+            updated_at: new Date()
+          })
+          .where('id', '=', data.sessionId)
+          .execute();
+
         // Notify other players in the match
         socket.to(data.sessionId).emit('player_accepted_match', {
           sessionId: data.sessionId,
@@ -915,6 +1693,38 @@ export function setupGameSocket(server: HTTPServer) {
           sessionId: data.sessionId,
           timestamp: Date.now()
         });
+
+        // Check if all players have accepted
+        const allPlayersReady = gameState.players.every((p: any) => p.ready);
+        console.log(`🔍 Session ${data.sessionId}: All players ready? ${allPlayersReady}`);
+
+        if (allPlayersReady) {
+          console.log(`🎮 All players accepted! Starting deck selection for session ${data.sessionId}`);
+
+          // Keep game in setup phase for deck selection - don't transition to playing yet
+          // The 60-second timer will handle the transition to playing after deck selection
+          gameState.startedAt = new Date();
+
+          // Update database with started timestamp but keep in setup phase
+          await db
+            .updateTable('game_sessions')
+            .set({
+              status: 'playing', // Database status is playing, but gamePhase stays setup for deck selection
+              game_state: gameState,
+              updated_at: new Date()
+            })
+            .where('id', '=', data.sessionId)
+            .execute();
+
+          // Notify all players that deck selection is starting
+          io.to(data.sessionId).emit('game_starting', {
+            sessionId: data.sessionId,
+            gameState: gameState,
+            timestamp: Date.now()
+          });
+
+          console.log(`🎉 Deck selection started for session ${data.sessionId}! Players have 60 seconds to select decks.`);
+        }
 
       } catch (error) {
         console.error('Error accepting match:', error);
@@ -964,6 +1774,16 @@ export function setupGameSocket(server: HTTPServer) {
     socket.on('disconnect', () => {
       console.log(`User ${socket.userId} disconnected from game socket`);
 
+      // Reset matchmaking state on disconnect
+      (socket as any).isWaitingForMatch = false;
+      (socket as any).gameMode = null;
+
+      // Clear matchmaking timeout
+      if ((socket as any).matchmakingTimeout) {
+        clearTimeout((socket as any).matchmakingTimeout);
+        (socket as any).matchmakingTimeout = null;
+      }
+
       // Leave personal notification room
       socket.leave(`user:${socket.userId}`);
       console.log(`✅ User ${socket.userId} left personal notification room`);
@@ -982,7 +1802,72 @@ export function setupGameSocket(server: HTTPServer) {
     });
   });
 
+  // Subscribe to match found notifications from MatchmakingWorker
+  setupMatchFoundSubscription(io);
+
+  // Store global reference
+  globalIo = io;
+
   return io;
+}
+
+/**
+ * Setup subscription to match found notifications from MatchmakingWorker
+ */
+async function setupMatchFoundSubscription(io: SocketIOServer) {
+  try {
+    console.log('🔔 Setting up match found subscription...');
+
+    // Import Pub/Sub configuration
+    const { getSubscription, PUBSUB_SUBSCRIPTIONS } = await import('../config/pubsub');
+
+    // Subscribe to match found notifications
+    const subscription = getSubscription(PUBSUB_SUBSCRIPTIONS.MATCH_NOTIFICATIONS);
+
+    subscription.on('message', (message) => {
+      try {
+        console.log('🔔 [MATCH NOTIFICATION] Received match found notification');
+        console.log('🔔 [MATCH NOTIFICATION] Message data:', message.data.toString());
+        console.log('🔔 [MATCH NOTIFICATION] Message attributes:', JSON.stringify(message.attributes, null, 2));
+
+        const matchData = JSON.parse(message.data.toString());
+        const { playerId, sessionId, gameMode } = message.attributes;
+
+        console.log(`🔔 [MATCH NOTIFICATION] Notifying player ${playerId} about match ${sessionId}`);
+
+        // Find the socket for this player
+        const playerSocket = Array.from(io.sockets.sockets.values())
+          .find(socket => (socket as any).userId === playerId);
+
+        if (playerSocket) {
+          console.log(`📤 [MATCH NOTIFICATION] Sending match_found to player ${playerId}`);
+          playerSocket.emit('match_found', {
+            sessionId,
+            gameMode,
+            players: matchData.players,
+            estimatedStartTime: matchData.estimatedStartTime,
+            timestamp: Date.now()
+          });
+          console.log(`✅ [MATCH NOTIFICATION] Match notification sent to player ${playerId}`);
+        } else {
+          console.log(`⚠️ [MATCH NOTIFICATION] Player ${playerId} not connected to WebSocket`);
+        }
+
+        message.ack();
+      } catch (error) {
+        console.error('❌ [MATCH NOTIFICATION] Error processing match notification:', error);
+        message.nack();
+      }
+    });
+
+    subscription.on('error', (error) => {
+      console.error('❌ [MATCH NOTIFICATION] Subscription error:', error);
+    });
+
+    console.log('✅ Match found subscription setup complete');
+  } catch (error) {
+    console.error('❌ Failed to setup match found subscription:', error);
+  }
 }
 
 /**

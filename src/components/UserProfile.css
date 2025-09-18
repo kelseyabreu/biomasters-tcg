@@ -139,6 +139,7 @@
 .account-actions ion-button {
   flex: 1;
   min-width: 120px;
+  margin: 0;
 }
 
 /* Compact Profile Styles */

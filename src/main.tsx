@@ -25,7 +25,7 @@ if ('serviceWorker' in navigator) {
 configureMobileAuth();
 
 // Expose store and service to window for testing (development only)
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV || process.env.NODE_ENV === 'development') {
   (window as any).useHybridGameStore = useHybridGameStore;
   (window as any).unifiedGameService = unifiedGameService;
   (window as any).offlineSecurityService = offlineSecurityService;

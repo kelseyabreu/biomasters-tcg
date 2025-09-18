@@ -12,7 +12,7 @@ module.exports = {
     }],
   },
   moduleNameMapper: {
-    '^@biomasters/shared/(.*)$': '<rootDir>/../shared/$1'
+    '^@shared/(.*)$': '<rootDir>/../shared/$1'
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [

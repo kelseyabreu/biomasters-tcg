@@ -3,19 +3,41 @@ import { IonButton, IonIcon, IonChip, IonLabel } from '@ionic/react';
 import { gameController, arrowForward } from 'ionicons/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useHybridGameStore } from '../../state/hybridGameStore';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import './ActiveBattleIndicator.css';
 
 export const ActiveBattleIndicator: React.FC = () => {
   const { activeBattle } = useHybridGameStore();
   const history = useHistory();
+  const location = useLocation();
 
   const handleReturnToBattle = () => {
     console.log('🎮 Returning to active battle:', activeBattle);
-    history.push('/battle');
+
+    if (activeBattle.sessionId) {
+      history.push(`/battle/${activeBattle.sessionId}`);
+    } else {
+      console.error('❌ No sessionId in active battle:', activeBattle);
+      // Fallback to clearing the active battle if no sessionId
+      useHybridGameStore.setState(() => ({
+        activeBattle: {
+          sessionId: null,
+          gameMode: null,
+          levelId: null,
+          isActive: false
+        }
+      }));
+    }
   };
 
   if (!activeBattle.isActive) {
+    return null;
+  }
+
+  // Hide the indicator if user is already on the battle page for this session
+  const currentPath = location.pathname;
+  const expectedBattlePath = `/battle/${activeBattle.sessionId}`;
+  if (currentPath === expectedBattlePath) {
     return null;
   }
 

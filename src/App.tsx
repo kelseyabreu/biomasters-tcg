@@ -17,6 +17,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import DeckBuilder from './components/collection/DeckBuilder';
 import BattleModeSelector from './components/battle/BattleModeSelector';
+import BattlePage from './pages/BattlePage';
 import MainMenu from './pages/MainMenu';
 import PackOpening from './pages/PackOpening';
 import AuthPage from './pages/AuthPage';
@@ -252,6 +253,9 @@ const App: React.FC = () => {
               <Route exact path="/battle">
                 <BattleModeSelector />
               </Route>
+              <Route path="/battle/:sessionId">
+                <BattlePage />
+              </Route>
               <Route exact path="/packs">
                 <PackOpening />
               </Route>
@@ -286,7 +290,7 @@ const App: React.FC = () => {
               <IonIcon aria-hidden="true" icon={library} />
               <IonLabel>Collection</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="online" href="/online">
+            <IonTabButton tab="online" href="/online" data-testid="online-multiplayer-button">
               <IonIcon aria-hidden="true" icon={people} />
               <IonLabel>Online</IonLabel>
             </IonTabButton>

@@ -374,6 +374,7 @@ export class DataLoader implements IGameDataLoader {
    */
   private transformCardData(rawCard: any): CardData {
     return {
+      id: rawCard.id || `card-${rawCard.cardId}-${Date.now()}`, // Generate UUID-like ID if not present
       cardId: rawCard.cardId,
       nameId: rawCard.nameId,
       scientificNameId: rawCard.scientificNameId,
@@ -409,7 +410,9 @@ export class DataLoader implements IGameDataLoader {
       taxoOrder: rawCard.taxoOrder || rawCard.taxo_order || null,
       taxoFamily: rawCard.taxoFamily || rawCard.taxo_family || null,
       taxoGenus: rawCard.taxoGenus || rawCard.taxo_genus || null,
-      taxoSpecies: rawCard.taxoSpecies || rawCard.taxo_species || null
+      taxoSpecies: rawCard.taxoSpecies || rawCard.taxo_species || null,
+      // Add species name for backward compatibility
+      speciesName: rawCard.speciesName || rawCard.species_name || null
     };
   }
 

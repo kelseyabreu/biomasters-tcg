@@ -8,13 +8,12 @@ import { vi } from 'vitest';
 import OnlineMultiplayer from '../../pages/OnlineMultiplayer';
 
 // Mock the hybrid game store
-vi.mock('../../state/hybridGameStore', () => ({
-  useHybridGameStore: () => ({
+vi.mock('../../state/hybridGameStore', () => {
+  const mockStoreState = {
     online: {
       matchmaking: {
         isSearching: false,
         queueTime: 0,
-        estimatedWait: 0,
         gameMode: null,
         preferences: {},
         lastSearchAttempt: 0
@@ -49,7 +48,36 @@ vi.mock('../../state/hybridGameStore', () => ({
     refreshDailyQuests: vi.fn(),
     refreshLeaderboard: vi.fn(),
     updateQuestProgress: vi.fn(),
-    claimQuestReward: vi.fn()
+    userId: 'test-user-id',
+    userType: 'authenticated',
+    gameState: null,
+    currentGameId: null,
+    initializeWebSocket: vi.fn(),
+    disconnectWebSocket: vi.fn()
+  };
+
+  const mockStore = Object.assign(() => mockStoreState, {
+    getState: () => mockStoreState,
+    setState: vi.fn(),
+    subscribe: vi.fn(),
+    destroy: vi.fn()
+  });
+
+  return {
+    useHybridGameStore: mockStore,
+    default: mockStore
+  };
+});
+
+// Mock the GameSocket service
+vi.mock('../../services/gameSocket', () => ({
+  getGameSocket: () => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    isConnected: vi.fn(() => false),
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn()
   })
 }));
 

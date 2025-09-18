@@ -9,6 +9,7 @@ import { persist, subscribeWithSelector, createJSONStorage } from 'zustand/middl
 import { offlineSecurityService, OfflineCollection } from '../services/offlineSecurityService';
 import { starterPackService } from '../services/starterPackService';
 import { syncService, SyncResult } from '../services/syncService';
+import { getGameSocket } from '../services/gameSocket';
 import { initializeCardMapping } from '@shared/utils/cardIdHelpers';
 
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
@@ -172,7 +173,6 @@ export interface BattleSlice {
 export interface MatchmakingState {
   isSearching: boolean;
   queueTime: number;
-  estimatedWait: number;
   gameMode: string | null;
   preferences: any;
   lastSearchAttempt: number;
@@ -355,6 +355,10 @@ export interface HybridGameState {
   // Conflict Resolution
   resolveSyncConflicts: (conflicts: any[]) => void;
   dismissSyncConflicts: () => void;
+
+  // WebSocket Connection Management
+  initializeWebSocket: () => void;
+  disconnectWebSocket: () => void;
 
   // Online Multiplayer Actions
   findMatch: (gameMode: string, preferences?: any) => Promise<void>;
@@ -1179,7 +1183,6 @@ export const useHybridGameStore = create<HybridGameState>()(
           matchmaking: {
             isSearching: false,
             queueTime: 0,
-            estimatedWait: 0,
             gameMode: null,
             preferences: {},
             lastSearchAttempt: 0
@@ -1462,20 +1465,32 @@ export const useHybridGameStore = create<HybridGameState>()(
             console.log('✅ Store hydration completed');
           }
 
-          // Now try to recover authentication state from persisted data
-          await get().recoverAuthenticationState();
-
-          // Firebase onAuthStateChanged now fires immediately if user was persisted
-          // Thanks to browserLocalPersistence, this handles Scenarios 1 & 2 automatically
+          // Set up Firebase auth state listener first
+          // Firebase onAuthStateChanged will fire immediately if user was persisted
+          // Thanks to browserLocalPersistence, this handles authentication restoration automatically
           onAuthStateChanged(auth, async (user) => {
-            console.log('🔥 Auth state changed:', user ? `User: ${user.uid}` : 'No user');
+            console.log('🔥 [AUTH-FLOW] Auth state changed:', user ? `User: ${user.uid}` : 'No user');
 
             const previousUser = get().firebaseUser;
             const currentState = get();
 
+            console.log('🔍 [AUTH-FLOW] Current store state before processing:', {
+              isAuthenticated: currentState.isAuthenticated,
+              userId: currentState.userId,
+              isGuestMode: currentState.isGuestMode,
+              hasFirebaseUser: !!currentState.firebaseUser,
+              hasGuestToken: !!currentState.guestToken,
+              hasUserProfile: !!currentState.userProfile
+            });
+
             if (user) {
               // Firebase user is signed in (new or restored from persistence)
-              console.log('✅ Firebase user authenticated:', user.uid);
+              console.log('✅ [AUTH-FLOW] Firebase user authenticated:', {
+                uid: user.uid,
+                email: user.email,
+                emailVerified: user.emailVerified,
+                displayName: user.displayName
+              });
 
               // Don't override guest mode if we're in the middle of guest conversion
               if (currentState.isGuestMode && !previousUser) {
@@ -1503,27 +1518,48 @@ export const useHybridGameStore = create<HybridGameState>()(
                 }
               });
 
+              console.log('🔍 [AUTH-FLOW] Store state updated with Firebase user:', {
+                isAuthenticated: get().isAuthenticated,
+                userId: get().userId,
+                isGuestMode: get().isGuestMode,
+                hasUserProfile: !!get().userProfile,
+                userProfileId: get().userProfile?.id
+              });
+
               // Clear any guest credentials since we have a Firebase user
               await tokenManager.clearGuestCredentials();
 
               // CRITICAL: Set the current user ID in the offline security service
-              console.log('🔑 Setting current user ID in offline security service for Firebase user...');
+              console.log('🔑 [AUTH-FLOW] Setting current user ID in offline security service for Firebase user...');
               offlineSecurityService.setCurrentUserId(user.uid);
+              console.log('✅ [AUTH-FLOW] Offline security service user ID set successfully');
 
               // Handle user authentication (new or returning)
               if (!previousUser) {
-                console.log('👤 Firebase user authenticated - setting up...');
+                console.log('👤 [AUTH-FLOW] Firebase user authenticated - setting up new user...');
                 try {
                   // Setup new user first (this includes backend registration)
+                  console.log('🔄 [AUTH-FLOW] Starting handleNewUser...');
                   await get().handleNewUser();
+                  console.log('✅ [AUTH-FLOW] handleNewUser completed successfully');
 
                   // IMPORTANT: Initialize device registration AFTER backend registration is complete
                   // This ensures the backend knows about the user before device registration
-                  console.log('🔑 Backend setup complete, now initializing device registration...');
+                  console.log('🔑 [AUTH-FLOW] Backend setup complete, now initializing device registration...');
                   await get().initializeOfflineKey();
+                  console.log('✅ [AUTH-FLOW] initializeOfflineKey completed successfully');
+
+                  console.log('🔍 [AUTH-FLOW] New user setup completed, final state:', {
+                    isAuthenticated: get().isAuthenticated,
+                    userId: get().userId,
+                    isGuestMode: get().isGuestMode,
+                    hasUserProfile: !!get().userProfile
+                  });
                 } catch (error) {
-                  console.error('❌ Failed to setup authenticated user:', error);
+                  console.error('❌ [AUTH-FLOW] Failed to setup authenticated user:', error);
                 }
+              } else {
+                console.log('👤 [AUTH-FLOW] Returning Firebase user, skipping new user setup');
               }
 
               // Ensure collection is loaded for Firebase user
@@ -1542,15 +1578,33 @@ export const useHybridGameStore = create<HybridGameState>()(
               }
 
             } else {
-              // No Firebase user - check for guest authentication
-              console.log('🔍 No Firebase user, checking for guest authentication...');
+              // No Firebase user - try to recover authentication state from local storage
+              console.log('🔍 [AUTH-FLOW] No Firebase user, attempting to recover authentication state...');
 
-              if (!currentState.isGuestMode) {
-                // Try to recover guest authentication from secure storage
-                const guestCredentials = await tokenManager.getGuestCredentials();
+              // Only try to recover if we haven't already tried
+              if (!currentState.isAuthenticated && !currentState.isGuestMode) {
+                console.log('🔄 [AUTH-FLOW] Calling recoverAuthenticationState...');
+                await get().recoverAuthenticationState();
 
-                if (guestCredentials) {
-                  console.log('🔄 Found guest credentials, attempting to restore guest session...');
+                // Check if recovery was successful
+                const recoveredState = get();
+                console.log('🔍 [AUTH-FLOW] Recovery completed, new state:', {
+                  isAuthenticated: recoveredState.isAuthenticated,
+                  isGuestMode: recoveredState.isGuestMode,
+                  userId: recoveredState.userId
+                });
+
+                // If still not authenticated, check for guest credentials
+                if (!recoveredState.isAuthenticated) {
+                  console.log('🔍 [AUTH-FLOW] No authentication recovered, checking for guest credentials...');
+                  const guestCredentials = await tokenManager.getGuestCredentials();
+
+                  if (guestCredentials) {
+                    console.log('🔄 [AUTH-FLOW] Found guest credentials, attempting to restore guest session...', {
+                      hasGuestId: !!guestCredentials.guestId,
+                      hasGuestSecret: !!guestCredentials.guestSecret,
+                      hasGuestToken: !!guestCredentials.guestToken
+                    });
                   try {
                     // Restore guest state
                     set({
@@ -1604,6 +1658,7 @@ export const useHybridGameStore = create<HybridGameState>()(
                       }
                     });
                     await tokenManager.clearAllAuthData();
+                  }
                   }
                 }
               } else {
@@ -2921,9 +2976,13 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
 
             // Update state with error information
+            // Don't block the UI for sync conflicts - they're normal
+            const syncErrorMessage = error instanceof Error ? error.message : String(error);
+            const isConflictError = syncErrorMessage.includes('409') || syncErrorMessage.includes('conflict');
+
             set({
-              syncStatus: 'error',
-              syncError: userFriendlyMessage,
+              syncStatus: isConflictError ? 'idle' : 'error',
+              syncError: isConflictError ? null : userFriendlyMessage,
               // Preserve sync service state if available
               syncServiceState: state.syncServiceState ? {
                 isSyncing: false,
@@ -3309,6 +3368,66 @@ export const useHybridGameStore = create<HybridGameState>()(
         // ONLINE MULTIPLAYER ACTIONS IMPLEMENTATION
         // ============================================================================
 
+        // WebSocket Connection Management
+        initializeWebSocket: () => {
+          const state = get();
+
+          if (!state.isAuthenticated || !state.isOnline) {
+            console.warn('⚠️ Cannot initialize WebSocket: not authenticated or offline');
+            return;
+          }
+
+          console.log('🔌 Initializing WebSocket connection...');
+          const gameSocket = getGameSocket();
+
+          // Connect to WebSocket
+          gameSocket.connect();
+
+          // Set up event listeners for match events
+          const handleMatchFound = (data: any) => {
+            console.log('🎯 Match found via WebSocket:', data);
+
+            // Stop searching state
+            set((state) => ({
+              online: {
+                ...state.online,
+                matchmaking: {
+                  ...state.online.matchmaking,
+                  isSearching: false
+                }
+              }
+            }));
+
+            // Trigger match found event (handled by UI components)
+          };
+
+          const handleMatchAccepted = (data: any) => {
+            console.log('✅ Match accepted via WebSocket:', data);
+
+            // Update active battle state
+            set((state) => ({
+              activeBattle: {
+                sessionId: data.sessionId,
+                gameMode: 'online',
+                levelId: null,
+                isActive: true
+              }
+            }));
+          };
+
+          // Add event listeners
+          gameSocket.on('match_found', handleMatchFound);
+          gameSocket.on('match_accepted', handleMatchAccepted);
+
+          console.log('✅ WebSocket connection initialized');
+        },
+
+        disconnectWebSocket: () => {
+          console.log('🔌 Disconnecting WebSocket...');
+          const gameSocket = getGameSocket();
+          gameSocket.disconnect();
+        },
+
         // Matchmaking Actions
         findMatch: async (gameMode: string, preferences?: any) => {
           const state = get();
@@ -3325,6 +3444,9 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           console.log(`🔍 Starting matchmaking for ${gameMode}`);
 
+          // Initialize WebSocket if not already connected
+          get().initializeWebSocket();
+
           set((state) => ({
             online: {
               ...state.online,
@@ -3340,38 +3462,11 @@ export const useHybridGameStore = create<HybridGameState>()(
           }));
 
           try {
-            const result = await unifiedGameService.findMatch(gameMode, preferences);
+            // Use WebSocket-based matchmaking
+            const gameSocket = getGameSocket();
+            gameSocket.joinMatchmaking(gameMode, preferences);
 
-            if (result.isValid && result.newState) {
-              console.log('✅ Match found:', result.newState);
-
-              set((state) => ({
-                online: {
-                  ...state.online,
-                  matchmaking: {
-                    ...state.online.matchmaking,
-                    isSearching: false
-                  }
-                }
-              }));
-
-              // If match found immediately, handle it
-              if (result.metadata?.matchFound) {
-                // This would typically trigger navigation to the game
-                console.log('🎮 Match ready, starting game...');
-              }
-            } else {
-              console.error('❌ Matchmaking failed:', result.errorMessage);
-              set((state) => ({
-                online: {
-                  ...state.online,
-                  matchmaking: {
-                    ...state.online.matchmaking,
-                    isSearching: false
-                  }
-                }
-              }));
-            }
+            console.log('✅ Matchmaking request sent via WebSocket');
           } catch (error: any) {
             console.error('❌ Matchmaking error:', error);
             set((state) => ({
@@ -3397,7 +3492,9 @@ export const useHybridGameStore = create<HybridGameState>()(
           console.log('🚫 Cancelling matchmaking');
 
           try {
-            await unifiedGameService.cancelMatchmaking();
+            // Use WebSocket to cancel matchmaking
+            const gameSocket = getGameSocket();
+            gameSocket.cancelMatchmaking();
 
             set((state) => ({
               online: {
@@ -3411,7 +3508,7 @@ export const useHybridGameStore = create<HybridGameState>()(
               }
             }));
 
-            console.log('✅ Matchmaking cancelled');
+            console.log('✅ Matchmaking cancelled via WebSocket');
           } catch (error: any) {
             console.error('❌ Failed to cancel matchmaking:', error);
           }
@@ -3420,23 +3517,33 @@ export const useHybridGameStore = create<HybridGameState>()(
         acceptMatch: async (sessionId: string) => {
           console.log(`✅ Accepting match: ${sessionId}`);
 
-          // Update active battle state using existing pattern
-          set((state) => ({
-            activeBattle: {
-              sessionId,
-              gameMode: 'online',
-              levelId: null,
-              isActive: true
-            },
-            online: {
-              ...state.online,
-              matchmaking: {
-                ...state.online.matchmaking,
-                isSearching: false,
-                gameMode: null
+          try {
+            // Use WebSocket to accept match
+            const gameSocket = getGameSocket();
+            gameSocket.acceptMatch(sessionId);
+
+            // Update active battle state using existing pattern
+            set((state) => ({
+              activeBattle: {
+                sessionId,
+                gameMode: 'online',
+                levelId: null,
+                isActive: true
+              },
+              online: {
+                ...state.online,
+                matchmaking: {
+                  ...state.online.matchmaking,
+                  isSearching: false,
+                  gameMode: null
+                }
               }
-            }
-          }));
+            }));
+
+            console.log('✅ Match accepted via WebSocket');
+          } catch (error: any) {
+            console.error('❌ Failed to accept match:', error);
+          }
         },
 
         // Rating Actions

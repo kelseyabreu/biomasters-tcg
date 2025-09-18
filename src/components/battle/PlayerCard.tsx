@@ -120,10 +120,26 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   };
   
   // Render a single card based on visibility
-  const renderCard = (cardInstanceId: string, index: number) => {
-    const cardData = getCardData(cardInstanceId);
-    const isSelected = selectedCardId === cardInstanceId;
-    const shouldShowCard = isCardVisible(cardInstanceId);
+  const renderCard = (cardInput: string | any, index: number) => {
+    const cardData = getCardData(cardInput);
+
+    // Extract instanceId for comparison (handle both string and object inputs)
+    // For hidden cards, create unique keys to avoid React warnings
+    let instanceId: string;
+    if (typeof cardInput === 'string') {
+      instanceId = cardInput;
+    } else if (cardInput?.instanceId) {
+      instanceId = cardInput.instanceId;
+      // Make hidden cards unique by adding index
+      if (cardInput.isHidden) {
+        instanceId = `${cardInput.instanceId}-${index}`;
+      }
+    } else {
+      instanceId = `card-${index}`;
+    }
+
+    const isSelected = selectedCardId === instanceId;
+    const shouldShowCard = isCardVisible(instanceId);
     
     // Determine card display mode
     let displayMode: 'back' | 'generic' | 'full' = 'back';
@@ -137,12 +153,12 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
     
     return (
       <motion.div
-        key={cardInstanceId}
+        key={instanceId}
         className={cardClasses}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, delay: index * 0.02 }}
-        onClick={() => isInteractive && onCardSelect?.(cardInstanceId)}
+        onClick={() => isInteractive && onCardSelect?.(instanceId)}
       >
         {displayMode === 'back' ? (
           // Card back
@@ -192,7 +208,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
     );
   };
 
-  const displayTitle = title || `${player.name} (${player.hand.length})`;
+  const displayTitle = title || `${player.name} (${player.hand?.length || 0})`;
   const cardSize = compact ? 'small' : 'normal';
 
   return (
@@ -297,8 +313,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
                 {/* Hand Cards */}
                 <div className="hand-cards-container">
                   <div className="hand-cards-scroll">
-                    {player.hand.length > 0 ? (
-                      player.hand.map((cardInstanceId, index) => 
+                    {(player.hand?.length || 0) > 0 ? (
+                      player.hand?.map((cardInstanceId, index) =>
                         renderCard(cardInstanceId, index)
                       )
                     ) : (

@@ -230,7 +230,7 @@ export enum ActionId {
  * Game Phases - Overall game state
  */
 export enum GamePhase {
-  SETUP = 'setup',
+  SETUP = 'setup',    // Online: Deck selection (60s) + player ready. Offline: Player ready only
   PLAYING = 'playing',
   FINAL_TURN = 'final_turn',  // Final turn phase when a player can't draw
   ENDED = 'ended'
@@ -893,6 +893,7 @@ export enum TaxoSpecies {
  * User Account Types
  */
 export enum UserType {
+  ANONYMOUS = 'anonymous',
   GUEST = 'guest',
   REGISTERED = 'registered',
   ADMIN = 'admin'
@@ -1121,3 +1122,116 @@ export const IUCN_CONSERVATION_DATA = {
     rarityName: 'Special'
   }
 } as const;
+
+// ============================================================================
+// PRODUCT SYSTEM ENUMS
+// ============================================================================
+
+/**
+ * Core Product Types - High level abstraction for any product
+ */
+export enum ProductType {
+  DECK = 1,
+  BOOSTER_PACK = 2,
+  SINGLE_CARD = 3,
+  BUNDLE = 4,
+  MERCHANDISE = 5,        // Clothes, stuffed animals, etc.
+  DIGITAL_CONTENT = 6,    // Wallpapers, avatars, etc.
+  SUBSCRIPTION = 7        // Premium memberships, etc.
+}
+
+/**
+ * Deck Types - All deck categories including custom and prebuilt types
+ */
+export enum DeckType {
+  CUSTOM = 1,                      // Player-created decks
+  STARTER_FOREST = 2,              // Forest starter deck
+  STARTER_OCEAN = 3,               // Ocean starter deck
+  THEME_ARCTIC = 4,                // Arctic theme deck
+  THEME_DESERT = 5,                // Desert theme deck
+  THEME_RAINFOREST = 6,            // Rainforest theme deck
+  TOURNAMENT_BALANCED = 7,         // Tournament legal deck
+  EDUCATIONAL_CONSERVATION = 8     // Conservation education deck
+}
+
+/**
+ * Physical product categories for merchandise
+ */
+export enum MerchandiseType {
+  CLOTHING = 1,
+  PLUSHIE = 2,
+  POSTER = 3,
+  STICKER = 4,
+  ACCESSORY = 5
+}
+
+/**
+ * Content Types - What kind of content is in a product
+ */
+export enum ProductContentType {
+  FIXED_CARD = 1,           // Specific cards (decks, guaranteed cards)
+  RANDOM_POOL = 2,          // Random from conservation status pool (boosters)
+  NESTED_PRODUCT = 3,       // Contains other products (bundles)
+  DECK_TEMPLATE = 4,        // Pre-built deck configuration
+  DIGITAL_ASSET = 5,        // Digital content (avatars, wallpapers)
+  PHYSICAL_ITEM = 6         // Physical merchandise
+}
+
+/**
+ * Payment Methods - How purchases are made
+ */
+export enum PaymentMethod {
+  VIRTUAL_CURRENCY = 1,       // Eco credits, gems, etc.
+  REAL_MONEY = 2,            // Direct payment
+  STRIPE = 3                 // Stripe payment processing
+}
+
+/**
+ * Platform Types - Where the purchase/action was made
+ */
+export enum Platform {
+  WEB = 1,                   // Web browser
+  IOS = 2,                   // iOS app
+  ANDROID = 3                // Android app
+}
+
+/**
+ * Purchase Status - State of a purchase transaction
+ */
+export enum PurchaseStatus {
+  PENDING = 0,               // Payment initiated but not confirmed
+  COMPLETED = 1,             // Payment successful and fulfilled
+  FAILED = 2,                // Payment failed
+  REFUNDED = 3,              // Payment refunded
+  DISPUTED = 4,              // Payment disputed/chargeback
+  CANCELLED = 5              // Purchase cancelled before completion
+}
+
+/**
+ * Refund Status - State of a refund request
+ */
+export enum RefundStatus {
+  PENDING = 0,               // Refund requested but not processed
+  COMPLETED = 1,             // Refund successfully processed
+  FAILED = 2                 // Refund failed to process
+}
+
+/**
+ * Risk Level - Fraud risk assessment for purchases
+ */
+export enum RiskLevel {
+  NORMAL = 1,                // Low risk transaction
+  ELEVATED = 2,              // Medium risk transaction
+  HIGHEST = 3                // High risk transaction
+}
+
+/**
+ * Currency - Supported currencies for purchases
+ */
+export enum Currency {
+  USD = 'USD',               // US Dollar
+  EUR = 'EUR',               // Euro
+  GBP = 'GBP',               // British Pound
+  CAD = 'CAD',               // Canadian Dollar
+  JPY = 'JPY'                // Japanese Yen
+}

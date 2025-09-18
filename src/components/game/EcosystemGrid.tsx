@@ -110,7 +110,19 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
     return Array.from({ length: gameSettings.gridHeight }, (_, y) =>
       Array.from({ length: gameSettings.gridWidth }, (_, x) => {
         const positionKey = `${x},${y}`;
-        const card = grid && grid.get ? grid.get(positionKey) : null;
+
+        // Handle both Map and Object formats for grid
+        let card = null;
+        if (grid) {
+          if (grid instanceof Map) {
+            // Grid is a proper Map
+            card = grid.get(positionKey);
+          } else if (typeof grid === 'object') {
+            // Grid is a plain object (serialized from server)
+            card = (grid as any)[positionKey];
+          }
+        }
+
         const isValidPosition = highlightedPositions.some((pos: any) => pos.x === x && pos.y === y);
         
         return (
@@ -135,6 +147,7 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
     <div
       ref={containerRef}
       className="ecosystem-grid-container"
+      data-testid="ecosystem-grid"
       style={{
         position: 'relative',
         width: '100%',

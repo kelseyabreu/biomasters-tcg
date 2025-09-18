@@ -18,6 +18,8 @@ import {
   generateGuestUsername
 } from '../utils/guestAuth';
 import { NewOfflineAction } from '../database/types';
+import { starterDeckService } from '../services/starterDeckService';
+import { UserType } from '@shared/enums';
 
 const router = Router();
 
@@ -147,6 +149,23 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
   // Generate JWT for immediate use
   const guestJWT = generateGuestJWT(result.id, guestCredentials.guestId);
 
+  // Auto-onboard new guest user with starter decks
+  let onboardingResult = null;
+  try {
+    console.log('🎯 [GUEST-AUTH] Starting auto-onboarding for new guest user:', result.id);
+    onboardingResult = await starterDeckService.autoOnboardIfNeeded(result.id, UserType.GUEST);
+    if (onboardingResult?.success) {
+      console.log('✅ [GUEST-AUTH] Auto-onboarding completed:', {
+        userId: result.id,
+        decksCreated: onboardingResult.deck_ids.length,
+        cardsAdded: onboardingResult.cards_added
+      });
+    }
+  } catch (error) {
+    console.error('⚠️ [GUEST-AUTH] Auto-onboarding failed (non-critical):', error);
+    // Don't fail guest creation if onboarding fails
+  }
+
   res.status(201).json({
     success: true,
     data: {
@@ -159,7 +178,12 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
         coins: result.coins,
         gems: result.gems,
         dust: result.dust
-      }
+      },
+      onboarding: onboardingResult ? {
+        starter_decks_given: onboardingResult.starter_decks_given,
+        deck_ids: onboardingResult.deck_ids,
+        cards_added: onboardingResult.cards_added
+      } : null
     },
     auth: {
       guestSecret: guestCredentials.guestSecret,

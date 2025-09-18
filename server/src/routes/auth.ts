@@ -6,7 +6,9 @@ import { db } from '../database/kysely';
 import { NewTransaction } from '../database/types';
 // import { getFirebaseUser } from '../config/firebase'; // Unused for now
 import { CacheManager } from '../config/redis';
-import { encrypt, generateSigningKey } from '../utils/encryption';
+import { encrypt, decrypt, generateSigningKey } from '../utils/encryption';
+import { starterDeckService } from '../services/starterDeckService';
+import { UserType } from '@shared/enums';
 
 const router = Router();
 
@@ -246,6 +248,23 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
     timestamp: new Date().toISOString()
   });
 
+  // Auto-onboard new user with starter decks
+  let onboardingResult = null;
+  try {
+    console.log('🎯 [AUTH-REGISTER] Starting auto-onboarding for new user:', result.id);
+    onboardingResult = await starterDeckService.autoOnboardIfNeeded(result.id, UserType.REGISTERED);
+    if (onboardingResult?.success) {
+      console.log('✅ [AUTH-REGISTER] Auto-onboarding completed:', {
+        userId: result.id,
+        decksCreated: onboardingResult.deck_ids.length,
+        cardsAdded: onboardingResult.cards_added
+      });
+    }
+  } catch (error) {
+    console.error('⚠️ [AUTH-REGISTER] Auto-onboarding failed (non-critical):', error);
+    // Don't fail registration if onboarding fails
+  }
+
   res.status(201).json({
     success: true,
     message: 'User registered successfully',
@@ -260,7 +279,12 @@ router.post('/register', authRateLimiter, accountCreationRateLimiter, requireFir
         eco_credits: result.eco_credits,
         xp_points: result.xp_points,
         created_at: result.created_at
-      }
+      },
+      onboarding: onboardingResult ? {
+        starter_decks_given: onboardingResult.starter_decks_given,
+        deck_ids: onboardingResult.deck_ids,
+        cards_added: onboardingResult.cards_added
+      } : null
     }
   });
   return;
@@ -567,6 +591,16 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
 
   // Get current active key version for this device
   console.log('🔑 [OFFLINE-KEY] Determining key version...');
+
+  // First check if there's an existing device sync state
+  const deviceSyncState = await db
+    .selectFrom('device_sync_states')
+    .select(['current_key_version'])
+    .where('device_id', '=', device_id)
+    .where('user_id', '=', user.id)
+    .executeTakeFirst();
+
+  // Check for active signing keys
   const currentActiveKey = await db
     .selectFrom('device_signing_keys')
     .select(['key_version'])
@@ -576,10 +610,76 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     .orderBy('key_version', 'desc')
     .executeTakeFirst();
 
-  const newKeyVersion = (currentActiveKey?.key_version || 0) + 1;
+  // Also check all existing keys for this device to debug
+  const allExistingKeys = await db
+    .selectFrom('device_signing_keys')
+    .select(['key_version', 'status', 'created_at'])
+    .where('device_id', '=', device_id)
+    .where('user_id', '=', user.id)
+    .orderBy('key_version', 'desc')
+    .execute();
+
+  console.log('🔍 [OFFLINE-KEY] All existing keys for device:', {
+    deviceId: device_id,
+    userId: user.id,
+    keys: allExistingKeys,
+    activeKey: currentActiveKey
+  });
+
+  // If device sync state exists but no active key, check if the expected key exists but is inactive
+  let expectedKeyVersion = deviceSyncState?.current_key_version;
+  if (deviceSyncState && !currentActiveKey && expectedKeyVersion) {
+    console.log('🔍 [OFFLINE-KEY] Device sync state exists but no active key, checking expected version:', expectedKeyVersion);
+
+    const expectedKey = await db
+      .selectFrom('device_signing_keys')
+      .select(['key_version', 'status', 'signing_key', 'expires_at'])
+      .where('device_id', '=', device_id)
+      .where('user_id', '=', user.id)
+      .where('key_version', '=', expectedKeyVersion)
+      .executeTakeFirst();
+
+    if (expectedKey) {
+      console.log('🔍 [OFFLINE-KEY] Found expected key with status:', expectedKey.status);
+
+      // If the expected key exists but is not active, reactivate it
+      if (expectedKey.status !== 'ACTIVE') {
+        console.log('🔄 [OFFLINE-KEY] Reactivating existing key...');
+        await db
+          .updateTable('device_signing_keys')
+          .set({
+            status: 'ACTIVE',
+            updated_at: new Date()
+          })
+          .where('device_id', '=', device_id)
+          .where('user_id', '=', user.id)
+          .where('key_version', '=', expectedKeyVersion)
+          .execute();
+
+        // Return the reactivated key
+        res.json({
+          success: true,
+          signing_key: decrypt(expectedKey.signing_key),
+          key_version: expectedKeyVersion,
+          expires_at: expectedKey.expires_at,
+          message: 'Reactivated existing signing key'
+        });
+        return;
+      }
+    }
+  }
+
+  console.log('🔍 [OFFLINE-KEY] Key version calculation inputs:', {
+    currentActiveKeyVersion: currentActiveKey?.key_version,
+    expectedKeyVersion: expectedKeyVersion,
+    deviceSyncStateVersion: deviceSyncState?.current_key_version
+  });
+
+  let newKeyVersion = (currentActiveKey?.key_version || expectedKeyVersion || 0) + 1;
   console.log('🔑 [OFFLINE-KEY] Key version:', {
     existingVersion: currentActiveKey?.key_version || 0,
-    newVersion: newKeyVersion
+    newVersion: newKeyVersion,
+    calculationBase: currentActiveKey?.key_version || expectedKeyVersion || 0
   });
 
   // Supersede the old active key if it exists
@@ -598,19 +698,141 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
       .execute();
   }
 
-  // Store new signing key in historical storage
+  // Check for existing key with this version before insertion
+  console.log('🔍 [OFFLINE-KEY] Checking for existing key before insertion...');
+  const existingKeyCheck = await db
+    .selectFrom('device_signing_keys')
+    .selectAll()
+    .where('device_id', '=', device_id)
+    .where('user_id', '=', user.id)
+    .where('key_version', '=', newKeyVersion)
+    .executeTakeFirst();
+
+  if (existingKeyCheck) {
+    console.log('🔄 [OFFLINE-KEY] Key already exists with this version:', {
+      keyVersion: existingKeyCheck.key_version,
+      status: existingKeyCheck.status,
+      createdAt: existingKeyCheck.created_at
+    });
+
+    if (existingKeyCheck.status === 'ACTIVE') {
+      console.log('✅ [OFFLINE-KEY] Returning existing active key');
+      return res.status(200).json({
+        success: true,
+        signing_key: decrypt(existingKeyCheck.signing_key),
+        key_version: existingKeyCheck.key_version,
+        expires_at: existingKeyCheck.expires_at,
+        message: 'Using existing active signing key'
+      });
+    } else {
+      // Key exists but is not active, find the next available version
+      console.log('🔄 [OFFLINE-KEY] Key exists but not active, finding next version...');
+      const highestKey = await db
+        .selectFrom('device_signing_keys')
+        .select(['key_version'])
+        .where('device_id', '=', device_id)
+        .where('user_id', '=', user.id)
+        .orderBy('key_version', 'desc')
+        .executeTakeFirst();
+
+      newKeyVersion = (highestKey?.key_version || 0) + 1;
+      console.log('🔑 [OFFLINE-KEY] Using next available version:', newKeyVersion);
+    }
+  }
+
+  // Store new signing key in historical storage with conflict resolution
   console.log('🔑 [OFFLINE-KEY] Storing new signing key...');
-  await db
-    .insertInto('device_signing_keys')
-    .values({
-      device_id,
-      user_id: user.id,
-      signing_key: encrypt(signingKey), // Encrypt before storage
-      key_version: newKeyVersion,
-      status: 'ACTIVE',
-      expires_at: expiresAt
-    })
-    .execute();
+  try {
+    await db
+      .insertInto('device_signing_keys')
+      .values({
+        device_id,
+        user_id: user.id,
+        signing_key: encrypt(signingKey), // Encrypt before storage
+        key_version: newKeyVersion,
+        status: 'ACTIVE',
+        expires_at: expiresAt
+      })
+      .execute();
+  } catch (error: any) {
+    console.log('❌ [OFFLINE-KEY] Error inserting signing key:', {
+      errorCode: error.code,
+      errorMessage: error.message,
+      deviceId: device_id,
+      userId: user.id,
+      keyVersion: newKeyVersion
+    });
+
+    if (error.code === '23505') { // Unique constraint violation
+      console.log('🔄 [OFFLINE-KEY] Unique constraint violation - key already exists');
+
+      // Check if there's already an active key with this version
+      const existingKey = await db
+        .selectFrom('device_signing_keys')
+        .select(['signing_key', 'expires_at', 'status'])
+        .where('device_id', '=', device_id)
+        .where('user_id', '=', user.id)
+        .where('key_version', '=', newKeyVersion)
+        .executeTakeFirst();
+
+      console.log('🔍 [OFFLINE-KEY] Found existing key after conflict:', {
+        exists: !!existingKey,
+        status: existingKey?.status,
+        keyVersion: newKeyVersion
+      });
+
+      if (existingKey && existingKey.status === 'ACTIVE') {
+        console.log('✅ [OFFLINE-KEY] Using existing active key after conflict');
+        // Return the existing key instead of creating a new one
+        res.json({
+          success: true,
+          signing_key: decrypt(existingKey.signing_key),
+          key_version: newKeyVersion,
+          expires_at: existingKey.expires_at,
+          message: 'Using existing active signing key'
+        });
+        return;
+      } else {
+        // If key exists but is not active, find the next available version
+        console.log('🔄 [OFFLINE-KEY] Key exists but not active, finding next available version...');
+
+        const highestKey = await db
+          .selectFrom('device_signing_keys')
+          .select(['key_version'])
+          .where('device_id', '=', device_id)
+          .where('user_id', '=', user.id)
+          .orderBy('key_version', 'desc')
+          .executeTakeFirst();
+
+        const nextKeyVersion = (highestKey?.key_version || 0) + 1;
+        console.log('🔑 [OFFLINE-KEY] Retrying with next available version:', nextKeyVersion);
+
+        // Retry with the next available version
+        try {
+          await db
+            .insertInto('device_signing_keys')
+            .values({
+              device_id,
+              user_id: user.id,
+              signing_key: encrypt(signingKey),
+              key_version: nextKeyVersion,
+              status: 'ACTIVE',
+              expires_at: expiresAt
+            })
+            .execute();
+
+          newKeyVersion = nextKeyVersion;
+          console.log('✅ [OFFLINE-KEY] Successfully created key with version:', nextKeyVersion);
+        } catch (retryError: any) {
+          console.log('❌ [OFFLINE-KEY] Retry failed:', retryError.message);
+          throw retryError;
+        }
+      }
+    } else {
+      console.log('❌ [OFFLINE-KEY] Non-constraint error during insertion');
+      throw error;
+    }
+  }
 
   // Update or create device sync state with current key version pointer
   console.log('🔑 [OFFLINE-KEY] Updating device sync state...');
@@ -646,6 +868,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     expires_at: expiresAt.toISOString(),
     device_id
   });
+  return;
 }));
 
 /**

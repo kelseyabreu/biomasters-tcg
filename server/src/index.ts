@@ -41,6 +41,7 @@ import questsRoutes from './routes/quests';
 import matchesRoutes from './routes/matches';
 import leaderboardRoutes from './routes/leaderboard';
 import healthRoutes from './routes/health';
+import productsRoutes from './routes/products';
 
 // Import unified data loader factory
 import { createProductionDataLoader, createDevelopmentDataLoader } from '../../shared/data/UnifiedDataLoader';
@@ -224,7 +225,7 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env['CORS_ORIGIN']?.split(',') || ['http://localhost:5174'],
+  origin: process.env['CORS_ORIGIN']?.split(',') || ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -555,6 +556,7 @@ app.use('/api/ratings', ratingsRoutes);
 app.use('/api/quests', questsRoutes);
 app.use('/api/matches', matchesRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/products', productsRoutes);
 
 // Test routes (only available in non-production environments)
 if (process.env['NODE_ENV'] !== 'production') {

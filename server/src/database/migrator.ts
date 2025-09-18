@@ -199,6 +199,46 @@ export class KyselyMigrator {
       const standardizeGameSessionsSql = readFileSync(standardizeGameSessionsPath, 'utf8');
       await this.executeMigration('021_standardize_game_sessions_schema', standardizeGameSessionsSql);
 
+      // 023: Universal products system (disabled for now)
+      // const universalProductsPath = join(__dirname, 'migrations/023_universal_products_system.sql');
+      // const universalProductsSql = readFileSync(universalProductsPath, 'utf8');
+      // await this.executeMigration('023_universal_products_system', universalProductsSql);
+
+      // 024: Starter decks data (disabled - using simpler approach)
+      // const starterDecksDataPath = join(__dirname, 'migrations/024_starter_decks_data.sql');
+      // const starterDecksDataSql = readFileSync(starterDecksDataPath, 'utf8');
+      // await this.executeMigration('024_starter_decks_data', starterDecksDataSql);
+
+      // 025: Purchase system tables (disabled - depends on products table)
+      // const purchaseSystemPath = join(__dirname, 'migrations/025_purchase_system_tables.sql');
+      // const purchaseSystemSql = readFileSync(purchaseSystemPath, 'utf8');
+      // await this.executeMigration('025_purchase_system_tables', purchaseSystemSql);
+
+      // 027: Deck access system (our new approach)
+      const deckAccessPath = join(__dirname, 'migrations/027_deck_access_system.sql');
+      const deckAccessSql = readFileSync(deckAccessPath, 'utf8');
+      await this.executeMigration('027_deck_access_system', deckAccessSql);
+
+      // 028: Fix starter decks system
+      const fixStarterDecksPath = join(__dirname, 'migrations/028_fix_starter_decks_system.sql');
+      const fixStarterDecksSql = readFileSync(fixStarterDecksPath, 'utf8');
+      await this.executeMigration('028_fix_starter_decks_system', fixStarterDecksSql);
+
+      // 029: Add species name mapping
+      const speciesNameMappingPath = join(__dirname, 'migrations/029_add_species_name_mapping.sql');
+      const speciesNameMappingSql = readFileSync(speciesNameMappingPath, 'utf8');
+      await this.executeMigration('029_add_species_name_mapping', speciesNameMappingSql);
+
+      // 030: Comprehensive schema alignment
+      const schemaAlignmentPath = join(__dirname, 'migrations/030_comprehensive_schema_alignment.sql');
+      const schemaAlignmentSql = readFileSync(schemaAlignmentPath, 'utf8');
+      await this.executeMigration('030_comprehensive_schema_alignment', schemaAlignmentSql);
+
+      // 031: Fix dual key system (id as UUID)
+      const fixDualKeyPath = join(__dirname, 'migrations/031_fix_dual_key_system.sql');
+      const fixDualKeySql = readFileSync(fixDualKeyPath, 'utf8');
+      await this.executeMigration('031_fix_dual_key_system', fixDualKeySql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

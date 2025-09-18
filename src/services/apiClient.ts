@@ -419,6 +419,9 @@ export const gameApi = {
   getMatchHistory: (page: number = 1, limit: number = 20) =>
     api.get<ApiResponse>(`/api/matches/history?page=${page}&limit=${limit}`),
 
+  getGameSession: (sessionId: string) =>
+    api.get<ApiResponse>(`/api/matches/${sessionId}`),
+
   forfeitMatch: (sessionId: string) =>
     api.post<ApiResponse>(`/api/matches/${sessionId}/forfeit`),
 

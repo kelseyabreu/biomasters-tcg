@@ -141,14 +141,14 @@ REDIS_PORT=6379
 
 # Security
 JWT_SECRET=your_super_secret_jwt_key_here
-CORS_ORIGIN=http://localhost:5174
+CORS_ORIGIN=http://localhost:5173
 ```
 
 ## 🧪 Testing the Setup
 
 ### 1. Test Frontend Authentication
 
-1. Open http://localhost:5174
+1. Open http://localhost:5173
 2. Click the login icon in the header
 3. Try creating an account
 4. Verify email/password and Google sign-in work
@@ -289,7 +289,7 @@ redis-cli ping
 
 When everything is working, you should see:
 
-- ✅ Frontend running on http://localhost:5174
+- ✅ Frontend running on http://localhost:5173
 - ✅ Backend API running on http://localhost:3001
 - ✅ PostgreSQL database connected and migrated
 - ✅ Redis cache connected and working

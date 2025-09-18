@@ -213,6 +213,8 @@ export class BioMastersEngine {
     const grid = new Map<string, CardInstance>();
 
     // Initialize HOME cards for each player
+    console.log('🏠 [ENGINE] Creating HOME cards for players:', players.map(p => ({ id: p.id, name: p.name })));
+
     players.forEach((player, index) => {
       const homePosition = this.getHOMEPosition(index, players.length, gameSettings);
       const homeCard: CardInstance = {
@@ -231,7 +233,27 @@ export class BioMastersEngine {
         isDetritus: false,
         isHOME: true
       };
+
+      console.log(`🏠 [ENGINE] Creating HOME card for player ${player.id}:`, {
+        position: homePosition,
+        instanceId: homeCard.instanceId,
+        cardId: homeCard.cardId,
+        ownerId: homeCard.ownerId,
+        isHOME: homeCard.isHOME
+      });
+
       grid.set(`${homePosition.x},${homePosition.y}`, homeCard);
+    });
+
+    console.log('🏠 [ENGINE] Final grid after HOME card creation:', {
+      gridSize: grid.size,
+      gridEntries: Array.from(grid.entries()).map(([key, card]) => ({
+        position: key,
+        cardId: card.cardId,
+        instanceId: card.instanceId,
+        ownerId: card.ownerId,
+        isHOME: card.isHOME
+      }))
     });
 
     const newGameState: GameState = {

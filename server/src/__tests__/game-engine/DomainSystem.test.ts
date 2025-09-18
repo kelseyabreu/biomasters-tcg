@@ -96,6 +96,7 @@ describe('Domain System Tests', () => {
       // Test that the engine correctly identifies them as chemoautotrophs
       // Convert to engine-compatible format
       const engineCard: CardData = {
+        id: "550e8400-e29b-41d4-a716-446655440002",
         cardId: card.cardId,
         nameId: CardNameId.CARD_OAK_TREE, // Using placeholder since we don't have real mapping
         scientificNameId: ScientificNameId.SCIENTIFIC_QUERCUS_ROBUR, // Using placeholder

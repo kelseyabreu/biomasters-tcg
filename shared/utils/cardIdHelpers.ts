@@ -189,3 +189,126 @@ export function getCardDisplayName(card: { nameId: string }, localization: any):
       .replace(/\b\w/g, l => l.toUpperCase());
   }
 }
+
+// ============================================================================
+// SPECIES NAME MAPPING - Bridge between server species_name and card system
+// ============================================================================
+
+/**
+ * Species name to CardId mapping
+ * Maps server species_name (kebab-case) to CardId (numeric)
+ * Based on the database migration mappings and starter deck service
+ */
+const SPECIES_NAME_TO_CARD_ID_MAP: Record<string, number> = {
+  // Core starter pack species (from starterDeckService.ts)
+  'oak-tree': 1,
+  'kelp': 2,
+  'giant-kelp': 2,
+  'grass': 3,
+  'reed-canary-grass': 3,
+  'rabbit': 4,
+  'european-rabbit': 4,
+  'sea-otter': 5,
+  'red-fox': 6,
+  'american-black-bear': 6,
+  'great-white-shark': 7,
+  'mycena-mushroom': 8,
+  'turkey-vulture': 9,
+  'deer-tick': 10,
+  'common-earthworm': 10,
+
+  // Additional mappings from migration files
+  'bear': 6,
+  'fox': 6,
+  'salmon': 5,
+  'sockeye-salmon': 5,
+  'butterfly': 34,
+  'monarch-butterfly': 34,
+  'deer': 47,
+  'whitetailed-deer': 47,
+  'wolf': 96,
+  'gray-wolf': 96,
+  'mouse': 73,
+  'house-mouse': 73,
+  'cat': 37,
+  'domestic-cat': 37,
+  'dog': 48,
+  'domestic-dog': 48
+};
+
+/**
+ * Reverse mapping: CardId to species name
+ */
+const CARD_ID_TO_SPECIES_NAME_MAP: Record<number, string> = Object.fromEntries(
+  Object.entries(SPECIES_NAME_TO_CARD_ID_MAP).map(([speciesName, cardId]) => [cardId, speciesName])
+);
+
+/**
+ * Convert species name (kebab-case) to CardId (numeric)
+ * Used when server sends species_name and frontend needs cardId
+ */
+export function speciesNameToCardId(speciesName: string): number | null {
+  return SPECIES_NAME_TO_CARD_ID_MAP[speciesName] || null;
+}
+
+/**
+ * Convert CardId (numeric) to species name (kebab-case)
+ * Used when frontend has cardId and needs to send species_name to server
+ */
+export function cardIdToSpeciesName(cardId: number): string | null {
+  return CARD_ID_TO_SPECIES_NAME_MAP[cardId] || null;
+}
+
+/**
+ * Extract species name from server card instance ID
+ * Handles format: "card-oak-tree-timestamp-random"
+ */
+export function extractSpeciesNameFromInstanceId(instanceId: string): string | null {
+  if (!instanceId.startsWith('card-')) {
+    return null;
+  }
+
+  const parts = instanceId.split('-');
+  if (parts.length < 3) {
+    return null;
+  }
+
+  // Find the timestamp part (first numeric part after 'card-')
+  const timestampIndex = parts.findIndex((part, index) => index > 0 && /^\d+$/.test(part));
+  if (timestampIndex <= 1) {
+    return null;
+  }
+
+  // Join the parts between 'card-' and timestamp
+  return parts.slice(1, timestampIndex).join('-');
+}
+
+/**
+ * Convert server card instance ID to CardId
+ * Combines extraction and mapping in one step
+ */
+export function instanceIdToCardId(instanceId: string): number | null {
+  const speciesName = extractSpeciesNameFromInstanceId(instanceId);
+  return speciesName ? speciesNameToCardId(speciesName) : null;
+}
+
+/**
+ * Validate that a species name exists in the mapping
+ */
+export function isValidSpeciesName(speciesName: string): boolean {
+  return speciesName in SPECIES_NAME_TO_CARD_ID_MAP;
+}
+
+/**
+ * Get all valid species names
+ */
+export function getAllSpeciesNames(): string[] {
+  return Object.keys(SPECIES_NAME_TO_CARD_ID_MAP);
+}
+
+/**
+ * Get species name to CardId mapping for debugging
+ */
+export function getSpeciesNameMapping(): Record<string, number> {
+  return { ...SPECIES_NAME_TO_CARD_ID_MAP };
+}

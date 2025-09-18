@@ -793,17 +793,17 @@ router.post('/',
         if (cardIds.length > 0) {
           const existingCards = await trx
             .selectFrom('cards')
-            .select('id')
-            .where('id', 'in', cardIds)
+            .select('card_id')
+            .where('card_id', 'in', cardIds)
             .execute();
 
-          const existingCardIds = new Set(existingCards.map(card => card.id));
+          const existingCardIds = new Set(existingCards.map(card => card.card_id).filter(Boolean));
 
           // Log any missing cards
           const missingCardIds = cardIds.filter(id => !existingCardIds.has(id));
           if (missingCardIds.length > 0) {
             console.error(`❌ Missing card IDs in database: ${missingCardIds.join(', ')}`);
-            console.error(`Available card IDs: ${Array.from(existingCardIds).sort((a, b) => a - b).join(', ')}`);
+            console.error(`Available card IDs: ${Array.from(existingCardIds).filter(id => id !== null).sort((a, b) => a! - b!).join(', ')}`);
           }
         }
 
@@ -816,11 +816,11 @@ router.post('/',
             continue;
           }
 
-          // Verify card exists in database before inserting
+          // Verify card exists in database before inserting (using card_id field)
           const cardExists = await trx
             .selectFrom('cards')
-            .select('id')
-            .where('id', '=', cardId)
+            .select('card_id')
+            .where('card_id', '=', cardId)
             .executeTakeFirst();
 
           if (!cardExists) {

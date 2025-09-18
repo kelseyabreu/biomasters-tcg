@@ -43,6 +43,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import OrganismRenderer from '../OrganismRenderer';
 
 import { unifiedGameService } from '../../services/UnifiedGameService';
+import { getGameSocket } from '../../services/gameSocket';
 import { AIDifficulty } from '../../../shared/ai/AIStrategy';
 import { AIStrategyFactory } from '../../../shared/ai/AIStrategyFactory';
 import PlayerStatsDisplay from '../ui/PlayerStatsDisplay';
@@ -57,16 +58,22 @@ import './PlayerCard.css';
 
 interface TCGBattleScreenProps {
   onExit?: () => void;
+  isOnlineMode?: boolean;
+  sessionId?: string;
 }
 
 interface TCGGameSettings {
-  gameMode: 'practice' | 'ranked' | 'tutorial';
+  gameMode: 'practice' | 'ranked' | 'tutorial' | 'online';
   difficulty: 'easy' | 'medium' | 'hard';
   playerCount: 2 | 4;
   timeLimit?: number;
 }
 
-export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
+export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
+  onExit,
+  isOnlineMode = false,
+  sessionId
+}) => {
 
   // Localization
   const localization = useLocalization();
@@ -115,9 +122,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
   // Get last drawn cards from store for animation
   const lastDrawnCards = useHybridGameStore((state) => state.battle.lastDrawnCards);
 
+  // Determine if this is an online game
+  const activeBattle = useHybridGameStore(state => state.activeBattle);
+  const isOnlineGame = isOnlineMode || activeBattle?.gameMode === 'online' || !!sessionId;
+  const gameSessionId = sessionId || activeBattle?.sessionId;
+
   // Game settings (could be moved to store if needed)
   const gameSettings: TCGGameSettings = {
-    gameMode: 'practice',
+    gameMode: isOnlineGame ? 'online' : 'practice',
     difficulty: 'easy',
     playerCount: 2
   };
@@ -127,41 +139,119 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     const initializeGame = async () => {
       console.log('🎮 [TCG] Initializing TCG Battle...');
       console.log('🎮 [TCG] Game settings:', gameSettings);
+      console.log('🎮 [TCG] Is online game:', isOnlineGame);
 
-      // Create players based on game settings
-      const players = [];
-      console.log('🎮 [TCG] Creating players for count:', gameSettings.playerCount);
+      if (isOnlineGame && gameSessionId) {
+        // Online game - join WebSocket session
+        console.log('🌐 [TCG] Joining online game session:', gameSessionId);
+        const gameSocket = getGameSocket();
 
-      if (gameSettings.playerCount === 2) {
-        players.push(
-          { id: 'human', name: 'Player' },
-          { id: 'ai', name: 'AI Opponent' }
-        );
-      } else if (gameSettings.playerCount === 4) {
-        players.push(
-          { id: 'human', name: 'Player' },
-          { id: 'ai1', name: 'AI Opponent 1' },
-          { id: 'ai2', name: 'AI Opponent 2' },
-          { id: 'ai3', name: 'AI Opponent 3' }
-        );
+        // Connect and wait for connection before joining session
+        await gameSocket.connect();
+
+        // Wait for connection to be established
+        const waitForConnection = () => {
+          return new Promise<void>((resolve, reject) => {
+            if (gameSocket.isConnected()) {
+              resolve();
+              return;
+            }
+
+            const timeout = setTimeout(() => {
+              gameSocket.off('connected', onConnected);
+              reject(new Error('WebSocket connection timeout'));
+            }, 5000);
+
+            const onConnected = () => {
+              clearTimeout(timeout);
+              gameSocket.off('connected', onConnected);
+              resolve();
+            };
+
+            gameSocket.on('connected', onConnected);
+          });
+        };
+
+        try {
+          await waitForConnection();
+          console.log('✅ [TCG] WebSocket connected, joining session...');
+          gameSocket.joinSession(gameSessionId);
+        } catch (error) {
+          console.error('❌ [TCG] Failed to connect to WebSocket:', error);
+          return;
+        }
+
+        // Listen for game state updates from server
+        const handleGameStateUpdate = (update: any) => {
+          console.log('🔄 [TCG] Received game_state_update:', update);
+          // Update the local game state with server state
+          if (update.data && update.data.session && update.data.session.gameState) {
+            console.log('🎮 [TCG] Updating game state from server:', update.data.session.gameState);
+            useHybridGameStore.setState((state) => ({
+              battle: {
+                ...state.battle,
+                tcgGameState: update.data.session.gameState,
+                isLoading: false // Stop loading when we receive game state
+              }
+            }));
+          }
+        };
+
+        const handleGameUpdate = (update: any) => {
+          console.log('🔄 [TCG] Received game_update:', update);
+          // Update the local game state with server state
+          useHybridGameStore.setState((state) => ({
+            battle: {
+              ...state.battle,
+              tcgGameState: update.gameState
+            }
+          }));
+        };
+
+        gameSocket.on('game_state_update', handleGameStateUpdate);
+        gameSocket.on('game_update', handleGameUpdate);
+
+        // Cleanup function
+        return () => {
+          gameSocket.off('game_state_update', handleGameStateUpdate);
+          gameSocket.off('game_update', handleGameUpdate);
+        };
+      } else {
+        // Offline game - create local game
+        const players = [];
+        console.log('🎮 [TCG] Creating players for count:', gameSettings.playerCount);
+
+        if (gameSettings.playerCount === 2) {
+          players.push(
+            { id: 'human', name: 'Player' },
+            { id: 'ai', name: 'AI Opponent' }
+          );
+        } else if (gameSettings.playerCount === 4) {
+          players.push(
+            { id: 'human', name: 'Player' },
+            { id: 'ai1', name: 'AI Opponent 1' },
+            { id: 'ai2', name: 'AI Opponent 2' },
+            { id: 'ai3', name: 'AI Opponent 3' }
+          );
+        }
+
+        console.log('🎮 [TCG] Players created:', players);
+
+        // Use store action to start the game
+        await startTCGGame('tcg-battle', players, {
+          startingHandSize: 5,
+          maxHandSize: 10
+        });
+
+        console.log('✅ [TCG] TCG Battle initialization requested');
       }
-
-      console.log('🎮 [TCG] Players created:', players);
-
-      // Use store action to start the game
-      await startTCGGame('tcg-battle', players, {
-        startingHandSize: 5,
-        maxHandSize: 10
-      });
-
-      console.log('✅ [TCG] TCG Battle initialization requested');
     };
 
     // Only initialize if we don't have a game state yet and there's no error
     if (!gameState && !isLoading && !error) {
       initializeGame();
     }
-  }, [gameState, isLoading, error, startTCGGame]);
+  }, [gameState, isLoading, error, startTCGGame, isOnlineGame, gameSessionId]);
 
   // Auto-ready AI players when game is in setup phase
   useEffect(() => {
@@ -579,22 +669,53 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
       return;
     }
 
-    // Use the selected card ID directly (it should already be the card ID)
-    // Use store action to play the card
-    await playCard(selectedHandCardId, { x, y });
+    if (isOnlineGame && gameSessionId) {
+      // Online game - send action via WebSocket
+      console.log('🌐 [TCG] Sending play card action via WebSocket');
+      const gameSocket = getGameSocket();
+      gameSocket.sendGameAction({
+        id: `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        type: 'place_card',
+        playerId: currentPlayer.id,
+        timestamp: Date.now(),
+        data: {
+          cardId: selectedHandCardId,
+          position: { x, y }
+        }
+      });
+    } else {
+      // Offline game - use store action
+      await playCard(selectedHandCardId, { x, y });
+    }
 
     console.log('✅ Card placement requested');
-  }, [gameState, selectedHandCardId, highlightedPositions, playCard]);
+  }, [gameState, selectedHandCardId, highlightedPositions, playCard, isOnlineGame, gameSessionId]);
 
   // Handle pass turn
   const handlePassTurn = useCallback(async () => {
     if (!gameState) return;
 
-    // Use store action to pass turn
-    await passTurn();
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer) return;
+
+    if (isOnlineGame && gameSessionId) {
+      // Online game - send action via WebSocket
+      console.log('🌐 [TCG] Sending pass turn action via WebSocket');
+      const gameSocket = getGameSocket();
+      gameSocket.sendGameAction({
+        id: `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        type: 'pass_turn',
+        playerId: currentPlayer.id,
+        timestamp: Date.now(),
+        data: {}
+      });
+    } else {
+      // Offline game - use store action
+      await passTurn();
+    }
 
     console.log('✅ Pass turn requested');
-  }, [gameState, passTurn]);
+  }, [gameState, passTurn, isOnlineGame, gameSessionId]);
 
   // Handle drop and draw three
   const handleDropAndDraw = useCallback(async () => {
@@ -610,40 +731,59 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
       return;
     }
 
-    // Execute the action and get the drawn cards directly
-    const result = await dropAndDrawThree(selectedHandCardId);
+    if (isOnlineGame && gameSessionId) {
+      // Online game - send action via WebSocket
+      console.log('🌐 [TCG] Sending drop and draw action via WebSocket');
+      const gameSocket = getGameSocket();
+      gameSocket.sendGameAction({
+        id: `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        type: 'drop_and_draw',
+        playerId: currentPlayer.id,
+        timestamp: Date.now(),
+        data: {
+          cardId: selectedHandCardId
+        }
+      });
 
-    // Clear the selected card since it's been discarded
-    selectHandCard(null);
-    setHighlightedPositions([]);
-
-    // Get drawn cards from the result or fallback to store
-    const actualDrawnCards = (result as any)?.drawnCards || lastDrawnCards;
-    console.log('🃏 [Animation] Using drawn cards from action result:', actualDrawnCards);
-
-    // Only run animation if we actually drew cards
-    if (actualDrawnCards && actualDrawnCards.length > 0) {
-      // Start drawing animation
-      setIsDrawingCards(true);
-      setDrawnCards([]);
-
-      // Animate cards being drawn one by one with actual card data
-      setTimeout(() => setDrawnCards([actualDrawnCards[0]]), 200);
-      if (actualDrawnCards.length > 1) {
-        setTimeout(() => setDrawnCards([actualDrawnCards[0], actualDrawnCards[1]]), 400);
-      }
-      if (actualDrawnCards.length > 2) {
-        setTimeout(() => setDrawnCards([actualDrawnCards[0], actualDrawnCards[1], actualDrawnCards[2]]), 600);
-      }
-
-      setTimeout(() => {
-        setIsDrawingCards(false);
-        setDrawnCards([]);
-      }, 1200);
+      // Clear the selected card since it's been discarded
+      selectHandCard(null);
+      setHighlightedPositions([]);
     } else {
-      console.log('🚨 [Animation] No cards drawn, skipping animation');
+      // Offline game - execute the action and get the drawn cards directly
+      const result = await dropAndDrawThree(selectedHandCardId);
+
+      // Clear the selected card since it's been discarded
+      selectHandCard(null);
+      setHighlightedPositions([]);
+
+      // Get drawn cards from the result or fallback to store
+      const actualDrawnCards = (result as any)?.drawnCards || lastDrawnCards;
+      console.log('🃏 [Animation] Using drawn cards from action result:', actualDrawnCards);
+
+      // Only run animation if we actually drew cards
+      if (actualDrawnCards && actualDrawnCards.length > 0) {
+        // Start drawing animation
+        setIsDrawingCards(true);
+        setDrawnCards([]);
+
+        // Animate cards being drawn one by one with actual card data
+        setTimeout(() => setDrawnCards([actualDrawnCards[0]]), 200);
+        if (actualDrawnCards.length > 1) {
+          setTimeout(() => setDrawnCards([actualDrawnCards[0], actualDrawnCards[1]]), 400);
+        }
+        if (actualDrawnCards.length > 2) {
+          setTimeout(() => setDrawnCards([actualDrawnCards[0], actualDrawnCards[1], actualDrawnCards[2]]), 600);
+        }
+
+        setTimeout(() => {
+          setIsDrawingCards(false);
+          setDrawnCards([]);
+        }, 1200);
+      } else {
+        console.log('🚨 [Animation] No cards drawn, skipping animation');
+      }
     }
-  }, [gameState, selectedHandCardId, dropAndDrawThree, lastDrawnCards]);
+  }, [gameState, selectedHandCardId, dropAndDrawThree, lastDrawnCards, isOnlineGame, gameSessionId]);
 
 
 
@@ -917,6 +1057,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({ onExit }) => {
     >
       <IonPage
         className="tcg-battle-screen"
+        data-testid="tcg-battle-screen"
         style={{
           '--background': currentTheme.colors.backgroundPrimary,
           '--color': currentTheme.colors.textPrimary,

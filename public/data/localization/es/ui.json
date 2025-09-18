@@ -233,5 +233,61 @@
     "TROPHIC_PARASITE": "Parásito",
     "TROPHIC_MUTUALIST": "Mutualista",
     "TROPHIC_DETRITIVORE": "Detritívoro"
+  },
+  "authentication": {
+    "UI_CREATE_ACCOUNT": "Crear Cuenta",
+    "UI_WELCOME_BACK": "Bienvenido de Vuelta",
+    "UI_JOIN_COMMUNITY": "Únete a la comunidad de Biomasters TCG",
+    "UI_SIGN_IN_ACCOUNT": "Inicia sesión en tu cuenta de Biomasters TCG",
+    "UI_DISPLAY_NAME": "Nombre de Usuario",
+    "UI_EMAIL": "Correo Electrónico",
+    "UI_PASSWORD": "Contraseña",
+    "UI_ENTER_DISPLAY_NAME": "Ingresa tu nombre de usuario",
+    "UI_ENTER_EMAIL": "Ingresa tu correo electrónico",
+    "UI_ENTER_PASSWORD": "Ingresa tu contraseña",
+    "UI_REMEMBER_ME": "Recordarme",
+    "UI_FORGOT_PASSWORD": "¿Olvidaste tu Contraseña?",
+    "UI_PLEASE_WAIT": "Por favor espera...",
+    "UI_SIGN_UP": "Registrarse",
+    "UI_SIGN_IN": "Iniciar Sesión",
+    "UI_CONTINUE_WITH_GOOGLE": "Continuar con Google",
+    "UI_CONTINUE_AS_GUEST": "Continuar como Invitado",
+    "UI_ALREADY_HAVE_ACCOUNT": "¿Ya tienes una cuenta?",
+    "UI_DONT_HAVE_ACCOUNT": "¿No tienes una cuenta?"
+  },
+  "authMessages": {
+    "UI_FILL_REQUIRED_FIELDS": "Por favor completa todos los campos requeridos",
+    "UI_ENTER_DISPLAY_NAME_MSG": "Por favor ingresa un nombre de usuario",
+    "UI_ACCOUNT_CREATED": "¡Cuenta creada! Por favor revisa tu correo para verificación.",
+    "UI_SIGNED_IN_SUCCESS": "¡Sesión iniciada exitosamente!",
+    "UI_CONVERTING_GUEST": "Convirtiendo tu cuenta de invitado...",
+    "UI_CONVERSION_SUCCESS": "✅ ¡Éxito! Tu cuenta ahora es segura. ¡Bienvenido, {username}!",
+    "UI_CONVERSION_FAILED": "Conversión fallida: {error}",
+    "UI_ACCOUNT_CREATED_MERGE_FAILED": "Cuenta creada pero falló la fusión de datos de invitado. Por favor contacta soporte.",
+    "UI_AUTH_FAILED": "Autenticación fallida",
+    "UI_GOOGLE_SIGNIN_SUCCESS": "¡Sesión iniciada con Google exitosamente!",
+    "UI_GOOGLE_SIGNIN_FAILED": "Inicio de sesión con Google falló",
+    "UI_GUEST_SIGNIN_SUCCESS": "¡Sesión iniciada como invitado!",
+    "UI_GUEST_SIGNIN_FAILED": "Inicio de sesión como invitado falló"
+  },
+  "guestRegistration": {
+    "UI_PROTECT_PROGRESS": "¡Protege tu Progreso!",
+    "UI_CREATE_FREE_ACCOUNT": "Crea una cuenta gratuita para guardar tu colección en todos los dispositivos",
+    "UI_DONT_LOSE_CARDS": "¡No Pierdas tus Cartas!",
+    "UI_SAVE_SPECIES_CREDITS": "Guarda tus {species} especies y {credits} eco-créditos",
+    "UI_SECURE_COLLECTION": "¡Asegura tu Colección!",
+    "UI_PROTECT_SPECIES_CARDS_CREDITS": "Protege {species} especies, {cards} cartas, y {credits} eco-créditos"
+  },
+  "battle": {
+    "UI_NOTICE": "Aviso",
+    "UI_FORFEIT_MATCH": "Abandonar Partida"
+  },
+  "collection": {
+    "UI_ENTER_DECK_NAME": "Ingresa nombre del mazo",
+    "UI_CONSERVATION_STATUS": "Estado de Conservación",
+    "UI_ALL_STATUS": "Todos los Estados",
+    "UI_TROPHIC_ROLE": "Rol Trófico",
+    "UI_ALL_ROLES": "Todos los Roles",
+    "UI_PRODUCER": "Productor"
   }
 }

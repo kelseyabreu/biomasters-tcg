@@ -132,12 +132,17 @@ export interface DecksTable {
   name: string;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
+  deck_type: Generated<number>;
+  is_public: Generated<boolean>;
+  is_claimable: Generated<boolean>;
+  cards: Generated<string>; // JSONB as string
 }
 
 export interface DeckCardsTable {
   id: Generated<string>;
   deck_id: string;
-  card_id: number; // Foreign key to cards table
+  card_id: number; // Foreign key to cards.id table (primary)
+  species_name?: string; // Legacy species name (optional, kept for transition)
   position_in_deck: number;
 }
 
@@ -211,10 +216,20 @@ export interface TrophicCategoriesTable {
 
 export interface KeywordsTable {
   id: Generated<number>;
+  keyword_id: number | null; // Integer game logic identifier (added in migration 030)
   keyword_name: string;
   keyword_type: string;
   description: string | null;
+
+  // Alternative naming (added in migration 030)
+  name: string | null; // Keyword name
+
+  // Versioning and sync fields (added in migration 030)
+  version: number | null; // Version for sync
+  is_active: boolean | null; // Whether keyword is active
+
   created_at: Generated<Date>;
+  updated_at: Generated<Date> | null;
 }
 
 export interface TriggersTable {
@@ -251,11 +266,22 @@ export interface ActionsTable {
 
 export interface AbilitiesTable {
   id: Generated<number>;
+  ability_id: number | null; // Integer game logic identifier (added in migration 030)
   ability_name: string;
   trigger_id: number;
   effects: string; // JSONB as string
   description: string | null;
+
+  // Localization fields (added in migration 030)
+  name_id: string | null; // Localization key for ability name
+  description_id: string | null; // Localization key for description
+
+  // Versioning and sync fields (added in migration 030)
+  version: number | null; // Version for sync
+  is_active: boolean | null; // Whether ability is active
+
   created_at: Generated<Date>;
+  updated_at: Generated<Date> | null;
 }
 
 export interface ConservationStatusesTable {
@@ -270,6 +296,7 @@ export interface ConservationStatusesTable {
 
 export interface CardsTable {
   id: Generated<number>;
+  card_id: number | null; // Integer game logic identifier (added in migration 030)
   card_name: string;
   trophic_level: number | null;
   trophic_category_id: number | null;
@@ -310,6 +337,22 @@ export interface CardsTable {
   // Reproduction
   offspring_count: number | null;
   gestation_days: number | null;
+
+  // Localization fields (added in migration 030)
+  name_id: string | null; // Enum-based card name ID for localization
+  scientific_name_id: string | null; // Enum-based scientific name ID for localization
+  description_id: string | null; // Enum-based description ID for localization
+  taxonomy_id: string | null; // Enum-based taxonomy ID for localization
+
+  // Game mechanics fields (added in migration 030)
+  domain: number | null; // Domain for game mechanics
+  keywords: number[] | null; // Array of keyword IDs
+  abilities: number[] | null; // Array of ability IDs
+  conservation_status: number | null; // Conservation status enum
+
+  // Versioning and sync fields (added in migration 030)
+  version: number | null; // Version for sync
+  is_active: boolean | null; // Whether card is active
 
   // Game metadata
   artwork_url: string | null;

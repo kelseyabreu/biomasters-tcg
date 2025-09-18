@@ -19,6 +19,7 @@ describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {
 
     // Create mock card database with proper CardData interface
     const createMockCard = (cardId: CardId, nameId: CardNameId, scientificNameId: ScientificNameId, trophicLevel: TrophicLevel) => ({
+      id: `550e8400-e29b-41d4-a716-44665544000${cardId}`,
       cardId: cardId,
       nameId,
       scientificNameId,

@@ -167,6 +167,7 @@ export function createMinimalTestGameData(): TestGameData {
 
   // Add a basic test card with all required properties
   cardsMap.set(1, {
+    id: "550e8400-e29b-41d4-a716-446655440001",
     cardId: 1,
     nameId: 'CARD_OAK_TREE' as any,
     scientificNameId: 'SCIENTIFIC_OAK_TREE' as any,

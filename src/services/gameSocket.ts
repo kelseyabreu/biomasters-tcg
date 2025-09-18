@@ -18,21 +18,57 @@ export class GameSocketService {
   private eventListeners: Map<string, Function[]> = new Map();
 
   constructor() {
-    this.initializeSocket();
+    // Initialize socket asynchronously
+    this.initializeSocket().catch(error => {
+      console.error('❌ [GameSocket] Failed to initialize socket:', error);
+    });
   }
 
-  private initializeSocket() {
-    const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+  private async initializeSocket() {
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
     const gameStore = useHybridGameStore.getState();
 
-    if (!gameStore.guestToken) {
-      console.warn('No auth token available for socket connection');
+    console.log('🔍 [GameSocket] Current game store state:', {
+      isAuthenticated: gameStore.isAuthenticated,
+      isGuestMode: gameStore.isGuestMode,
+      hasFirebaseUser: !!gameStore.firebaseUser,
+      hasGuestToken: !!gameStore.guestToken,
+      userId: gameStore.userId
+    });
+
+    // Get authentication token (Firebase or guest)
+    let authToken = null;
+
+    if (gameStore.firebaseUser) {
+      console.log('🔐 [GameSocket] Getting Firebase token for WebSocket...');
+      try {
+        authToken = await gameStore.firebaseUser.getIdToken();
+        console.log('✅ [GameSocket] Firebase token obtained for WebSocket:', {
+          tokenLength: authToken.length,
+          tokenPrefix: authToken.substring(0, 50) + '...'
+        });
+      } catch (error) {
+        console.error('❌ [GameSocket] Failed to get Firebase token:', error);
+        return;
+      }
+    } else if (gameStore.guestToken) {
+      console.log('🔐 [GameSocket] Using guest token for WebSocket...');
+      authToken = gameStore.guestToken;
+    } else {
+      console.warn('⚠️ [GameSocket] No auth token available for socket connection');
+      console.log('🔍 [GameSocket] Available auth options:', {
+        firebaseUser: !!gameStore.firebaseUser,
+        guestToken: !!gameStore.guestToken,
+        isAuthenticated: gameStore.isAuthenticated,
+        isGuestMode: gameStore.isGuestMode
+      });
       return;
     }
 
+    console.log('🔌 [GameSocket] Initializing WebSocket connection to:', serverUrl);
     this.socket = io(serverUrl, {
       auth: {
-        token: gameStore.guestToken
+        token: authToken
       },
       autoConnect: false
     });
@@ -87,12 +123,16 @@ export class GameSocketService {
     this.socket.on('match_found', (data: any) => {
       console.log('🎯 Match found:', data);
       this.emit('match_found', data);
+    });
 
-      // Update store using existing pattern
-      const gameStore = useHybridGameStore.getState();
-      if (data.sessionId) {
-        gameStore.acceptMatch(data.sessionId);
-      }
+    this.socket.on('match_accepted', (data: any) => {
+      console.log('✅ Match accepted:', data);
+      this.emit('match_accepted', data);
+    });
+
+    this.socket.on('game_starting', (data: any) => {
+      console.log('🎮 Game starting:', data);
+      this.emit('game_starting', data);
     });
 
     this.socket.on('matchmaking_cancelled', (data: any) => {
@@ -108,7 +148,6 @@ export class GameSocketService {
       const gameStore = useHybridGameStore.getState();
       if (gameStore.online.matchmaking.isSearching) {
         gameStore.online.matchmaking.queueTime = data.queueTime || 0;
-        gameStore.online.matchmaking.estimatedWait = data.estimatedWait || 0;
       }
     });
 
@@ -164,9 +203,20 @@ export class GameSocketService {
     });
   }
 
-  connect() {
+  async connect() {
+    // Reinitialize socket if needed (e.g., after authentication)
+    if (!this.socket) {
+      console.log('🔄 [GameSocket] Socket not initialized, initializing...');
+      await this.initializeSocket();
+    }
+
     if (this.socket && !this.socket.connected) {
+      console.log('🔌 [GameSocket] Connecting to WebSocket...');
       this.socket.connect();
+    } else if (this.socket && this.socket.connected) {
+      console.log('✅ [GameSocket] Already connected to WebSocket');
+    } else {
+      console.error('❌ [GameSocket] Failed to initialize socket for connection');
     }
   }
 

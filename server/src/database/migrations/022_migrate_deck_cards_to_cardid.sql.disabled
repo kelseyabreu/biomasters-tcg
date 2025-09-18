@@ -1,0 +1,162 @@
+-- Migration 022: Migrate deck_cards table from species_name to card_id
+-- This migration updates the deck_cards table to use numeric card_id instead of species_name
+
+-- Step 1: Add the new card_id column
+ALTER TABLE deck_cards ADD COLUMN IF NOT EXISTS card_id INTEGER;
+
+-- Step 2: Create a temporary mapping table for species_name -> card_id conversion
+CREATE TEMP TABLE species_to_cardid_mapping (
+    species_name VARCHAR(100) PRIMARY KEY,
+    card_id INTEGER NOT NULL
+);
+
+-- Step 3: Insert comprehensive mappings from cards.json
+INSERT INTO species_to_cardid_mapping (species_name, card_id) VALUES
+    -- Core starter pack species
+    ('oak-tree', 1),
+    ('giant-kelp', 2),
+    ('grass', 3),
+    ('reed-canary-grass', 3),
+    ('rabbit', 4),
+    ('european-rabbit', 4),
+    ('fox', 53),
+    ('red-fox', 53),
+    ('butterfly', 34),
+    ('monarch-butterfly', 34),
+    
+    -- Other cards from cards.json (CardId 1-97)
+    ('sockeye-salmon', 5),
+    ('american-black-bear', 6),
+    ('great-white-shark', 7),
+    ('mycena-mushroom', 8),
+    ('turkey-vulture', 9),
+    ('deer-tick', 10),
+    ('common-earthworm', 11),
+    ('dung-beetle', 12),
+    ('soil-bacteria', 13),
+    ('decomposer-mushroom', 14),
+    ('deep-sea-hydrothermal-vent-bacteria', 15),
+    ('iron-spring-bacteria', 16),
+    ('mycorrhizal-fungi', 17),
+    ('nitrogen-fixing-bacteria', 18),
+    ('pacific-krill', 19),
+    ('phytoplankton', 20),
+    ('zooplankton', 21),
+    ('european-honey-bee', 22),
+    ('volcanic-hydrogen-bacteria', 25),
+    ('nitrifying-soil-bacteria', 26),
+    ('sediment-chemosynthetic-bacteria', 27),
+    ('red-wood-ant', 28),
+    ('apple-tree', 29),
+    ('north-american-beaver', 30),
+    ('american-bison', 31),
+    ('wild-boar', 32),
+    ('bush-cherry', 33),
+    ('prickly-pear-cactus', 35),
+    ('dromedary-camel', 36),
+    ('domestic-cat', 37),
+    ('monarch-caterpillar', 38),
+    ('butterfly-egg', 39),
+    ('cherry-blossom', 40),
+    ('eastern-chipmunk', 41),
+    ('corn', 42),
+    ('domestic-cattle', 43),
+    ('house-cricket', 44),
+    ('common-daisy', 45),
+    ('english-oak', 46),
+    ('whitetailed-deer', 47),
+    ('domestic-dog', 48),
+    ('sacred-dung-beetle', 49),
+    ('eelgrass', 50),
+    ('african-bush-elephant', 51),
+    ('scots-pine', 52),
+    ('common-frog', 54),
+    ('giraffe', 55),
+    ('domestic-goat', 56),
+    ('mountain-gorilla', 57),
+    ('common-grape-vine', 58),
+    ('perennial-ryegrass', 59),
+    ('golden-hamster', 60),
+    ('european-hedgehog', 61),
+    ('spearmint', 62),
+    ('hibiscus', 63),
+    ('common-hippopotamus', 64),
+    ('domestic-horse', 65),
+    ('koala', 66),
+    ('leopard', 67),
+    ('african-lion', 68),
+    ('desert-lizard', 69),
+    ('llama', 70),
+    ('woolly-mammoth', 71),
+    ('common-chimpanzee', 72),
+    ('house-mouse', 73),
+    ('common-decomposer', 74),
+    ('bornean-orangutan', 75),
+    ('ox', 76),
+    ('coconut-palm', 77),
+    ('giant-panda', 78),
+    ('domestic-pig', 79),
+    ('common-raccoon', 80),
+    ('bighorn-sheep', 81),
+    ('white-rhinoceros', 82),
+    ('rice', 83),
+    ('sweet-briar', 84),
+    ('desert-hairy-scorpion', 85),
+    ('roman-snail', 86),
+    ('ball-python', 87),
+    ('garden-spider', 88),
+    ('garden-strawberry', 89),
+    ('common-sunflower', 90),
+    ('tiger', 91),
+    ('garden-tulip', 92),
+    ('green-sea-turtle', 93),
+    ('asian-water-buffalo', 94),
+    ('white-clover', 95),
+    ('gray-wolf', 96),
+    ('plains-zebra', 97);
+
+-- Step 4: Update existing deck_cards records to populate card_id from species_name
+UPDATE deck_cards 
+SET card_id = mapping.card_id
+FROM species_to_cardid_mapping mapping
+WHERE deck_cards.species_name = mapping.species_name
+AND deck_cards.card_id IS NULL;
+
+-- Step 5: Handle any unmapped species
+DO $$
+DECLARE
+    unmapped_count INTEGER;
+    unmapped_species TEXT[];
+BEGIN
+    SELECT COUNT(*), ARRAY_AGG(DISTINCT species_name)
+    INTO unmapped_count, unmapped_species
+    FROM deck_cards 
+    WHERE card_id IS NULL;
+    
+    IF unmapped_count > 0 THEN
+        RAISE NOTICE 'Found % unmapped species in deck_cards: %', unmapped_count, unmapped_species;
+        -- Delete records with unmapped species
+        DELETE FROM deck_cards WHERE card_id IS NULL;
+        RAISE NOTICE 'Deleted % deck_cards records with unmapped species', unmapped_count;
+    END IF;
+END $$;
+
+-- Step 6: Make card_id NOT NULL and add constraints
+ALTER TABLE deck_cards ALTER COLUMN card_id SET NOT NULL;
+
+-- Step 7: Add foreign key constraint to reference the cards table
+ALTER TABLE deck_cards ADD CONSTRAINT fk_deck_cards_card_id 
+    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE;
+
+-- Step 8: Update indexes
+CREATE INDEX IF NOT EXISTS idx_deck_cards_card_id ON deck_cards(card_id);
+
+-- Step 9: Keep species_name for transition period but make it optional
+ALTER TABLE deck_cards ALTER COLUMN species_name DROP NOT NULL;
+
+-- Step 10: Clean up temporary mapping table
+DROP TABLE species_to_cardid_mapping;
+
+-- Step 11: Add comments for documentation
+COMMENT ON COLUMN deck_cards.card_id IS 'Numeric card ID referencing cards.id table';
+COMMENT ON COLUMN deck_cards.species_name IS 'Legacy species name (kebab-case) - kept for transition period';

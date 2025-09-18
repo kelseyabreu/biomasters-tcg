@@ -34,7 +34,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         'decks.name',
         'decks.created_at',
         'decks.updated_at',
-        db.fn.count('deck_cards.card_id').as('card_count')
+        db.fn.count('deck_cards.species_name').as('card_count')
       ])
       .where('decks.user_id', '=', req.user.id)
       .groupBy(['decks.id', 'decks.name', 'decks.created_at', 'decks.updated_at'])
@@ -97,7 +97,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       .selectFrom('deck_cards')
       .select([
         'deck_cards.id as deck_card_id',
-        'deck_cards.card_id',
+        'deck_cards.species_name',
         'deck_cards.position_in_deck'
       ])
       .where('deck_cards.deck_id', '=', id)
@@ -199,6 +199,7 @@ router.post('/',
           const deckCardData: NewDeckCard = {
             deck_id: deck?.id?.toString() || '0',
             card_id: card.card_id,
+            species_name: card.species_name || `card-${card.card_id}`,
             position_in_deck: i + 1
           };
 

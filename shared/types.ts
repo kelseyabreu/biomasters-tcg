@@ -48,14 +48,19 @@ export interface Position {
 
 /**
  * Card data structure - uses enum-based localization IDs
+ * Implements dual-key system: id (UUID) + cardId (INTEGER)
  * Field names match JSON format (camelCase) for optimal performance
  */
 export interface CardData {
-  cardId: number;                    // Database primary key (replacing 'id')
+  id: string;                        // UUID database primary key
+  cardId: number;                    // Integer game logic identifier (enum-based)
   nameId: string;                    // Enum-based card name ID for localization
   scientificNameId: string;          // Enum-based scientific name ID for localization
   descriptionId: string;             // Enum-based description ID for localization
   taxonomyId: string;                // Enum-based taxonomy ID for localization
+
+  // Species name mapping (for backward compatibility)
+  speciesName?: string;              // Kebab-case species name (e.g., 'oak-tree', 'sea-otter')
 
   // Taxonomy for filtering (numeric enums for performance)
   taxoDomain: TaxoDomain;
@@ -113,6 +118,44 @@ export interface AbilityData {
   descriptionId: string;
   triggerId: TriggerId;
   effects: AbilityEffect[];
+}
+
+/**
+ * Enhanced Ability data structure - matches database schema
+ * Implements dual-key system: id (UUID) + abilityId (INTEGER)
+ * Includes versioning and sync fields for comprehensive ability management
+ */
+export interface EnhancedAbilityData {
+  id: string;                        // UUID database primary key
+  abilityId: number;                 // Integer game logic identifier (enum-based)
+  ability_name?: string;             // Legacy field (backward compatibility)
+  nameId?: string;                   // Localization key for ability name
+  descriptionId?: string;            // Localization key for description
+  triggerId: number;                 // Trigger type ID
+  effects: any;                      // JSONB effects data
+  description?: string;              // Legacy description field
+  version: number;                   // Version for sync
+  isActive: boolean;                 // Whether ability is active
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Keyword data structure - matches database schema
+ * Implements dual-key system: id (UUID) + keywordId (INTEGER)
+ * Includes versioning and sync fields for comprehensive keyword management
+ */
+export interface KeywordData {
+  id: string;                        // UUID database primary key
+  keywordId: number;                 // Integer game logic identifier (enum-based)
+  keyword_name?: string;             // Legacy field (backward compatibility)
+  name?: string;                     // Keyword name
+  keyword_type?: string;             // Keyword type (legacy)
+  description?: string;              // Keyword description (legacy)
+  version: number;                   // Version for sync
+  isActive: boolean;                 // Whether keyword is active
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 /**
@@ -206,6 +249,9 @@ export interface TCGPlayer extends BasePlayer {
   actionsRemaining: number;
   field: any[]; // Cards currently in play on the field
   playedSpecies: Set<string>; // Set of species nameIds that have been played
+  // Deck selection properties (online matches only)
+  selectedDeckId?: string; // ID of the deck chosen for this match
+  hasDeckSelected?: boolean; // Whether player has selected a deck
 }
 
 /**
@@ -249,6 +295,9 @@ export interface TCGGameState extends BaseGameState {
   grid: Map<string, CardInstance>; // Position key (x,y) -> CardInstance
   detritus: CardInstance[]; // Cards in the detritus zone
   gameSettings: TCGGameSettings;
+  // Deck selection phase properties (online matches only)
+  deckSelectionTimeRemaining?: number; // Seconds remaining for deck selection
+  deckSelectionDeadline?: number; // Timestamp when deck selection ends
 }
 
 /**
@@ -786,7 +835,7 @@ export interface UserSession {
 
 
 /**
- * User's card collection entry
+ * User's card collection entry (legacy)
  */
 export interface UserCard {
   id: string;
@@ -799,6 +848,23 @@ export interface UserCard {
   is_foil?: boolean;
   variant?: string;
   condition?: CardCondition;
+}
+
+/**
+ * Enhanced User Collection entry - matches new database schema
+ * Supports golden cards, flair levels, and sync metadata
+ */
+export interface UserCollection {
+  id: number;                        // BIGSERIAL primary key
+  user_id: string;                   // UUID reference to users
+  card_id: number;                   // Integer reference to cards.card_id
+  quantity: number;                  // Number of cards owned
+  is_golden: boolean;                // Whether card has golden variant
+  flair_level: number;               // Card flair/upgrade level (0-5)
+  acquired_via: string;              // How card was acquired
+  acquired_at: Date;                 // When card was first acquired
+  last_synced?: Date;                // Last sync timestamp
+  dirty: boolean;                    // Whether record needs sync to server
 }
 
 /**
@@ -821,6 +887,16 @@ export interface DeckCard {
   card_id: CardId;
   quantity: number;
   position_in_deck?: number;
+}
+
+/**
+ * Deck selection data for online matches
+ */
+export interface DeckSelectionData {
+  availableDecks: UserDeck[];
+  timeRemaining: number; // Seconds remaining for selection
+  deadline: number; // Timestamp when selection ends
+  playersReady: string[]; // Player IDs who have selected decks
 }
 
 /**

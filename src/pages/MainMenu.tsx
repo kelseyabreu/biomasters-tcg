@@ -100,8 +100,7 @@ const MainMenu: React.FC = () => {
       setToastMessage('Signing out...');
       setShowToast(true);
       await signOutUser();
-      setToastMessage('✅ Signed out successfully!');
-      setShowToast(true);
+      // Navigation is handled in the store, no need for success toast
     } catch (error) {
       console.error('Sign-out failed:', error);
       setToastMessage('❌ Failed to sign out. Please try again.');

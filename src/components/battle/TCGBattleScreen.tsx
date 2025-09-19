@@ -51,6 +51,8 @@ import EndGameModal from '../ui/EndGameModal';
 import EcosystemGrid from '../game/EcosystemGrid';
 import PlayerHandDisplay from './PlayerHandDisplay';
 import PlayerCard from './PlayerCard';
+import TurnTimer from './TurnTimer';
+import GameLog, { GameLogEntry } from './GameLog';
 import '../ui/PlayerStatsDisplay.css';
 import '../ui/EndGameModal.css';
 import './PlayerHandDisplay.css';
@@ -114,6 +116,11 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   // Card drawing animation state
   const [isDrawingCards, setIsDrawingCards] = React.useState(false);
   const [drawnCards, setDrawnCards] = React.useState<string[]>([]);
+
+  // Turn timer and game log state
+  const [gameLogEntries, setGameLogEntries] = React.useState<GameLogEntry[]>([]);
+  const [showGameLog, setShowGameLog] = React.useState(true);
+  const [turnStartTime, setTurnStartTime] = React.useState<number>(Date.now());
 
   // Player cards navigation state (moved to top level to follow Rules of Hooks)
   const [currentCardIndex, setCurrentCardIndex] = React.useState(0);
@@ -636,38 +643,126 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
       // Calculate valid positions using the unified game service
       try {
+        console.log('🎯 [VALID POSITIONS] Starting calculation for card:', {
+          cardInstanceId,
+          currentPlayer: currentPlayer.id,
+          gameId: gameState.gameId,
+          gamePhase: gameState.gamePhase,
+          turnPhase: gameState.turnPhase,
+          actionsRemaining: gameState.actionsRemaining
+        });
+
         // Extract card ID from instance ID (e.g., "1" from "1_0")
         const cardId = parseInt(cardInstanceId.split('_')[0]);
+        console.log('🎯 [VALID POSITIONS] Extracted cardId:', cardId, 'from instanceId:', cardInstanceId);
+
         const result = await unifiedGameService.getValidMoves(gameState.gameId, currentPlayer.id, cardId.toString());
 
+        console.log('🎯 [VALID POSITIONS] UnifiedGameService result:', {
+          isValid: result.isValid,
+          hasNewState: !!result.newState,
+          positions: result.newState?.positions,
+          errorMessage: result.errorMessage
+        });
+
         if (result.isValid && result.newState) {
-          console.log(`🎯 Valid positions for card ${cardInstanceId}:`, result.newState.positions);
+          console.log(`🎯 [VALID POSITIONS] Setting highlighted positions for card ${cardInstanceId}:`, result.newState.positions);
           setHighlightedPositions(result.newState.positions);
         } else {
-          console.warn('❌ Failed to get valid positions:', result.errorMessage);
+          console.warn('❌ [VALID POSITIONS] Failed to get valid positions:', result.errorMessage);
           setHighlightedPositions([]);
         }
       } catch (error) {
-        console.error('❌ Error calculating valid positions:', error);
+        console.error('❌ [VALID POSITIONS] Error calculating valid positions:', error);
         // Fallback to empty positions
         setHighlightedPositions([]);
       }
     }
   }, [gameState, selectedHandCardId, selectHandCard, setHighlightedPositions]);
 
-  // Handle card placement on grid
-  const handleGridPositionClick = useCallback(async (x: number, y: number) => {
-    if (!gameState || !selectedHandCardId) return;
+  // Add game log entry helper
+  const addGameLogEntry = useCallback((action: GameLogEntry['action'], details: GameLogEntry['details'] = {}) => {
+    if (!gameState) return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    if (!currentPlayer) return;
+    const entry: GameLogEntry = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: Date.now(),
+      turn: gameState.turnNumber,
+      playerId: currentPlayer?.id || 'unknown',
+      playerName: currentPlayer?.name || 'Unknown Player',
+      action,
+      details
+    };
+
+    console.log('📝 [GAME LOG] Adding entry:', entry);
+    setGameLogEntries(prev => [...prev, entry]);
+  }, [gameState]);
+
+  // Handle turn timer timeout
+  const handleTurnTimeout = useCallback(async () => {
+    if (!gameState) return;
+
+    console.log('⏰ [TURN TIMER] Turn timeout - auto-passing turn');
+    addGameLogEntry('pass_turn', { reason: 'Time expired' });
+
+    try {
+      await passTurn();
+    } catch (error) {
+      console.error('❌ [TURN TIMER] Error auto-passing turn:', error);
+    }
+  }, [gameState, passTurn, addGameLogEntry]);
+
+  // Track turn changes to reset timer and log game start
+  useEffect(() => {
+    if (gameState?.gamePhase === GamePhase.PLAYING) {
+      setTurnStartTime(Date.now());
+      console.log('⏰ [TURN TIMER] Turn changed, resetting timer');
+
+      // Add game start entry if this is the first turn
+      if (gameState.turnNumber === 1 && gameLogEntries.length === 0) {
+        addGameLogEntry('game_start');
+      }
+    }
+  }, [gameState?.currentPlayerIndex, gameState?.gamePhase, gameState?.turnNumber, gameLogEntries.length, addGameLogEntry]);
+
+  // Handle card placement on grid
+  const handleGridPositionClick = useCallback(async (x: number, y: number) => {
+    console.log('🎯 [GRID CLICK] Grid position clicked:', {
+      x, y,
+      hasGameState: !!gameState,
+      selectedHandCardId,
+      highlightedPositionsCount: highlightedPositions.length,
+      highlightedPositions: highlightedPositions
+    });
+
+    if (!gameState || !selectedHandCardId) {
+      console.log('❌ [GRID CLICK] Missing gameState or selectedHandCardId');
+      return;
+    }
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer) {
+      console.log('❌ [GRID CLICK] No current player found');
+      return;
+    }
 
     // Check if position is valid
     const isValidPosition = highlightedPositions.some(pos => pos.x === x && pos.y === y);
+    console.log('🎯 [GRID CLICK] Position validation:', {
+      x, y,
+      isValidPosition,
+      highlightedPositions: highlightedPositions.map(pos => ({ x: pos.x, y: pos.y }))
+    });
+
     if (!isValidPosition) {
-      console.log('❌ Invalid position for this card');
+      console.log('❌ [GRID CLICK] Invalid position for this card');
       return;
     }
+
+    // Get card data for logging
+    const cardData = getCardData(selectedHandCardId);
+    const cardName = cardData ? getLocalizedCardName(cardData) : `Card ${selectedHandCardId}`;
 
     if (isOnlineGame && gameSessionId) {
       // Online game - send action via WebSocket
@@ -687,6 +782,13 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       // Offline game - use store action
       await playCard(selectedHandCardId, { x, y });
     }
+
+    // Add to game log
+    addGameLogEntry('play_card', {
+      cardName,
+      cardId: selectedHandCardId,
+      position: { x, y }
+    });
 
     console.log('✅ Card placement requested');
   }, [gameState, selectedHandCardId, highlightedPositions, playCard, isOnlineGame, gameSessionId]);
@@ -714,8 +816,11 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       await passTurn();
     }
 
+    // Add to game log
+    addGameLogEntry('pass_turn');
+
     console.log('✅ Pass turn requested');
-  }, [gameState, passTurn, isOnlineGame, gameSessionId]);
+  }, [gameState, passTurn, isOnlineGame, gameSessionId, addGameLogEntry]);
 
   // Handle drop and draw three
   const handleDropAndDraw = useCallback(async () => {
@@ -1589,6 +1694,24 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           onClose={handleCloseEndGameModal}
           onPlayAgain={handlePlayAgain}
           onReturnHome={handleReturnHome}
+        />
+
+        {/* Turn Timer */}
+        {gameState && gameState.gamePhase === GamePhase.PLAYING && (
+          <TurnTimer
+            isActive={true}
+            duration={60} // 1 minute
+            onTimeUp={handleTurnTimeout}
+            playerName={gameState.players[gameState.currentPlayerIndex]?.name || 'Player'}
+            actionsRemaining={gameState.actionsRemaining}
+          />
+        )}
+
+        {/* Game Log */}
+        <GameLog
+          entries={gameLogEntries}
+          isVisible={showGameLog}
+          onToggleVisibility={() => setShowGameLog(!showGameLog)}
         />
       </IonContent>
     </IonPage>

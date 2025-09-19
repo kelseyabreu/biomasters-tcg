@@ -55,7 +55,11 @@ export interface UnifiedBattleInterfaceProps {
   // UI state
   selectedHandCardId: string | null;
   highlightedPositions: any[];
-  
+
+  // Timer state
+  timeRemaining?: number;
+  isTimerWarning?: boolean;
+
   // Callbacks
   onExit?: () => void;
   onPlayerReady?: () => Promise<void>;
@@ -81,6 +85,8 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
   error,
   selectedHandCardId,
   highlightedPositions,
+  timeRemaining = 60,
+  isTimerWarning = false,
   onExit,
   onPlayerReady,
   onGridPositionClick,
@@ -99,13 +105,13 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
 
   // Timer state for deck selection countdown
-  const [timeRemaining, setTimeRemaining] = useState<number>(60);
+  const [deckSelectionTimeRemaining, setDeckSelectionTimeRemaining] = useState<number>(60);
 
   // Countdown timer effect for deck selection
   useEffect(() => {
     if (gameState.gamePhase === GamePhase.SETUP && isOnlineMode) {
       const timer = setInterval(() => {
-        setTimeRemaining(prev => {
+        setDeckSelectionTimeRemaining(prev => {
           if (prev <= 1) {
             clearInterval(timer);
             return 0;
@@ -214,6 +220,30 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
     );
   }
 
+  // Helper function to get proper player display name
+  const getPlayerDisplayName = (player: any, isCurrentPlayer: boolean) => {
+    if (isCurrentPlayer) {
+      return 'You';
+    }
+
+    // If player name looks like "Player XXXX", try to get a better name
+    if (player.name && player.name.startsWith('Player ')) {
+      // Try to get actual username from session data
+      const sessionData = (window as any).sessionData || {};
+      const sessionPlayers = sessionData.players || [];
+      const sessionPlayer = sessionPlayers.find((p: any) => p.playerId === player.id || p.id === player.id);
+
+      if (sessionPlayer && sessionPlayer.username) {
+        return sessionPlayer.username;
+      }
+
+      // Fallback to "Opponent" for cleaner display
+      return 'Opponent';
+    }
+
+    return player.name || 'Unknown Player';
+  };
+
   // Debug: Log the actual game state structure
   console.log('🔍 [UnifiedBattleInterface] Game state structure:', {
     gamePhase: gameState.gamePhase,
@@ -238,6 +268,27 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
     directGridKeys: gameState.grid && typeof gameState.grid === 'object' ? Object.keys(gameState.grid) : 'N/A',
     engineGridKeys: gameState.engineState?.grid && typeof gameState.engineState.grid === 'object' ? Object.keys(gameState.engineState.grid) : 'N/A'
   });
+
+  // 🔍 DEBUG: Full game state structure
+  console.log('🔍 [FULL GAME STATE] Complete structure:', {
+    topLevelKeys: Object.keys(gameState),
+    engineStateKeys: gameState.engineState ? Object.keys(gameState.engineState) : 'No engine state',
+    gamePhase: gameState.gamePhase,
+    engineGamePhase: gameState.engineState?.gamePhase,
+    currentPlayerIndex: gameState.currentPlayerIndex,
+    engineCurrentPlayerIndex: gameState.engineState?.currentPlayerIndex,
+    hasPlayers: !!gameState.players,
+    playersCount: gameState.players?.length,
+    enginePlayersCount: gameState.engineState?.players?.length,
+    turnNumber: gameState.turnNumber,
+    engineTurnNumber: gameState.engineState?.turnNumber
+  });
+
+  // 🔍 DEBUG: Check if game needs to be started
+  if (gameState.engineState?.gamePhase === 'setup' && gameState.gamePhase === 'playing') {
+    console.log('🚨 [GAME STATE MISMATCH] Engine is in setup but game is playing - this might be why grid is empty');
+    console.log('🔧 [GAME STATE MISMATCH] Possible solutions: 1) Start the engine game, 2) Wait for engine to catch up');
+  }
 
   const grid = gameState.grid || gameState.engineState?.grid;
   if (grid) {
@@ -410,10 +461,10 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                 </IonCardHeader>
                 <IonCardContent>
                   <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                    <h3>Time Remaining: {timeRemaining}s</h3>
+                    <h3>Time Remaining: {deckSelectionTimeRemaining}s</h3>
                     <IonProgressBar
-                      value={(60 - timeRemaining) / 60}
-                      color={timeRemaining <= 10 ? "danger" : "primary"}
+                      value={(60 - deckSelectionTimeRemaining) / 60}
+                      color={deckSelectionTimeRemaining <= 10 ? "danger" : "primary"}
                     />
                   </div>
 
@@ -725,6 +776,19 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                           handSize: playerWithCards.hand?.length
                         }
                       });
+
+                      // Fix player name - use actual username instead of ID-based name
+                      if (playerWithCards.name && playerWithCards.name.startsWith('Player ')) {
+                        // Try to get the actual username from session data or use a better fallback
+                        const actualUsername = sessionData.currentUser?.username ||
+                                             sessionData.currentUser?.name ||
+                                             'You';
+                        playerWithCards.name = actualUsername;
+                        console.log('👤 [USER MAPPING] Fixed player name:', {
+                          oldName: playerWithCards.name,
+                          newName: actualUsername
+                        });
+                      }
                     }
                   }
 
@@ -750,11 +814,15 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                     <PlayerCard
                       key={player.id}
                       player={player}
-                      title={`${player.name} (${player.hand?.length || 0})`}
+                      title={`${getPlayerDisplayName(player, isCurrentPlayerCard)} (${player.hand?.length || 0})`}
                       cardVisibilityMode={isCurrentPlayerCard ? 'full' : 'hidden'}
                       isCurrentPlayer={isCurrentPlayerCard}
                       isPlayerTurn={isPlayerTurnCard}
                       actionsRemaining={playerActionsRemaining}
+                      showTimer={isPlayerTurnCard && (gameState.gamePhase === GamePhase.PLAYING || gameState.engineState?.gamePhase === GamePhase.PLAYING)}
+                      timerDuration={60}
+                      timeRemaining={timeRemaining}
+                      isTimerWarning={isTimerWarning}
                       selectedCardId={isCurrentPlayerCard ? selectedHandCardId : null}
                       onCardSelect={isCurrentPlayerCard ? onHandCardSelect : undefined}
                       isInteractive={isCurrentPlayerCard}

@@ -19,10 +19,12 @@ import {
 import { arrowBack } from 'ionicons/icons';
 
 import UnifiedBattleInterface from '../components/battle/UnifiedBattleInterface';
+import TurnTimer from '../components/battle/TurnTimer';
+import GameLog, { GameLogEntry } from '../components/battle/GameLog';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { gameApi } from '../services/apiClient';
 import { TCGGameState, TCGGameSettings } from '@shared/types';
-import { ApiStatus } from '@shared/enums';
+import { ApiStatus, GamePhase } from '@shared/enums';
 import { Card } from '../types';
 import { getGameSocket } from '../services/gameSocket';
 import { useLocalization } from '../contexts/LocalizationContext';
@@ -58,6 +60,13 @@ export const BattlePage: React.FC = () => {
   // Additional state for unified battle interface
   const [selectedHandCardId, setSelectedHandCardId] = useState<string | null>(null);
   const [highlightedPositions, setHighlightedPositions] = useState<any[]>([]);
+
+  // Turn timer and game log state
+  const [gameLogEntries, setGameLogEntries] = useState<GameLogEntry[]>([]);
+  const [showGameLog, setShowGameLog] = useState(true);
+  const [turnStartTime, setTurnStartTime] = useState<number>(Date.now());
+  const [timeRemaining, setTimeRemaining] = useState<number>(60);
+  const [isTimerWarning, setIsTimerWarning] = useState<boolean>(false);
 
   // Get species cards from store
   const allSpeciesCards = useHybridGameStore(state => state.allSpeciesCards);
@@ -126,6 +135,15 @@ export const BattlePage: React.FC = () => {
 
         // Store session data globally for player mapping
         (window as any).sessionData = response.data.data;
+
+        // 🔧 Check for game phase mismatch
+        if (response.data.data.gameState?.gamePhase === 'playing' &&
+            response.data.data.gameState?.engineState?.gamePhase === 'setup') {
+          console.log('🚨 [GAME PHASE MISMATCH] Detected phase mismatch!');
+          console.log('🔧 [GAME PHASE MISMATCH] Game is in playing phase but engine is in setup phase');
+          console.log('🔧 [GAME PHASE MISMATCH] This explains why the grid is empty and HOME cards are missing');
+          console.log('🔧 [GAME PHASE MISMATCH] The server needs to sync the engine state with the game state');
+        }
 
         // Update the store with the active battle info
         useHybridGameStore.setState(() => ({
@@ -318,13 +336,112 @@ export const BattlePage: React.FC = () => {
   };
 
   const handleGridPositionClick = (x: number, y: number) => {
-    console.log('🎮 [BattlePage] Grid position clicked:', { x, y });
-    // TODO: Send move to server via WebSocket
+    console.log('🎯 [GRID CLICK] Grid position clicked:', {
+      x, y,
+      hasGameState: !!sessionData?.gameState,
+      selectedHandCardId,
+      highlightedPositionsCount: highlightedPositions.length,
+      highlightedPositions: highlightedPositions
+    });
+
+    if (!sessionData?.gameState || !selectedHandCardId) {
+      console.log('❌ [GRID CLICK] Missing gameState or selectedHandCardId');
+      return;
+    }
+
+    const currentPlayer = sessionData.gameState.players[sessionData.gameState.currentPlayerIndex];
+    if (!currentPlayer) {
+      console.log('❌ [GRID CLICK] No current player found');
+      return;
+    }
+
+    // Check if position is valid
+    const isValidPosition = highlightedPositions.some(pos => pos.x === x && pos.y === y);
+    console.log('🎯 [GRID CLICK] Position validation:', {
+      x, y,
+      isValidPosition,
+      highlightedPositions: highlightedPositions.map(pos => ({ x: pos.x, y: pos.y }))
+    });
+
+    if (!isValidPosition) {
+      console.log('❌ [GRID CLICK] Invalid position for this card');
+      return;
+    }
+
+    // Get card data for logging
+    const cardData = getCardData(selectedHandCardId);
+    const cardName = cardData ? (cardData.name || 'Unknown') : `Card ${selectedHandCardId}`;
+
+    // Send action via WebSocket
+    const gameSocket = getGameSocket();
+    gameSocket.sendGameAction({
+      id: `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+      type: 'place_card',
+      playerId: currentPlayer.id,
+      timestamp: Date.now(),
+      data: {
+        cardId: selectedHandCardId,
+        position: { x, y }
+      }
+    });
+
+    // Add to game log
+    addGameLogEntry('play_card', {
+      cardName,
+      cardId: selectedHandCardId,
+      position: { x, y }
+    });
+
+    console.log(`✅ Card ${selectedHandCardId} placement requested at (${x}, ${y})`);
   };
 
-  const handleHandCardSelect = (cardId: string) => {
-    console.log('🎮 [BattlePage] Hand card selected:', cardId);
+  const handleHandCardSelect = async (cardId: string) => {
+    console.log('🎯 [CARD SELECTION] Hand card selected:', {
+      cardId,
+      hasGameState: !!sessionData?.gameState,
+      gamePhase: sessionData?.gameState?.gamePhase,
+      currentPlayerIndex: sessionData?.gameState?.currentPlayerIndex
+    });
+
     setSelectedHandCardId(cardId);
+
+    if (!sessionData?.gameState || !cardId) {
+      console.log('❌ [CARD SELECTION] Missing gameState or cardId');
+      setHighlightedPositions([]);
+      return;
+    }
+
+    const currentPlayer = sessionData.gameState.players[sessionData.gameState.currentPlayerIndex];
+    if (!currentPlayer) {
+      console.log('❌ [CARD SELECTION] No current player found');
+      setHighlightedPositions([]);
+      return;
+    }
+
+    // Calculate valid positions for the selected card
+    try {
+      console.log('🎯 [VALID POSITIONS] Starting calculation for card:', {
+        cardId,
+        currentPlayer: currentPlayer.id,
+        gamePhase: sessionData.gameState.gamePhase
+      });
+
+      // For now, let's add some basic valid positions as a test
+      // In a real implementation, this would call the game engine
+      const testValidPositions = [
+        { x: 4, y: 4 },
+        { x: 4, y: 5 },
+        { x: 5, y: 4 },
+        { x: 5, y: 5 }
+      ];
+
+      console.log('🎯 [VALID POSITIONS] Setting test positions:', testValidPositions);
+      setHighlightedPositions(testValidPositions);
+
+    } catch (error) {
+      console.error('❌ [VALID POSITIONS] Error calculating valid positions:', error);
+      setHighlightedPositions([]);
+    }
   };
 
   const handleDropAndDraw = () => {
@@ -334,7 +451,24 @@ export const BattlePage: React.FC = () => {
 
   const handlePassTurn = () => {
     console.log('🎮 [BattlePage] Pass turn action');
-    // TODO: Send action to server via WebSocket
+
+    if (!sessionData?.gameState) return;
+
+    const currentPlayer = sessionData.gameState.players[sessionData.gameState.currentPlayerIndex];
+    if (!currentPlayer) return;
+
+    // Send pass turn action via WebSocket
+    const gameSocket = getGameSocket();
+    gameSocket.sendGameAction({
+      id: `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+      type: 'pass_turn',
+      playerId: currentPlayer.id,
+      timestamp: Date.now(),
+      data: {}
+    });
+
+    // Add to game log
+    addGameLogEntry('pass_turn');
   };
 
   // Helper function to get card data
@@ -475,6 +609,89 @@ export const BattlePage: React.FC = () => {
     };
   };
 
+  // Add game log entry helper
+  const addGameLogEntry = React.useCallback((action: GameLogEntry['action'], details: GameLogEntry['details'] = {}) => {
+    if (!sessionData?.gameState) return;
+
+    const currentPlayer = sessionData.gameState.players[sessionData.gameState.currentPlayerIndex];
+    const entry: GameLogEntry = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: Date.now(),
+      turn: sessionData.gameState.turnNumber,
+      playerId: currentPlayer?.id || 'unknown',
+      playerName: currentPlayer?.name || 'Unknown Player',
+      action,
+      details
+    };
+
+    console.log('📝 [GAME LOG] Adding entry:', entry);
+    setGameLogEntries(prev => [...prev, entry]);
+  }, [sessionData?.gameState]);
+
+  // Handle turn timer timeout
+  const handleTurnTimeout = React.useCallback(async () => {
+    if (!sessionData?.gameState) return;
+
+    console.log('⏰ [TURN TIMER] Turn timeout - auto-passing turn');
+    addGameLogEntry('pass_turn', { reason: 'Time expired' });
+
+    // Send pass turn action via WebSocket
+    const gameSocket = getGameSocket();
+    const currentPlayer = sessionData.gameState.players[sessionData.gameState.currentPlayerIndex];
+    if (currentPlayer) {
+      gameSocket.sendGameAction({
+        id: `action_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        type: 'pass_turn',
+        playerId: currentPlayer.id,
+        timestamp: Date.now(),
+        data: {}
+      });
+    }
+  }, [sessionData?.gameState, addGameLogEntry]);
+
+  // Track turn changes to reset timer
+  React.useEffect(() => {
+    if (sessionData?.gameState?.gamePhase === GamePhase.PLAYING) {
+      setTurnStartTime(Date.now());
+      setTimeRemaining(60);
+      setIsTimerWarning(false);
+      console.log('⏰ [TURN TIMER] Turn changed, resetting timer');
+
+      // Add game start entry if this is the first turn
+      if (sessionData.gameState.turnNumber === 1 && gameLogEntries.length === 0) {
+        addGameLogEntry('game_start');
+      }
+    }
+  }, [sessionData?.gameState?.currentPlayerIndex, sessionData?.gameState?.gamePhase, sessionData?.gameState?.turnNumber, gameLogEntries.length, addGameLogEntry]);
+
+  // Timer countdown logic
+  React.useEffect(() => {
+    if (sessionData?.gameState?.gamePhase !== GamePhase.PLAYING || timeRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        const newTime = prev - 1;
+
+        // Warning when 15 seconds or less
+        if (newTime <= 15 && !isTimerWarning) {
+          setIsTimerWarning(true);
+          console.log(`⚠️ [TURN TIMER] Warning: ${newTime} seconds remaining`);
+        }
+
+        // Time's up
+        if (newTime <= 0) {
+          console.log(`⏰ [TURN TIMER] Time's up!`);
+          handleTurnTimeout();
+          return 0;
+        }
+
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sessionData?.gameState?.gamePhase, timeRemaining, isTimerWarning, handleTurnTimeout]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -544,25 +761,47 @@ export const BattlePage: React.FC = () => {
 
   // Success state - render the unified battle interface
   return (
-    <UnifiedBattleInterface
-      gameState={sessionData.gameState}
-      isLoading={false}
-      error={null}
-      selectedHandCardId={selectedHandCardId}
-      highlightedPositions={highlightedPositions}
-      onExit={handleBackToLobby}
-      onPlayerReady={handlePlayerReady}
-      onGridPositionClick={handleGridPositionClick}
-      onHandCardSelect={handleHandCardSelect}
-      onDropAndDraw={handleDropAndDraw}
-      onPassTurn={handlePassTurn}
-      allSpeciesCards={allSpeciesCards}
-      getCardData={getCardData}
-      isOnlineMode={true}
-      title={`Online Battle - ${sessionData.gameMode}`}
-      sessionId={sessionId}
-      userId={userId || undefined}
-    />
+    <>
+      <UnifiedBattleInterface
+        gameState={sessionData.gameState}
+        isLoading={false}
+        error={null}
+        selectedHandCardId={selectedHandCardId}
+        highlightedPositions={highlightedPositions}
+        timeRemaining={timeRemaining}
+        isTimerWarning={isTimerWarning}
+        onExit={handleBackToLobby}
+        onPlayerReady={handlePlayerReady}
+        onGridPositionClick={handleGridPositionClick}
+        onHandCardSelect={handleHandCardSelect}
+        onDropAndDraw={handleDropAndDraw}
+        onPassTurn={handlePassTurn}
+        allSpeciesCards={allSpeciesCards}
+        getCardData={getCardData}
+        isOnlineMode={true}
+        title={`Online Battle - ${sessionData.gameMode}`}
+        sessionId={sessionId}
+        userId={userId || undefined}
+      />
+
+      {/* Turn Timer */}
+      {sessionData.gameState && sessionData.gameState.gamePhase === GamePhase.PLAYING && (
+        <TurnTimer
+          isActive={true}
+          duration={60} // 1 minute
+          onTimeUp={handleTurnTimeout}
+          playerName={sessionData.gameState.players[sessionData.gameState.currentPlayerIndex]?.name || 'Player'}
+          actionsRemaining={sessionData.gameState.actionsRemaining}
+        />
+      )}
+
+      {/* Game Log */}
+      <GameLog
+        entries={gameLogEntries}
+        isVisible={showGameLog}
+        onToggleVisibility={() => setShowGameLog(!showGameLog)}
+      />
+    </>
   );
 };
 

@@ -19,7 +19,7 @@ const router = Router();
 /**
  * Verify action chain integrity by checking previous_hash
  */
-async function verifyActionChain(actions: OfflineAction[], deviceId: string, keyVersion: number, userId: string): Promise<boolean> {
+async function verifyActionChain(actions: OfflineAction[], deviceId: string, _keyVersion: number, userId: string): Promise<boolean> {
   try {
     // Get count of successful actions for this device to determine expected nonce start
     const actionCount = await db
@@ -80,7 +80,7 @@ async function verifyActionChain(actions: OfflineAction[], deviceId: string, key
         timestamp: previousAction.timestamp,
         api_version: previousAction.api_version,
         device_id: deviceId,
-        key_version: keyVersion,
+        key_version: previousAction.key_version, // Use the action's original key version, not current device key version
         previous_hash: previousAction.previous_hash,
         nonce: previousAction.nonce
       })).digest('hex');
@@ -143,7 +143,7 @@ function verifyActionSignature(action: Omit<OfflineAction, 'signature'>, signatu
       timestamp: action.timestamp,
       api_version: action.api_version,
       device_id: deviceId,
-      key_version: action.key_version || keyVersion || 1,
+      key_version: action.key_version, // Use the action's original key version
       previous_hash: action.previous_hash,
       nonce: action.nonce
     });
@@ -212,7 +212,7 @@ async function getHistoricalSigningKeys(deviceId: string, userId: string, keyVer
     .select(['signing_key', 'key_version'])
     .where('device_id', '=', deviceId)
     .where('user_id', '=', userId)
-    .where('key_version', 'in', keyVersions)
+    .where('key_version', 'in', keyVersions.map(v => BigInt(v)))
     .execute();
 
   const keyMap = new Map<number, string>();
@@ -220,7 +220,7 @@ async function getHistoricalSigningKeys(deviceId: string, userId: string, keyVer
   for (const key of keys) {
     try {
       const decryptedKey = decrypt(key.signing_key);
-      keyMap.set(key.key_version, decryptedKey);
+      keyMap.set(Number(key.key_version), decryptedKey);
     } catch (error) {
       console.error('❌ [KEY-LOOKUP] Failed to decrypt signing key:', {
         keyVersion: key.key_version,
@@ -501,7 +501,7 @@ router.post('/',
 
       // Verify action chain integrity before processing individual actions
       if (sortedActions.length > 0) {
-        const isValidChain = await verifyActionChain(sortedActions, device_id, currentSigningKey.key_version || 1, userId);
+        const isValidChain = await verifyActionChain(sortedActions, device_id, Number(currentSigningKey.key_version) || 1, userId);
         if (!isValidChain) {
           console.log('❌ Action chain integrity verification failed');
           res.status(409).json({
@@ -583,7 +583,7 @@ router.post('/',
             continue;
           }
 
-          const signingKeyForAction = historicalKeys.get(actionKeyVersion);
+          const signingKeyForAction = historicalKeys.get(Number(actionKeyVersion));
 
           if (!signingKeyForAction) {
             console.log('❌ [SIGNATURE-VERIFY] No signing key found for version:', {
@@ -602,7 +602,7 @@ router.post('/',
               keyVersion: actionKeyVersion
             });
 
-            isValidSignature = verifyActionSignature(actionPayload, signature, signingKeyForAction, device_id, actionKeyVersion);
+            isValidSignature = verifyActionSignature(actionPayload, signature, signingKeyForAction, device_id, Number(actionKeyVersion));
           }
 
           if (!isValidSignature) {
@@ -914,11 +914,39 @@ router.post('/',
         expires_at: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
       };
 
+      // Add all successfully processed actions to discarded_actions so client removes them from queue
+      const allProcessedActions = sortedActions.map(action => action.id);
+      const finalDiscardedActions = [...new Set([...discardedActions, ...allProcessedActions])];
+
+      console.log('🔄 [SYNC] Preparing response with discarded actions:', {
+        originalDiscardedCount: discardedActions.length,
+        allProcessedCount: allProcessedActions.length,
+        finalDiscardedCount: finalDiscardedActions.length,
+        finalDiscardedActions: finalDiscardedActions
+      });
+
+      // Get existing action chain for this device to help client rebuild queue
+      const existingActions = await db
+        .selectFrom('sync_actions_log')
+        .select(['action_id', 'action_type', 'processed_at'])
+        .where('user_id', '=', userId)
+        .where('device_id', '=', device_id)
+        .where('status', '=', 'success')
+        .orderBy('processed_at', 'asc')
+        .execute();
+
+      console.log('🔗 [SYNC-RESPONSE] Including existing action chain:', {
+        deviceId: device_id,
+        existingActionsCount: existingActions.length,
+        actionIds: existingActions.map(a => a.action_id)
+      });
+
       // Prepare response
       const response = {
         success: true,
         conflicts: conflicts.length > 0 ? conflicts : undefined,
-        discarded_actions: discardedActions.length > 0 ? discardedActions : undefined,
+        discarded_actions: finalDiscardedActions.length > 0 ? finalDiscardedActions : undefined,
+        existing_action_chain: existingActions.length > 0 ? existingActions : undefined,
         new_server_state: {
           cards_owned: Object.fromEntries(
             Array.from(serverCollection.entries()).map(([species, card]) => [

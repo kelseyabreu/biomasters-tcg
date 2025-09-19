@@ -90,9 +90,14 @@ export const PlayerHandDisplay: React.FC<PlayerHandDisplayProps> = ({
     
     // Hidden mode: show card back
     if (visibilityMode === 'hidden') {
+      // Create unique key for hidden cards to avoid React key conflicts
+      const uniqueKey = typeof cardInstanceId === 'object' ?
+        `hidden-${index}-${Date.now()}` :
+        `${cardInstanceId}-hidden-${index}`;
+
       return (
         <motion.div
-          key={cardInstanceId}
+          key={uniqueKey}
           className="hand-card card-back"
           initial={{ opacity: 0, rotateY: 180 }}
           animate={{ opacity: 1, rotateY: 0 }}

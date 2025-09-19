@@ -19,7 +19,8 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonChip
+  IonChip,
+  IonProgressBar
 } from '@ionic/react';
 import {
   eyeOutline,
@@ -58,7 +59,13 @@ interface PlayerCardProps {
   isCurrentPlayer?: boolean;
   isPlayerTurn?: boolean;
   actionsRemaining?: number;
-  
+
+  // Timer settings
+  showTimer?: boolean;
+  timerDuration?: number; // in seconds
+  timeRemaining?: number; // in seconds
+  isTimerWarning?: boolean;
+
   // Interaction settings
   isCollapsible?: boolean;
   isExpanded?: boolean;
@@ -92,6 +99,10 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   isCurrentPlayer = false,
   isPlayerTurn = false,
   actionsRemaining = 0,
+  showTimer = false,
+  timerDuration = 60,
+  timeRemaining = 60,
+  isTimerWarning = false,
   isCollapsible = false,
   isExpanded = true,
   onToggleExpansion,
@@ -158,7 +169,17 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3, delay: index * 0.02 }}
-        onClick={() => isInteractive && onCardSelect?.(instanceId)}
+        onClick={() => {
+          console.log('🎯 [PlayerCard] Card clicked:', {
+            instanceId,
+            isInteractive,
+            hasOnCardSelect: !!onCardSelect,
+            playerName: player.name
+          });
+          if (isInteractive && onCardSelect) {
+            onCardSelect(instanceId);
+          }
+        }}
       >
         {displayMode === 'back' ? (
           // Card back
@@ -211,6 +232,18 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
   const displayTitle = title || `${player.name} (${player.hand?.length || 0})`;
   const cardSize = compact ? 'small' : 'normal';
 
+  // Debug timer display
+  if (showTimer || isPlayerTurn) {
+    console.log('⏰ [PlayerCard] Timer debug:', {
+      playerName: player.name,
+      showTimer,
+      isPlayerTurn,
+      timeRemaining,
+      isTimerWarning,
+      shouldShowTimer: showTimer && isPlayerTurn
+    });
+  }
+
   return (
     <motion.div
       className={`player-card-container ${className} ${cardSize}`}
@@ -234,6 +267,11 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
               <IonCardTitle className="player-name">
                 <IonIcon icon={person} />
                 {displayTitle}
+                {showTimer && isPlayerTurn && (
+                  <span className={`timer-display ${isTimerWarning ? 'warning' : ''}`}>
+                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </span>
+                )}
               </IonCardTitle>
               
               {/* Player Status Indicators - Removed TURN and YOU chips for cleaner design */}
@@ -299,6 +337,17 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Turn Timer Progress Bar */}
+          {showTimer && isPlayerTurn && (
+            <div className="timer-progress-container">
+              <IonProgressBar
+                value={timeRemaining / timerDuration}
+                color={isTimerWarning ? 'danger' : 'primary'}
+                className="turn-timer-progress"
+              />
+            </div>
+          )}
         </IonCardHeader>
 
         <AnimatePresence>

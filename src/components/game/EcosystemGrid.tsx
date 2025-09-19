@@ -107,6 +107,35 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
 
   // Generate grid cells
   const renderGridCells = () => {
+    // Debug: Log grid state for HOME card investigation
+    const gridEntries = [];
+    if (grid instanceof Map) {
+      gridEntries.push(...Array.from(grid.entries()).map(([key, card]) => ({
+        position: key,
+        cardId: card.cardId,
+        instanceId: card.instanceId,
+        isHOME: card.isHOME,
+        ownerId: card.ownerId
+      })));
+    } else if (typeof grid === 'object' && grid) {
+      gridEntries.push(...Object.entries(grid).map(([key, card]: [string, any]) => ({
+        position: key,
+        cardId: card.cardId,
+        instanceId: card.instanceId,
+        isHOME: card.isHOME,
+        ownerId: card.ownerId
+      })));
+    }
+
+    console.log('🏠 [EcosystemGrid] Rendering grid cells:', {
+      gridWidth: gameSettings.gridWidth,
+      gridHeight: gameSettings.gridHeight,
+      gridType: grid instanceof Map ? 'Map' : typeof grid,
+      gridSize: grid instanceof Map ? grid.size : (grid ? Object.keys(grid).length : 0),
+      gridEntries: gridEntries,
+      homeCards: gridEntries.filter(entry => entry.isHOME)
+    });
+
     return Array.from({ length: gameSettings.gridHeight }, (_, y) =>
       Array.from({ length: gameSettings.gridWidth }, (_, x) => {
         const positionKey = `${x},${y}`;
@@ -123,8 +152,18 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
           }
         }
 
+        // Debug: Log HOME card detection
+        if (card?.isHOME) {
+          console.log(`🏠 [EcosystemGrid] Found HOME card at ${positionKey}:`, {
+            instanceId: card.instanceId,
+            cardId: card.cardId,
+            ownerId: card.ownerId,
+            position: card.position
+          });
+        }
+
         const isValidPosition = highlightedPositions.some((pos: any) => pos.x === x && pos.y === y);
-        
+
         return (
           <GridCell
             key={positionKey}

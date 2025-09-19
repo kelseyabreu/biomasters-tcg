@@ -71,6 +71,11 @@ export interface SyncResponse {
     server_state: any;
   }>;
   discarded_actions?: string[];
+  existing_action_chain?: Array<{
+    action_id: string;
+    action_type: string;
+    processed_at: string;
+  }>;
   new_server_state: {
     cards_owned: Record<number, any>;
     eco_credits: number;
@@ -92,6 +97,7 @@ class OfflineSecurityService {
   private signingKeyVersion: number = 0;
   private deviceId: string;
   private currentUserId: string | null = null;
+  private serverProcessedActionsCount: number = 0;
 
   constructor() {
     this.deviceId = this.getOrCreateDeviceId();
@@ -217,6 +223,15 @@ class OfflineSecurityService {
   }
 
   /**
+   * Update the count of actions already processed by the server
+   * This is used for correct nonce calculation
+   */
+  updateServerProcessedActionsCount(count: number): void {
+    this.serverProcessedActionsCount = count;
+    console.log(`🔗 Updated server processed actions count: ${count}`);
+  }
+
+  /**
    * Update collection's signing key version and recalculate hash
    */
   private updateCollectionSigningKeyVersion(newVersion: number): void {
@@ -290,16 +305,34 @@ class OfflineSecurityService {
     const collectionState = this.getCollectionState();
     const actionQueue = collectionState.action_queue;
 
+    console.log('🔗 [HASH] getLastActionHash called:', {
+      queueLength: actionQueue.length,
+      deviceId: this.deviceId,
+      signingKeyVersion: this.signingKeyVersion,
+      timestamp: new Date().toISOString()
+    });
+
     if (actionQueue.length === 0) {
+      console.log('🔗 [HASH] No actions in queue, returning null (first action)');
       return null; // First action in chain
     }
 
     // Get the last action and create its hash (without signature)
     const lastAction = actionQueue[actionQueue.length - 1];
-    const lastActionPayload = JSON.stringify({
+    console.log('🔗 [HASH] Last action details:', {
       id: lastAction.id,
       action: lastAction.action,
       cardId: lastAction.cardId,
+      nonce: lastAction.nonce,
+      key_version: lastAction.key_version,
+      timestamp: lastAction.timestamp,
+      previous_hash: lastAction.previous_hash ? lastAction.previous_hash.substring(0, 16) + '...' : null
+    });
+
+    const lastActionPayload = JSON.stringify({
+      id: lastAction.id,
+      action: lastAction.action,
+      card_id: lastAction.cardId, // Use card_id to match server expectations
       quantity: lastAction.quantity,
       pack_type: lastAction.pack_type,
       deck_id: lastAction.deck_id,
@@ -311,14 +344,32 @@ class OfflineSecurityService {
       nonce: lastAction.nonce
     });
 
-    return CryptoJS.SHA256(lastActionPayload).toString();
+    const hash = CryptoJS.SHA256(lastActionPayload).toString();
+    console.log('🔗 [HASH] Calculated hash:', {
+      payloadLength: lastActionPayload.length,
+      hash: hash.substring(0, 16) + '...',
+      fullHash: hash
+    });
+
+    return hash;
   }
 
   /**
    * Generate HMAC signature for action with chain integrity
    */
   private signAction(action: Omit<OfflineAction, 'signature' | 'previous_hash' | 'nonce' | 'key_version'>): { signature: string; previous_hash: string | null; nonce: number; key_version: number } {
+    console.log('✍️ [SIGN] signAction called:', {
+      actionId: action.id,
+      actionType: action.action,
+      cardId: action.cardId,
+      timestamp: action.timestamp,
+      deviceId: this.deviceId,
+      currentKeyVersion: this.signingKeyVersion,
+      hasSigningKey: !!this.signingKey
+    });
+
     if (!this.signingKey) {
+      console.error('❌ [SIGN] No signing key available');
       throw new Error('Signing key not initialized. User must be authenticated to perform offline actions.');
     }
 
@@ -326,12 +377,23 @@ class OfflineSecurityService {
     const previousHash = this.getLastActionHash();
 
     // Generate a nonce (sequential number for this device/user combination)
+    // Account for actions already processed by the server
     const collectionState = this.getCollectionState();
-    const nonce = collectionState.action_queue.length + 1;
+    const localQueueLength = collectionState.action_queue.length;
+    const nonce = this.serverProcessedActionsCount + localQueueLength + 1;
+
+    console.log('✍️ [SIGN] Action chain details:', {
+      previousHash: previousHash ? previousHash.substring(0, 16) + '...' : null,
+      nonce: nonce,
+      localQueueLength: localQueueLength,
+      serverProcessedCount: this.serverProcessedActionsCount,
+      calculation: `${this.serverProcessedActionsCount} + ${localQueueLength} + 1 = ${nonce}`
+    });
 
     // Capture the key version at the time of signing - ensure it's valid (> 0)
     const keyVersion = this.signingKeyVersion;
     if (!keyVersion || keyVersion === 0) {
+      console.error('❌ [SIGN] Invalid key version:', keyVersion);
       throw new Error('Invalid signing key version. Please wait for server authentication to complete.');
     }
 
@@ -340,7 +402,7 @@ class OfflineSecurityService {
     const payload = JSON.stringify({
       id: action.id,
       action: action.action,
-      cardId: action.cardId,
+      card_id: action.cardId, // Use card_id to match server expectations
       quantity: action.quantity,
       pack_type: action.pack_type,
       deck_id: action.deck_id,
@@ -352,7 +414,20 @@ class OfflineSecurityService {
       nonce: nonce
     });
 
+    console.log('✍️ [SIGN] Payload details:', {
+      payloadLength: payload.length,
+      keyVersion: keyVersion,
+      deviceId: this.deviceId,
+      nonce: nonce,
+      previousHash: previousHash ? previousHash.substring(0, 16) + '...' : null
+    });
+
     const signature = CryptoJS.HmacSHA256(payload, this.signingKey).toString();
+    console.log('✍️ [SIGN] Signature generated:', {
+      signatureLength: signature.length,
+      signature: signature.substring(0, 16) + '...',
+      fullSignature: signature
+    });
 
     return { signature, previous_hash: previousHash, nonce, key_version: keyVersion };
   }
@@ -377,6 +452,15 @@ class OfflineSecurityService {
     action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened',
     data: Partial<OfflineAction>
   ): OfflineAction {
+    console.log('🏭 [CREATE] createAction called:', {
+      actionType: action,
+      data: data,
+      deviceId: this.deviceId,
+      signingKeyVersion: this.signingKeyVersion,
+      hasSigningKey: !!this.signingKey,
+      timestamp: new Date().toISOString()
+    });
+
     const actionData: Omit<OfflineAction, 'signature' | 'previous_hash' | 'nonce' | 'key_version'> = {
       id: this.generateSecureId(),
       action,
@@ -385,15 +469,35 @@ class OfflineSecurityService {
       ...data
     };
 
+    console.log('🏭 [CREATE] Action data prepared:', {
+      id: actionData.id,
+      action: actionData.action,
+      cardId: actionData.cardId,
+      pack_type: actionData.pack_type,
+      timestamp: actionData.timestamp,
+      api_version: actionData.api_version
+    });
+
     const { signature, previous_hash, nonce, key_version } = this.signAction(actionData);
 
-    return {
+    const finalAction = {
       ...actionData,
       signature,
       previous_hash,
       nonce,
       key_version
     };
+
+    console.log('🏭 [CREATE] Final action created:', {
+      id: finalAction.id,
+      action: finalAction.action,
+      nonce: finalAction.nonce,
+      key_version: finalAction.key_version,
+      signature: finalAction.signature ? finalAction.signature.substring(0, 16) + '...' : null,
+      previous_hash: finalAction.previous_hash ? finalAction.previous_hash.substring(0, 16) + '...' : null
+    });
+
+    return finalAction;
   }
 
   /**
@@ -531,10 +635,31 @@ class OfflineSecurityService {
    * Add action to queue and update collection
    */
   addActionToQueue(collection: OfflineCollection, action: OfflineAction): OfflineCollection {
+    console.log('📝 [QUEUE] addActionToQueue called:', {
+      actionId: action.id,
+      actionType: action.action,
+      cardId: action.cardId,
+      nonce: action.nonce,
+      keyVersion: action.key_version,
+      currentQueueLength: collection.action_queue.length,
+      timestamp: new Date().toISOString()
+    });
+
     const updatedCollection = {
       ...collection,
       action_queue: [...collection.action_queue, action]
     };
+
+    console.log('📝 [QUEUE] Action added to queue:', {
+      newQueueLength: updatedCollection.action_queue.length,
+      actionDetails: {
+        id: action.id,
+        action: action.action,
+        nonce: action.nonce,
+        signature: action.signature ? action.signature.substring(0, 16) + '...' : null,
+        previous_hash: action.previous_hash ? action.previous_hash.substring(0, 16) + '...' : null
+      }
+    });
 
     // Update collection hash - exclude the collection_hash field from the calculation
     const collectionForHashing = {
@@ -551,6 +676,11 @@ class OfflineSecurityService {
     };
 
     updatedCollection.collection_hash = this.calculateCollectionHash(collectionForHashing);
+
+    console.log('📝 [QUEUE] Collection hash updated:', {
+      newHash: updatedCollection.collection_hash ? updatedCollection.collection_hash.substring(0, 16) + '...' : null,
+      queueLength: updatedCollection.action_queue.length
+    });
 
     return updatedCollection;
   }

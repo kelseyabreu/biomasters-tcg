@@ -6,6 +6,7 @@ import { db } from '../database/kysely';
 import { setCustomUserClaims } from '../config/firebase';
 import { CacheManager } from '../config/redis';
 import { sql } from 'kysely';
+import admin from 'firebase-admin';
 
 const router = Router();
 
@@ -461,6 +462,254 @@ router.post('/users/:userId/currency', requireAdmin, strictRateLimiter, asyncHan
 }));
 
 /**
+ * POST /api/admin/grant-currency
+ * Grant currency to a user by username, email, or ID
+ */
+router.post('/grant-currency', requireAdmin, strictRateLimiter, asyncHandler(async (req, res) => {
+  const { identifier, gems, coins, dust, eco_credits, reason } = req.body;
+
+  if (!identifier) {
+    return res.status(400).json({
+      error: 'MISSING_IDENTIFIER',
+      message: 'Username, email, or user ID is required'
+    });
+  }
+
+  if (!reason || reason.length < 5) {
+    return res.status(400).json({
+      error: 'INVALID_REASON',
+      message: 'Reason must be at least 5 characters long'
+    });
+  }
+
+  // Helper function to check if string is a valid UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
+  // Find user by identifier (username, email, or ID)
+  let user = await db
+    .selectFrom('users')
+    .select(['id', 'username', 'email', 'gems', 'coins', 'dust', 'eco_credits'])
+    .where((eb) => {
+      const conditions = [
+        eb('username', '=', identifier),
+        eb('email', '=', identifier)
+      ];
+
+      // Only add ID condition if identifier is a valid UUID
+      if (isValidUUID(identifier)) {
+        conditions.push(eb('id', '=', identifier));
+      }
+
+      return eb.or(conditions);
+    })
+    .executeTakeFirst();
+
+  if (!user) {
+    return res.status(404).json({
+      error: 'USER_NOT_FOUND',
+      message: 'No user found with that username, email, or ID'
+    });
+  }
+
+  // Update currency using Kysely transaction
+  const result = await db.transaction().execute(async (trx) => {
+    // Update user currency
+    const updatedUser = await trx
+      .updateTable('users')
+      .set({
+        gems: (user!.gems || 0) + (gems || 0),
+        coins: (user!.coins || 0) + (coins || 0),
+        dust: (user!.dust || 0) + (dust || 0),
+        eco_credits: (user!.eco_credits || 0) + (eco_credits || 0),
+        updated_at: new Date()
+      })
+      .where('id', '=', user!.id)
+      .returning(['id', 'username', 'email', 'gems', 'coins', 'dust', 'eco_credits'])
+      .executeTakeFirst();
+
+    // Log admin action
+    console.log(`💰 [ADMIN] Currency granted to user ${user!.username} (${user!.id}):`, {
+      gems: gems || 0,
+      coins: coins || 0,
+      dust: dust || 0,
+      eco_credits: eco_credits || 0,
+      reason,
+      adminId: req.user?.id
+    });
+
+    return updatedUser;
+  });
+
+  res.json({
+    message: 'Currency granted successfully',
+    user: result
+  });
+  return;
+}));
+
+/**
+ * POST /api/admin/grant-card
+ * Grant cards to a user by username, email, or ID
+ */
+router.post('/grant-card', requireAdmin, strictRateLimiter, asyncHandler(async (req, res) => {
+  const { identifier, cardId, quantity = 1, reason } = req.body;
+
+  if (!identifier) {
+    return res.status(400).json({
+      error: 'MISSING_IDENTIFIER',
+      message: 'Username, email, or user ID is required'
+    });
+  }
+
+  if (!cardId) {
+    return res.status(400).json({
+      error: 'MISSING_CARD_ID',
+      message: 'Card ID is required'
+    });
+  }
+
+  if (!reason || reason.length < 5) {
+    return res.status(400).json({
+      error: 'INVALID_REASON',
+      message: 'Reason must be at least 5 characters long'
+    });
+  }
+
+  if (quantity < 1 || quantity > 100) {
+    return res.status(400).json({
+      error: 'INVALID_QUANTITY',
+      message: 'Quantity must be between 1 and 100'
+    });
+  }
+
+  // Helper function to check if string is a valid UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
+  // Find user by identifier (username, email, or ID)
+  let user = await db
+    .selectFrom('users')
+    .select(['id', 'username', 'email'])
+    .where((eb) => {
+      const conditions = [
+        eb('username', '=', identifier),
+        eb('email', '=', identifier)
+      ];
+
+      // Only add ID condition if identifier is a valid UUID
+      if (isValidUUID(identifier)) {
+        conditions.push(eb('id', '=', identifier));
+      }
+
+      return eb.or(conditions);
+    })
+    .executeTakeFirst();
+
+  if (!user) {
+    return res.status(404).json({
+      error: 'USER_NOT_FOUND',
+      message: 'No user found with that username, email, or ID'
+    });
+  }
+
+  // Verify card exists
+  const card = await db
+    .selectFrom('cards')
+    .select(['id', 'common_name', 'scientific_name'])
+    .where('id', '=', cardId)
+    .executeTakeFirst();
+
+  if (!card) {
+    return res.status(404).json({
+      error: 'CARD_NOT_FOUND',
+      message: `Card with ID ${cardId} not found`
+    });
+  }
+
+  // Grant card using transaction
+  const result = await db.transaction().execute(async (trx) => {
+    // Check if user already has this card
+    const existingCard = await trx
+      .selectFrom('user_cards')
+      .select(['quantity'])
+      .where('user_id', '=', user!.id)
+      .where('card_id', '=', cardId)
+      .executeTakeFirst();
+
+    let updatedCard;
+    if (existingCard) {
+      // Update existing card quantity
+      updatedCard = await trx
+        .updateTable('user_cards')
+        .set({
+          quantity: existingCard.quantity + quantity,
+          last_acquired_at: new Date()
+        })
+        .where('user_id', '=', user!.id)
+        .where('card_id', '=', cardId)
+        .returning(['user_id', 'card_id', 'quantity'])
+        .executeTakeFirst();
+    } else {
+      // Insert new card
+      updatedCard = await trx
+        .insertInto('user_cards')
+        .values({
+          user_id: user!.id,
+          card_id: cardId,
+          quantity: quantity,
+          acquisition_method: 'reward' as const,
+          acquired_at: new Date(),
+          first_acquired_at: new Date(),
+          last_acquired_at: new Date()
+        })
+        .returning(['user_id', 'card_id', 'quantity'])
+        .executeTakeFirst();
+    }
+
+    // Update user's cards_collected count
+    await trx
+      .updateTable('users')
+      .set({
+        cards_collected: sql`COALESCE((SELECT SUM(quantity) FROM user_cards WHERE user_id = ${user!.id}), 0)`,
+        updated_at: new Date()
+      })
+      .where('id', '=', user!.id)
+      .execute();
+
+    // Log admin action
+    console.log(`🃏 [ADMIN] Card granted to user ${user!.username} (${user!.id}):`, {
+      cardId,
+      cardName: card!.common_name || card!.scientific_name,
+      quantity,
+      reason,
+      adminId: req.user?.id
+    });
+
+    return updatedCard;
+  });
+
+  res.json({
+    message: 'Card granted successfully',
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email
+    },
+    card: {
+      id: card.id,
+      name: card.common_name || card.scientific_name,
+      quantity: result?.quantity
+    }
+  });
+  return;
+}));
+
+/**
  * GET /api/admin/analytics
  * Get basic analytics data
  */
@@ -822,42 +1071,37 @@ router.get('/check-template-deck-cards', asyncHandler(async (_req, res) => {
   try {
     console.log('🔧 [ADMIN] Checking template deck cards...');
 
+    // Get template decks (system user decks)
     const templateDecks = await db
       .selectFrom('decks')
-      .select(['id', 'name', 'cards'])
-      .where('id', 'in', ['f438ca2d-ba05-4d3b-8dcd-61c9d022d6a4', 'fe31875e-a6de-4d03-b87c-7161ddbeab6f'])
+      .select(['id', 'name'])
+      .where('user_id', '=', '00000000-0000-0000-0000-000000000000') // System user
+      .where('is_claimable', '=', true)
       .execute();
 
-    console.log('🔧 [ADMIN] Template deck cards:', templateDecks.map(deck => ({
+    console.log('🔧 [ADMIN] Found template decks:', templateDecks.map(deck => ({
       id: deck.id,
-      name: deck.name,
-      hasCards: !!deck.cards,
-      cardsType: typeof deck.cards,
-      cardsLength: deck.cards ? (typeof deck.cards === 'string' ? deck.cards.length : JSON.stringify(deck.cards).length) : 0
+      name: deck.name
     })));
 
-    // Calculate card counts
-    const deckDetails = templateDecks.map(deck => {
-      let cardCount = 0;
-      let cards = null;
+    // Calculate card counts from deck_cards table
+    const deckDetails = [];
+    for (const deck of templateDecks) {
+      const cardCountResult = await db
+        .selectFrom('deck_cards')
+        .select(db.fn.count('id').as('card_count'))
+        .where('deck_id', '=', deck.id)
+        .executeTakeFirst();
 
-      if (deck.cards) {
-        try {
-          cards = typeof deck.cards === 'string' ? JSON.parse(deck.cards) : deck.cards;
-          cardCount = Array.isArray(cards) ? cards.reduce((sum: number, card: any) => sum + (card.quantity || 0), 0) : 0;
-        } catch (error) {
-          console.error(`🔧 [ADMIN] Error parsing cards for deck ${deck.id}:`, error);
-        }
-      }
+      const cardCount = Number(cardCountResult?.card_count || 0);
 
-      return {
+      deckDetails.push({
         id: deck.id,
         name: deck.name,
         cardCount,
-        hasCards: !!deck.cards,
         cardsValid: cardCount >= 20
-      };
-    });
+      });
+    }
 
     console.log('🔧 [ADMIN] Deck card counts:', deckDetails);
 
@@ -885,98 +1129,150 @@ router.get('/fix-template-deck-cards', asyncHandler(async (_req, res) => {
   try {
     console.log('🔧 [ADMIN] Fixing template deck cards...');
 
-    // Forest Ecosystem Starter deck cards (21 cards)
-    const forestCards = [
-      { cardId: 1, quantity: 3 },   // Oak Tree
-      { cardId: 2, quantity: 3 },   // Pine Tree
-      { cardId: 3, quantity: 2 },   // Maple Tree
-      { cardId: 4, quantity: 3 },   // Deer
-      { cardId: 5, quantity: 2 },   // Rabbit
-      { cardId: 6, quantity: 2 },   // Squirrel
-      { cardId: 7, quantity: 2 },   // Wolf
-      { cardId: 8, quantity: 2 },   // Bear
-      { cardId: 9, quantity: 2 }    // Fox
-    ];
+    // This endpoint now verifies that deck_cards table has the correct data
+    // The actual deck cards should be populated by migrations, not JSONB
 
-    // Ocean Ecosystem Starter deck cards (21 cards)
-    const oceanCards = [
-      { cardId: 10, quantity: 3 },  // Kelp
-      { cardId: 11, quantity: 3 },  // Seaweed
-      { cardId: 12, quantity: 2 },  // Coral
-      { cardId: 13, quantity: 3 },  // Fish
-      { cardId: 14, quantity: 2 },  // Dolphin
-      { cardId: 15, quantity: 2 },  // Whale
-      { cardId: 16, quantity: 2 },  // Shark
-      { cardId: 17, quantity: 2 },  // Octopus
-      { cardId: 18, quantity: 2 }   // Sea Turtle
-    ];
-
-    // Update Forest Ecosystem Starter
-    await db
-      .updateTable('decks')
-      .set({
-        cards: JSON.stringify(forestCards)
-      })
-      .where('id', '=', 'fe31875e-a6de-4d03-b87c-7161ddbeab6f')
-      .execute();
-
-    // Update Ocean Ecosystem Starter
-    await db
-      .updateTable('decks')
-      .set({
-        cards: JSON.stringify(oceanCards)
-      })
-      .where('id', '=', 'f438ca2d-ba05-4d3b-8dcd-61c9d022d6a4')
-      .execute();
-
-    console.log('🔧 [ADMIN] Template deck cards updated successfully');
-
-    // Verify the fix
-    const updatedDecks = await db
+    // Get template decks (system user decks)
+    const templateDecks = await db
       .selectFrom('decks')
-      .select(['id', 'name', 'cards'])
-      .where('id', 'in', ['f438ca2d-ba05-4d3b-8dcd-61c9d022d6a4', 'fe31875e-a6de-4d03-b87c-7161ddbeab6f'])
+      .select(['id', 'name'])
+      .where('user_id', '=', '00000000-0000-0000-0000-000000000000') // System user
+      .where('is_claimable', '=', true)
       .execute();
 
-    const deckDetails = updatedDecks.map(deck => {
-      let cardCount = 0;
-      let cards = null;
+    console.log('🔧 [ADMIN] Found template decks:', templateDecks);
 
-      if (deck.cards) {
-        try {
-          cards = typeof deck.cards === 'string' ? JSON.parse(deck.cards) : deck.cards;
-          cardCount = Array.isArray(cards) ? cards.reduce((sum: number, card: any) => sum + (card.quantity || 0), 0) : 0;
-        } catch (error) {
-          console.error(`🔧 [ADMIN] Error parsing cards for deck ${deck.id}:`, error);
-        }
-      }
+    // Verify deck_cards table has the correct data
+    const deckDetails = [];
+    for (const deck of templateDecks) {
+      const deckCards = await db
+        .selectFrom('deck_cards')
+        .select(['card_id', 'species_name', 'position_in_deck'])
+        .where('deck_id', '=', deck.id)
+        .orderBy('position_in_deck', 'asc')
+        .execute();
 
-      return {
+      const cardCount = deckCards.length;
+
+      deckDetails.push({
         id: deck.id,
         name: deck.name,
         cardCount,
-        cardsValid: cardCount >= 20
-      };
-    });
+        cardsValid: cardCount >= 20,
+        sampleCards: deckCards.slice(0, 5).map(dc => ({
+          cardId: dc.card_id,
+          speciesName: dc.species_name,
+          position: dc.position_in_deck
+        }))
+      });
+    }
 
-    console.log('🔧 [ADMIN] Updated deck card counts:', deckDetails);
+    console.log('🔧 [ADMIN] Template deck verification complete');
+
+    // Verify the deck_cards data
+
+    console.log('🔧 [ADMIN] Template deck verification results:', deckDetails);
 
     return res.json({
       status: 'success',
       success: true,
       data: {
-        message: 'Template deck cards fixed successfully',
-        decks: deckDetails
+        message: 'Template deck cards verified successfully',
+        decks: deckDetails,
+        note: 'Template deck cards are now managed through deck_cards table, not JSONB'
       }
     });
 
   } catch (error) {
-    console.error('🔧 [ADMIN] Error fixing template deck cards:', error);
+    console.error('🔧 [ADMIN] Error verifying template deck cards:', error);
     return res.status(500).json({
       status: 'error',
       success: false,
-      error: 'Failed to fix template deck cards',
+      error: 'Failed to verify template deck cards',
       data: null
+    });
+  }
+}));
+
+/**
+ * POST /api/admin/create-firebase-admin
+ * Create Firebase admin user (system endpoint, no auth required for initial setup)
+ */
+router.post('/create-firebase-admin', strictRateLimiter, asyncHandler(async (_req, res) => {
+  try {
+    console.log('🔥 [ADMIN] Creating Firebase admin user...');
+
+    const auth = admin.auth();
+    const adminEmail = 'biomasters.tcg@gmail.com';
+    const adminPassword = 'Biomasters12345';
+
+    try {
+      // Try to get existing user first
+      const existingUser = await auth.getUserByEmail(adminEmail);
+      console.log('✅ [ADMIN] Admin user already exists in Firebase:', existingUser.uid);
+
+      // Update password for existing user
+      await auth.updateUser(existingUser.uid, {
+        password: adminPassword
+      });
+      console.log('✅ [ADMIN] Admin password updated');
+
+      // Set custom claims for admin
+      await auth.setCustomUserClaims(existingUser.uid, {
+        admin: true,
+        role: 'admin'
+      });
+      console.log('✅ [ADMIN] Admin custom claims set for existing user');
+
+      return res.json({
+        success: true,
+        message: 'Admin user updated successfully',
+        data: {
+          email: adminEmail,
+          uid: existingUser.uid,
+          action: 'updated'
+        }
+      });
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        console.log('👤 [ADMIN] Creating new Firebase admin user...');
+
+        // Create new user
+        const userRecord = await auth.createUser({
+          email: adminEmail,
+          password: adminPassword,
+          displayName: 'System Administrator',
+          emailVerified: true
+        });
+
+        console.log('✅ [ADMIN] Firebase admin user created:', userRecord.uid);
+
+        // Set custom claims for admin
+        await auth.setCustomUserClaims(userRecord.uid, {
+          admin: true,
+          role: 'admin'
+        });
+        console.log('✅ [ADMIN] Admin custom claims set');
+
+        return res.json({
+          success: true,
+          message: 'Admin user created successfully',
+          data: {
+            email: adminEmail,
+            uid: userRecord.uid,
+            action: 'created'
+          }
+        });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ [ADMIN] Failed to create admin Firebase user:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to create admin Firebase user',
+      message: error.message
     });
   }
 }));

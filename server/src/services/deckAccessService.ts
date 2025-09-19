@@ -104,35 +104,47 @@ class DeckAccessService {
         .having(db.fn.count('deck_cards.id'), '>=', 20) // Minimum deck size
         .execute();
 
-      // Get all template decks (using existing user for now)
+      // Get all template decks (system user decks that are claimable)
       const templateDecks = await db
         .selectFrom('decks')
+        .leftJoin('deck_cards', 'decks.id', 'deck_cards.deck_id')
         .select([
-          'id',
-          'name',
-          'deck_type',
-          'cards'
+          'decks.id',
+          'decks.name',
+          'decks.deck_type',
+          db.fn.count('deck_cards.id').as('card_count')
         ])
-        .where('user_id', '=', '721eab5a-9239-4f66-b974-df7df6564b62') // Template user
-        .where('is_claimable', '=', true)
-        .orderBy('deck_type', 'asc')
+        .where('decks.user_id', '=', '00000000-0000-0000-0000-000000000000') // System user
+        .where('decks.is_claimable', '=', true)
+        .groupBy(['decks.id', 'decks.name', 'decks.deck_type'])
+        .having(db.fn.count('deck_cards.id'), '>=', 20) // Minimum deck size
+        .orderBy('decks.deck_type', 'asc')
         .execute();
 
       // Get user's card counts for access checking
       const userCardCounts = await this.getUserCardCounts(userId);
 
-      // Filter template decks based on access
-      const accessibleTemplateDecks = templateDecks.filter(deck => {
-        try {
-          // Handle both JSON string and object cases
-          const cards = typeof deck.cards === 'string' ? JSON.parse(deck.cards) : deck.cards;
-          const access = this.canAccessTemplateDeck(deck.deck_type, cards, userCardCounts);
-          return access.canAccess;
-        } catch (error) {
-          console.error('Error parsing deck cards:', error, 'Raw cards:', deck.cards);
-          return false;
+      // Filter template decks based on access (get actual card requirements from deck_cards)
+      const accessibleTemplateDecks = [];
+      for (const deck of templateDecks) {
+        // Get the actual cards in this template deck
+        const deckCards = await db
+          .selectFrom('deck_cards')
+          .select(['card_id', db.fn.count('id').as('quantity')])
+          .where('deck_id', '=', deck.id)
+          .groupBy('card_id')
+          .execute();
+
+        const templateCards = deckCards.map(dc => ({
+          cardId: dc.card_id,
+          quantity: Number(dc.quantity)
+        }));
+
+        const access = this.canAccessTemplateDeck(deck.deck_type, templateCards, userCardCounts);
+        if (access.canAccess) {
+          accessibleTemplateDecks.push(deck);
         }
-      });
+      }
 
       return {
         personal_decks: personalDecks.map(deck => ({
@@ -141,27 +153,13 @@ class DeckAccessService {
           card_count: Number(deck.card_count),
           source: 'personal' as const
         })),
-        template_decks: accessibleTemplateDecks.map(deck => {
-          try {
-            const cards = typeof deck.cards === 'string' ? JSON.parse(deck.cards) : deck.cards;
-            return {
-              id: deck.id,
-              name: deck.name,
-              card_count: cards.reduce((sum: number, card: any) => sum + card.quantity, 0),
-              source: 'template' as const,
-              deck_type: deck.deck_type
-            };
-          } catch (error) {
-            console.error('Error parsing deck cards for response:', error);
-            return {
-              id: deck.id,
-              name: deck.name,
-              card_count: 0,
-              source: 'template' as const,
-              deck_type: deck.deck_type
-            };
-          }
-        })
+        template_decks: accessibleTemplateDecks.map(deck => ({
+          id: deck.id,
+          name: deck.name,
+          card_count: Number(deck.card_count),
+          source: 'template' as const,
+          deck_type: deck.deck_type
+        }))
       };
 
     } catch (error) {
@@ -175,14 +173,13 @@ class DeckAccessService {
    */
   async getDeckBuilderTemplates(userId: string): Promise<DeckBuilderTemplatesResponse> {
     try {
-      // Get all template decks
+      // Get all template decks (system user decks)
       const templateDecks = await db
         .selectFrom('decks')
         .select([
           'id',
           'name',
-          'deck_type',
-          'cards'
+          'deck_type'
         ])
         .where('user_id', '=', '00000000-0000-0000-0000-000000000000') // System user
         .where('is_claimable', '=', true)
@@ -195,10 +192,23 @@ class DeckAccessService {
       const availableTemplates: TemplateDeck[] = [];
       const lockedTemplates: TemplateDeck[] = [];
 
-      templateDecks.forEach(deck => {
+      for (const deck of templateDecks) {
         try {
-          const cards = typeof deck.cards === 'string' ? JSON.parse(deck.cards) : deck.cards;
+          // Get the actual cards in this template deck from deck_cards table
+          const deckCards = await db
+            .selectFrom('deck_cards')
+            .select(['card_id', db.fn.count('id').as('quantity')])
+            .where('deck_id', '=', deck.id)
+            .groupBy('card_id')
+            .execute();
+
+          const cards = deckCards.map(dc => ({
+            cardId: dc.card_id,
+            quantity: Number(dc.quantity)
+          }));
+
           const access = this.canAccessTemplateDeck(deck.deck_type, cards, userCardCounts);
+          const totalCards = cards.reduce((sum, card) => sum + card.quantity, 0);
 
           const templateDeck: TemplateDeck = {
             id: deck.id,
@@ -206,7 +216,7 @@ class DeckAccessService {
             description: '', // No description field in decks table
             deck_type: deck.deck_type,
             cards: cards,
-            total_cards: cards.reduce((sum: number, card: any) => sum + card.quantity, 0),
+            total_cards: totalCards,
             can_access: access.canAccess,
             missing_cards: access.missingCards
           };
@@ -219,7 +229,7 @@ class DeckAccessService {
         } catch (error) {
           console.error('Error processing template deck:', error, 'Deck:', deck);
         }
-      });
+      }
 
       return {
         available_templates: availableTemplates,

@@ -2762,6 +2762,18 @@ export class BioMastersEngine {
         p.energy = newState.gameSettings.startingEnergy || 3;
         console.log(`⚡ Player ${p.name} starting energy: ${p.energy}`);
 
+        // Check if player already has deck cards (from online match initialization)
+        if (p.deck && p.deck.length > 0) {
+          console.log(`🎴 Player ${p.name} already has deck cards from online match: ${p.deck.length} cards`);
+          console.log(`🎒 Player ${p.name} existing hand:`, p.hand);
+          console.log(`📚 Player ${p.name} existing deck:`, p.deck);
+          // Don't override existing deck cards for online matches
+          return;
+        }
+
+        // Only generate random cards for offline/local games
+        console.log(`🎴 Generating random cards for offline player ${p.name}`);
+
         // Get available card IDs from the card database
         const availableCardIds = Array.from(this.cardDatabase.keys());
         console.log(`🎴 Available card IDs from database:`, availableCardIds);

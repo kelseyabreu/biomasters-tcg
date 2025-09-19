@@ -552,6 +552,8 @@ export class MatchmakingWorker {
                     playerId: user.id,
                     id: user.id,
                     name: user.display_name || user.username || `Player ${index + 1}`,
+                    username: user.username || user.display_name,
+                    firebaseUid: user.firebase_uid, // Include Firebase UID for frontend mapping
                     ready: false,
                     rating: match.players.find(p => p.playerId === user.id)?.rating || 1000
                 };

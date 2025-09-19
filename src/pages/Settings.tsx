@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonContent,
   IonPage,
@@ -55,6 +55,8 @@ import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
 import { SyncStatus } from '../components/collection/SyncStatus';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { useHistory } from 'react-router-dom';
+import { UserType } from '../../shared/enums';
+import { auth } from '../config/firebase';
 import './Settings.css';
 import '../components/auth/AccountDeletionModal.css';
 import '../components/game/GridCellStyles.css';
@@ -123,6 +125,16 @@ const Settings: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showAccountDeletion, setShowAccountDeletion] = useState(false);
 
+  // Admin functionality state
+  const [adminIdentifier, setAdminIdentifier] = useState('');
+  const [adminCurrencyAmount, setAdminCurrencyAmount] = useState('');
+  const [adminCurrencyType, setAdminCurrencyType] = useState('eco_credits');
+  const [adminCardId, setAdminCardId] = useState('');
+  const [adminCardQuantity, setAdminCardQuantity] = useState('1');
+  const [adminReason, setAdminReason] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const {
     userProfile,
     isGuestMode,
@@ -133,6 +145,37 @@ const Settings: React.FC = () => {
     lastSyncTime,
     syncError
   } = useHybridGameStore();
+
+  // Check Firebase custom claims for admin privileges
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (auth.currentUser) {
+        try {
+          // Get the ID token to access custom claims
+          const idTokenResult = await auth.currentUser.getIdTokenResult();
+          const claims = idTokenResult.claims;
+
+          // Check if user has admin claims
+          const hasAdminClaim = claims.admin === true || claims.role === 'admin';
+          setIsAdmin(hasAdminClaim);
+
+          console.log('🔐 [Settings] Admin status check:', {
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            hasAdminClaim,
+            claims: claims
+          });
+        } catch (error) {
+          console.error('❌ [Settings] Failed to check admin status:', error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [auth.currentUser]);
 
   const handleCreateCustomTheme = () => {
     if (customThemeName.trim()) {
@@ -153,6 +196,111 @@ const Settings: React.FC = () => {
       setShowToast(true);
     }
   };
+
+  // Admin functions
+  const handleGrantCurrency = async () => {
+    if (!adminIdentifier.trim() || !adminCurrencyAmount.trim() || !adminReason.trim()) {
+      setToastMessage('Please fill in all fields');
+      setShowToast(true);
+      return;
+    }
+
+    setAdminLoading(true);
+    try {
+      // Get Firebase ID token for authentication
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        setToastMessage('Authentication required');
+        setShowToast(true);
+        setAdminLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/grant-currency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          identifier: adminIdentifier,
+          [adminCurrencyType]: parseInt(adminCurrencyAmount),
+          reason: adminReason
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setToastMessage(`Currency granted successfully to ${result.user.username}`);
+        setAdminIdentifier('');
+        setAdminCurrencyAmount('');
+        setAdminReason('');
+      } else {
+        setToastMessage(`Error: ${result.message || 'Failed to grant currency'}`);
+      }
+    } catch (error) {
+      console.error('Error granting currency:', error);
+      setToastMessage('Network error. Please try again.');
+    } finally {
+      setAdminLoading(false);
+      setShowToast(true);
+    }
+  };
+
+  const handleGrantCard = async () => {
+    if (!adminIdentifier.trim() || !adminCardId.trim() || !adminReason.trim()) {
+      setToastMessage('Please fill in all fields');
+      setShowToast(true);
+      return;
+    }
+
+    setAdminLoading(true);
+    try {
+      // Get Firebase ID token for authentication
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        setToastMessage('Authentication required');
+        setShowToast(true);
+        setAdminLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/grant-card', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          identifier: adminIdentifier,
+          cardId: parseInt(adminCardId),
+          quantity: parseInt(adminCardQuantity),
+          reason: adminReason
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setToastMessage(`Card granted successfully to ${result.user.username}`);
+        setAdminIdentifier('');
+        setAdminCardId('');
+        setAdminCardQuantity('1');
+        setAdminReason('');
+      } else {
+        setToastMessage(`Error: ${result.message || 'Failed to grant card'}`);
+      }
+    } catch (error) {
+      console.error('Error granting card:', error);
+      setToastMessage('Network error. Please try again.');
+    } finally {
+      setAdminLoading(false);
+      setShowToast(true);
+    }
+  };
+
+  // Admin status is now checked via Firebase custom claims in useEffect above
 
   const getThemePreview = (theme: ThemeConfig) => (
     <div className="theme-preview">
@@ -823,6 +971,149 @@ const Settings: React.FC = () => {
                     </p>
                   </IonNote>
                 </div>
+              </IonCardContent>
+            </IonCard>
+          )}
+
+          {/* Admin Section */}
+          {isAdmin && (
+            <IonCard>
+              <IonCardHeader>
+                <IonCardTitle>
+                  <IonIcon icon={settings} />
+                  Admin Tools
+                </IonCardTitle>
+              </IonCardHeader>
+
+              <IonCardContent>
+                <IonList>
+                  {/* Grant Currency Section */}
+                  <IonItem>
+                    <IonLabel>
+                      <h2>Grant Currency</h2>
+                      <p>Grant currency to users by username, email, or ID</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">User (Username, Email, or ID)</IonLabel>
+                    <IonInput
+                      value={adminIdentifier}
+                      placeholder="Enter username, email, or user ID"
+                      onIonInput={(e) => setAdminIdentifier(e.detail.value!)}
+                      disabled={adminLoading}
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Currency Type</IonLabel>
+                    <IonSelect
+                      value={adminCurrencyType}
+                      onIonChange={(e: any) => setAdminCurrencyType(e.detail.value)}
+                      disabled={adminLoading}
+                    >
+                      <IonSelectOption value="eco_credits">Eco Credits</IonSelectOption>
+                      <IonSelectOption value="gems">Gems</IonSelectOption>
+                      <IonSelectOption value="coins">Coins</IonSelectOption>
+                      <IonSelectOption value="dust">Dust</IonSelectOption>
+                    </IonSelect>
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Amount</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={adminCurrencyAmount}
+                      placeholder="Enter amount"
+                      onIonInput={(e) => setAdminCurrencyAmount(e.detail.value!)}
+                      disabled={adminLoading}
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Reason</IonLabel>
+                    <IonInput
+                      value={adminReason}
+                      placeholder="Enter reason for granting currency"
+                      onIonInput={(e) => setAdminReason(e.detail.value!)}
+                      disabled={adminLoading}
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonButton
+                      expand="block"
+                      color="primary"
+                      onClick={handleGrantCurrency}
+                      disabled={adminLoading || !adminIdentifier || !adminCurrencyAmount || !adminReason}
+                    >
+                      {adminLoading ? 'Granting...' : 'Grant Currency'}
+                    </IonButton>
+                  </IonItem>
+
+                  {/* Grant Card Section */}
+                  <IonItem style={{ marginTop: '20px' }}>
+                    <IonLabel>
+                      <h2>Grant Card</h2>
+                      <p>Grant cards to users by username, email, or ID</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">User (Username, Email, or ID)</IonLabel>
+                    <IonInput
+                      value={adminIdentifier}
+                      placeholder="Enter username, email, or user ID"
+                      onIonInput={(e) => setAdminIdentifier(e.detail.value!)}
+                      disabled={adminLoading}
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Card ID</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={adminCardId}
+                      placeholder="Enter card ID"
+                      onIonInput={(e) => setAdminCardId(e.detail.value!)}
+                      disabled={adminLoading}
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Quantity</IonLabel>
+                    <IonInput
+                      type="number"
+                      value={adminCardQuantity}
+                      placeholder="Enter quantity"
+                      onIonInput={(e) => setAdminCardQuantity(e.detail.value!)}
+                      disabled={adminLoading}
+                      min="1"
+                      max="100"
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonLabel position="stacked">Reason</IonLabel>
+                    <IonInput
+                      value={adminReason}
+                      placeholder="Enter reason for granting card"
+                      onIonInput={(e) => setAdminReason(e.detail.value!)}
+                      disabled={adminLoading}
+                    />
+                  </IonItem>
+
+                  <IonItem>
+                    <IonButton
+                      expand="block"
+                      color="secondary"
+                      onClick={handleGrantCard}
+                      disabled={adminLoading || !adminIdentifier || !adminCardId || !adminReason}
+                    >
+                      {adminLoading ? 'Granting...' : 'Grant Card'}
+                    </IonButton>
+                  </IonItem>
+                </IonList>
               </IonCardContent>
             </IonCard>
           )}

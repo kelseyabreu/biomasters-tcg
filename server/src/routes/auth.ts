@@ -675,11 +675,18 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     deviceSyncStateVersion: deviceSyncState?.current_key_version
   });
 
-  let newKeyVersion = (currentActiveKey?.key_version || expectedKeyVersion || 0) + 1;
+  // Convert string versions to numbers and use timestamp if no existing version
+  const currentKeyVersionNum = currentActiveKey?.key_version ? Number(currentActiveKey.key_version) : 0;
+  const expectedKeyVersionNum = expectedKeyVersion ? Number(expectedKeyVersion) : 0;
+  const baseVersion = currentKeyVersionNum || expectedKeyVersionNum || Date.now();
+
+  let newKeyVersion = baseVersion + 1;
   console.log('🔑 [OFFLINE-KEY] Key version:', {
     existingVersion: currentActiveKey?.key_version || 0,
     newVersion: newKeyVersion,
-    calculationBase: currentActiveKey?.key_version || expectedKeyVersion || 0
+    calculationBase: baseVersion,
+    currentKeyVersionNum: currentKeyVersionNum,
+    expectedKeyVersionNum: expectedKeyVersionNum
   });
 
   // Supersede the old active key if it exists
@@ -705,7 +712,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     .selectAll()
     .where('device_id', '=', device_id)
     .where('user_id', '=', user.id)
-    .where('key_version', '=', newKeyVersion)
+    .where('key_version', '=', BigInt(newKeyVersion))
     .executeTakeFirst();
 
   if (existingKeyCheck) {
@@ -735,7 +742,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
         .orderBy('key_version', 'desc')
         .executeTakeFirst();
 
-      newKeyVersion = (highestKey?.key_version || 0) + 1;
+      newKeyVersion = Number(highestKey?.key_version || 0) + 1;
       console.log('🔑 [OFFLINE-KEY] Using next available version:', newKeyVersion);
     }
   }
@@ -749,7 +756,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
         device_id,
         user_id: user.id,
         signing_key: encrypt(signingKey), // Encrypt before storage
-        key_version: newKeyVersion,
+        key_version: BigInt(newKeyVersion),
         status: 'ACTIVE',
         expires_at: expiresAt
       })
@@ -772,7 +779,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
         .select(['signing_key', 'expires_at', 'status'])
         .where('device_id', '=', device_id)
         .where('user_id', '=', user.id)
-        .where('key_version', '=', newKeyVersion)
+        .where('key_version', '=', BigInt(newKeyVersion))
         .executeTakeFirst();
 
       console.log('🔍 [OFFLINE-KEY] Found existing key after conflict:', {
@@ -804,7 +811,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
           .orderBy('key_version', 'desc')
           .executeTakeFirst();
 
-        const nextKeyVersion = (highestKey?.key_version || 0) + 1;
+        const nextKeyVersion = Number(highestKey?.key_version || 0) + 1;
         console.log('🔑 [OFFLINE-KEY] Retrying with next available version:', nextKeyVersion);
 
         // Retry with the next available version
@@ -815,7 +822,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
               device_id,
               user_id: user.id,
               signing_key: encrypt(signingKey),
-              key_version: nextKeyVersion,
+              key_version: BigInt(nextKeyVersion),
               status: 'ACTIVE',
               expires_at: expiresAt
             })
@@ -841,32 +848,44 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     .values({
       device_id,
       user_id: user.id,
-      current_key_version: newKeyVersion,
+      current_key_version: BigInt(newKeyVersion),
       last_sync_timestamp: 0,
       last_used_at: new Date()
     })
     .onConflict((oc) => oc
       .columns(['device_id', 'user_id'])
       .doUpdateSet({
-        current_key_version: newKeyVersion,
+        current_key_version: BigInt(newKeyVersion),
         last_used_at: new Date(),
         updated_at: new Date()
       })
     )
     .execute();
 
+  // Get existing action chain for this device to help client rebuild queue
+  const existingActions = await db
+    .selectFrom('sync_actions_log')
+    .select(['action_id', 'action_type', 'processed_at'])
+    .where('user_id', '=', user.id)
+    .where('device_id', '=', device_id)
+    .where('status', '=', 'success')
+    .orderBy('processed_at', 'asc')
+    .execute();
+
   console.log('✅ [OFFLINE-KEY] Device registration completed successfully:', {
     deviceId: device_id,
     userId: user.id,
     keyVersion: newKeyVersion,
-    expiresAt: expiresAt.toISOString()
+    expiresAt: expiresAt.toISOString(),
+    existingActionsCount: existingActions.length
   });
 
   res.json({
     signing_key: signingKey,
     signing_key_version: newKeyVersion,
     expires_at: expiresAt.toISOString(),
-    device_id
+    device_id,
+    existing_action_chain: existingActions.length > 0 ? existingActions : undefined
   });
   return;
 }));

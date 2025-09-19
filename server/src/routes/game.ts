@@ -188,34 +188,62 @@ router.patch('/sessions/:sessionId/ready', requireAuth, asyncHandler(async (req,
 
 /**
  * GET /api/game/decks
- * Get user's saved decks
+ * Get user's saved decks (using normalized deck structure)
  */
 router.get('/decks', requireAuth, asyncHandler(async (req, res) => {
   const user = req.user!;
 
+  // Get user's personal decks with card counts
   const decks = await db
-    .selectFrom('user_decks')
-    .selectAll()
-    .where('user_id', '=', user.id)
-    .orderBy('is_favorite', 'desc')
-    .orderBy('updated_at', 'desc')
+    .selectFrom('decks')
+    .leftJoin('deck_cards', 'decks.id', 'deck_cards.deck_id')
+    .select([
+      'decks.id',
+      'decks.name',
+      'decks.created_at',
+      'decks.updated_at',
+      db.fn.count('deck_cards.id').as('card_count')
+    ])
+    .where('decks.user_id', '=', user.id)
+    .where('decks.user_id', '!=', '00000000-0000-0000-0000-000000000000') // Exclude system decks
+    .groupBy(['decks.id', 'decks.name', 'decks.created_at', 'decks.updated_at'])
+    .orderBy('decks.updated_at', 'desc')
     .execute();
 
+  // Get cards for each deck to maintain API compatibility
+  const decksWithCards = await Promise.all(
+    decks.map(async (deck) => {
+      const deckCards = await db
+        .selectFrom('deck_cards')
+        .select(['card_id', db.fn.count('id').as('quantity')])
+        .where('deck_id', '=', deck.id)
+        .groupBy('card_id')
+        .execute();
+
+      const cards = deckCards.map(dc => ({
+        cardId: dc.card_id,
+        quantity: Number(dc.quantity)
+      }));
+
+      return {
+        id: deck.id,
+        name: deck.name,
+        description: '', // No description in decks table
+        cards: cards, // Normalized format instead of JSONB
+        isValid: Number(deck.card_count) >= 20,
+        isFavorite: false, // No favorite field in decks table
+        format: 'standard',
+        totalCards: Number(deck.card_count),
+        winRate: 0, // No win rate in decks table
+        gamesPlayed: 0, // No games played in decks table
+        createdAt: deck.created_at,
+        updatedAt: deck.updated_at
+      };
+    })
+  );
+
   res.json({
-    decks: decks.map(deck => ({
-      id: deck.id,
-      name: deck.name,
-      description: deck.description,
-      cards: deck.cards,
-      isValid: deck.is_valid,
-      isFavorite: deck.is_favorite,
-      format: deck.format,
-      totalCards: deck.total_cards,
-      winRate: deck.win_rate,
-      gamesPlayed: deck.games_played,
-      createdAt: deck.created_at,
-      updatedAt: deck.updated_at
-    }))
+    decks: decksWithCards
   });
 }));
 
@@ -244,7 +272,7 @@ router.post('/decks', requireAuth, asyncHandler(async (req, res) => {
 
   // Check if deck name already exists for user
   const existingDeck = await db
-    .selectFrom('user_decks')
+    .selectFrom('decks')
     .select('id')
     .where('user_id', '=', user.id)
     .where('name', '=', name)
@@ -260,37 +288,55 @@ router.post('/decks', requireAuth, asyncHandler(async (req, res) => {
   // Calculate total cards
   const totalCards = cards.reduce((sum: number, card: any) => sum + (card.quantity || 0), 0);
 
-  // TODO: Validate deck composition and card ownership
-  const isValid = totalCards >= 30 && totalCards <= 40;
+  // Validate deck composition
+  const isValid = totalCards >= 20 && totalCards <= 40;
 
-  // Create deck
-  const newDeck = await db
-    .insertInto('user_decks')
-    .values({
-      user_id: user.id,
-      name,
-      description,
-      cards: JSON.stringify(cards),
-      format,
-      total_cards: totalCards,
-      is_valid: isValid,
-      is_favorite: false,
-      games_played: 0,
-      win_rate: 0
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow();
+  // Create deck in transaction
+  const newDeck = await db.transaction().execute(async (trx) => {
+    // Create deck
+    const deck = await trx
+      .insertInto('decks')
+      .values({
+        user_id: user.id,
+        name,
+        deck_type: 1, // DeckType.CUSTOM
+        is_public: false,
+        is_claimable: false
+      })
+      .returning(['id', 'name', 'created_at', 'updated_at'])
+      .executeTakeFirstOrThrow();
+
+    // Add cards to deck_cards table
+    let position = 1;
+    for (const card of cards) {
+      for (let i = 0; i < card.quantity; i++) {
+        await trx
+          .insertInto('deck_cards')
+          .values({
+            deck_id: deck.id,
+            card_id: card.cardId || card.card_id,
+            species_name: `card-${card.cardId || card.card_id}`,
+            position_in_deck: position++
+          })
+          .execute();
+      }
+    }
+
+    return deck;
+  });
 
   res.status(201).json({
     message: 'Deck created successfully',
     deck: {
       id: newDeck.id,
       name: newDeck.name,
-      description: newDeck.description,
-      cards: newDeck.cards,
-      format: newDeck.format,
-      totalCards: newDeck.total_cards,
-      isValid: newDeck.is_valid
+      description: description || '',
+      cards: cards, // Return the input cards format for compatibility
+      format: format,
+      totalCards: totalCards,
+      isValid: isValid,
+      createdAt: newDeck.created_at,
+      updatedAt: newDeck.updated_at
     }
   });
   return;
@@ -302,7 +348,7 @@ router.post('/decks', requireAuth, asyncHandler(async (req, res) => {
  */
 router.put('/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
   const { deckId } = req.params;
-  const { name, description, cards } = req.body;
+  const { name, cards } = req.body;
   // const isFavorite = req.body.isFavorite; // Unused for now
   const user = req.user!;
 
@@ -330,28 +376,52 @@ router.put('/decks/:deckId', requireAuth, asyncHandler(async (req, res) => {
     return;
   }
 
-  // For now, just update basic deck info
-  // let totalCards = 30; // Default deck size - unused for now
-  // let isValid = true; // Deck validation - unused for now
+  // Update deck in transaction
+  const updatedDeck = await db.transaction().execute(async (trx) => {
+    // Update deck metadata
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    updateData.updated_at = new Date();
 
-  if (cards) {
-    // totalCards = cards.reduce((sum: number, card: any) => sum + (card.quantity || 0), 0);
-    // isValid = totalCards >= 30 && totalCards <= 40; // Validation logic for future use
-    console.log(`Deck has ${cards.length} card types`); // Placeholder for deck validation
-  }
+    const deck = await trx
+      .updateTable('decks')
+      .set(updateData)
+      .where('id', '=', deckId)
+      .where('user_id', '=', user.id)
+      .returning(['id', 'name', 'user_id', 'created_at', 'updated_at'])
+      .executeTakeFirst();
 
-  // Update deck
-  const updateData: any = {};
-  if (name !== undefined) updateData.name = name;
-  if (description !== undefined) updateData.description = description;
+    if (!deck) {
+      throw new Error('Failed to update deck');
+    }
 
-  const updatedDeck = await db
-    .updateTable('decks')
-    .set(updateData)
-    .where('id', '=', deckId)
-    .where('user_id', '=', user.id)
-    .returning(['id', 'name', 'user_id', 'created_at', 'updated_at'])
-    .executeTakeFirst();
+    // Update cards if provided
+    if (cards && Array.isArray(cards)) {
+      // Delete existing cards
+      await trx
+        .deleteFrom('deck_cards')
+        .where('deck_id', '=', deckId)
+        .execute();
+
+      // Add new cards
+      let position = 1;
+      for (const card of cards) {
+        for (let i = 0; i < card.quantity; i++) {
+          await trx
+            .insertInto('deck_cards')
+            .values({
+              deck_id: deckId,
+              card_id: card.cardId || card.card_id,
+              species_name: `card-${card.cardId || card.card_id}`,
+              position_in_deck: position++
+            })
+            .execute();
+        }
+      }
+    }
+
+    return deck;
+  });
 
   if (!updatedDeck) {
     res.status(404).json({

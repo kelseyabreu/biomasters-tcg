@@ -123,7 +123,7 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
           device_id: deviceId,
           user_id: user.id,
           signing_key: encrypt(signingKey),
-          key_version: 1,
+          key_version: BigInt(1),
           status: 'ACTIVE',
           expires_at: keyExpiresAt
         })
@@ -135,7 +135,7 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
         .values({
           device_id: deviceId,
           user_id: user.id,
-          current_key_version: 1,
+          current_key_version: BigInt(1),
           last_sync_timestamp: 0,
           last_used_at: new Date()
         })
@@ -335,7 +335,7 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
           device_id: deviceId,
           user_id: user.id,
           signing_key: encrypt(signingKey),
-          key_version: 1,
+          key_version: BigInt(1),
           status: 'ACTIVE',
           expires_at: keyExpiresAt
         })
@@ -355,14 +355,14 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
         .values({
           device_id: deviceId,
           user_id: user.id,
-          current_key_version: 1,
+          current_key_version: BigInt(1),
           last_sync_timestamp: 0,
           last_used_at: new Date()
         })
         .onConflict((oc) => oc
           .columns(['device_id', 'user_id'])
           .doUpdateSet({
-            current_key_version: 1,
+            current_key_version: BigInt(1),
             last_sync_timestamp: 0,
             last_used_at: new Date(),
             updated_at: new Date()

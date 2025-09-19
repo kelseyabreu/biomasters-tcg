@@ -200,33 +200,57 @@ const DeckSelectionComponent: React.FC<DeckSelectionComponentProps> = ({
         value={selectedDeckId} 
         onIonChange={e => setSelectedDeckId(e.detail.value)}
       >
-        {availableDecks.map((deck, index) => (
-          <IonCard key={`${deck.source}-${deck.id}-${index}`} style={{ margin: '8px 0' }}>
-            <IonItem>
-              <IonRadio 
-                slot="start" 
-                value={deck.id}
-                disabled={!deck.isValid}
-              />
-              <IonLabel>
-                <h3>{deck.name}</h3>
-                <p>
-                  <IonIcon icon={library} style={{ marginRight: '4px' }} />
-                  {deck.cardCount} cards
-                  {!deck.isValid && (
-                    <IonBadge color="danger" style={{ marginLeft: '8px' }}>
-                      Invalid
-                    </IonBadge>
-                  )}
-                </p>
-                <p style={{ fontSize: '0.8em', color: 'var(--ion-color-medium)' }}>
-                  <IonIcon icon={time} style={{ marginRight: '4px' }} />
-                  Source: {deck.source === 'personal' ? 'Personal Deck' : 'Starter Deck'}
-                </p>
-              </IonLabel>
-            </IonItem>
-          </IonCard>
-        ))}
+        {availableDecks.map((deck, index) => {
+          const isSelected = selectedDeckId === deck.id;
+          return (
+            <IonCard
+              key={`${deck.source}-${deck.id}-${index}`}
+              style={{
+                margin: '8px 0',
+                border: isSelected ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-color-light)',
+                background: isSelected ? 'var(--ion-color-primary-tint)' : undefined,
+                transform: isSelected ? 'scale(1.02)' : undefined,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <IonItem>
+                <IonRadio
+                  slot="start"
+                  value={deck.id}
+                  disabled={!deck.isValid}
+                />
+                <IonLabel>
+                  <h3 style={{
+                    color: isSelected ? 'var(--ion-color-primary)' : undefined,
+                    fontWeight: isSelected ? 'bold' : undefined
+                  }}>
+                    {deck.name}
+                    {isSelected && (
+                      <IonIcon
+                        icon={checkmarkCircle}
+                        color="primary"
+                        style={{ marginLeft: '8px' }}
+                      />
+                    )}
+                  </h3>
+                  <p>
+                    <IonIcon icon={library} style={{ marginRight: '4px' }} />
+                    {deck.cardCount} cards
+                    {!deck.isValid && (
+                      <IonBadge color="danger" style={{ marginLeft: '8px' }}>
+                        Invalid
+                      </IonBadge>
+                    )}
+                  </p>
+                  <p style={{ fontSize: '0.8em', color: 'var(--ion-color-medium)' }}>
+                    <IonIcon icon={time} style={{ marginRight: '4px' }} />
+                    Source: {deck.source === 'personal' ? 'Personal Deck' : 'Starter Deck'}
+                  </p>
+                </IonLabel>
+              </IonItem>
+            </IonCard>
+          );
+        })}
       </IonRadioGroup>
 
       <div style={{ marginTop: '16px', textAlign: 'center' }}>

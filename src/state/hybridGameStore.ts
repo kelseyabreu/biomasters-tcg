@@ -2077,6 +2077,23 @@ export const useHybridGameStore = create<HybridGameState>()(
                 console.log(`🧹 [SignOut] Cleared user-scoped data for user: ${currentUserId}`);
               }
 
+              // Clear offline collection state immediately
+              console.log('🔓 [SignOut] Clearing offline collection state...');
+              set({
+                offlineCollection: null,
+                hasStarterPack: false,
+                syncStatus: 'idle',
+                lastSyncTime: 0,
+                syncError: null,
+                pendingActions: 0,
+                showSyncConflicts: false,
+                syncConflicts: [],
+                syncServiceState: {
+                  isSyncing: false,
+                  lastSyncAttempt: 0
+                }
+              });
+
               // Sign out through Firebase
               console.log('🔓 [SignOut] Calling Firebase signOut...');
               await signOut(auth);
@@ -2100,6 +2117,13 @@ export const useHybridGameStore = create<HybridGameState>()(
               guestId: finalState.guestId,
               firebaseUser: finalState.firebaseUser?.email
             });
+
+            // Navigate to home page after successful sign-out
+            console.log('🏠 [SignOut] Navigating to home page...');
+            if (typeof window !== 'undefined' && window.location) {
+              // Use window.location for a full page refresh to ensure clean state
+              window.location.href = '/home';
+            }
           } catch (error) {
             console.error('❌ [SignOut] Sign-out failed:', error);
             throw error;
@@ -2152,11 +2176,12 @@ export const useHybridGameStore = create<HybridGameState>()(
                   throw new Error(`Failed to get offline key: ${errorData.message || response.statusText}`);
                 }
 
-                const { signing_key, signing_key_version, expires_at } = await response.json();
+                const { signing_key, signing_key_version, expires_at, existing_action_chain } = await response.json();
                 console.log('🔑 [DEVICE_REG] Received signing key from server, initializing...', {
                   hasKey: !!signing_key,
                   keyVersion: signing_key_version,
-                  expiresAt: expires_at
+                  expiresAt: expires_at,
+                  existingActionsCount: existing_action_chain?.length || 0
                 });
 
                 // Calculate expiry timestamp
@@ -2165,6 +2190,19 @@ export const useHybridGameStore = create<HybridGameState>()(
                 // Update signing key with version and expiry
                 offlineSecurityService.updateSigningKey(signing_key, signing_key_version || 1, expiresAtTimestamp);
                 console.log('🔑 [DEVICE_REG] ✅ Offline signing key initialized from server');
+
+                // Handle existing action chain from server
+                if (existing_action_chain && existing_action_chain.length > 0) {
+                  console.log('🔗 [DEVICE_REG] Server provided existing action chain:', {
+                    actionCount: existing_action_chain.length,
+                    actionIds: existing_action_chain.map((a: any) => a.action_id)
+                  });
+
+                  // Update the offline security service with the count of server-processed actions
+                  // This ensures correct nonce calculation for new actions
+                  offlineSecurityService.updateServerProcessedActionsCount(existing_action_chain.length);
+                  console.log('🔗 [DEVICE_REG] Updated server processed actions count for correct nonce calculation');
+                }
 
               } catch (serverError) {
                 console.warn('🔑 [DEVICE_REG] ⚠️ Server unavailable, using local fallback key:', serverError);

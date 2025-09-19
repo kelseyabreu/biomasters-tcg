@@ -458,6 +458,7 @@ router.post('/:sessionId/select-deck', requireAuth, async (req: Request, res: Re
     const userId = req.user!.id;
 
     if (!sessionId || !deckId) {
+      console.log(`❌ [DECK-SELECT] Missing required parameters: sessionId=${sessionId}, deckId=${deckId}`);
       return res.status(400).json({
         status: 'error',
         success: false,
@@ -476,8 +477,7 @@ router.post('/:sessionId/select-deck', requireAuth, async (req: Request, res: Re
         'decks.name',
         'decks.user_id',
         'decks.deck_type',
-        'decks.is_claimable',
-        'decks.cards'
+        'decks.is_claimable'
       ])
       .where('decks.id', '=', deckId)
       .executeTakeFirst();
@@ -506,14 +506,19 @@ router.post('/:sessionId/select-deck', requireAuth, async (req: Request, res: Re
 
     console.log(`🎯 Deck access check: personal=${isPersonalDeck}, template=${isTemplateDeck}, deckUserId=${deck.user_id}, currentUserId=${userId}, isClaimable=${deck.is_claimable}`);
 
-    // Validate deck has enough cards
-    let cardCount = 0;
-    if (deck.cards) {
-      const deckCards = typeof deck.cards === 'string' ? JSON.parse(deck.cards) : deck.cards;
-      cardCount = deckCards.reduce((sum: number, card: any) => sum + card.quantity, 0);
-    }
+    // Validate deck has enough cards - use deck_cards table (same as game loading logic)
+    const deckCardsResult = await db
+      .selectFrom('deck_cards')
+      .select(db.fn.count('id').as('card_count'))
+      .where('deck_id', '=', deckId)
+      .executeTakeFirst();
+
+    const cardCount = Number(deckCardsResult?.card_count || 0);
+
+    console.log(`🔍 [DECK-SELECT] Deck validation: deckId=${deckId}, cardCount=${cardCount}, deckName=${deck.name}`);
 
     if (cardCount < 20) {
+      console.log(`❌ [DECK-SELECT] Deck validation failed: cardCount=${cardCount}, deckId=${deckId}, deckName=${deck.name}`);
       return res.status(400).json({
         status: 'error',
         success: false,
@@ -530,6 +535,7 @@ router.post('/:sessionId/select-deck', requireAuth, async (req: Request, res: Re
       .executeTakeFirst();
 
     if (!session) {
+      console.log(`❌ [DECK-SELECT] Session not found: sessionId=${sessionId}`);
       return res.status(404).json({
         status: 'error',
         success: false,
@@ -538,12 +544,15 @@ router.post('/:sessionId/select-deck', requireAuth, async (req: Request, res: Re
       } as ApiResponse);
     }
 
+    console.log(`🔍 [DECK-SELECT] Session found: sessionId=${sessionId}, hasGameState=${!!session.game_state}`);
+
     // Check if user is part of this session
     const gameState = session.game_state as any;
     const players = gameState.players || [];
     const playerIndex = players.findIndex((p: any) => p.playerId === userId || p.id === userId);
 
     if (playerIndex === -1) {
+      console.log(`❌ [DECK-SELECT] User not in session: userId=${userId}, sessionId=${sessionId}, players=${JSON.stringify(players.map((p: any) => ({ id: p.id, playerId: p.playerId })))}`);
       return res.status(403).json({
         status: 'error',
         success: false,
@@ -745,6 +754,29 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
       gameState.deckSelectionTimeRemaining = timeRemaining;
     }
 
+    // Get user details for proper player mapping
+    const playerIds = players.map((p: any) => p.playerId || p.id);
+    const userDetails = await db
+      .selectFrom('users')
+      .select(['id', 'username', 'display_name', 'firebase_uid'])
+      .where('id', 'in', playerIds)
+      .execute();
+
+    console.log('🔍 [GET MATCH] User details for player mapping:', userDetails);
+
+    // Create enhanced players array with Firebase UID mapping
+    const enhancedPlayers = players.map((player: any) => {
+      const userDetail = userDetails.find(u => u.id === (player.playerId || player.id));
+      return {
+        ...player,
+        firebaseUid: userDetail?.firebase_uid,
+        username: userDetail?.username || userDetail?.display_name || player.name,
+        name: userDetail?.display_name || userDetail?.username || player.name
+      };
+    });
+
+    console.log('🔍 [GET MATCH] Enhanced players with Firebase UIDs:', enhancedPlayers);
+
     return res.json({
       status: 'success',
       success: true,
@@ -752,7 +784,7 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
         sessionId: session.id,
         gameMode: session.game_mode,
         status: session.status,
-        players: players,
+        players: enhancedPlayers, // Use enhanced players with Firebase UID mapping
         gameState: gameState,
         createdAt: session.created_at,
         updatedAt: session.updated_at

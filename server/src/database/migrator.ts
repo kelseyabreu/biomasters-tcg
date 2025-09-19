@@ -239,6 +239,26 @@ export class KyselyMigrator {
       const fixDualKeySql = readFileSync(fixDualKeyPath, 'utf8');
       await this.executeMigration('031_fix_dual_key_system', fixDualKeySql);
 
+      // 032: Add admin user
+      const addAdminUserPath = join(__dirname, 'migrations/032_add_admin_user.sql');
+      const addAdminUserSql = readFileSync(addAdminUserPath, 'utf8');
+      await this.executeMigration('032_add_admin_user', addAdminUserSql);
+
+      // 033: Fix key_version column type to BIGINT
+      const fixKeyVersionPath = join(__dirname, 'migrations/033_fix_key_version_bigint.sql');
+      const fixKeyVersionSql = readFileSync(fixKeyVersionPath, 'utf8');
+      await this.executeMigration('033_fix_key_version_bigint', fixKeyVersionSql);
+
+      // 034: Migrate user_decks to normalized structure
+      const migrateUserDecksPath = join(__dirname, 'migrations/034_migrate_user_decks_to_normalized.sql');
+      const migrateUserDecksSql = readFileSync(migrateUserDecksPath, 'utf8');
+      await this.executeMigration('034_migrate_user_decks_to_normalized', migrateUserDecksSql);
+
+      // 035: Remove JSONB cards column (Phase 3)
+      const removeJsonbPath = join(__dirname, 'migrations/035_remove_jsonb_cards_column.sql');
+      const removeJsonbSql = readFileSync(removeJsonbPath, 'utf8');
+      await this.executeMigration('035_remove_jsonb_cards_column', removeJsonbSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

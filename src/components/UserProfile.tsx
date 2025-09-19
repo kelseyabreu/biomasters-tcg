@@ -38,11 +38,12 @@ interface UserProfileProps {
   compact?: boolean;
 }
 
-export const UserProfile: React.FC<UserProfileProps> = ({ 
-  showStats = true, 
-  compact = false 
+export const UserProfile: React.FC<UserProfileProps> = ({
+  showStats = true,
+  compact = false
 }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   
   const {
     isAuthenticated,
@@ -112,9 +113,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
   const handleSignOut = async () => {
     try {
+      setIsSigningOut(true);
       await signOutUser();
+      // Navigation is handled in the store, no need to do anything here
     } catch (error) {
       console.error('Sign out failed:', error);
+      setIsSigningOut(false); // Reset loading state on error
     }
   };
 
@@ -297,10 +301,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               size="small"
               color="medium"
               onClick={handleSignOut}
+              disabled={isSigningOut}
               data-testid="signout-button"
             >
               <IonIcon icon={logOut} slot="start" />
-              {isGuestMode ? 'Exit Guest Mode' : 'Sign Out'}
+              {isSigningOut ? 'Signing out...' : (isGuestMode ? 'Exit Guest Mode' : 'Sign Out')}
             </IonButton>
           </div>
         )}

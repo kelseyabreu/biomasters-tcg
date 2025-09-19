@@ -218,6 +218,43 @@
   margin: 0;
 }
 
+/* Timer display in player name */
+.timer-display {
+  margin-left: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--ion-color-primary);
+  background: var(--ion-color-primary-tint);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--ion-color-primary);
+}
+
+.timer-display.warning {
+  color: var(--ion-color-danger);
+  background: var(--ion-color-danger-tint);
+  border-color: var(--ion-color-danger);
+  animation: pulse-timer 1s infinite;
+}
+
+@keyframes pulse-timer {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Timer progress bar container */
+.timer-progress-container {
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.turn-timer-progress {
+  height: 4px;
+  border-radius: 2px;
+}
+
 /* Status indicators removed for cleaner design */
 /* .status-indicators {
   display: flex;

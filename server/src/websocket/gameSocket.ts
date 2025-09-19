@@ -1393,10 +1393,27 @@ export function setupGameSocket(server: HTTPServer) {
           try {
             const { default: db } = await import('../database/kysely');
 
-            const players = [
-              { playerId: socket.userId, rating: 1000, ready: false },
-              { playerId: opponentSocket.userId, rating: 1050, ready: false }
-            ];
+            // Get user details for proper player mapping
+            const userDetails = await db
+              .selectFrom('users')
+              .select(['id', 'username', 'display_name', 'firebase_uid'])
+              .where('id', 'in', [socket.userId!, opponentSocket.userId!])
+              .execute();
+
+            console.log('🔍 [WEBSOCKET MATCH] User details for players:', userDetails);
+
+            const players = [socket.userId!, opponentSocket.userId!].map((userId, index) => {
+              const userDetail = userDetails.find(u => u.id === userId);
+              return {
+                playerId: userId,
+                id: userId,
+                name: userDetail?.display_name || userDetail?.username || `Player ${index + 1}`,
+                username: userDetail?.username || userDetail?.display_name,
+                firebaseUid: userDetail?.firebase_uid,
+                rating: index === 0 ? 1000 : 1050,
+                ready: false
+              };
+            });
 
             // Start deck selection phase with 60-second timer
             const deckSelectionDeadline = Date.now() + 60000; // 60 seconds from now

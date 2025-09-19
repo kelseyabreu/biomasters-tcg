@@ -39,12 +39,26 @@
 /* Base Hand Card Styles */
 .hand-card {
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   flex-shrink: 0;
 }
 
 .hand-card.interactive {
   cursor: pointer;
+}
+
+/* Selected Hand Card Styles */
+.hand-card.selected {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 8px 16px rgba(var(--ion-color-primary-rgb), 0.4);
+  border: 3px solid var(--ion-color-primary) !important;
+  background: var(--ion-color-primary-tint) !important;
+  z-index: 10;
+}
+
+.hand-card.interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hand-card.interactive:hover {

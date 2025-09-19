@@ -135,7 +135,7 @@ export interface DecksTable {
   deck_type: Generated<number>;
   is_public: Generated<boolean>;
   is_claimable: Generated<boolean>;
-  cards: Generated<string>; // JSONB as string
+  // cards JSONB field removed - now using deck_cards table
 }
 
 export interface DeckCardsTable {
@@ -174,7 +174,7 @@ export interface MigrationsTable {
 export interface DeviceSyncStatesTable {
   device_id: string; // Part of composite primary key
   user_id: string; // Part of composite primary key
-  current_key_version: number; // Points to current active key version
+  current_key_version: bigint; // Points to current active key version (timestamp)
   last_sync_timestamp: number;
   last_used_at: Generated<Date>;
   created_at: Generated<Date>;
@@ -186,7 +186,7 @@ export interface DeviceSigningKeysTable {
   device_id: string;
   user_id: string;
   signing_key: string; // Encrypted signing key
-  key_version: number;
+  key_version: bigint; // Timestamp-based version number
   status: 'ACTIVE' | 'SUPERSEDED' | 'EXPIRED';
   expires_at: Date;
   superseded_at: Date | null;

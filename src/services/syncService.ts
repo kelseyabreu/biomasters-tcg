@@ -234,6 +234,20 @@ class SyncService {
       discardedActions.push(...response.discarded_actions);
     }
 
+    // Handle existing action chain from server (for nonce calculation only)
+    if (response.existing_action_chain && response.existing_action_chain.length > 0) {
+      console.log('🔗 [SYNC-SERVICE] Server provided existing action chain for nonce calculation:', {
+        actionCount: response.existing_action_chain.length,
+        actionIds: response.existing_action_chain.map(a => a.action_id)
+      });
+
+      // Update the offline security service with the count of server-processed actions
+      // This will be used to calculate the correct starting nonce for new actions
+      // DO NOT remove these from local queue - they represent user progress
+      offlineSecurityService.updateServerProcessedActionsCount(response.existing_action_chain.length);
+      console.log('🔗 [SYNC-SERVICE] Updated server processed actions count for correct nonce calculation');
+    }
+
     // Update signing key if provided
     if (response.new_signing_key) {
       offlineSecurityService.updateSigningKey(

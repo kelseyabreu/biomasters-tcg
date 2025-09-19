@@ -85,6 +85,7 @@ const Profile: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showSignOutAlert, setShowSignOutAlert] = useState(false);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Initialize form with current user data
   useEffect(() => {
@@ -176,11 +177,13 @@ const Profile: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
+      setIsSigningOut(true);
       await signOutUser();
-      showToastMessage('👋 Signed out successfully');
+      // Navigation is handled in the store, no need for toast here
     } catch (error: any) {
       console.error('Sign out failed:', error);
       showToastMessage(`❌ Sign out failed: ${error.message}`);
+      setIsSigningOut(false); // Reset loading state on error
     }
   };
 
@@ -473,10 +476,11 @@ const Profile: React.FC = () => {
               fill="outline"
               color="danger"
               onClick={() => setShowSignOutAlert(true)}
+              disabled={isSigningOut}
               className="sign-out-button"
             >
               <IonIcon icon={logOut} slot="start" />
-              Sign Out
+              {isSigningOut ? 'Signing out...' : 'Sign Out'}
             </IonButton>
           </IonCardContent>
         </IonCard>

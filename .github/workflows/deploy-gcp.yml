@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [main]
 
+# Required for Workload Identity Federation
+permissions:
+  contents: read
+  id-token: write
+
 env:
   PROJECT_ID: biomasters-tcg
   REGION: us-east1
@@ -47,33 +52,15 @@ jobs:
     - name: Build server
       run: npm run build:server
 
-    # Set up Cloud SDK first
+    # Authenticate with GCP using Workload Identity Federation (no secrets required!)
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: projects/416250257146/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+        service_account: biomasters-server-dev@biomasters-tcg.iam.gserviceaccount.com
+
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
-
-    # Create GCP credentials file and authenticate
-    - name: Setup GCP Authentication
-      run: |
-        # Create credentials file
-        cat > /tmp/gcp-key.json << EOF
-        {
-          "type": "service_account",
-          "project_id": "biomasters-tcg",
-          "private_key_id": "8b1aedd1ec955080c3aea475c9031e2c9c44bb65",
-          "private_key": "${{ secrets.FIREBASE_PRIVATE_KEY }}",
-          "client_email": "biomasters-server-dev@biomasters-tcg.iam.gserviceaccount.com",
-          "client_id": "110371745342356969744",
-          "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-          "token_uri": "https://oauth2.googleapis.com/token",
-          "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-          "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/biomasters-server-dev%40biomasters-tcg.iam.gserviceaccount.com",
-          "universe_domain": "googleapis.com"
-        }
-        EOF
-
-        # Authenticate with gcloud
-        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
-        gcloud config set project biomasters-tcg
 
     # Build and Deploy Backend to Cloud Run
     - name: Build Docker Image

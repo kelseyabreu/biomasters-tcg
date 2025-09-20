@@ -24,7 +24,7 @@ import GameLog, { GameLogEntry } from '../components/battle/GameLog';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { gameApi } from '../services/apiClient';
 import { TCGGameState, TCGGameSettings } from '@kelseyabreu/shared';
-import { ApiStatus, GamePhase } from '@kelseyabreu/shared';
+import { ApiStatus, GamePhase, deepDeserialize } from '@kelseyabreu/shared';
 import { Card } from '../types';
 import { getGameSocket } from '../services/gameSocket';
 import { useLocalization } from '../contexts/LocalizationContext';
@@ -110,16 +110,32 @@ export const BattlePage: React.FC = () => {
       const response = await gameApi.getGameSession(sessionId);
 
       if (response.data.status === ApiStatus.SUCCESS && response.data.data) {
-        setSessionData(response.data.data);
-        console.log('✅ [BattlePage] Game session loaded:', response.data.data);
+        // Deserialize Maps in the game state if they exist
+        const sessionData = { ...response.data.data };
+        if (sessionData.gameState) {
+          console.log('🔄 [BattlePage] Deserializing initial game state Maps...');
+          sessionData.gameState = deepDeserialize(sessionData.gameState);
+          console.log('🔄 [BattlePage] Initial game state deserialized:', {
+            hasGrid: !!(sessionData.gameState.grid),
+            hasEngineState: !!(sessionData.gameState.engineState),
+            hasEngineGrid: !!(sessionData.gameState.engineState?.grid),
+            gridType: sessionData.gameState.grid ? sessionData.gameState.grid.constructor.name : 'undefined',
+            engineGridType: sessionData.gameState.engineState?.grid ? sessionData.gameState.engineState.grid.constructor.name : 'undefined',
+            gridSize: sessionData.gameState.grid instanceof Map ? sessionData.gameState.grid.size : 'not a Map',
+            engineGridSize: sessionData.gameState.engineState?.grid instanceof Map ? sessionData.gameState.engineState.grid.size : 'not a Map'
+          });
+        }
+
+        setSessionData(sessionData);
+        console.log('✅ [BattlePage] Game session loaded with deserialized Maps:', sessionData);
 
         // 🎮 DEBUG: Detailed session data analysis
         console.log('🎮 [SESSION DATA] Detailed analysis:', {
-          sessionId: response.data.data.sessionId,
-          gameMode: response.data.data.gameMode,
-          status: response.data.data.status,
-          playersCount: response.data.data.players?.length,
-          players: response.data.data.players?.map((p: any) => ({
+          sessionId: sessionData.sessionId,
+          gameMode: sessionData.gameMode,
+          status: sessionData.status,
+          playersCount: sessionData.players?.length,
+          players: sessionData.players?.map((p: any) => ({
             id: p.id,
             playerId: p.playerId,
             name: p.name,
@@ -128,17 +144,17 @@ export const BattlePage: React.FC = () => {
             userId: p.userId,
             allKeys: Object.keys(p)
           })),
-          gameStateKeys: Object.keys(response.data.data.gameState || {}),
-          hasGrid: !!(response.data.data.gameState?.grid || response.data.data.gameState?.engineState?.grid),
-          gridSize: (response.data.data.gameState?.grid || response.data.data.gameState?.engineState?.grid)?.size || 0
+          gameStateKeys: Object.keys(sessionData.gameState || {}),
+          hasGrid: !!(sessionData.gameState?.grid || sessionData.gameState?.engineState?.grid),
+          gridSize: (sessionData.gameState?.grid || sessionData.gameState?.engineState?.grid)?.size || 0
         });
 
         // Store session data globally for player mapping
-        (window as any).sessionData = response.data.data;
+        (window as any).sessionData = sessionData;
 
         // 🔧 Check for game phase mismatch
-        if (response.data.data.gameState?.gamePhase === 'playing' &&
-            response.data.data.gameState?.engineState?.gamePhase === 'setup') {
+        if (sessionData.gameState?.gamePhase === 'playing' &&
+            sessionData.gameState?.engineState?.gamePhase === 'setup') {
           console.log('🚨 [GAME PHASE MISMATCH] Detected phase mismatch!');
           console.log('🔧 [GAME PHASE MISMATCH] Game is in playing phase but engine is in setup phase');
           console.log('🔧 [GAME PHASE MISMATCH] This explains why the grid is empty and HOME cards are missing');
@@ -148,7 +164,7 @@ export const BattlePage: React.FC = () => {
         // Update the store with the active battle info
         useHybridGameStore.setState(() => ({
           activeBattle: {
-            sessionId: response.data.data.sessionId,
+            sessionId: sessionData.sessionId,
             gameMode: 'online',
             levelId: null,
             isActive: true
@@ -215,7 +231,22 @@ export const BattlePage: React.FC = () => {
 
       // Update session data if it's for our session
       if (update.sessionId === sessionId && update.data?.gameState) {
-        console.log('🔄 [BattlePage] Updating local game state:', update.data.gameState);
+        console.log('🔄 [BattlePage] Deserializing game state Maps...');
+
+        // Deserialize Maps from the serialized format
+        const deserializedGameState = deepDeserialize(update.data.gameState);
+
+        console.log('🔄 [BattlePage] Game state deserialized:', {
+          hasGrid: !!(deserializedGameState.grid),
+          hasEngineState: !!(deserializedGameState.engineState),
+          hasEngineGrid: !!(deserializedGameState.engineState?.grid),
+          gridType: deserializedGameState.grid ? deserializedGameState.grid.constructor.name : 'undefined',
+          engineGridType: deserializedGameState.engineState?.grid ? deserializedGameState.engineState.grid.constructor.name : 'undefined',
+          gridSize: deserializedGameState.grid instanceof Map ? deserializedGameState.grid.size : 'not a Map',
+          engineGridSize: deserializedGameState.engineState?.grid instanceof Map ? deserializedGameState.engineState.grid.size : 'not a Map'
+        });
+
+        console.log('🔄 [BattlePage] Updating local game state with deserialized data');
 
         setSessionData(prev => {
           if (prev) {
@@ -228,7 +259,7 @@ export const BattlePage: React.FC = () => {
           }
           return prev ? {
             ...prev,
-            gameState: update.data.gameState
+            gameState: deserializedGameState  // Use the deserialized game state with proper Maps
           } : null;
         });
       }
@@ -238,10 +269,14 @@ export const BattlePage: React.FC = () => {
       console.log('🎮 [BattlePage] Game initialized event received:', update);
 
       if (update.sessionId === sessionId) {
-        console.log('🎮 [BattlePage] Game initialized for our session - updating state');
+        console.log('🎮 [BattlePage] Game initialized for our session - deserializing and updating state');
+
+        // Deserialize Maps from the serialized format
+        const deserializedGameState = deepDeserialize(update.data.gameState);
+
         setSessionData(prev => prev ? {
           ...prev,
-          gameState: update.data.gameState
+          gameState: deserializedGameState  // Use the deserialized game state with proper Maps
         } : null);
       }
     };

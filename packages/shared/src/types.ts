@@ -35,6 +35,76 @@ import {
 } from './enums';
 
 // ============================================================================
+// SERIALIZATION UTILITIES
+// ============================================================================
+
+/**
+ * Utility functions for serializing/deserializing Maps for WebSocket transmission
+ * Maps don't serialize properly to JSON, so we need custom handling
+ */
+export interface SerializableMap<K, V> {
+  __type: 'Map';
+  entries: [K, V][];
+}
+
+/**
+ * Convert a Map to a serializable format
+ */
+export function serializeMap<K, V>(map: Map<K, V>): SerializableMap<K, V> {
+  return {
+    __type: 'Map',
+    entries: Array.from(map.entries())
+  };
+}
+
+/**
+ * Convert a serializable map back to a Map
+ */
+export function deserializeMap<K, V>(serialized: SerializableMap<K, V>): Map<K, V> {
+  return new Map(serialized.entries);
+}
+
+/**
+ * Deep serialize an object, converting Maps to serializable format
+ */
+export function deepSerialize(obj: any): any {
+  if (obj instanceof Map) {
+    return serializeMap(obj);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(deepSerialize);
+  }
+  if (obj && typeof obj === 'object') {
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = deepSerialize(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
+/**
+ * Deep deserialize an object, converting serializable maps back to Maps
+ */
+export function deepDeserialize(obj: any): any {
+  if (obj && typeof obj === 'object' && obj.__type === 'Map') {
+    return deserializeMap(obj);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(deepDeserialize);
+  }
+  if (obj && typeof obj === 'object') {
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = deepDeserialize(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
+// ============================================================================
 // CORE GAME TYPES
 // ============================================================================
 

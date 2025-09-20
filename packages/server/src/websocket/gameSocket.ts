@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { sql } from 'kysely';
 import { randomUUID } from 'crypto';
 import { db } from '../database/kysely';
-import { PhyloGameAction } from '@kelseyabreu/shared';
+import { PhyloGameAction, deepSerialize, deepDeserialize } from '@kelseyabreu/shared';
 
 // Global WebSocket server instance
 let globalIo: SocketIOServer | null = null;
@@ -20,7 +20,7 @@ export function getGlobalIo(): SocketIOServer | null {
 function serializeGameStateForTransmission(gameState: any): any {
   if (!gameState) return gameState;
 
-  console.log('🔄 [SERIALIZATION] Starting serialization for game state:', {
+  console.log('🔄 [SERIALIZATION] Starting deep serialization for game state:', {
     hasGameState: !!gameState,
     hasGrid: !!gameState.grid,
     hasEngineState: !!gameState.engineState,
@@ -29,26 +29,27 @@ function serializeGameStateForTransmission(gameState: any): any {
     engineGridType: gameState.engineState?.grid ? gameState.engineState.grid.constructor.name : 'undefined'
   });
 
-  const serialized = { ...gameState };
+  // Use the new deep serialization to handle all Maps recursively
+  const serialized = deepSerialize(gameState);
 
-  // Convert Map objects to plain objects for transmission
+  // Log the results for debugging
   if (gameState.grid && gameState.grid instanceof Map) {
-    console.log('🔄 [SERIALIZATION] Converting grid Map to object for transmission, entries:', gameState.grid.size);
-    serialized.grid = Object.fromEntries(gameState.grid.entries());
-    console.log('🔄 [SERIALIZATION] Grid converted, result keys:', Object.keys(serialized.grid));
+    console.log('🔄 [SERIALIZATION] Grid Map serialized:', {
+      originalSize: gameState.grid.size,
+      serializedType: serialized.grid?.__type,
+      serializedEntries: serialized.grid?.entries?.length || 0
+    });
   }
 
-  // Handle engineState if it exists
-  if (gameState.engineState && gameState.engineState.grid && gameState.engineState.grid instanceof Map) {
-    console.log('🔄 [SERIALIZATION] Converting engineState grid Map to object for transmission, entries:', gameState.engineState.grid.size);
-    serialized.engineState = {
-      ...gameState.engineState,
-      grid: Object.fromEntries(gameState.engineState.grid.entries())
-    };
-    console.log('🔄 [SERIALIZATION] EngineState grid converted, result keys:', Object.keys(serialized.engineState.grid));
+  if (gameState.engineState?.grid && gameState.engineState.grid instanceof Map) {
+    console.log('🔄 [SERIALIZATION] EngineState grid Map serialized:', {
+      originalSize: gameState.engineState.grid.size,
+      serializedType: serialized.engineState?.grid?.__type,
+      serializedEntries: serialized.engineState?.grid?.entries?.length || 0
+    });
   }
 
-  console.log('🔄 [SERIALIZATION] Serialization complete');
+  console.log('🔄 [SERIALIZATION] Deep serialization complete');
   return serialized;
 }
 

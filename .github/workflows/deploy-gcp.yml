@@ -36,7 +36,13 @@ jobs:
       run: npm run build:frontend
       env:
         VITE_API_URL: https://api.biomasters.app
-        VITE_FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+        VITE_FIREBASE_API_KEY: AIzaSyCLZDVgAPSO7Lakad59vr_snAnYhlB-QVw
+        VITE_FIREBASE_AUTH_DOMAIN: biomasters-tcg.firebaseapp.com
+        VITE_FIREBASE_PROJECT_ID: biomasters-tcg
+        VITE_FIREBASE_STORAGE_BUCKET: biomasters-tcg.firebasestorage.app
+        VITE_FIREBASE_MESSAGING_SENDER_ID: 416250257146
+        VITE_FIREBASE_APP_ID: 1:416250257146:web:1e7bb352ce2f8b670df343
+        VITE_FIREBASE_MEASUREMENT_ID: G-5NBNQSXC8F
 
     - name: Build server
       run: npm run build:server

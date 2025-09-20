@@ -144,10 +144,34 @@ async function initializeServices() {
     await initializeFirebase();
 
     console.log('🔴 Initializing Redis connection...');
-    await initializeRedis();
+    try {
+      await initializeRedis();
+      console.log('✅ Redis initialization completed');
+    } catch (error) {
+      console.error('❌ [STARTUP] Redis initialization failed:', error);
+      console.error('❌ [STARTUP] Redis error details:', {
+        message: (error as any)?.message,
+        stack: (error as any)?.stack,
+        code: (error as any)?.code
+      });
+      // Continue without Redis - don't crash the server
+      console.log('⚠️ [STARTUP] Continuing without Redis...');
+    }
 
     console.log('🔴 Initializing IORedis connection...');
-    await initializeIORedis();
+    try {
+      await initializeIORedis();
+      console.log('✅ IORedis initialization completed');
+    } catch (error) {
+      console.error('❌ [STARTUP] IORedis initialization failed:', error);
+      console.error('❌ [STARTUP] IORedis error details:', {
+        message: (error as any)?.message,
+        stack: (error as any)?.stack,
+        code: (error as any)?.code
+      });
+      // Continue without IORedis - don't crash the server
+      console.log('⚠️ [STARTUP] Continuing without IORedis...');
+    }
 
     // Try to connect to PostgreSQL (optional for now)
     try {
@@ -159,17 +183,8 @@ async function initializeServices() {
       console.warn('   Install PostgreSQL to enable full functionality');
     }
 
-    // Try to connect to Redis (optional)
-    try {
-      console.log('🔴 Connecting to Redis...');
-      await initializeRedis();
-      console.log('✅ Redis connected successfully');
-    } catch (error) {
-      console.warn('⚠️  Redis not available, using memory-based caching');
-    }
-
-    // IORedis already initialized above
-    console.log('✅ IORedis connected successfully');
+    // Redis and IORedis already initialized above
+    console.log('✅ Redis and IORedis initialization completed');
 
     // Initialize server data loader
     try {

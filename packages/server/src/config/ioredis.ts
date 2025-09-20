@@ -19,21 +19,27 @@ function getIORedisConfig() {
     port: parseInt(process.env['REDIS_PORT'] || '6378'),
     password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5',
 
-    // Memorystore-optimized settings (increased timeouts for Cloud Run)
+    // Memorystore-optimized settings for Cloud Run
     connectTimeout: 30000,
     commandTimeout: 15000,
-    maxRetriesPerRequest: 5,
+    maxRetriesPerRequest: 3,
     lazyConnect: true,
     keepAlive: 30000,
+    retryDelayOnFailover: 100,
 
     // Connection pool settings
     family: 4, // Force IPv4
     db: 0,
   };
 
-  // Enable TLS if transit encryption is enabled (Google Cloud Memorystore)
+  // Google Cloud Memorystore with transit encryption requires TLS
+  console.log('🔴 [IORedis] TLS setting:', process.env['REDIS_TLS']);
   if (process.env['REDIS_TLS'] === 'true') {
+    // Enable TLS for both development and production when REDIS_TLS=true
     config.tls = { rejectUnauthorized: false };
+    console.log('🔴 [IORedis] TLS enabled for secure connection');
+  } else {
+    console.log('🔴 [IORedis] TLS disabled');
   }
 
   console.log('🔴 [IORedis] Final config object:', JSON.stringify(config, null, 2));

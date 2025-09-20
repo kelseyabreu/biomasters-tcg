@@ -16,21 +16,27 @@ function getRedisConfig() {
     port: parseInt(process.env['REDIS_PORT'] || '6378'),
     password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5',
 
-    // Memorystore-optimized settings
+    // Memorystore-optimized settings for Cloud Run
     connectTimeout: 30000,
     commandTimeout: 15000,
-    maxRetriesPerRequest: 5,
+    maxRetriesPerRequest: 3,
     lazyConnect: true,
     keepAlive: 30000,
+    retryDelayOnFailover: 100,
 
     // Connection pool settings
     family: 4, // Force IPv4
     db: 0,
   };
 
-  // Enable TLS if transit encryption is enabled
+  // Google Cloud Memorystore with transit encryption requires TLS
+  console.log('🔴 [Redis] TLS setting:', process.env['REDIS_TLS']);
   if (process.env['REDIS_TLS'] === 'true') {
+    // Enable TLS for both development and production when REDIS_TLS=true
     config.tls = { rejectUnauthorized: false };
+    console.log('🔴 [Redis] TLS enabled for secure connection');
+  } else {
+    console.log('🔴 [Redis] TLS disabled');
   }
 
   console.log('🔴 [Redis] Config:', JSON.stringify({
@@ -57,6 +63,12 @@ export async function initializeRedis(): Promise<void> {
   console.log('🔴 [Redis] - REDIS_PASSWORD:', process.env['REDIS_PASSWORD'] ? 'SET' : 'NOT SET');
   console.log('🔴 [Redis] - REDIS_TLS:', process.env['REDIS_TLS']);
   console.log('🔴 [Redis] - NODE_ENV:', process.env['NODE_ENV']);
+
+  // Add more detailed environment logging
+  console.log('🔴 [Redis] All Redis-related env vars:');
+  Object.keys(process.env).filter(key => key.includes('REDIS')).forEach(key => {
+    console.log(`🔴 [Redis] - ${key}:`, key.includes('PASSWORD') ? 'SET' : process.env[key]);
+  });
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -162,12 +174,27 @@ export function getRedisClient(): Redis | null {
 }
 
 /**
- * Check if Redis is available
+ * Check if Redis is available by testing the actual connection
  */
 export function isRedisAvailable(): boolean {
-  const available = redisAvailable && redisClient !== null;
-  console.log(`🔴 [Redis] isRedisAvailable() called - redisAvailable: ${redisAvailable}, redisClient: ${redisClient ? 'EXISTS' : 'NULL'}, result: ${available}`);
-  return available;
+  console.log(`🔴 [Redis] isRedisAvailable() called - redisAvailable flag: ${redisAvailable}, redisClient: ${redisClient ? 'EXISTS' : 'NULL'}`);
+
+  // If no client exists, definitely not available
+  if (!redisClient) {
+    console.log(`🔴 [Redis] No client exists, returning false`);
+    return false;
+  }
+
+  // Test the actual connection status instead of relying on event-based flags
+  // Redis client has a 'status' property that shows the actual connection state
+  const status = redisClient.status;
+  console.log(`🔴 [Redis] Client status: ${status}`);
+
+  // Redis status can be: 'wait', 'connecting', 'connect', 'ready', 'close', 'reconnecting', 'end'
+  const isConnected = status === 'ready' || status === 'connect';
+  console.log(`🔴 [Redis] isRedisAvailable() result: ${isConnected} (based on status: ${status})`);
+
+  return isConnected;
 }
 
 /**

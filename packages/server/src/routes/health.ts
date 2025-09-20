@@ -359,4 +359,49 @@ router.get('/ioredis', asyncHandler(async (_req: Request, res: Response) => {
   }
 }));
 
+/**
+ * Debug Redis state (temporary)
+ */
+router.get('/redis-debug', asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    console.log('🔴 [DEBUG] Redis debug endpoint called');
+
+    const redisClient = require('../config/redis').redisClient;
+    const isAvailable = isRedisAvailable();
+
+    console.log('🔴 [DEBUG] Redis client exists:', !!redisClient);
+    console.log('🔴 [DEBUG] isRedisAvailable():', isAvailable);
+
+    // Try to ping Redis directly
+    let pingResult = null;
+    let pingError = null;
+
+    if (redisClient) {
+      try {
+        pingResult = await redisClient.ping();
+        console.log('🔴 [DEBUG] Direct ping result:', pingResult);
+      } catch (error) {
+        pingError = (error as any)?.message || 'Unknown error';
+        console.log('🔴 [DEBUG] Direct ping error:', pingError);
+      }
+    }
+
+    res.json({
+      status: 'debug',
+      redisClientExists: !!redisClient,
+      isRedisAvailable: isAvailable,
+      directPingResult: pingResult,
+      directPingError: pingError,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('🔴 [DEBUG] Redis debug error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
 export default router;

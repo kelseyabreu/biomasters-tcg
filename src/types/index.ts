@@ -18,22 +18,24 @@ import {
   GameSettings,
   GameMetadata,
   AbilityData,
-  ConservationStatus,
   CardId,
   AbilityId,
   TrophicLevel,
   TurnPhase,
   GamePhase,
-  Domain,
   KeywordId,
   TriggerId,
   EffectId,
   SelectorId,
   ActionId,
   TrophicCategoryId,
+  PhyloGameState,
+  ConservationStatus,
   GameActionType,
-  PhyloGameState
+  Domain
 } from '@kelseyabreu/shared';
+
+
 
 // Re-export shared types for convenience
 export type {
@@ -47,23 +49,25 @@ export type {
   CardModifier,
   GameSettings,
   GameMetadata,
-  AbilityData
+  AbilityData,
+  PhyloGameState
 } from '@kelseyabreu/shared';
 
 export {
-  ConservationStatus,
   CardId,
   AbilityId,
   TrophicLevel,
   TurnPhase,
   GamePhase,
-  Domain,
   KeywordId,
   TriggerId,
   EffectId,
   SelectorId,
   ActionId,
-  TrophicCategoryId
+  TrophicCategoryId,
+  ConservationStatus,
+  GameActionType,
+  Domain
 } from '@kelseyabreu/shared';
 
 // ============================================================================

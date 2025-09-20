@@ -1,0 +1,105 @@
+# .github/workflows/deploy-gcp.yml
+name: Deploy to GCP
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PROJECT_ID: biomasters-tcg
+  REGION: us-east1
+  BACKEND_SERVICE: biomasters-api
+  FRONTEND_BUCKET: biomasters-frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build shared package
+      run: npm run build:shared
+
+    - name: Build frontend
+      run: npm run build:frontend
+      env:
+        VITE_API_URL: https://api.biomasters.app
+        VITE_FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+
+    - name: Build server
+      run: npm run build:server
+
+    # Authenticate with GCP using existing service account
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    # Build and Deploy Backend to Cloud Run
+    - name: Build Docker Image
+      run: |
+        gcloud builds submit \
+          --config packages/server/cloudbuild.yaml \
+          --substitutions _PROJECT_ID=$PROJECT_ID \
+          .
+
+    - name: Deploy Backend to Cloud Run
+      run: |
+        gcloud run deploy $BACKEND_SERVICE \
+          --image gcr.io/$PROJECT_ID/$BACKEND_SERVICE \
+          --platform managed \
+          --region $REGION \
+          --allow-unauthenticated \
+          --port 3001 \
+          --memory 2Gi \
+          --cpu 2 \
+          --min-instances 0 \
+          --max-instances 10 \
+          --timeout 300 \
+          --set-env-vars="NODE_ENV=production" \
+          --set-env-vars="PORT=3001" \
+          --set-env-vars="GOOGLE_CLOUD_PROJECT_ID=$PROJECT_ID" \
+          --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+          --set-env-vars="REDIS_HOST=10.36.239.107" \
+          --set-env-vars="REDIS_PORT=6378" \
+          --set-env-vars="REDIS_PASSWORD=657fc2af-f410-4b45-9b8a-2a54fe7e60d5" \
+          --set-env-vars="REDIS_TLS=true" \
+          --set-env-vars="FIREBASE_PROJECT_ID=biomasters-tcg" \
+          --set-env-vars="FIREBASE_CLIENT_EMAIL=biomasters-server-dev@biomasters-tcg.iam.gserviceaccount.com" \
+          --set-env-vars="FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" \
+          --vpc-connector projects/$PROJECT_ID/locations/$REGION/connectors/redis-connector \
+          --vpc-egress private-ranges-only
+
+    # Deploy Frontend to Cloud Storage
+    - name: Deploy Frontend to Cloud Storage
+      run: |
+        gcloud storage rsync dist/ gs://$FRONTEND_BUCKET/ --recursive --delete-unmatched-destination-objects
+        gcloud storage objects update gs://$FRONTEND_BUCKET/**/*.js --cache-control="public, max-age=31536000"
+        gcloud storage objects update gs://$FRONTEND_BUCKET/**/*.css --cache-control="public, max-age=31536000"
+        gcloud storage objects update gs://$FRONTEND_BUCKET/index.html --cache-control="public, max-age=3600"
+
+    # Output deployment URLs
+    - name: Output URLs
+      run: |
+        echo "🚀 Backend deployed to: https://$BACKEND_SERVICE-$(echo $REGION | tr '-' '')-$PROJECT_ID.a.run.app"
+        echo "🌐 Frontend deployed to: https://storage.googleapis.com/$FRONTEND_BUCKET/index.html"
+        echo "📋 Next: Update CloudFlare DNS to point to these URLs"
+        echo ""
+        echo "🔧 CloudFlare DNS Configuration:"
+        echo "api.biomasters.app → CNAME → $BACKEND_SERVICE-$(echo $REGION | tr '-' '')-$PROJECT_ID.a.run.app"
+        echo "biomasters.app → CNAME → storage.googleapis.com/$FRONTEND_BUCKET"

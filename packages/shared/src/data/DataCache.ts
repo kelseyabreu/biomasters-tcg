@@ -68,8 +68,8 @@ export class DataCache {
       this.loadFromPersistence();
     }
 
-    // Set up periodic cleanup only if not in test environment
-    if (process.env['NODE_ENV'] !== 'test') {
+    // Set up periodic cleanup only if not in test environment and in Node.js environment
+    if (typeof process !== 'undefined' && process.env && process.env['NODE_ENV'] !== 'test') {
       this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000); // Every 5 minutes
     }
   }

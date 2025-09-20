@@ -4,15 +4,24 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files from server directory
-COPY server/package*.json ./
+# Copy root package.json and workspace configuration
+COPY package*.json ./
 
-# Install all dependencies (including dev dependencies for build)
+# Copy workspace packages
+COPY packages/shared/ ./packages/shared/
+COPY packages/server/ ./packages/server/
+
+# Copy public data
+COPY public/ ./public/
+
+# Install all dependencies
 RUN npm ci
 
-# Copy server source code and shared directory
-COPY server/ ./
-COPY shared/ ./shared/
+# Build shared package
+RUN cd packages/shared && npm run build
+
+# Build server
+RUN cd packages/server && npm run build
 
 # Install tsx globally for runtime TypeScript execution
 RUN npm install -g tsx
@@ -26,6 +35,9 @@ EXPOSE 3001
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1
+
+# Set working directory to server
+WORKDIR /app/packages/server
 
 # Start the application with tsx
 CMD ["tsx", "src/index.ts"]

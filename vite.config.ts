@@ -9,8 +9,15 @@ export default defineConfig({
     react(),
     // legacy() // Temporarily disabled due to core-js issue
   ],
+  define: {
+    // Provide browser-safe process global for shared package compatibility
+    'process.env': 'import.meta.env'
+  },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx']
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+    alias: {
+      '@kelseyabreu/shared': path.resolve(__dirname, 'packages/shared/src/index.ts')
+    }
   },
   assetsInclude: ['**/*.json'],
   json: {

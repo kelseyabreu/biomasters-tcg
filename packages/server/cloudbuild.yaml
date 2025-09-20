@@ -1,6 +1,6 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'server/Dockerfile.parent', '-t', 'gcr.io/$PROJECT_ID/biomasters-api', '.']
+    args: ['build', '-f', 'packages/server/Dockerfile.parent', '-t', 'gcr.io/$PROJECT_ID/biomasters-api', '.']
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/biomasters-api']
 images:

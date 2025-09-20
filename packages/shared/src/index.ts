@@ -130,6 +130,7 @@ export {
   GameActionType,
   ValidationError,
   ApiStatus,
+  ConservationStatus,
   GAME_CONSTANTS,
   DOMAIN_COMPATIBILITY,
   TROPHIC_CONNECTIONS,

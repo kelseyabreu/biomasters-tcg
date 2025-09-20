@@ -7,7 +7,7 @@ import express, { Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { db } from '../database/kysely';
 import { MatchmakingService } from '../services/MatchmakingService';
-import { ApiResponse, MatchmakingRequest } from '../../../shared/types';
+import { ApiResponse, MatchmakingRequest } from '@shared/types';
 
 const router = express.Router();
 

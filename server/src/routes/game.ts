@@ -6,8 +6,8 @@ import { db } from '../database/kysely';
 import { z } from 'zod';
 import crypto from 'crypto';
 // import { NewDeck } from '../database/types'; // Unused for now
-import { BioMastersEngine, GameSettings, PlayerAction } from '../../../shared/game-engine/BioMastersEngine';
-import { IUnifiedDataLoader } from '../../../shared/data/IServerDataLoader';
+import { BioMastersEngine, GameSettings, PlayerAction } from '@shared/game-engine/BioMastersEngine';
+import { IUnifiedDataLoader } from '@shared/data/IServerDataLoader';
 import { createMockLocalizationManager } from '../utils/mockLocalizationManager';
 
 const router = Router();

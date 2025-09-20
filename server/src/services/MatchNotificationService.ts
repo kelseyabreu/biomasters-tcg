@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { Message, Subscription } from '@google-cloud/pubsub';
 import { db } from '../database/kysely';
 import { getSubscription, PUBSUB_SUBSCRIPTIONS } from '../config/pubsub';
-import { MatchFound, MatchNotification } from '../../../shared/types';
+import { MatchFound, MatchNotification } from '@shared/types';
 
 export class MatchNotificationService {
     private io: Server;

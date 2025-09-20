@@ -12,7 +12,7 @@ const JWT_EXPIRES_IN = '7d'; // Guest tokens last 7 days
 const SALT_ROUNDS = 12;
 
 // Import unified GuestJWTPayload from shared types
-import type { GuestJWTPayload } from '../../../shared/types';
+import type { GuestJWTPayload } from '@shared/types';
 
 // Legacy type (marked for removal)
 export interface GuestJWTPayload_old {

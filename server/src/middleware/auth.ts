@@ -7,7 +7,7 @@ import { CacheManager } from '../config/redis';
 import { adaptDatabaseUserToUnified } from '../database/types';
 import type {
   DatabaseUser
-} from '../../../shared/types';
+} from '@shared/types';
 
 // Note: Express Request types are now defined in server/src/types/express.d.ts
 // using the unified authentication context

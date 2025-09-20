@@ -4,14 +4,13 @@
  */
 
 import { Message, Subscription } from '@google-cloud/pubsub';
-import { Redis } from '@upstash/redis';
+import { getRedisClient, isRedisAvailable } from '../config/redis';
 import crypto from 'crypto';
 import { db } from '../database/kysely';
 import { getSubscription, publishMessage, PUBSUB_TOPICS, PUBSUB_SUBSCRIPTIONS } from '../config/pubsub';
-import { MatchmakingRequest, MatchFound, MatchmakingQueueEntry } from '../../../shared/types';
+import { MatchmakingRequest, MatchFound, MatchmakingQueueEntry } from '@shared/types';
 
 export class MatchmakingWorker {
-    private redis: Redis;
     private isRunning = false;
     private cleanupInterval?: NodeJS.Timeout | null;
     private namespace: string;
@@ -19,25 +18,15 @@ export class MatchmakingWorker {
 
     constructor(namespace: string = 'prod') {
         this.namespace = namespace;
-        console.log(`🔴 [MatchmakingWorker] Initializing Redis connection with namespace: ${namespace}...`);
-        console.log('🔴 [MatchmakingWorker] Environment check:');
-        console.log('🔴 [MatchmakingWorker] UPSTASH_REDIS_REST_URL:', process.env['UPSTASH_REDIS_REST_URL'] ? 'SET' : 'NOT SET');
-        console.log('🔴 [MatchmakingWorker] UPSTASH_REDIS_REST_TOKEN:', process.env['UPSTASH_REDIS_REST_TOKEN'] ? 'SET' : 'NOT SET');
+        console.log(`🔴 [MatchmakingWorker] Initializing with namespace: ${namespace}...`);
+    }
 
-        // Use Upstash Redis configuration
-        const redisConfig = {
-            url: process.env['UPSTASH_REDIS_REST_URL'] || '',
-            token: process.env['UPSTASH_REDIS_REST_TOKEN'] || ''
-        };
-
-        console.log('🔴 [MatchmakingWorker] Redis config:', {
-            url: redisConfig.url ? redisConfig.url.substring(0, 50) + '...' : 'empty',
-            token: redisConfig.token ? 'SET (length: ' + redisConfig.token.length + ')' : 'empty',
-            namespace: this.namespace
-        });
-
-        this.redis = new Redis(redisConfig);
-        console.log(`✅ [MatchmakingWorker] Redis client created with namespace: ${namespace}`);
+    private getRedis() {
+        const client = getRedisClient();
+        if (!client || !isRedisAvailable()) {
+            throw new Error('Redis not available for matchmaking worker');
+        }
+        return client;
     }
 
     /**
@@ -291,7 +280,7 @@ export class MatchmakingWorker {
     private async findPotentialMatch(request: MatchmakingRequest, queueKey: string): Promise<{ players: Array<{ playerId: string, rating: number }> } | null> {
         try {
             // Get all players in queue (read-only operation)
-            const requests = await this.redis.zrange(queueKey, 0, -1);
+            const requests = await this.getRedis().zrange(queueKey, 0, -1);
             console.log(`🔍 [POTENTIAL MATCH] Found ${requests.length} players in queue`);
 
             if (requests.length === 0) {
@@ -389,11 +378,11 @@ export class MatchmakingWorker {
             console.log(`🔒 [ATOMIC RESERVATION] Reservation keys:`, reservationKeys);
 
             // Use Redis MULTI for atomic transaction (not pipeline!)
-            const transaction = this.redis.multi();
+            const transaction = this.getRedis().multi();
 
             // Add SET NX commands for each player to the transaction
             for (const key of reservationKeys) {
-                transaction.set(key, sessionId, { nx: true, px: reservationTTL });
+                transaction.set(key, sessionId, 'PX', reservationTTL, 'NX');
             }
 
             // Execute the transaction atomically
@@ -412,7 +401,7 @@ export class MatchmakingWorker {
                 console.log(`🔒 [ATOMIC RESERVATION] Individual results:`, results);
 
                 // Clean up any partial reservations using another transaction
-                const cleanupTransaction = this.redis.multi();
+                const cleanupTransaction = this.getRedis().multi();
                 for (const key of reservationKeys) {
                     cleanupTransaction.del(key);
                 }
@@ -476,7 +465,7 @@ export class MatchmakingWorker {
             console.log(`🧹 [CLEANUP] Removing ${reservationKeys.length} reservation keys`);
 
             // Use transaction for atomic cleanup
-            const transaction = this.redis.multi();
+            const transaction = this.getRedis().multi();
             for (const key of reservationKeys) {
                 transaction.del(key);
             }
@@ -656,7 +645,7 @@ export class MatchmakingWorker {
         console.log(`🧹 [MATCHMAKING WORKER] Players to remove:`, players.map(p => p.playerId));
 
         try {
-            const requests = await this.redis.zrange(queueKey, 0, -1);
+            const requests = await this.getRedis().zrange(queueKey, 0, -1);
             console.log(`🧹 [MATCHMAKING WORKER] Queue ${queueKey} currently has ${requests.length} items before removal`);
             const playersToRemove = new Set(players.map(p => p.playerId));
 
@@ -683,7 +672,7 @@ export class MatchmakingWorker {
 
                     if (playersToRemove.has(request.playerId)) {
                         console.log('🔴 [MatchmakingWorker] Found player to remove:', request.playerId);
-                        await this.redis.zrem(queueKey, requestStr);
+                        await this.getRedis().zrem(queueKey, requestStr);
                         console.log(`🗑️ Removed ${request.playerId} from Redis queue`);
                     }
                 } catch (parseError) {
@@ -706,7 +695,7 @@ export class MatchmakingWorker {
             console.log(`🗑️ Removed ${playerIds.length} players from matchmaking queues`);
 
             // Verify final queue state
-            const finalRequests = await this.redis.zrange(queueKey, 0, -1);
+            const finalRequests = await this.getRedis().zrange(queueKey, 0, -1);
             console.log(`🧹 [MATCHMAKING WORKER] Queue ${queueKey} now has ${finalRequests.length} items remaining after removal`);
         } catch (error) {
             console.error('❌ Failed to remove players from queue:', error);
@@ -721,7 +710,7 @@ export class MatchmakingWorker {
 
         try {
             console.log('🔴 [MatchmakingWorker] Getting Redis queue entries for:', queueKey);
-            const requests = await this.redis.zrange(queueKey, 0, -1);
+            const requests = await this.getRedis().zrange(queueKey, 0, -1);
             console.log('🔴 [MatchmakingWorker] Raw Redis zrange result:', requests);
             console.log('🔴 [MatchmakingWorker] Type of requests:', typeof requests);
 
@@ -748,7 +737,7 @@ export class MatchmakingWorker {
 
                     if (request.playerId === playerId) {
                         console.log('🔴 [MatchmakingWorker] Found matching player, removing from queue');
-                        await this.redis.zrem(queueKey, requestStr);
+                        await this.getRedis().zrem(queueKey, requestStr);
                         console.log(`🗑️ Removed ${playerId} from Redis queue ${queueKey}`);
                         break;
                     }
@@ -816,13 +805,13 @@ export class MatchmakingWorker {
     private async cleanupExpiredRequests(): Promise<void> {
         try {
             const gameModesPattern = 'matchmaking:*';
-            const queues = await this.redis.keys(gameModesPattern);
+            const queues = await this.getRedis().keys(gameModesPattern);
 
             const expireTime = Date.now() - (10 * 60 * 1000); // 10 minutes
             let totalCleaned = 0;
 
             for (const queueKey of queues) {
-                const removed = await this.redis.zremrangebyscore(queueKey, 0, expireTime);
+                const removed = await this.getRedis().zremrangebyscore(queueKey, 0, expireTime);
                 totalCleaned += removed;
             }
 
@@ -909,12 +898,12 @@ export class MatchmakingWorker {
      */
     private async getQueueStats(): Promise<Record<string, number>> {
         try {
-            const queues = await this.redis.keys('matchmaking:*');
+            const queues = await this.getRedis().keys('matchmaking:*');
             const stats: Record<string, number> = {};
 
             for (const queueKey of queues) {
                 const gameMode = queueKey.replace('matchmaking:', '');
-                const size = await this.redis.zcard(queueKey);
+                const size = await this.getRedis().zcard(queueKey);
                 stats[gameMode] = size;
             }
 

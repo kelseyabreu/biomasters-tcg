@@ -5,7 +5,7 @@
  */
 
 import { db } from '../database/kysely';
-import { DeckType, UserType, AcquisitionMethod } from '../../../shared/enums';
+import { DeckType, UserType, AcquisitionMethod } from '@shared/enums';
 
 export interface StarterDeckCard {
   cardId: number;

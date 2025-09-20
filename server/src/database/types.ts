@@ -584,7 +584,7 @@ export interface Database {
 // Import unified types from shared module
 import type {
   DatabaseUser
-} from '../../../shared/types';
+} from '@shared/types';
 
 // Helper types for CRUD operations using unified types
 export type User = DatabaseUser; // Use unified DatabaseUser type

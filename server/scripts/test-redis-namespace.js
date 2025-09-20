@@ -1,22 +1,32 @@
 #!/usr/bin/env node
 
 /**
- * Test Redis namespace functionality
+ * Test Redis namespace functionality with IORedis and GCP Memorystore
  * This script tests if Redis namespacing is working correctly
  */
 
 // Load environment variables
 require('dotenv').config();
 
-const { Redis } = require('@upstash/redis');
+const { Redis } = require('ioredis');
 
 async function testRedisNamespace() {
-    console.log('🔧 Testing Redis namespace functionality (manual namespacing)...\n');
+    console.log('🔧 Testing Redis namespace functionality with IORedis (manual namespacing)...\n');
 
-    // Create Redis clients (Upstash doesn't have built-in namespacing)
+    // Create Redis client using IORedis with GCP Memorystore
     const redis = new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN
+        host: process.env.REDIS_HOST || '10.36.239.107',
+        port: parseInt(process.env.REDIS_PORT || '6378'),
+        password: process.env.REDIS_PASSWORD || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5',
+        connectTimeout: 10000,
+        commandTimeout: 5000,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        family: 4,
+        db: 0,
+        ...(process.env.REDIS_TLS === 'true' ? {
+            tls: { rejectUnauthorized: false }
+        } : {})
     });
 
     // Manual namespacing (like our actual code does)

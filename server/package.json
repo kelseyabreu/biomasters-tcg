@@ -5,8 +5,10 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "npx tsc",
     "start": "node dist/index.js",
+    "test:memorystore": "tsx src/scripts/test-memorystore.ts",
+    "test:redis-cloud": "tsx src/scripts/test-redis-cloud.ts",
     "test": "jest",
     "test:matchmaking": "jest --testPathPattern=matchmaking",
     "test:integration": "jest --testPathPattern=integration",
@@ -38,7 +40,6 @@
     "@types/axios": "^0.9.36",
     "@types/crypto-js": "^4.2.2",
     "@types/socket.io": "^3.0.1",
-    "@upstash/redis": "^1.35.3",
     "axios": "^1.11.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
@@ -84,5 +85,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "imports": {
+    "@shared/*": "./shared/*"
   }
 }

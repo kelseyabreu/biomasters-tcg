@@ -1,5 +1,5 @@
 import { db } from '../database/kysely';
-import { DeckType } from '../../../shared/enums';
+import { DeckType } from '@shared/enums';
 
 export interface TemplateDeck {
   id: string;

@@ -19,6 +19,7 @@ console.log('  Working directory:', process.cwd());
 import { initializeFirebase } from './config/firebase';
 import { initializeKysely } from './database/kysely';
 import { initializeRedis } from './config/redis';
+import { initializeIORedis } from './config/ioredis';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/logger';
@@ -44,7 +45,7 @@ import healthRoutes from './routes/health';
 import productsRoutes from './routes/products';
 
 // Import unified data loader factory
-import { createProductionDataLoader, createDevelopmentDataLoader } from '../../shared/data/UnifiedDataLoader';
+import { createProductionDataLoader, createDevelopmentDataLoader } from '@shared/data/UnifiedDataLoader';
 
 // Import WebSocket setup
 import { setupGameSocket } from './websocket/gameSocket';
@@ -53,6 +54,9 @@ import { setupGameSocket } from './websocket/gameSocket';
 import { initializePubSub } from './config/pubsub';
 import { MatchmakingWorker } from './workers/MatchmakingWorker';
 import { MatchNotificationService } from './services/MatchNotificationService';
+
+// Import distributed game worker system
+import { initializeGameWorkerManager } from './services/GameWorkerManager';
 
 // Import game data manager
 // DataLoader import removed - using direct file system loading instead
@@ -96,14 +100,13 @@ app.get('/health', async (_req, res) => {
         }
       })(),
 
-      // Redis health check
+      // Redis health check (using IORedis) - simplified to avoid timing issues
       (async () => {
         try {
-          const { checkRedisHealth } = await import('./config/redis');
-          return await Promise.race([
-            checkRedisHealth(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Redis health check timeout')), 3000))
-          ]);
+          const { isIORedisAvailable } = await import('./config/ioredis');
+          // Return true if IORedis is available, false otherwise
+          // Detailed health check is available at /health/ioredis endpoint
+          return isIORedisAvailable();
         } catch (error) {
           console.error('Redis health check error:', error);
           return false;
@@ -157,6 +160,15 @@ async function initializeServices() {
       console.log('✅ Redis connected successfully');
     } catch (error) {
       console.warn('⚠️  Redis not available, using memory-based caching');
+    }
+
+    // Try to connect to IORedis for game workers (optional)
+    try {
+      console.log('🔴 Connecting to IORedis for game workers...');
+      await initializeIORedis();
+      console.log('✅ IORedis connected successfully');
+    } catch (error) {
+      console.warn('⚠️  IORedis not available, game worker system will be disabled');
     }
 
     // Initialize server data loader
@@ -302,21 +314,24 @@ app.get('/api/health/detailed', async (_req, res) => {
       };
     }
 
-    // Redis detailed check
+    // Redis detailed check (using IORedis)
     try {
       const redisStartTime = Date.now();
-      const { checkRedisHealth, isRedisAvailable } = await import('./config/redis');
+      const { checkIORedisHealth, isIORedisAvailable } = await import('./config/ioredis');
 
-      const redisHealthy = await checkRedisHealth();
+      const redisHealthy = await checkIORedisHealth();
       const redisResponseTime = Date.now() - redisStartTime;
 
       healthDetails.services.redis = {
         status: redisHealthy ? 'healthy' : 'unhealthy',
-        available: isRedisAvailable(),
+        available: isIORedisAvailable(),
         responseTime: redisResponseTime,
         connection: {
-          url: process.env['UPSTASH_REDIS_REST_URL'] ? 'Upstash REST API' : 'Standard Redis',
-          fallback: !isRedisAvailable() ? 'Memory cache' : null
+          type: 'Google Cloud Memorystore (IORedis)',
+          host: process.env['REDIS_HOST'] || 'localhost',
+          port: process.env['REDIS_PORT'] || '6379',
+          tls: process.env['REDIS_TLS'] === 'true',
+          fallback: !isIORedisAvailable() ? 'Memory cache' : null
         }
       };
     } catch (error) {
@@ -424,8 +439,9 @@ function checkRequiredEnvVars() {
 
   const missing = required.filter(varName => !process.env[varName]);
   const optional = [
-    'UPSTASH_REDIS_REST_URL',
-    'REDIS_URL'
+    'REDIS_HOST',
+    'REDIS_PORT',
+    'REDIS_PASSWORD'
   ];
 
   const optionalMissing = optional.filter(varName => !process.env[varName]);
@@ -481,7 +497,8 @@ app.get('/api/health/migrations', async (_req, res) => {
       '018_add_user_cards_metadata_columns',
       '019_fix_species_name_constraint',
       '020_add_pubsub_matchmaking',
-      '021_standardize_game_sessions_schema'
+      '021_standardize_game_sessions_schema',
+      '036_add_worker_management_schema'
     ];
 
     const executedMigrationNames = executedMigrations.map(m => m.name);
@@ -591,6 +608,9 @@ if (io) {
 let matchmakingWorker: MatchmakingWorker | null = null;
 let matchNotificationService: MatchNotificationService | null = null;
 
+// Global variable for game worker manager
+let gameWorkerManager: any = null;
+
 // Initialize matchmaking services
 async function initializeMatchmakingServices() {
   try {
@@ -624,11 +644,49 @@ async function initializeMatchmakingServices() {
   }
 }
 
+// Initialize distributed game worker system
+async function initializeGameWorkerSystem() {
+  try {
+    // Skip in test environment
+    if (process.env['NODE_ENV'] === 'test') {
+      console.log('⚠️ Game worker system disabled in test environment');
+      return;
+    }
+
+    console.log('🎮 Initializing distributed game worker system...');
+
+    // Get IORedis instance for game workers
+    const { getIORedisClient } = await import('./config/ioredis');
+    const redis = getIORedisClient();
+
+    if (!redis) {
+      console.log('⚠️ Game worker system disabled (IORedis not available)');
+      return;
+    }
+
+    // Initialize the game worker manager
+    gameWorkerManager = await initializeGameWorkerManager(redis, io);
+
+    console.log('✅ Distributed game worker system initialized successfully');
+    console.log(`🔧 Worker ID: ${gameWorkerManager.getWorkerId()}`);
+
+  } catch (error) {
+    console.error('❌ Failed to initialize game worker system:', error);
+    console.warn('⚠️ Game sessions will operate without distributed worker support');
+  }
+}
+
 // Graceful shutdown
 async function gracefulShutdown(signal: string) {
   console.log(`🛑 ${signal} received, shutting down gracefully...`);
 
   try {
+    // Stop game worker system first (handles session transfer)
+    if (gameWorkerManager) {
+      console.log('🛑 Stopping game worker system...');
+      await gameWorkerManager.shutdown();
+    }
+
     // Stop matchmaking services
     if (matchmakingWorker) {
       console.log('🛑 Stopping MatchmakingWorker...');
@@ -681,6 +739,9 @@ async function startServer() {
       console.log(`📍 Environment: ${process.env['NODE_ENV'] || 'development'}`);
       console.log(`🌐 Health check: http://localhost:${PORT}/health`);
       console.log(`📚 API Base URL: http://localhost:${PORT}/api`);
+
+      // Initialize distributed game worker system
+      await initializeGameWorkerSystem();
 
       // Initialize matchmaking services after server is running
       await initializeMatchmakingServices();

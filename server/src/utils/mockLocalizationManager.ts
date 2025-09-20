@@ -4,7 +4,7 @@
  * Provides a simple implementation for server-side code that doesn't need full localization
  */
 
-import { ILocalizationManager } from '../../../shared/localization-manager';
+import { ILocalizationManager } from '@shared/localization-manager';
 import {
   CardNameId,
   ScientificNameId,
@@ -15,7 +15,7 @@ import {
   UITextId,
   TaxonomyId,
   SupportedLanguage
-} from '../../../shared/text-ids';
+} from '@shared/text-ids';
 
 /**
  * Mock implementation that returns the text ID as the display text

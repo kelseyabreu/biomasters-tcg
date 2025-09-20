@@ -8,7 +8,7 @@ import type {
   FirebaseUserData,
   GuestJWTPayload,
   AuthenticationContext
-} from '../../../shared/types';
+} from '@shared/types';
 
 declare global {
   namespace Express {

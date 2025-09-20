@@ -1,0 +1,7 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'test-redis.Dockerfile', '-t', 'gcr.io/$PROJECT_ID/redis-test', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/redis-test']
+images:
+  - 'gcr.io/$PROJECT_ID/redis-test'

@@ -1,28 +1,46 @@
-import { Redis } from '@upstash/redis';
+import { Redis } from 'ioredis';
 
 let redisClient: Redis | null = null;
 let redisAvailable = false;
 
 /**
- * Redis configuration - Upstash Redis REST API
+ * Redis configuration - Google Cloud Memorystore using IORedis
  */
 function getRedisConfig() {
-  // Check if we have Upstash credentials
-  const upstashUrl = process.env['UPSTASH_REDIS_REST_URL'];
-  const upstashToken = process.env['UPSTASH_REDIS_REST_TOKEN'];
+  console.log('🔴 [Redis] getRedisConfig called');
+  console.log('🔴 [Redis] NODE_ENV:', process.env['NODE_ENV']);
 
-  if (upstashUrl && upstashToken) {
-    return {
-      url: upstashUrl,
-      token: upstashToken,
-    };
+  // Use Google Cloud Memorystore configuration
+  const config: any = {
+    host: process.env['REDIS_HOST'] || '10.36.239.107',
+    port: parseInt(process.env['REDIS_PORT'] || '6378'),
+    password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5',
+
+    // Memorystore-optimized settings
+    connectTimeout: 30000,
+    commandTimeout: 15000,
+    maxRetriesPerRequest: 5,
+    lazyConnect: true,
+    keepAlive: 30000,
+
+    // Connection pool settings
+    family: 4, // Force IPv4
+    db: 0,
+  };
+
+  // Enable TLS if transit encryption is enabled
+  if (process.env['REDIS_TLS'] === 'true') {
+    config.tls = { rejectUnauthorized: false };
   }
 
-  // Fallback to standard Redis URL for local development
-  return {
-    url: process.env['REDIS_URL'] || `redis://${process.env['REDIS_HOST'] || 'localhost'}:${process.env['REDIS_PORT'] || 6379}`,
-    token: process.env['REDIS_PASSWORD'] || undefined,
-  };
+  console.log('🔴 [Redis] Config:', JSON.stringify({
+    host: config.host,
+    port: config.port,
+    password: config.password ? 'SET' : 'NOT SET',
+    tls: config.tls ? 'ENABLED' : 'DISABLED'
+  }));
+
+  return config;
 }
 
 /**
@@ -33,74 +51,63 @@ export async function initializeRedis(): Promise<void> {
   const retryDelay = 2000; // 2 seconds
 
   console.log('🔴 [Redis] Starting Redis initialization...');
-  console.log('🔴 [Redis] Environment variables check:');
-  console.log('🔴 [Redis] UPSTASH_REDIS_REST_URL:', process.env['UPSTASH_REDIS_REST_URL'] ? 'SET' : 'NOT SET');
-  console.log('🔴 [Redis] UPSTASH_REDIS_REST_TOKEN:', process.env['UPSTASH_REDIS_REST_TOKEN'] ? 'SET (length: ' + (process.env['UPSTASH_REDIS_REST_TOKEN']?.length || 0) + ')' : 'NOT SET');
-  console.log('🔴 [Redis] REDIS_URL:', process.env['REDIS_URL'] ? 'SET' : 'NOT SET');
-  console.log('🔴 [Redis] NODE_ENV:', process.env['NODE_ENV']);
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      console.log(`🔴 [Redis] Attempt ${attempt}/${maxRetries}`);
+
       const redisConfig = getRedisConfig();
-      console.log(`🔴 [Redis] Attempt ${attempt}/${maxRetries} - Connecting to Redis...`);
-      console.log(`🔴 [Redis] Config:`, {
-        url: redisConfig.url ? redisConfig.url.substring(0, 50) + '...' : 'undefined',
-        token: redisConfig.token ? 'SET (length: ' + redisConfig.token.length + ')' : 'undefined'
+      redisClient = new Redis(redisConfig as any);
+
+      // Set up error handlers before testing connection
+      redisClient.on('error', (error) => {
+        console.error('🔴 [Redis] Connection error:', error);
+        redisAvailable = false;
       });
 
-      // Create Upstash Redis client
-      redisClient = new Redis(redisConfig);
-      console.log('🔴 [Redis] Redis client created successfully');
+      redisClient.on('connect', () => {
+        console.log('🔴 [Redis] Connected event');
+      });
 
-      // Test the connection with timeout
-      console.log('🔴 [Redis] Testing connection with ping...');
-      const startTime = Date.now();
+      redisClient.on('ready', () => {
+        console.log('🔴 [Redis] Ready event');
+      });
 
-      const pingPromise = redisClient.ping();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Redis ping timeout after 5000ms')), 5000)
-      );
+      redisClient.on('close', () => {
+        console.log('🔴 [Redis] Connection closed event');
+        redisAvailable = false;
+      });
 
-      const result = await Promise.race([pingPromise, timeoutPromise]);
-      const endTime = Date.now();
+      // Test the connection
+      console.log('🔴 [Redis] Testing connection...');
+      const pingResult = await redisClient.ping();
 
-      console.log(`🔴 [Redis] Ping result: ${result} (took ${endTime - startTime}ms)`);
-
-      redisAvailable = true;
-      console.log('✅ [Redis] Connected successfully');
-      return;
+      if (pingResult === 'PONG') {
+        redisAvailable = true;
+        console.log('✅ [Redis] Connected successfully');
+        console.log(`🔴 [Redis] Initialization completed at ${new Date().toISOString()}`);
+        return;
+      } else {
+        throw new Error(`Unexpected ping response: ${pingResult}`);
+      }
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
+      console.error(`🔴 [Redis] Attempt ${attempt}/${maxRetries} failed:`, error);
 
-      console.error(`❌ [Redis] Attempt ${attempt}/${maxRetries} failed:`);
-      console.error(`❌ [Redis] Error message: ${errorMessage}`);
-      if (errorStack) {
-        console.error(`❌ [Redis] Error stack: ${errorStack}`);
+      if (redisClient) {
+        redisClient.disconnect();
+        redisClient = null;
       }
-      console.error(`❌ [Redis] Error type: ${typeof error}`);
-      console.error(`❌ [Redis] Error constructor: ${error?.constructor?.name}`);
-
       if (attempt < maxRetries) {
-        console.log(`🔄 [Redis] Retrying in ${retryDelay}ms...`);
+        console.log(`🔴 [Redis] Retrying in ${retryDelay}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
   }
 
-  // All attempts failed - set up fallback
-  redisClient = null;
+  console.warn('⚠️ [Redis] Failed to connect after all attempts');
+  console.warn('⚠️ [Redis] Redis-dependent features will use memory fallback');
   redisAvailable = false;
-
-  const isTestOrDev = ['test', 'development'].includes(process.env['NODE_ENV'] || '');
-
-  if (isTestOrDev) {
-    console.warn('⚠️ [Redis] Redis unavailable, using memory-based fallback for caching and rate limiting');
-  } else {
-    console.error('❌ [Redis] Failed to connect to Redis after all retries');
-    throw new Error('Redis connection failed - required for production');
-  }
 }
 
 /**
@@ -415,10 +422,13 @@ export class CacheManager {
       if (!redisClient || !redisAvailable) {
         return 0;
       }
-      if (members.length === 1) {
+      if (members.length === 1 && members[0] !== undefined) {
         return await redisClient.sadd(key, members[0]);
+      } else if (members.length > 1 && members[0] !== undefined) {
+        const validMembers = members.filter(m => m !== undefined) as string[];
+        return await redisClient.sadd(key, ...validMembers);
       } else {
-        return await redisClient.sadd(key, members[0], ...members.slice(1));
+        return 0;
       }
     } catch (error) {
       if (process.env['NODE_ENV'] === 'test') {
@@ -561,11 +571,18 @@ export async function checkRedisHealth(): Promise<boolean> {
   }
 }
 
+
+
 /**
  * Close Redis connection
  */
 export async function closeRedis(): Promise<void> {
-  // Upstash Redis doesn't need explicit connection closing
+  if (redisClient) {
+    console.log('🔴 [Redis] Closing connection...');
+    redisClient.disconnect();
+    redisClient = null;
+    redisAvailable = false;
+  }
 }
 
 export { redisClient };

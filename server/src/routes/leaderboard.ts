@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { db } from '../database/kysely';
-import { ApiResponse } from '../../../shared/types';
+import { ApiResponse } from '@shared/types';
 
 const router = Router();
 

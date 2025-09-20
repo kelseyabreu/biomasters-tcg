@@ -9,8 +9,8 @@ import {
   TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass,
   TaxoOrder, TaxoFamily, TaxoGenus, TaxoSpecies
 } from '@biomasters/shared';
-import { TaxonomyDisplayId } from '../../../shared/text-ids';
-import { TaxonomyMapper } from '../../../shared/taxonomy-mapping';
+import { TaxonomyDisplayId } from '@shared/text-ids';
+import { TaxonomyMapper } from '@shared/taxonomy-mapping';
 import { 
   getCardsByTaxonomyLevel, 
   getTaxonomicDiversityStats, 

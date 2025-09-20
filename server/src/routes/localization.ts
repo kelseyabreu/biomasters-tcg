@@ -5,8 +5,8 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { SupportedLanguage, LANGUAGE_CONFIG } from '../../../shared/text-ids';
-import { IServerDataLoader } from '../../../shared/data/IServerDataLoader';
+import { SupportedLanguage, LANGUAGE_CONFIG } from '@shared/text-ids';
+import { IServerDataLoader } from '@shared/data/IServerDataLoader';
 
 const router = Router();
 

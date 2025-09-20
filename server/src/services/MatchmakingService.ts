@@ -3,36 +3,25 @@
  * Handles distributed matchmaking with Redis queues and Pub/Sub messaging
  */
 
-import { Redis } from '@upstash/redis';
+import { getRedisClient, isRedisAvailable } from '../config/redis';
 import { db } from '../database/kysely';
 import { pubsub, PUBSUB_TOPICS, publishMessage } from '../config/pubsub';
-import { MatchmakingRequest, MatchmakingQueueEntry } from '../../../shared/types';
+import { MatchmakingRequest, MatchmakingQueueEntry } from '@shared/types';
 
 export class MatchmakingService {
-    private redis: Redis;
     private namespace: string;
 
     constructor(namespace: string = 'prod') {
         this.namespace = namespace;
-        console.log(`🔴 [MatchmakingService] Initializing Redis connection with namespace: ${namespace}...`);
-        console.log('🔴 [MatchmakingService] Environment check:');
-        console.log('🔴 [MatchmakingService] UPSTASH_REDIS_REST_URL:', process.env['UPSTASH_REDIS_REST_URL'] ? 'SET' : 'NOT SET');
-        console.log('🔴 [MatchmakingService] UPSTASH_REDIS_REST_TOKEN:', process.env['UPSTASH_REDIS_REST_TOKEN'] ? 'SET' : 'NOT SET');
+        console.log(`🔴 [MatchmakingService] Initializing with namespace: ${namespace}...`);
+    }
 
-        // Use Upstash Redis configuration
-        const redisConfig = {
-            url: process.env['UPSTASH_REDIS_REST_URL'] || '',
-            token: process.env['UPSTASH_REDIS_REST_TOKEN'] || ''
-        };
-
-        console.log('🔴 [MatchmakingService] Redis config:', {
-            url: redisConfig.url ? redisConfig.url.substring(0, 50) + '...' : 'empty',
-            token: redisConfig.token ? 'SET (length: ' + redisConfig.token.length + ')' : 'empty',
-            namespace: this.namespace
-        });
-
-        this.redis = new Redis(redisConfig);
-        console.log(`✅ [MatchmakingService] Redis client created with namespace: ${namespace}`);
+    private getRedis() {
+        const client = getRedisClient();
+        if (!client || !isRedisAvailable()) {
+            throw new Error('Redis not available for matchmaking');
+        }
+        return client;
     }
 
 
@@ -140,7 +129,7 @@ export class MatchmakingService {
             // Get current queue size from Redis
             const queueKey = this.getQueueKey(gameMode);
             console.log(`🔴 [MatchmakingService] Getting queue size from Redis for ${queueKey}`);
-            const queueSize = await this.redis.zcard(queueKey);
+            const queueSize = await this.getRedis().zcard(queueKey);
             console.log(`🔴 [MatchmakingService] Queue size: ${queueSize}`);
 
             // Get recent analytics for better estimation
@@ -243,7 +232,7 @@ export class MatchmakingService {
 
         try {
             console.log('🔴 [MatchmakingService] Calling redis.zadd...');
-            const result = await this.redis.zadd(queueKey, { score: request.timestamp, member: JSON.stringify(queueEntry) });
+            const result = await this.getRedis().zadd(queueKey, request.timestamp, JSON.stringify(queueEntry));
             console.log('🔴 [MatchmakingService] Redis zadd result:', result);
         } catch (error) {
             console.error('❌ [MatchmakingService] Redis zadd failed:', error);
@@ -268,7 +257,7 @@ export class MatchmakingService {
         const queueKey = this.getQueueKey(gameMode);
         console.log('🔴 [MatchmakingService] Getting Redis queue entries for:', queueKey);
 
-        const requests = await this.redis.zrange(queueKey, 0, -1);
+        const requests = await this.getRedis().zrange(queueKey, 0, -1);
         console.log('🔴 [MatchmakingService] Raw Redis zrange result:', requests);
         console.log('🔴 [MatchmakingService] Type of requests:', typeof requests);
         console.log('🔴 [MatchmakingService] Is array:', Array.isArray(requests));
@@ -296,7 +285,7 @@ export class MatchmakingService {
 
                 if (request.playerId === playerId) {
                     console.log('🔴 [MatchmakingService] Found matching player, removing from queue');
-                    await this.redis.zrem(queueKey, requestStr);
+                    await this.getRedis().zrem(queueKey, requestStr);
                     console.log('🔴 [MatchmakingService] Successfully removed from queue');
                     break;
                 }
@@ -317,7 +306,7 @@ export class MatchmakingService {
     private async updateRedisQueueState(gameMode: string): Promise<void> {
         try {
             const queueKey = this.getQueueKey(gameMode);
-            const currentSize = await this.redis.zcard(queueKey);
+            const currentSize = await this.getRedis().zcard(queueKey);
 
             await db
                 .insertInto('redis_queue_state')
@@ -394,12 +383,12 @@ export class MatchmakingService {
     async cleanupExpiredRequests(): Promise<void> {
         try {
             const gameModesPattern = `${this.namespace}:matchmaking:*`;
-            const queues = await this.redis.keys(gameModesPattern);
+            const queues = await this.getRedis().keys(gameModesPattern);
 
             const expireTime = Date.now() - (10 * 60 * 1000); // 10 minutes
 
             for (const queueKey of queues) {
-                const removed = await this.redis.zremrangebyscore(queueKey, 0, expireTime);
+                const removed = await this.getRedis().zremrangebyscore(queueKey, 0, expireTime);
                 if (removed > 0) {
                     console.log(`🧹 Cleaned up ${removed} expired requests from ${queueKey}`);
 
@@ -420,7 +409,7 @@ export class MatchmakingService {
         try {
             if (gameMode) {
                 const queueKey = this.getQueueKey(gameMode);
-                const size = await this.redis.zcard(queueKey);
+                const size = await this.getRedis().zcard(queueKey);
                 return {
                     [gameMode]: {
                         totalPlayers: size,
@@ -432,12 +421,12 @@ export class MatchmakingService {
             }
 
             // Get all queue sizes
-            const queues = await this.redis.keys(`${this.namespace}:matchmaking:*`);
+            const queues = await this.getRedis().keys(`${this.namespace}:matchmaking:*`);
             const stats: Record<string, any> = {};
 
             for (const queueKey of queues) {
                 const gameMode = queueKey.replace(`${this.namespace}:matchmaking:`, '');
-                const size = await this.redis.zcard(queueKey);
+                const size = await this.getRedis().zcard(queueKey);
                 stats[gameMode] = {
                     totalPlayers: size,
                     playersInQueue: size, // Add alias for compatibility
@@ -465,7 +454,7 @@ export class MatchmakingService {
 
         try {
             // Test Redis
-            await this.redis.ping();
+            await this.getRedis().ping();
             health.redis = true;
         } catch (error) {
             console.error('❌ Redis health check failed:', error);
@@ -497,7 +486,7 @@ export class MatchmakingService {
     async clearRedisQueue(gameMode: string): Promise<void> {
         try {
             const queueKey = this.getQueueKey(gameMode);
-            await this.redis.del(queueKey);
+            await this.getRedis().del(queueKey);
             console.log(`🧹 Cleared Redis queue: ${queueKey}`);
         } catch (error) {
             console.error(`❌ Error clearing Redis queue ${gameMode}:`, error);
@@ -514,7 +503,7 @@ export class MatchmakingService {
 
             for (const gameMode of gameModes) {
                 const queueKey = this.getQueueKey(gameMode);
-                await this.redis.del(queueKey);
+                await this.getRedis().del(queueKey);
             }
 
             console.log('🧹 Cleared all matchmaking queues');
@@ -529,10 +518,10 @@ export class MatchmakingService {
     async clearNamespace(): Promise<void> {
         try {
             const pattern = `${this.namespace}:*`;
-            const keys = await this.redis.keys(pattern);
+            const keys = await this.getRedis().keys(pattern);
 
             if (keys.length > 0) {
-                await this.redis.del(...keys);
+                await this.getRedis().del(...keys);
                 console.log(`🧹 Cleared ${keys.length} keys from namespace: ${this.namespace}`);
             } else {
                 console.log(`🧹 No keys found in namespace: ${this.namespace}`);

@@ -8,7 +8,7 @@ import { CacheManager } from '../config/redis';
 
 import type {
   PublicUser
-} from '../../../shared/types';
+} from '@shared/types';
 
 const router = Router();
 

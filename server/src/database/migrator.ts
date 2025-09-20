@@ -259,6 +259,11 @@ export class KyselyMigrator {
       const removeJsonbSql = readFileSync(removeJsonbPath, 'utf8');
       await this.executeMigration('035_remove_jsonb_cards_column', removeJsonbSql);
 
+      // 036: Add worker management schema for distributed game workers
+      const workerManagementPath = join(__dirname, 'migrations/036_add_worker_management_schema.sql');
+      const workerManagementSql = readFileSync(workerManagementPath, 'utf8');
+      await this.executeMigration('036_add_worker_management_schema', workerManagementSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

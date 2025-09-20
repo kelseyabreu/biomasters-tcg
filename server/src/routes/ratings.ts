@@ -7,7 +7,7 @@ import express, { Request, Response } from 'express';
 import crypto from 'crypto';
 import { authenticateToken } from '../middleware/auth';
 import { db } from '../database/kysely';
-import { ApiResponse } from '../../../shared/types';
+import { ApiResponse } from '@shared/types';
 
 const router = express.Router();
 

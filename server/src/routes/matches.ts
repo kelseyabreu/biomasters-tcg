@@ -7,7 +7,7 @@ import { Router, Request, Response } from 'express';
 import { sql } from 'kysely';
 import { db } from '../database/kysely';
 import { requireAuth } from '../middleware/auth';
-import { ApiResponse } from '../../../shared/types';
+import { ApiResponse } from '@shared/types';
 import deckAccessService from '../services/deckAccessService';
 import { getGlobalIo, initializeBioMastersGame } from '../websocket/gameSocket';
 

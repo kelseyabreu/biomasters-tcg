@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { sql } from 'kysely';
 import { randomUUID } from 'crypto';
 import { db } from '../database/kysely';
-import { PhyloGameAction } from '../../../shared/types';
+import { PhyloGameAction } from '@shared/types';
 
 // Global WebSocket server instance
 let globalIo: SocketIOServer | null = null;
@@ -167,7 +167,7 @@ export async function initializeBioMastersGame(sessionId: string, gameState: any
     const localizationManager = new MockLocalizationManager();
 
     // Import and initialize engine
-    const { BioMastersEngine } = await import('../../../shared/game-engine/BioMastersEngine');
+    const { BioMastersEngine } = await import('@shared/game-engine/BioMastersEngine');
     const engine = new BioMastersEngine(
       cardDatabase,
       abilityDatabase,
@@ -757,7 +757,7 @@ export function setupGameSocket(server: HTTPServer) {
           const localizationManager = new MockLocalizationManager();
 
           // Import and initialize engine
-          const { BioMastersEngine } = await import('../../../shared/game-engine/BioMastersEngine');
+          const { BioMastersEngine } = await import('@shared/game-engine/BioMastersEngine');
           const engine = new BioMastersEngine(
             cardDatabase,
             abilityDatabase,
@@ -796,7 +796,7 @@ export function setupGameSocket(server: HTTPServer) {
         }
 
         // Process action through BioMasters engine
-        const { BioMastersEngine } = await import('../../../shared/game-engine/BioMastersEngine');
+        const { BioMastersEngine } = await import('@shared/game-engine/BioMastersEngine');
 
         // Get the global server data loader
         const serverDataLoader = (global as any).serverDataLoader;

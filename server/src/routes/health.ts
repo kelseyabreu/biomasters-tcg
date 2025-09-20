@@ -8,6 +8,8 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { scalableFirebaseAuth } from '../utils/firebase-scaling';
 import { db } from '../database/kysely';
 import { isRedisAvailable, CacheManager } from '../config/redis';
+import { getGameWorkerManager } from '../services/GameWorkerManager';
+import { checkIORedisHealth } from '../config/ioredis';
 
 const router = Router();
 
@@ -260,6 +262,101 @@ router.get('/live', asyncHandler(async (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+}));
+
+/**
+ * Game worker health check endpoint
+ */
+router.get('/worker', asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const workerManager = getGameWorkerManager();
+
+    if (!workerManager.isReady()) {
+      return res.status(503).json({
+        status: 'unhealthy',
+        error: 'Game worker not initialized',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const healthStatus = await workerManager.getHealthStatus();
+
+    return res.json({
+      status: healthStatus.isHealthy ? 'healthy' : 'unhealthy',
+      worker: healthStatus,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Worker health check failed:', error);
+    return res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Worker health check failed'
+    });
+  }
+}));
+
+/**
+ * Detailed worker metrics endpoint
+ */
+router.get('/worker/metrics', asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const workerManager = getGameWorkerManager();
+
+    if (!workerManager.isReady()) {
+      return res.status(503).json({
+        error: 'Game worker not initialized',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const metrics = await workerManager.getWorkerMetrics();
+
+    return res.json({
+      metrics,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Worker metrics failed:', error);
+    return res.status(500).json({
+      error: 'Failed to get worker metrics',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+/**
+ * IORedis health check (for distributed worker system)
+ */
+router.get('/ioredis', asyncHandler(async (_req: Request, res: Response) => {
+  try {
+    const isHealthy = await checkIORedisHealth();
+
+    if (isHealthy) {
+      res.json({
+        status: 'healthy',
+        service: 'ioredis',
+        message: 'Memorystore Redis connection is working',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        status: 'error',
+        service: 'ioredis',
+        message: 'IORedis connection failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      service: 'ioredis',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
 }));
 
 export default router;

@@ -24,7 +24,6 @@ export const PUBSUB_SUBSCRIPTIONS = {
 export const pubsub = new PubSub({
   projectId: process.env['GOOGLE_CLOUD_PROJECT_ID']!,
   keyFilename: process.env['GOOGLE_CLOUD_KEY_FILE']!, // Service account key path
-  // Alternative: use GOOGLE_APPLICATION_CREDENTIALS environment variable
 });
 
 /**

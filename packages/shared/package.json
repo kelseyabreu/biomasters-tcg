@@ -25,8 +25,8 @@
   "license": "UNLICENSED",
   "private": false,
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "@kelseyabreu:registry": "https://npm.pkg.github.com"
+    "registry": "https://us-east1-npm.pkg.dev/biomasters-tcg/npm-packages/",
+    "@kelseyabreu:registry": "https://us-east1-npm.pkg.dev/biomasters-tcg/npm-packages/"
   },
   "repository": {
     "type": "git",

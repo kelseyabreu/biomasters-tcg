@@ -1,7 +1,30 @@
 steps:
+  # Step 1: Configure npm for Google Artifact Registry (Pure WIF - No secrets!)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Configure npm to use Google Artifact Registry with WIF authentication
+        gcloud auth configure-docker us-east1-docker.pkg.dev
+
+        # Create .npmrc for Artifact Registry (uses WIF automatically!)
+        cat > .npmrc << EOF
+        @kelseyabreu:registry=https://us-east1-npm.pkg.dev/$PROJECT_ID/npm-packages/
+        //us-east1-npm.pkg.dev/$PROJECT_ID/npm-packages/:_authToken=$(gcloud auth print-access-token)
+        //us-east1-npm.pkg.dev/$PROJECT_ID/npm-packages/:always-auth=true
+        registry=https://registry.npmjs.org/
+        EOF
+
+        echo "✅ Configured npm for Artifact Registry with WIF (zero secrets!)"
+
+  # Step 2: Build Docker image with pure WIF authentication
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-f', 'packages/server/Dockerfile.parent', '-t', 'gcr.io/$PROJECT_ID/biomasters-api', '.']
+
+  # Step 3: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/biomasters-api']
+
 images:
   - 'gcr.io/$PROJECT_ID/biomasters-api'

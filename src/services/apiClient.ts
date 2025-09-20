@@ -9,7 +9,8 @@
  * - TypeScript support with proper error types
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { auth } from '../config/firebase';
 import { tokenManager } from './tokenStorage';
 import { ApiResponse, ApiError } from '@kelseyabreu/shared';

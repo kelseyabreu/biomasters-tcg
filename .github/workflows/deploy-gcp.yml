@@ -67,7 +67,6 @@ jobs:
       run: |
         gcloud builds submit \
           --config packages/server/cloudbuild.yaml \
-          --substitutions _PROJECT_ID=$PROJECT_ID \
           .
 
     - name: Deploy Backend to Cloud Run

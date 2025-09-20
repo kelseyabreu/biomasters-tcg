@@ -3,11 +3,20 @@
  * Tests the user's request for a complete ecosystem gameplay flow
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
-import { CardInstance } from '../../../../shared/types';
-import { CardId, GameActionType, GamePhase, TrophicLevel } from '../../../../shared/enums';
-import { Position } from '../../../../shared/types';
-import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../../../../shared/text-ids';
+import {
+  BioMastersEngine,
+  GameSettings,
+  CardInstance,
+  CardId,
+  GameActionType,
+  GamePhase,
+  TrophicLevel,
+  Position,
+  CardNameId,
+  ScientificNameId,
+  CardDescriptionId,
+  TaxonomyId
+} from '@kelseyabreu/shared';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 
 describe('🎮 Simple Ecosystem Flow - Producer, 2 Rabbits, Wolf', () => {

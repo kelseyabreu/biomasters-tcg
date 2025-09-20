@@ -9,7 +9,7 @@ import { Redis } from 'ioredis';
 import * as dotenv from 'dotenv';
 
 // Load environment variables
-dotenv.config({ path: '.env.memorystore' });
+dotenv.config({ path: '.env' });
 
 async function testMemorystoreConnection() {
   console.log('🔴 Testing Google Cloud Memorystore Redis connection...');

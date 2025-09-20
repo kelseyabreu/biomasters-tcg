@@ -5,7 +5,7 @@
  * NO MOCKS - Full end-to-end testing
  */
 
-import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {

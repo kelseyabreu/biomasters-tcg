@@ -13,7 +13,7 @@ import { pubsub, initializePubSub } from '../../config/pubsub';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import jwt from 'jsonwebtoken';
-import { Redis } from '@upstash/redis';
+// Removed @upstash/redis - using ioredis with Google Cloud Memorystore instead
 import { randomUUID } from 'crypto';
 import { io as Client } from 'socket.io-client';
 import { setupGameSocket } from '../../websocket/gameSocket';

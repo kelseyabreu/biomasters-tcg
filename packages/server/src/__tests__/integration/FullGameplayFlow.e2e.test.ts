@@ -3,11 +3,18 @@
  * Tests: Producer, 2 Rabbits, Wolf ecosystem gameplay
  */
 
-import { BioMastersEngine, GameSettings, AbilityData as EngineAbilityData } from '../../../../shared/game-engine/BioMastersEngine';
-import { CardInstance } from '../../../../shared/types';
+import {
+  BioMastersEngine,
+  GameSettings,
+  AbilityData as EngineAbilityData,
+  CardInstance,
+  CardId,
+  GameActionType,
+  GamePhase,
+  Position,
+  GameAction
+} from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
-import { CardId, GameActionType, GamePhase } from '../../../../shared/enums';
-import { Position, GameAction } from '../../../../shared/types';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
   let gameData: any;

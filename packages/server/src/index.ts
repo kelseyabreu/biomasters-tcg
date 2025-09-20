@@ -19,7 +19,7 @@ console.log('  Working directory:', process.cwd());
 import { initializeFirebase } from './config/firebase';
 import { initializeKysely } from './database/kysely';
 import { initializeRedis } from './config/redis';
-import { initializeIORedis } from './config/ioredis';
+import { initializeIORedis, getIORedisClient, isIORedisAvailable } from './config/ioredis';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/logger';
@@ -168,14 +168,8 @@ async function initializeServices() {
       console.warn('⚠️  Redis not available, using memory-based caching');
     }
 
-    // Try to connect to IORedis for game workers (optional)
-    try {
-      console.log('🔴 Connecting to IORedis for game workers...');
-      await initializeIORedis();
-      console.log('✅ IORedis connected successfully');
-    } catch (error) {
-      console.warn('⚠️  IORedis not available, game worker system will be disabled');
-    }
+    // IORedis already initialized above
+    console.log('✅ IORedis connected successfully');
 
     // Initialize server data loader
     try {
@@ -266,8 +260,9 @@ app.use(requestLogger);
 
 
 
-// Rate limiting
-app.use(rateLimiter);
+// Rate limiting - TEMPORARILY DISABLED FOR DEBUGGING
+// app.use(rateLimiter);
+console.log('🔧 DEBUG: Rate limiter temporarily disabled for debugging');
 
 
 
@@ -561,9 +556,13 @@ app.post('/api/health/migrations/run', async (_req, res) => {
 });
 
 // Health check routes (before authentication)
+console.log('🔧 DEBUG: Registering health routes...');
 app.use('/health', healthRoutes);
 
 // API routes
+console.log('🔧 DEBUG: Registering API routes...');
+console.log('🔧 DEBUG: cardRoutes type:', typeof cardRoutes);
+console.log('🔧 DEBUG: cardRoutes stack length:', cardRoutes?.stack?.length || 'undefined');
 app.use('/api/auth', authRoutes);
 app.use('/api/guest', guestAuthRoutes);
 app.use('/api/users', userRoutes);
@@ -580,6 +579,26 @@ app.use('/api/quests', questsRoutes);
 app.use('/api/matches', matchesRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/products', productsRoutes);
+console.log('🔧 DEBUG: All API routes registered successfully');
+
+// DEBUG: Add a direct test route
+app.get('/api/test-direct', (req, res) => {
+  res.json({ message: 'Direct route works!', timestamp: new Date().toISOString() });
+});
+console.log('🔧 DEBUG: Direct test route added');
+
+// Debug: List all registered routes
+console.log('🔧 DEBUG: Listing all registered routes...');
+app._router.stack.forEach((middleware: any, index: number) => {
+  if (middleware.route) {
+    console.log(`🔧 Route ${index}: ${middleware.route.path} [${Object.keys(middleware.route.methods).join(', ')}]`);
+  } else if (middleware.name === 'router') {
+    console.log(`🔧 Router ${index}: ${middleware.regexp} (${middleware.handle?.stack?.length || 0} routes)`);
+  } else {
+    console.log(`🔧 Middleware ${index}: ${middleware.name || 'anonymous'}`);
+  }
+});
+console.log('🔧 DEBUG: Route listing complete');
 
 // Test routes (only available in non-production environments)
 if (process.env['NODE_ENV'] !== 'production') {
@@ -589,6 +608,8 @@ if (process.env['NODE_ENV'] !== 'production') {
 // 404 handler
 app.use('*', (req, res) => {
   console.log('🚨🚨🚨 404 HANDLER HIT:', req.method, req.originalUrl);
+  console.log('🔧 DEBUG: Request headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🔧 DEBUG: Available routes should include /health and /api/*');
   res.status(404).json({
     error: 'Not Found',
     message: `Route ${req.originalUrl} not found`,
@@ -661,9 +682,13 @@ async function initializeGameWorkerSystem() {
 
     console.log('🎮 Initializing distributed game worker system...');
 
-    // Get IORedis instance for game workers
-    const { getIORedisClient } = await import('./config/ioredis');
+    // Get IORedis instance for game workers (using imported functions to share module state)
+
+    console.log('🔴 [GameWorker] Checking IORedis availability...');
+    console.log('🔴 [GameWorker] isIORedisAvailable():', isIORedisAvailable());
+
     const redis = getIORedisClient();
+    console.log('🔴 [GameWorker] getIORedisClient() result:', redis ? 'EXISTS' : 'NULL');
 
     if (!redis) {
       console.log('⚠️ Game worker system disabled (IORedis not available)');
@@ -738,13 +763,16 @@ process.on('uncaughtException', (error) => {
 // Start server
 async function startServer() {
   try {
+    console.log('🔧 DEBUG: Starting server initialization...');
     await initializeServices();
+    console.log('🔧 DEBUG: Services initialized, starting HTTP server...');
 
     server.listen(PORT, async () => {
       console.log(`🚀 Biomasters TCG API Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env['NODE_ENV'] || 'development'}`);
       console.log(`🌐 Health check: http://localhost:${PORT}/health`);
       console.log(`📚 API Base URL: http://localhost:${PORT}/api`);
+      console.log('🔧 DEBUG: HTTP server is listening, routes should be available');
 
       // Initialize distributed game worker system
       await initializeGameWorkerSystem();

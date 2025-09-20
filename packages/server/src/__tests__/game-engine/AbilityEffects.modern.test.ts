@@ -4,7 +4,7 @@
  * Updated to use proper enums, data-driven approach, and modern interfaces
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,

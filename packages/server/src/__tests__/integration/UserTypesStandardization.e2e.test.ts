@@ -14,8 +14,7 @@
 import request from 'supertest';
 import app from '../../index';
 import { db, databaseAvailable } from '../setup';
-import { DatabaseUser, AuthenticatedUser, PublicUser } from '../../../../shared/types';
-import { UserType, SyncStatus } from '../../../../shared/enums';
+import { DatabaseUser, AuthenticatedUser, PublicUser, UserType, SyncStatus } from '@kelseyabreu/shared';
 import { adaptDatabaseUserToUnified } from '../../database/types';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';

@@ -13,7 +13,7 @@ import { pubsub, initializePubSub } from '../../config/pubsub';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import jwt from 'jsonwebtoken';
-import { Redis } from '@upstash/redis';
+// Removed @upstash/redis - using ioredis with Google Cloud Memorystore instead
 import { randomUUID } from 'crypto';
 import { io as Client } from 'socket.io-client';
 import { setupGameSocket } from '../../websocket/gameSocket';
@@ -360,7 +360,7 @@ describe('E2E: 2v2 Team Matchmaking with Pub/Sub', () => {
     console.log(`🚨🚨🚨 [TEST] Player tokens length: ${playerTokens.map(t => t.length)}`);
 
     // Make ready requests one by one to see exactly where it fails
-    const readyResponses = [];
+    const readyResponses: any[] = [];
     for (let index = 0; index < playerTokens.length; index++) {
       const token = playerTokens[index];
       console.log(`🚨🚨🚨 [TEST] Making ready request ${index + 1}/${playerTokens.length} for player ${index + 1}`);

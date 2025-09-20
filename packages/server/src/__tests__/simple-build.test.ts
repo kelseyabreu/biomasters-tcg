@@ -28,13 +28,12 @@ describe('Build and Connectivity Tests', () => {
 
   test('should export all required types', () => {
     // Test that shared enums are available (these are runtime values)
-    const enums = require('../../../shared/enums');
-    expect(enums).toBeDefined();
-    expect(enums.GameActionType).toBeDefined();
-    expect(enums.GameActionType.PLAY_CARD).toBe('PLAY_CARD');
+    const { GameActionType } = require('@kelseyabreu/shared');
+    expect(GameActionType).toBeDefined();
+    expect(GameActionType.PLAY_CARD).toBe('PLAY_CARD');
 
-    // Test that we can import the types module successfully (interfaces are compile-time only)
-    const types = require('../../../shared/types');
-    expect(types).toBeDefined();
+    // Test that we can import the shared package successfully
+    const shared = require('@kelseyabreu/shared');
+    expect(shared).toBeDefined();
   });
 });

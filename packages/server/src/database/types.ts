@@ -409,6 +409,7 @@ export interface GameSessionsTable {
   // Timing
   started_at?: Date; // When the actual game started
   ended_at?: Date; // When the game ended
+  end_reason?: string; // Why the game ended (abandonment_timeout, connection_timeout, etc.)
   duration_seconds?: number; // Total game duration
   created_at: Generated<Date>;
   updated_at: Generated<Date>;

@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and correct biological validation
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,

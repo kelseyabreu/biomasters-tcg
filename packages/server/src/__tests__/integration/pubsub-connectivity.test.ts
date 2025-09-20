@@ -332,7 +332,7 @@ describe('Pub/Sub Connectivity Tests', () => {
       }
 
       const messageCount = 5; // Reduced for faster testing
-      const publishPromises = [];
+      const publishPromises: Promise<string>[] = [];
 
       for (let i = 0; i < messageCount; i++) {
         publishPromises.push(

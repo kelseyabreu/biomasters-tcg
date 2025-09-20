@@ -4,7 +4,7 @@
  * Validates biological accuracy and game balance
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,

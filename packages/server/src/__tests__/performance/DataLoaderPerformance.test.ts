@@ -3,8 +3,7 @@
  * Tests caching (50ms → 1-5ms), retry logic, error handling, and edge cases
  */
 
-import { createUnifiedDataLoader } from '../../../../shared/data/UnifiedDataLoader';
-import { LoadResult } from '../../../../shared/data/IServerDataLoader';
+import { createUnifiedDataLoader, LoadResult } from '@kelseyabreu/shared';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -29,10 +28,14 @@ describe('UnifiedDataLoader Performance & Reliability', () => {
     let serverLoader: any;
 
     beforeEach(() => {
+      // Calculate correct path to project root from packages/server/src/__tests__/performance/
+      const projectRoot = path.join(__dirname, '../../../../../');
+      const dataPath = path.join(projectRoot, 'public/data');
+
       serverLoader = createUnifiedDataLoader({
         environment: 'server', // Force server environment to enable caching
         source: 'filesystem',
-        dataPath: '../public/data', // Correct path from server directory
+        dataPath: dataPath, // Correct path to project root public/data
         enableCaching: true, // Explicitly enable caching for performance tests
         cacheConfig: { ttl: 300000, maxSize: 100 }, // 5 minutes, 100 items max
         retryConfig: { maxRetries: 3, retryDelay: 100, backoffMultiplier: 2 }

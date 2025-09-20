@@ -62,8 +62,8 @@ class TestJSONFileDataLoader implements ILocalizationDataLoader {
 export async function loadTestGameData(): Promise<TestGameData> {
   try {
     // Determine the correct path to the data files
-    // From server/src/__tests__/utils/ we need to go up to the project root
-    const projectRoot = join(__dirname, '../../../../');
+    // From packages/server/src/__tests__/utils/ we need to go up to the project root
+    const projectRoot = join(__dirname, '../../../../../');
     const dataPath = join(projectRoot, 'public/data');
 
     console.log(`📂 Loading test data from: ${dataPath}`);

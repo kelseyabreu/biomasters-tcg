@@ -210,7 +210,7 @@ class StarterDeckService {
                 deck_id: deckResult.id,
                 card_id: card.cardId,
                 species_name: this.getSpeciesNameFromCardId(card.cardId),
-                position_in_deck: i
+                position_in_deck: i + 1  // Start positions at 1, not 0
               })
               .execute();
           }

@@ -54,6 +54,17 @@ function getIORedisConfig() {
  * Initialize IORedis connection for game worker system
  */
 export async function initializeIORedis(): Promise<void> {
+  // Prevent multiple initializations
+  if (ioredisInitialized && ioredisClient && ioredisAvailable) {
+    console.log('🔴 [IORedis] Already initialized and available, skipping...');
+    return;
+  }
+
+  if (ioredisClient) {
+    console.log('🔴 [IORedis] Client already exists, skipping initialization...');
+    return;
+  }
+
   const maxRetries = 3;
   const retryDelay = 2000; // 2 seconds
 
@@ -92,7 +103,8 @@ export async function initializeIORedis(): Promise<void> {
       // Set up error handlers before testing connection
       ioredisClient.on('error', (error) => {
         console.error('🔴 [IORedis] Connection error:', error);
-        ioredisAvailable = false;
+        // Don't immediately disable - let the health check handle it
+        console.log('🔴 [IORedis] Error occurred, but keeping client available for retry');
       });
 
       ioredisClient.on('connect', () => {
@@ -100,28 +112,54 @@ export async function initializeIORedis(): Promise<void> {
       });
 
       ioredisClient.on('ready', () => {
-        console.log('🔴 [IORedis] Ready event');
+        console.log('🔴 [IORedis] Ready event - connection is ready');
+        // Set available when ready
+        ioredisAvailable = true;
       });
 
       ioredisClient.on('close', () => {
         console.log('🔴 [IORedis] Connection closed event');
-        ioredisAvailable = false;
+        // Don't immediately disable - Redis will auto-reconnect
+        console.log('🔴 [IORedis] Connection closed, but keeping client for auto-reconnect');
       });
 
-      // Test the connection
-      console.log('🔴 [IORedis] Testing connection...');
-      const pingResult = await ioredisClient.ping();
+      ioredisClient.on('end', () => {
+        console.log('🔴 [IORedis] Connection ended event');
+        console.log('🔴 [IORedis] ⚠️ WARNING: END event fired - this will set client to NULL');
+        console.log('🔴 [IORedis] Stack trace:', new Error().stack);
+        // Only disable if this is a permanent disconnection
+        console.log('🔴 [IORedis] Connection ended permanently');
+        ioredisAvailable = false;
+        ioredisClient = null;
+        console.log('🔴 [IORedis] ❌ Client set to NULL due to END event');
+      });
 
-      if (pingResult === 'PONG') {
-        ioredisAvailable = true;
-        ioredisInitialized = true;
-        console.log('✅ [IORedis] Connected successfully');
-        console.log('🔴 [IORedis] Client set and initialized');
-        console.log('🔴 [IORedis] Final state - Client:', !!ioredisClient, 'Available:', ioredisAvailable, 'Initialized:', ioredisInitialized);
-        console.log(`🔴 [IORedis] Initialization completed at ${new Date().toISOString()}`);
-        return;
-      } else {
-        throw new Error(`Unexpected ping response: ${pingResult}`);
+      // Wait for connection to be fully ready
+      console.log('🔴 [IORedis] Waiting for connection to be fully ready...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+
+      // Test the connection
+      console.log('🔴 [IORedis] Testing connection with PING...');
+      console.log('🔴 [IORedis] Client state before ping - exists:', !!ioredisClient, 'status:', ioredisClient?.status);
+
+      try {
+        const pingResult = await ioredisClient.ping();
+        console.log('🔴 [IORedis] PING successful, result:', pingResult);
+
+        if (pingResult === 'PONG') {
+          ioredisAvailable = true;
+          ioredisInitialized = true;
+          console.log('✅ [IORedis] Connected successfully');
+          console.log('🔴 [IORedis] Client set and initialized');
+          console.log('🔴 [IORedis] Final state - Client:', !!ioredisClient, 'Available:', ioredisAvailable, 'Initialized:', ioredisInitialized);
+          console.log(`🔴 [IORedis] Initialization completed at ${new Date().toISOString()}`);
+          return;
+        } else {
+          throw new Error(`Unexpected ping response: ${pingResult}`);
+        }
+      } catch (pingError) {
+        console.error('🔴 [IORedis] PING command failed:', pingError);
+        throw pingError;
       }
 
     } catch (error) {
@@ -148,6 +186,17 @@ export async function initializeIORedis(): Promise<void> {
  * Get IORedis client (returns null if Redis is not available)
  */
 export function getIORedisClient(): Redis | null {
+  const timestamp = new Date().toISOString();
+  console.log(`🔴 [IORedis] getIORedisClient() called at ${timestamp}`);
+  console.log('🔴 [IORedis] Client exists:', !!ioredisClient);
+  console.log('🔴 [IORedis] Available flag:', ioredisAvailable);
+  console.log('🔴 [IORedis] Initialized flag:', ioredisInitialized);
+
+  if (!ioredisClient) {
+    console.log('🔴 [IORedis] ❌ Client is NULL - investigating...');
+    console.log('🔴 [IORedis] Stack trace of caller:', new Error().stack);
+  }
+
   return ioredisClient;
 }
 
@@ -155,7 +204,24 @@ export function getIORedisClient(): Redis | null {
  * Check if IORedis is available
  */
 export function isIORedisAvailable(): boolean {
-  return ioredisAvailable && ioredisClient !== null;
+  // More robust check - if client exists and is in a good state, consider it available
+  if (!ioredisClient) {
+    console.log('🔴 [IORedis] isIORedisAvailable() - No client exists');
+    return false;
+  }
+
+  // Check client status
+  const status = ioredisClient.status;
+  console.log('🔴 [IORedis] isIORedisAvailable() - Client status:', status);
+  console.log('🔴 [IORedis] isIORedisAvailable() - Available flag:', ioredisAvailable);
+  console.log('🔴 [IORedis] isIORedisAvailable() - Initialized flag:', ioredisInitialized);
+
+  // Consider available if client exists and is in ready or connecting state
+  const isClientReady = status === 'ready' || status === 'connecting' || status === 'connect';
+  const result = isClientReady && ioredisInitialized;
+
+  console.log('🔴 [IORedis] isIORedisAvailable() - Final result:', result);
+  return result;
 }
 
 /**

@@ -50,54 +50,97 @@ export async function initializeRedis(): Promise<void> {
   const maxRetries = 3;
   const retryDelay = 2000; // 2 seconds
 
-  console.log('🔴 [Redis] Starting Redis initialization...');
+  console.log('🔴 [Redis] ===== STARTING REDIS INITIALIZATION =====');
+  console.log('🔴 [Redis] Environment variables:');
+  console.log('🔴 [Redis] - REDIS_HOST:', process.env['REDIS_HOST']);
+  console.log('🔴 [Redis] - REDIS_PORT:', process.env['REDIS_PORT']);
+  console.log('🔴 [Redis] - REDIS_PASSWORD:', process.env['REDIS_PASSWORD'] ? 'SET' : 'NOT SET');
+  console.log('🔴 [Redis] - REDIS_TLS:', process.env['REDIS_TLS']);
+  console.log('🔴 [Redis] - NODE_ENV:', process.env['NODE_ENV']);
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔴 [Redis] Attempt ${attempt}/${maxRetries}`);
+      console.log(`🔴 [Redis] ===== ATTEMPT ${attempt}/${maxRetries} =====`);
 
       const redisConfig = getRedisConfig();
+      console.log('🔴 [Redis] Creating Redis client with config:', JSON.stringify(redisConfig, null, 2));
+
       redisClient = new Redis(redisConfig as any);
 
       // Set up error handlers before testing connection
       redisClient.on('error', (error) => {
-        console.error('🔴 [Redis] Connection error:', error);
+        console.error('🔴 [Redis] Connection error event:', error);
         redisAvailable = false;
       });
 
       redisClient.on('connect', () => {
-        console.log('🔴 [Redis] Connected event');
+        console.log('🔴 [Redis] ✅ Connected event fired');
       });
 
       redisClient.on('ready', () => {
-        console.log('🔴 [Redis] Ready event');
+        console.log('🔴 [Redis] ✅ Ready event fired');
+        redisAvailable = true;
       });
 
       redisClient.on('close', () => {
-        console.log('🔴 [Redis] Connection closed event');
+        console.log('🔴 [Redis] ❌ Connection closed event');
         redisAvailable = false;
       });
 
-      // Test the connection
-      console.log('🔴 [Redis] Testing connection...');
-      const pingResult = await redisClient.ping();
+      redisClient.on('reconnecting', () => {
+        console.log('🔴 [Redis] 🔄 Reconnecting event');
+      });
+
+      // Test the connection with timeout
+      console.log('🔴 [Redis] Testing connection with PING...');
+      const pingStart = Date.now();
+
+      const pingPromise = redisClient.ping();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('PING timeout after 10 seconds')), 10000)
+      );
+
+      const pingResult = await Promise.race([pingPromise, timeoutPromise]);
+      const pingDuration = Date.now() - pingStart;
+
+      console.log(`🔴 [Redis] PING result: ${pingResult} (took ${pingDuration}ms)`);
 
       if (pingResult === 'PONG') {
         redisAvailable = true;
-        console.log('✅ [Redis] Connected successfully');
+        console.log('✅ [Redis] CONNECTION SUCCESSFUL!');
+        console.log(`🔴 [Redis] Final status - redisAvailable: ${redisAvailable}`);
         console.log(`🔴 [Redis] Initialization completed at ${new Date().toISOString()}`);
+
+        // Test a basic operation
+        try {
+          await redisClient.set('test-key', 'test-value', 'EX', 10);
+          const testValue = await redisClient.get('test-key');
+          console.log(`🔴 [Redis] Test operation successful: ${testValue}`);
+        } catch (testError) {
+          console.error('🔴 [Redis] Test operation failed:', testError);
+        }
+
         return;
       } else {
         throw new Error(`Unexpected ping response: ${pingResult}`);
       }
 
     } catch (error) {
-      console.error(`🔴 [Redis] Attempt ${attempt}/${maxRetries} failed:`, error);
+      console.error(`🔴 [Redis] ❌ ATTEMPT ${attempt}/${maxRetries} FAILED:`, error);
+      console.error('🔴 [Redis] Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
 
       if (redisClient) {
+        console.log('🔴 [Redis] Disconnecting failed client...');
         redisClient.disconnect();
         redisClient = null;
       }
+
+      redisAvailable = false;
+
       if (attempt < maxRetries) {
         console.log(`🔴 [Redis] Retrying in ${retryDelay}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -105,8 +148,9 @@ export async function initializeRedis(): Promise<void> {
     }
   }
 
-  console.warn('⚠️ [Redis] Failed to connect after all attempts');
+  console.error('❌ [Redis] ===== FAILED TO CONNECT AFTER ALL ATTEMPTS =====');
   console.warn('⚠️ [Redis] Redis-dependent features will use memory fallback');
+  console.log(`🔴 [Redis] Final status - redisAvailable: ${redisAvailable}`);
   redisAvailable = false;
 }
 
@@ -121,7 +165,9 @@ export function getRedisClient(): Redis | null {
  * Check if Redis is available
  */
 export function isRedisAvailable(): boolean {
-  return redisAvailable && redisClient !== null;
+  const available = redisAvailable && redisClient !== null;
+  console.log(`🔴 [Redis] isRedisAvailable() called - redisAvailable: ${redisAvailable}, redisClient: ${redisClient ? 'EXISTS' : 'NULL'}, result: ${available}`);
+  return available;
 }
 
 /**
@@ -561,12 +607,25 @@ export class SessionManager {
  * Check if Redis connection is healthy
  */
 export async function checkRedisHealth(): Promise<boolean> {
+  console.log('🔴 [Redis] checkRedisHealth() called');
+  console.log(`🔴 [Redis] redisClient exists: ${redisClient ? 'YES' : 'NO'}`);
+  console.log(`🔴 [Redis] redisAvailable: ${redisAvailable}`);
+
   try {
-    if (!redisClient) return false;
+    if (!redisClient) {
+      console.log('🔴 [Redis] Health check failed - no client');
+      return false;
+    }
+
+    console.log('🔴 [Redis] Sending PING for health check...');
     const result = await redisClient.ping();
-    return result === 'PONG';
+    console.log(`🔴 [Redis] Health check PING result: ${result}`);
+
+    const healthy = result === 'PONG';
+    console.log(`🔴 [Redis] Health check result: ${healthy}`);
+    return healthy;
   } catch (error) {
-    console.error('❌ Redis health check failed:', error);
+    console.error('❌ [Redis] Health check failed with error:', error);
     return false;
   }
 }

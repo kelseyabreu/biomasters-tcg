@@ -48,9 +48,4 @@ Write-Host "   Press Ctrl+C to stop the tunnel" -ForegroundColor Yellow
 Write-Host "" -ForegroundColor White
 
 # Start the tunnel
-gcloud compute ssh biomasters-dev-vm `
-    --zone=us-central1-a `
-    --project=biomasters-tcg `
-    --ssh-flag="-L" `
-    --ssh-flag="6379:10.36.239.107:6378" `
-    --ssh-flag="-N"
+gcloud compute ssh biomasters-dev-vm --zone=us-central1-a --project=biomasters-tcg --ssh-flag='-L' --ssh-flag='6379:10.36.239.107:6378' --ssh-flag='-N'

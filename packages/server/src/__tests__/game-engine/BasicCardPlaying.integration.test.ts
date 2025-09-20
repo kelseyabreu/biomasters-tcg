@@ -4,7 +4,7 @@
  * NO MOCKS - Tests the complete flow: Database → GameDataManager → Engine → Game Logic
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,

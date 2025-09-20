@@ -5,7 +5,7 @@
  * ensuring compatibility with the new JSON-driven architecture.
  */
 
-import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine } from '@kelseyabreu/shared';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { loadTestGameData } from '../utils/testDataLoader';
 

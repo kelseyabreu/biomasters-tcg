@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and correct grid logic
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,
@@ -26,7 +26,8 @@ describe('Simple BioMasters Gameplay - Modern', () => {
       gridHeight: gridSize.height, // 10 for 1v1
       startingHandSize: 5,
       maxHandSize: 7,
-      turnTimeLimit: 300
+      turnTimeLimit: 300,
+      startingEnergy: 10
     };
 
     // Create test game state with HOME cards

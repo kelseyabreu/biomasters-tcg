@@ -14,7 +14,7 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { setupGameSocket } from '../../websocket/gameSocket';
 import jwt from 'jsonwebtoken';
-import { Redis } from '@upstash/redis';
+// Removed @upstash/redis - using ioredis with Google Cloud Memorystore instead
 import { randomUUID } from 'crypto';
 import { io as Client } from 'socket.io-client';
 import { createTestEnvironment, setupTestNamespaceCleanup, TestNamespaceManager } from '../helpers/testNamespace';
@@ -276,14 +276,14 @@ describe('E2E: FFA 4-Player Free-for-All Matchmaking with Pub/Sub', () => {
 
       // COMPLETE Redis cleanup before this test to ensure isolation
       try {
-        const redis = new Redis({
-          url: process.env['UPSTASH_REDIS_REST_URL']!,
-          token: process.env['UPSTASH_REDIS_REST_TOKEN']!,
-        });
-
-        // FLUSH ALL Redis data to ensure clean state
-        await redis.flushall();
-        console.log('✅ Main FFA Test: Redis completely flushed before test');
+        // Use the existing Redis client from MatchmakingService instead of Upstash
+        const matchmakingService = testEnv.matchmakingService as any;
+        if (matchmakingService.redis) {
+          await matchmakingService.redis.flushall();
+          console.log('✅ Main FFA Test: Redis completely flushed before test');
+        } else {
+          console.log('⚠️ Redis not available for cleanup - continuing without flush');
+        }
 
         // Wait for flush to propagate
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -385,7 +385,7 @@ describe('E2E: FFA 4-Player Free-for-All Matchmaking with Pub/Sub', () => {
     // Step 1: All 4 players join FFA queue sequentially
     console.log('🎯 Step 1: All 4 players joining FFA queue sequentially...');
 
-    const joinResponses = [];
+    const joinResponses: any[] = [];
     const testPlayerRatings = [1200, 1180, 1220, 1190]; // Compatible ratings within ±100 range
 
     for (let index = 0; index < playerTokens.length; index++) {
@@ -526,7 +526,7 @@ describe('E2E: FFA 4-Player Free-for-All Matchmaking with Pub/Sub', () => {
     console.log(`🚨🚨🚨 [TEST] Player tokens length: ${playerTokens.map(t => t?.length)}`);
 
     // Make ready requests one by one to see exactly where it fails
-    const readyResponses = [];
+    const readyResponses: any[] = [];
     for (let index = 0; index < playerTokens.length; index++) {
       const token = playerTokens[index];
       console.log(`🚨🚨🚨 [TEST] Making ready request ${index + 1}/${playerTokens.length} for player ${index + 1}`);

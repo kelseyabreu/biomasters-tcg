@@ -3,10 +3,9 @@
  * Tests the final turn mechanics when a player runs out of cards
  */
 
-import { BioMastersEngine } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, TurnPhase, GameActionType, GamePhase } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
-import { TurnPhase, GameActionType, GamePhase } from '../../../../shared/enums';
 
 describe('Final Turn System Integration Tests', () => {
   let gameData: any;

@@ -116,7 +116,14 @@ export class DistributedStateManager {
         throw new Error(`Session ${sessionId} not found or has no game state`);
       }
 
-      const gameState = JSON.parse(session.game_state as unknown as string);
+      // PostgreSQL JSONB columns are already parsed objects, not strings
+      logger.debug(`[DistributedStateManager] Raw game_state type: ${typeof session.game_state}, value: ${JSON.stringify(session.game_state).substring(0, 100)}...`);
+
+      const gameState = typeof session.game_state === 'string'
+        ? JSON.parse(session.game_state)
+        : session.game_state;
+
+      logger.debug(`[DistributedStateManager] Processed game state for session ${sessionId}, keys: ${Object.keys(gameState || {}).join(', ')}`);
 
       // 4. Populate caches for next time
       try {

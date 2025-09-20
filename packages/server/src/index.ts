@@ -143,6 +143,12 @@ async function initializeServices() {
     console.log('🔥 Initializing Firebase Admin SDK...');
     await initializeFirebase();
 
+    console.log('🔴 Initializing Redis connection...');
+    await initializeRedis();
+
+    console.log('🔴 Initializing IORedis connection...');
+    await initializeIORedis();
+
     // Try to connect to PostgreSQL (optional for now)
     try {
       console.log('🐘 Connecting to PostgreSQL with Kysely...');

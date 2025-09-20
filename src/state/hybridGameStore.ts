@@ -22,9 +22,8 @@ import { createUserScopedIndexedDBStorage, clearUserData } from '../utils/userSc
 import { guestApi, gameApi } from '../services/apiClient';
 import { unifiedGameService } from '../services/UnifiedGameService';
 import { GameMode } from '@kelseyabreu/shared';
-import { staticDataManager } from '../services/StaticDataManager';
 import { gameStateManager } from '../services/GameStateManager';
-import { PhyloGameState as SharedPhyloGameState, CardData } from '@kelseyabreu/shared';
+import { PhyloGameState as SharedPhyloGameState, CardData, sharedDataLoader } from '@kelseyabreu/shared';
 import type { ClientGameState } from '../types/ClientGameTypes';
 import { nameIdToCardId } from '@kelseyabreu/shared';
 
@@ -1404,8 +1403,8 @@ export const useHybridGameStore = create<HybridGameState>()(
           try {
             console.log('🔄 Loading species data...');
 
-            // Use StaticDataManager for data loading with background updates
-            const result = await staticDataManager.getDataFile('cards.json');
+            // Use sharedDataLoader for data loading from static files
+            const result = await sharedDataLoader.loadCards();
             if (!result.success || !result.data) {
               throw new Error(result.error || 'Failed to load card data');
             }

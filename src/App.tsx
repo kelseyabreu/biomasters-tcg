@@ -31,7 +31,7 @@ import { useHybridGameStore } from './state/hybridGameStore';
 import { ActiveBattleIndicator } from './components/navigation/ActiveBattleIndicator';
 import { LocalizationProvider } from './contexts/LocalizationContext';
 import { gameStateManager } from './services/GameStateManager';
-import { staticDataManager } from './services/StaticDataManager';
+
 import { ConnectivityIndicator, OfflineBanner } from './components/ui/ConnectivityIndicator';
 import { ConflictResolutionModal } from './components/ui/ConflictResolutionModal';
 import { ResumeGamePrompt } from './components/ui/ResumeGamePrompt';
@@ -165,9 +165,8 @@ const App: React.FC = () => {
   React.useEffect(() => {
     const initialize = async () => {
       try {
-        // Initialize static data manager first
-        console.log('🔄 [App] Initializing static data manager...');
-        await staticDataManager.initialize();
+        // Static data loading is now handled by sharedDataLoader automatically
+        console.log('🔄 [App] Static data will be loaded on-demand by sharedDataLoader...');
 
         // Initialize auth
         await initializeAuth();

@@ -11,8 +11,7 @@ COPY package*.json ./
 COPY packages/shared/ ./packages/shared/
 COPY packages/server/ ./packages/server/
 
-# Copy public data (if it exists)
-COPY public/ ./public/ 2>/dev/null || true
+# Note: public directory not needed for server build
 
 # Install all dependencies
 RUN npm ci

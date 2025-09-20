@@ -15,7 +15,7 @@
     "dev:shared": "npm run dev --workspace=packages/shared",
     "dev:server": "npm run dev --workspace=packages/server",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run build:shared && tsc && vite build",
     "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview",
     "test.e2e": "playwright test",

@@ -1,0 +1,46 @@
+{
+  "name": "@kelseyabreu/shared",
+  "version": "1.0.3",
+  "description": "Shared code for BioMasters TCG",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "jest"
+  },
+  "keywords": [
+    "biomasters",
+    "tcg",
+    "shared",
+    "typescript"
+  ],
+  "author": "BioMasters Team",
+  "license": "UNLICENSED",
+  "private": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "@kelseyabreu:registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kelseyabreu/biomasters-tcg.git",
+    "directory": "packages/shared"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "dependencies": {
+    "ioredis": "^5.3.2"
+  }
+}

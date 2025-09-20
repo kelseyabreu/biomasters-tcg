@@ -4,6 +4,11 @@
 /node_modules
 server/node_modules
 shared/node_modules
+/packages/server/node_modules
+/packages/shared/node_modules
+/packages/shared/src/node_modules
+/packages/frontend/node_modules
+
 /.pnp
 .pnp.js
 
@@ -14,6 +19,9 @@ shared/node_modules
 /dist
 server/dist
 shared/dist
+/packages/server/dist
+/packages/shared/dist
+/packages/frontend/dist
 
 # TypeScript compiled output (build artifacts)
 # Frontend compiled output

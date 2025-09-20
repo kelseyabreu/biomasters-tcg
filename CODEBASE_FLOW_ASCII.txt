@@ -1,0 +1,225 @@
+🧬 BioMasters TCG - Codebase Architecture & Flow (ASCII)
+================================================================
+
+📦 MONOREPO STRUCTURE
+=====================
+
+biomasters-tcg/
+├── packages/
+│   ├── 🔧 shared/           ← @kelseyabreu/shared (npm workspace)
+│   │   ├── types.ts         ← TypeScript interfaces
+│   │   ├── enums.ts         ← Game constants (CardId, TrophicLevel)
+│   │   ├── game-engine/     ← Unified game system
+│   │   │   ├── TCGEngine.ts      ← Multiplayer mode
+│   │   │   ├── PhyloEngine.ts    ← Campaign mode  
+│   │   │   └── BioMastersEngine.ts ← Core rules
+│   │   └── data/            ← Cross-platform data loading
+│   │
+│   ├── 🚀 server/           ← Node.js + Express API
+│   │   ├── routes/          ← HTTP endpoints
+│   │   ├── websocket/       ← Real-time communication
+│   │   ├── services/        ← Game workers & matchmaking
+│   │   └── config/          ← DB, Redis, Firebase setup
+│   │
+│   └── 📱 frontend/         ← React + Ionic (src/)
+│       ├── App.tsx          ← Main React app
+│       ├── state/           ← Zustand + React Query
+│       ├── services/        ← Game logic & API clients
+│       └── components/      ← UI components
+│
+├── 📊 public/data/          ← Single source of truth
+│   ├── cards.json           ← All card data
+│   ├── abilities.json       ← Ability definitions
+│   └── localization/en.json ← Text content
+│
+└── 📋 package.json          ← Workspace configuration
+
+🌊 DATA FLOW
+============
+
+1. JSON Data Loading:
+   📄 /public/data/*.json
+        ↓
+   📊 UnifiedDataLoader (environment detection)
+        ↓
+   🎮 Game Engines (TCG/Phylo)
+
+2. Frontend Flow:
+   ⚛️ React App
+        ↓
+   🗄️ Hybrid Store (Zustand)
+        ↓
+   🎮 Game Services
+        ↓
+   🔄 Unified Game Service
+        ↓
+   🃏 TCG Engine / 🌱 Phylo Engine
+
+3. Backend Flow:
+   🌐 Express API / ⚡ WebSocket
+        ↓
+   👥 Game Workers
+        ↓
+   🧬 BioMasters Core Engine
+        ↓
+   🔴 Redis (state) + 🐘 PostgreSQL (persistence)
+
+🔄 COMMUNICATION PATTERNS
+=========================
+
+Frontend ←→ Backend:
+📱 React App ──HTTP/WS──► 🚀 Express Server
+     │                         │
+     ├── 🔐 Firebase Auth ──────┤
+     ├── 📊 Static Data ────────┤
+     └── 🎮 Game Actions ───────┤
+                               │
+                               ▼
+                        🧬 Game Engine
+                               │
+                               ▼
+                    🔴 Redis ←→ 🐘 PostgreSQL
+
+Offline Mode:
+📱 Frontend ──► 📄 Local JSON ──► 🎮 Local Engine
+
+Online Mode:
+📱 Frontend ──► 🚀 Server ──► 🧬 Authoritative Engine
+
+🏗️ KEY ARCHITECTURAL PATTERNS
+==============================
+
+1. 📦 Monorepo with npm workspaces
+   - Shared package for common code
+   - Type-safe imports across packages
+   - Single build system
+
+2. 🎮 Unified Game Engine
+   - Abstract interface (IGameEngine)
+   - Multiple implementations (TCG/Phylo)
+   - Factory pattern for creation
+   - Environment-aware data loading
+
+3. 🔄 Offline-First Design
+   - Local JSON data as fallback
+   - Progressive enhancement
+   - Sync service for conflict resolution
+
+4. ⚡ Real-time Features
+   - WebSocket for live gameplay
+   - Redis for session state
+   - Pub/Sub for scaling
+
+5. 🌐 Cross-Platform Support
+   - React + Ionic for web/mobile
+   - Capacitor for native features
+   - PWA capabilities
+
+☁️ EXTERNAL SERVICES
+====================
+
+🔥 Firebase:
+   - Authentication (Google, email, anonymous)
+   - User management
+   - JWT tokens
+
+🚂 Railway:
+   - PostgreSQL database
+   - Production hosting
+
+☁️ Google Cloud Platform:
+   - 🔴 Redis Memorystore (session cache)
+   - 📡 Cloud Pub/Sub (messaging)
+   - 🔐 Service account authentication
+   - 🖥️ Compute VM (development access)
+
+🧪 DEVELOPMENT SETUP
+====================
+
+Local Development:
+1. Frontend: localhost:5173 (Vite)
+2. Backend: localhost:3001 (Express)
+3. Redis: SSH tunnel to GCP
+4. Database: Railway PostgreSQL
+5. Auth: Firebase
+
+Production:
+1. Frontend: CDN/hosting
+2. Backend: Cloud deployment
+3. Redis: Direct GCP connection
+4. Database: Railway PostgreSQL
+5. Scaling: Cloud Pub/Sub
+
+🎯 GAME MODES
+=============
+
+🃏 TCG Mode (Multiplayer):
+   - Real-time card battles
+   - Authoritative server validation
+   - WebSocket communication
+   - Redis session management
+
+🌱 Phylo Mode (Campaign):
+   - Single-player progression
+   - Local state management
+   - Offline-capable
+   - Educational content
+
+🔄 Hybrid Store:
+   - Seamless mode switching
+   - Unified state management
+   - Sync between local/server
+
+📊 DATA ARCHITECTURE
+====================
+
+Single Source of Truth:
+📄 /public/data/*.json files contain all game data
+
+Environment Detection:
+🌐 Client (browser) → Fetch API
+📱 Mobile (Capacitor) → Native file access  
+🚀 Server (Node.js) → Filesystem
+🧪 Test → No caching
+
+Cross-Platform Compatibility:
+- Browser-safe process checks
+- Environment-specific loaders
+- Graceful fallbacks
+
+🔐 SECURITY MODEL
+=================
+
+Authentication:
+- Firebase Auth integration
+- Guest user support
+- JWT token management
+
+Authorization:
+- Role-based access control
+- Server-side validation
+- Secure API endpoints
+
+Data Protection:
+- Encrypted connections (HTTPS/WSS)
+- Input validation
+- SQL injection prevention (Kysely)
+
+🚀 DEPLOYMENT STRATEGY
+======================
+
+Development:
+- Local development servers
+- SSH tunnels for cloud services
+- Hot reload for rapid iteration
+
+Production:
+- Container deployment
+- Load balancing
+- Auto-scaling with Pub/Sub
+- CDN for static assets
+
+Monitoring:
+- Health check endpoints
+- Error logging
+- Performance metrics

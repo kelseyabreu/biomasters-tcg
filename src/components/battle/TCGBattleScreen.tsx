@@ -37,15 +37,15 @@ import {
 
 // Import the battle store instead of game engine
 import useHybridGameStore from '../../state/hybridGameStore';
-import { GamePhase } from '../../../shared/enums';
+import { GamePhase } from '@kelseyabreu/shared';
 import { useLocalization } from '../../contexts/LocalizationContext';
 import { useTheme } from '../../theme/ThemeProvider';
 import OrganismRenderer from '../OrganismRenderer';
 
 import { unifiedGameService } from '../../services/UnifiedGameService';
 import { getGameSocket } from '../../services/gameSocket';
-import { AIDifficulty } from '../../../shared/ai/AIStrategy';
-import { AIStrategyFactory } from '../../../shared/ai/AIStrategyFactory';
+import { AIDifficulty } from '@kelseyabreu/shared';
+import { AIStrategyFactory } from '@kelseyabreu/shared';
 import PlayerStatsDisplay from '../ui/PlayerStatsDisplay';
 import EndGameModal from '../ui/EndGameModal';
 import EcosystemGrid from '../game/EcosystemGrid';

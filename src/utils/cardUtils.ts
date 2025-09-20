@@ -1,5 +1,5 @@
 import { TrophicRole } from '../types';
-import { ConservationStatus } from '@shared/enums';
+import { ConservationStatus } from '@kelseyabreu/shared';
 
 /**
  * Get color for trophic role

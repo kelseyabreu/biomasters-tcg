@@ -9,7 +9,7 @@ import {
   ILocalizationManager, 
   LocalizationManager, 
   JSONFileDataLoader 
-} from '@shared/localization-manager';
+} from '@kelseyabreu/shared';
 import {
   SupportedLanguage,
   CardNameId,
@@ -18,7 +18,7 @@ import {
   AbilityNameId,
   UITextId,
   LANGUAGE_CONFIG
-} from '@shared/text-ids';
+} from '@kelseyabreu/shared';
 
 interface LocalizationContextType {
   // Current state

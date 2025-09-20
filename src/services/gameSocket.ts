@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { PhyloGameAction } from '@shared/types';
+import { PhyloGameAction } from '@kelseyabreu/shared';
 
 // Use shared PhyloGameAction instead of local interface
 type GameAction = PhyloGameAction;

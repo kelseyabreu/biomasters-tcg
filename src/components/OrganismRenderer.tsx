@@ -3,7 +3,7 @@ import { IonButton, IonIcon } from '@ionic/react';
 import { add, remove, refresh } from 'ionicons/icons';
 import { Card as CardType } from '../types';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { getCardDisplayName } from '@shared/utils/cardIdHelpers';
+import { getCardDisplayName } from '@kelseyabreu/shared';
 
 // Import the organism models
 import { organismModels } from '../ecosystem-organisms';

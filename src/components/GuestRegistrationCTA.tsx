@@ -25,10 +25,10 @@ import {
   checkmark
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { getCollectionStats } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats } from '@kelseyabreu/shared';
 import { AuthModal } from './auth/AuthModal';
 import { useUILocalization } from '../hooks/useCardLocalization';
-import { UITextId } from '@shared/text-ids';
+import { UITextId } from '@kelseyabreu/shared';
 import './GuestRegistrationCTA.css';
 
 interface GuestRegistrationCTAProps {

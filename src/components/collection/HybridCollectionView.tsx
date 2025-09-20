@@ -10,7 +10,7 @@ import { search, filter, statsChart, sync, options, close } from 'ionicons/icons
 import { Card, ConservationStatus } from '../../types';
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import { useLocalization } from '../../contexts/LocalizationContext';
-import { getCollectionStats, isCardOwnedByNameId, getCardOwnershipByNameId } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats, isCardOwnedByNameId, getCardOwnershipByNameId } from '@kelseyabreu/shared';
 
 import { CollectionCard, CardPropertyFilter } from './CollectionCard';
 import { CollectionStats } from './CollectionStats';

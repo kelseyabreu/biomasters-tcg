@@ -38,7 +38,7 @@ import {
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import CollectionCard, { CardPropertyFilter } from './CollectionCard';
 import PropertyFilterModal from './PropertyFilterModal';
-import { nameIdToCardId, cardIdToNameId } from '@shared/utils/cardIdHelpers';
+import { nameIdToCardId, cardIdToNameId } from '@kelseyabreu/shared';
 import './DeckBuilder.css';
 
 interface DeckCard {

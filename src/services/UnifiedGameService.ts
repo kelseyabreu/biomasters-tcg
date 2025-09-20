@@ -11,12 +11,12 @@ import {
   UnifiedGameAction,
   UnifiedActionResult,
   GameEngineData
-} from '@shared/game-engine/IGameEngine';
-import { gameEngineFactory } from '@shared/game-engine/GameEngineFactory';
-import { GameState } from '@shared/types';
-import { LoadResult } from '@shared/data/IServerDataLoader';
+} from '@kelseyabreu/shared';
+import { gameEngineFactory } from '@kelseyabreu/shared';
+import { GameState } from '@kelseyabreu/shared';
+import { LoadResult } from '@kelseyabreu/shared';
 import { gameApi } from './apiClient';
-import { sharedDataLoader } from '@shared/data/UnifiedDataLoader';
+import { sharedDataLoader } from '@kelseyabreu/shared';
 
 // ============================================================================
 // UNIFIED SERVICE INTERFACES

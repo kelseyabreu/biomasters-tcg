@@ -10,7 +10,7 @@ import { offlineSecurityService, OfflineCollection } from '../services/offlineSe
 import { starterPackService } from '../services/starterPackService';
 import { syncService, SyncResult } from '../services/syncService';
 import { getGameSocket } from '../services/gameSocket';
-import { initializeCardMapping } from '@shared/utils/cardIdHelpers';
+import { initializeCardMapping } from '@kelseyabreu/shared';
 
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
 import { MatchResult, RatingUpdate, OnlineGameSettings } from '../services/UnifiedGameService';
@@ -21,18 +21,18 @@ import { tokenManager } from '../services/tokenStorage';
 import { createUserScopedIndexedDBStorage, clearUserData } from '../utils/userScopedStorage';
 import { guestApi, gameApi } from '../services/apiClient';
 import { unifiedGameService } from '../services/UnifiedGameService';
-import { GameMode } from '@shared/game-engine/IGameEngine';
+import { GameMode } from '@kelseyabreu/shared';
 import { staticDataManager } from '../services/StaticDataManager';
 import { gameStateManager } from '../services/GameStateManager';
-import { PhyloGameState as SharedPhyloGameState, CardData } from '@shared/types';
+import { PhyloGameState as SharedPhyloGameState, CardData } from '@kelseyabreu/shared';
 import type { ClientGameState } from '../types/ClientGameTypes';
-import { nameIdToCardId } from '@shared/utils/cardIdHelpers';
+import { nameIdToCardId } from '@kelseyabreu/shared';
 
 // Import unified user types
 import type {
   AuthenticatedUser
-} from '@shared/types';
-import { SyncStatus, UserType } from '@shared/enums';
+} from '@kelseyabreu/shared';
+import { SyncStatus, UserType } from '@kelseyabreu/shared';
 
 // Global reference to store for user ID access
 let storeRef: any = null;

@@ -20,7 +20,7 @@ import {
   IonTitle
 } from '@ionic/react';
 import { languageOutline, checkmark } from 'ionicons/icons';
-import { SupportedLanguage, LANGUAGE_CONFIG, LanguageInfo } from '@shared/text-ids';
+import { SupportedLanguage, LANGUAGE_CONFIG, LanguageInfo } from '@kelseyabreu/shared';
 
 interface LanguageSelectorProps {
   currentLanguage: SupportedLanguage;

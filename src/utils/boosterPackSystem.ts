@@ -2,7 +2,7 @@
 // Uses real-world conservation percentages to determine card rarity
 
 import { Card, CONSERVATION_RARITY_DATA } from '../types';
-import { ConservationStatus } from '@shared/enums';
+import { ConservationStatus } from '@kelseyabreu/shared';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BoosterPack {

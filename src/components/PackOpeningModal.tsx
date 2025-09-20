@@ -38,7 +38,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { Card as CardType, CONSERVATION_RARITY_DATA } from '../types';
-import { ConservationStatus } from '@shared/enums';
+import { ConservationStatus } from '@kelseyabreu/shared';
 import { useLocalization } from '../contexts/LocalizationContext';
 
 import Card from './Card';

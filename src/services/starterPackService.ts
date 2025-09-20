@@ -3,10 +3,10 @@
  * Manages the fixed starter collection that all users receive
  */
 
-import { dataLoader } from '@shared/data/DataLoader';
+import { dataLoader } from '@kelseyabreu/shared';
 import { Card, TrophicRole } from '../types';
-import { CardId } from '@shared/enums';
-import { CardData } from '@shared/types';
+import { CardId } from '@kelseyabreu/shared';
+import { CardData } from '@kelseyabreu/shared';
 // No longer need legacy species name conversions
 
 // Helper function to map trophic levels to roles

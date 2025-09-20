@@ -29,7 +29,7 @@ import {
   statsChart
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { getCollectionStats } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats } from '@kelseyabreu/shared';
 import { UserProfile } from '../components/UserProfile';
 import { GuestRegistrationCTA } from '../components/GuestRegistrationCTA';
 import { CollectionDebugPanel } from '../components/debug/CollectionDebugPanel';

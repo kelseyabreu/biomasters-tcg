@@ -26,7 +26,7 @@ import {
 } from 'ionicons/icons';
 import { BoosterPackSystem, PackOpeningResult, displayConservationEducation } from '../utils/boosterPackSystem';
 import { Card as CardType, CONSERVATION_RARITY_DATA } from '../types';
-import { ConservationStatus } from '@shared/enums';
+import { ConservationStatus } from '@kelseyabreu/shared';
 import { useLocalization } from '../contexts/LocalizationContext';
 
 import Card from './Card';

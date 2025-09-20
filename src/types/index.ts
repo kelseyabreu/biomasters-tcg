@@ -5,8 +5,8 @@
  * All shared types should be imported directly from @shared/types and @shared/enums
  */
 
-// Import and re-export shared types that are commonly used in frontend
-import type {
+// Import shared types and enums that are used across frontend, server, and workers
+import {
   CardData,
   Player,
   GameState,
@@ -17,10 +17,7 @@ import type {
   CardModifier,
   GameSettings,
   GameMetadata,
-  AbilityData
-} from '@shared/types';
-
-import {
+  AbilityData,
   ConservationStatus,
   CardId,
   AbilityId,
@@ -33,8 +30,10 @@ import {
   EffectId,
   SelectorId,
   ActionId,
-  TrophicCategoryId
-} from '@shared/enums';
+  TrophicCategoryId,
+  GameActionType,
+  PhyloGameState
+} from '@kelseyabreu/shared';
 
 // Re-export shared types for convenience
 export type {
@@ -49,7 +48,7 @@ export type {
   GameSettings,
   GameMetadata,
   AbilityData
-} from '@shared/types';
+} from '@kelseyabreu/shared';
 
 export {
   ConservationStatus,
@@ -65,7 +64,7 @@ export {
   SelectorId,
   ActionId,
   TrophicCategoryId
-} from '@shared/enums';
+} from '@kelseyabreu/shared';
 
 // ============================================================================
 // FRONTEND-SPECIFIC ENUMS (not in shared)
@@ -120,7 +119,7 @@ export enum PhyloKeyword {
   POLLINATOR = 'POLLINATOR'
 }
 
-export enum WinCondition {
+export enum WinConditionType {
   APEX_PREDATOR = 'Apex Predator',
   ECOSYSTEM_BALANCE = 'Ecosystem Balance',
   CONSERVATION_VICTORY = 'Conservation Victory',
@@ -232,13 +231,7 @@ export interface ConservationRarity {
   glowEffect: string;
 }
 
-export interface WinConditionProgress {
-  condition: WinCondition;
-  playerId: string;
-  progress: number;
-  target: number;
-  achieved: boolean;
-}
+
 
 // Phylo domino-style game interfaces
 export interface PhyloCardPosition {
@@ -412,24 +405,107 @@ export function transformCardDataToCard(cardData: CardData): Card {
   };
 }
 
-// Helper functions for mapping shared types to frontend types
-function mapTrophicLevelToRole(trophicLevel: any): TrophicRole {
-  // Map numeric trophic levels to frontend roles based on shared/enums.ts TrophicLevel enum
-  switch (trophicLevel) {
-    case -2: return TrophicRole.DECOMPOSER; // DETRITIVORE
-    case -1: return TrophicRole.DECOMPOSER; // SAPROTROPH
-    case 0: return TrophicRole.DECOMPOSER;  // DETRITUS_TILE
-    case 1: return TrophicRole.PRODUCER;    // PRODUCER
-    case 2: return TrophicRole.HERBIVORE;   // PRIMARY_CONSUMER
-    case 3: return TrophicRole.CARNIVORE;   // SECONDARY_CONSUMER
-    case 4: return TrophicRole.CARNIVORE;   // APEX_PREDATOR
-    default: return TrophicRole.PRODUCER;
+// ============================================================================
+// MAPPING FUNCTIONS: Shared Types ↔ Frontend Types
+// ============================================================================
+
+/**
+ * Maps frontend action types to shared GameActionType enum
+ */
+export function mapActionType(frontendActionType: string): GameActionType {
+  switch (frontendActionType) {
+    case 'place_card':
+      return GameActionType.PLAY_CARD;
+    case 'move_card':
+      return GameActionType.MOVE_CARD;
+    case 'challenge':
+      return GameActionType.CHALLENGE;
+    case 'pass_turn':
+      return GameActionType.PASS_TURN;
+    case 'drop_and_draw':
+      return GameActionType.DROP_AND_DRAW_THREE;
+    case 'PLACE_CARD':
+      return GameActionType.PLAY_CARD;
+    case 'MOVE_CARD':
+      return GameActionType.MOVE_CARD;
+    case 'ACTIVATE_ABILITY':
+      return GameActionType.ACTIVATE_ABILITY;
+    case 'END_TURN':
+      return GameActionType.PASS_TURN;
+    case 'CHALLENGE':
+      return GameActionType.CHALLENGE;
+    case 'PASS':
+      return GameActionType.PASS_TURN;
+    default:
+      return GameActionType.PASS_TURN; // Default fallback
   }
 }
 
-function mapDomainToHabitat(domain: any): Habitat {
-  // Simple mapping - could be enhanced based on actual domain values
-  return Habitat.TEMPERATE; // Default
+/**
+ * Maps shared TrophicLevel enum to frontend TrophicRole enum
+ */
+function mapTrophicLevelToRole(trophicLevel: TrophicLevel | number | null): TrophicRole {
+  if (trophicLevel === null || trophicLevel === undefined) {
+    return TrophicRole.PRODUCER;
+  }
+
+  switch (trophicLevel) {
+    case TrophicLevel.DETRITIVORE:      // -2
+    case -2:
+      return TrophicRole.DETRITIVORE;
+    case TrophicLevel.SAPROTROPH:       // -1
+    case -1:
+      return TrophicRole.DECOMPOSER;
+    case TrophicLevel.DETRITUS_TILE:    // 0
+    case 0:
+      return TrophicRole.DECOMPOSER;
+    case TrophicLevel.PRODUCER:         // 1
+    case 1:
+      return TrophicRole.PRODUCER;
+    case TrophicLevel.PRIMARY_CONSUMER: // 2
+    case 2:
+      return TrophicRole.HERBIVORE;
+    case TrophicLevel.SECONDARY_CONSUMER: // 3
+    case 3:
+      return TrophicRole.CARNIVORE;
+    case TrophicLevel.APEX_PREDATOR:    // 4
+    case 4:
+      return TrophicRole.CARNIVORE;
+    default:
+      return TrophicRole.PRODUCER;
+  }
+}
+
+/**
+ * Maps shared Domain enum to frontend Habitat enum
+ */
+function mapDomainToHabitat(domain: Domain | number | null): Habitat {
+  if (domain === null || domain === undefined) {
+    return Habitat.TEMPERATE;
+  }
+
+  switch (domain) {
+    case Domain.TERRESTRIAL:
+    case 1:
+      return Habitat.TEMPERATE;
+    case Domain.FRESHWATER:
+    case 2:
+      return Habitat.TEMPERATE; // Could be more specific
+    case Domain.MARINE:
+    case 3:
+      return Habitat.TROPICAL; // Ocean environments
+    case Domain.AMPHIBIOUS_FRESHWATER:
+    case 4:
+      return Habitat.TEMPERATE;
+    case Domain.AMPHIBIOUS_MARINE:
+    case 5:
+      return Habitat.TROPICAL;
+    case Domain.EURYHALINE:
+    case 6:
+      return Habitat.TEMPERATE;
+    default:
+      return Habitat.TEMPERATE;
+  }
 }
 
 function calculatePowerFromBiologicalData(cardData: CardData): number {
@@ -586,3 +662,54 @@ export const CONSERVATION_RARITY_DATA: Record<ConservationStatus, ConservationRa
     glowEffect: 'shadow-gray'
   }
 };
+
+// ============================================================================
+// MISSING TYPES FOR GAME LOGIC
+// ============================================================================
+
+export interface TurnAction {
+  type: 'PLACE_CARD' | 'MOVE_CARD' | 'ACTIVATE_ABILITY' | 'END_TURN' | 'CHALLENGE' | 'PASS';
+  playerId: string;
+  cardId?: string;
+  targetPosition?: Position;
+  sourcePosition?: Position;
+  abilityId?: string;
+  targetCardId?: string;
+  data?: any;
+  challengeData?: {
+    targetCardId: string;
+    targetPlayerId: string;
+    claimType: any; // ScientificChallenge['claimType']
+    evidence: string;
+  };
+}
+
+export interface TurnResult {
+  success: boolean;
+  action: GameAction;
+  newGameState: PhyloGameState;
+  nextPlayer?: string;
+  gameEnded?: boolean;
+  winCondition?: any;
+  errorMessage?: string;
+}
+
+export interface WinCondition {
+  id: string;
+  type: 'ECOSYSTEM_BALANCE' | 'SPECIES_DIVERSITY' | 'CONSERVATION_GOAL' | 'SCIENTIFIC_ACCURACY';
+  name: string;
+  description: string;
+  targetValue: number;
+  currentValue?: number;
+  isComplete?: boolean;
+}
+
+export interface WinConditionProgress {
+  condition: WinConditionType;
+  playerId: string;
+  progress: number; // Current progress value
+  target: number; // Target value to achieve
+  achieved: boolean; // Whether the condition is met
+  isComplete?: boolean; // Alias for achieved
+  description?: string; // Optional description
+}

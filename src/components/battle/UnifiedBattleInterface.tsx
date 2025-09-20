@@ -30,7 +30,7 @@ import {
   chevronForwardOutline
 } from 'ionicons/icons';
 
-import { GamePhase } from '../../../shared/enums';
+import { GamePhase } from '@kelseyabreu/shared';
 import { useLocalization } from '../../contexts/LocalizationContext';
 import { useTheme } from '../../theme/ThemeProvider';
 import EcosystemGrid from '../game/EcosystemGrid';

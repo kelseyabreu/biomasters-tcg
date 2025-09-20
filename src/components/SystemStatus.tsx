@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonItem, IonLabel, IonList } from '@ionic/react';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { getCollectionStats } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats } from '@kelseyabreu/shared';
 import ConflictResolutionModal from './sync/ConflictResolutionModal';
 
 /**

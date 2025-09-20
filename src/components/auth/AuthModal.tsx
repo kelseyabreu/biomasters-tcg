@@ -23,7 +23,7 @@ import {
 import { close, shield, trophy, leaf, star } from 'ionicons/icons';
 import { AuthForm } from './AuthForm';
 import { useHybridGameStore } from '../../state/hybridGameStore';
-import { getCollectionStats } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats } from '@kelseyabreu/shared';
 
 interface AuthModalProps {
   isOpen: boolean;

@@ -55,7 +55,7 @@ import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
 import { SyncStatus } from '../components/collection/SyncStatus';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { useHistory } from 'react-router-dom';
-import { UserType } from '../../shared/enums';
+import { UserType } from '@kelseyabreu/shared';
 import { auth } from '../config/firebase';
 import './Settings.css';
 import '../components/auth/AccountDeletionModal.css';

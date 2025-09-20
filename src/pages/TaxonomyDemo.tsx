@@ -26,8 +26,8 @@ import {
   IonToast
 } from '@ionic/react';
 import { TaxonomyBrowser } from '../components/taxonomy/TaxonomyBrowser';
-import { sharedDataLoader } from '@shared/data/UnifiedDataLoader';
-import { CardData } from '../../shared';
+import { sharedDataLoader } from '@kelseyabreu/shared';
+import { CardData } from '@kelseyabreu/shared';
 
 // For now, let's use a simpler approach and load JSON directly
 interface SimpleCardData {

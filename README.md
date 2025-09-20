@@ -79,9 +79,10 @@ Card rarity reflects **real IUCN Red List percentages** (October 2024 data):
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL 12+ (for server)
-- Redis 6+ (optional, for caching)
+- Google Cloud CLI (for Redis tunnel)
+- Git (for repository access)
 
-### Frontend Only
+### Frontend Only (Offline Mode)
 ```bash
 git clone <repository-url>
 cd biomasters-tcg
@@ -90,19 +91,53 @@ npm run dev
 # Open http://localhost:5173
 ```
 
-### Full Stack Setup
-```bash
-# 1. Frontend
-npm install
-npm run dev
+### Full Stack Setup (Complete Features)
 
-# 2. Server (in separate terminal)
-cd server
+#### 1. Clone and Install
+```bash
+git clone <repository-url>
+cd biomasters-tcg
+npm install  # Install all workspace dependencies
+```
+
+#### 2. Frontend Development
+```bash
+npm run dev
+# Open http://localhost:5173
+```
+
+#### 3. Server Setup (in separate terminal)
+```bash
+cd packages/server
 npm install
 npm run db:migrate  # Set up PostgreSQL first
 npm run dev
 # Server runs on http://localhost:3001
 ```
+
+#### 4. Redis Setup (for full matchmaking features)
+```bash
+# Start Redis tunnel (keep this running)
+cd packages/server
+npm run redis:tunnel
+
+# In new terminal, restart server to use Redis
+npm start
+```
+
+### Quick Development Modes
+
+#### Basic Development (No Redis)
+- ✅ API endpoints work
+- ✅ Authentication works
+- ✅ Database operations work
+- ⚠️ Matchmaking/Redis features disabled
+
+#### Full Development (With Redis)
+- ✅ All features work including matchmaking
+- ✅ Real-time WebSocket features
+- ✅ Distributed game workers
+- ✅ Pub/Sub messaging system
 
 ### Game Data Architecture
 - **Single Source**: All game data in `/public/data/*.json`
@@ -143,31 +178,38 @@ Cards have domain keywords affecting placement:
 
 ## 🏗️ Architecture
 
-### Project Structure
+### Project Structure (Monorepo)
 ```
 biomasters-tcg/
-├── public/data/           # 🎯 SINGLE SOURCE OF TRUTH
-│   ├── cards.json        # Complete card data
-│   ├── abilities.json    # Ability definitions
-│   └── en.json          # Localization data
-├── src/                  # Frontend (React + Ionic)
-│   ├── components/      # UI components
-│   │   ├── battle/     # TCG Battle screens
-│   │   ├── game/       # Phylo Campaign screens
-│   │   └── cards/      # Card rendering components
-│   ├── pages/          # Screen components
-│   ├── services/       # Game engines and API clients
-│   │   └── UnifiedGameService.ts  # Unified service for both TCG and Phylo
-│   └── state/          # Zustand hybrid game store
-├── server/              # Backend (Express + PostgreSQL)
-│   ├── src/
-│   │   ├── routes/     # API endpoints
-│   │   ├── game-engine/ # Authoritative BioMasters engine
-│   │   ├── services/   # GameDataManager (reads /public/data/)
-│   │   └── database/   # PostgreSQL queries (API only)
-│   └── public/         # (removed - no duplicates)
-└── shared/             # TypeScript enums & types
-    └── game-engine/    # Shared BioMasters engine
+├── packages/
+│   ├── shared/              # 📦 @kelseyabreu/shared npm package
+│   │   ├── src/
+│   │   │   ├── types/      # TypeScript interfaces & types
+│   │   │   ├── enums/      # Game enums and constants
+│   │   │   └── game-engine/ # Shared BioMasters engine
+│   │   └── package.json    # Published to GitHub Packages
+│   ├── server/             # 🚀 Backend API Server
+│   │   ├── src/
+│   │   │   ├── routes/     # API endpoints
+│   │   │   ├── services/   # Business logic & Redis/Pub/Sub
+│   │   │   ├── config/     # Database, Redis, Firebase config
+│   │   │   └── middleware/ # Authentication & validation
+│   │   ├── .env            # Development environment variables
+│   │   ├── .env.production # Production environment variables
+│   │   └── start-redis-tunnel.bat # Windows Redis tunnel script
+│   └── frontend/           # 📱 React + Ionic Frontend
+│       ├── public/data/    # 🎯 SINGLE SOURCE OF TRUTH
+│       │   ├── cards.json  # Complete card data
+│       │   ├── abilities.json # Ability definitions
+│       │   └── en.json     # Localization data
+│       ├── src/
+│       │   ├── components/ # UI components
+│       │   ├── pages/      # Screen components
+│       │   ├── services/   # Game engines and API clients
+│       │   └── state/      # Zustand hybrid game store
+│       └── package.json
+├── package.json            # Root workspace configuration
+└── README.md              # This file
 ```
 
 ### Data Flow

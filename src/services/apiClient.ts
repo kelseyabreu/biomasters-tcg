@@ -12,7 +12,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { auth } from '../config/firebase';
 import { tokenManager } from './tokenStorage';
-import { ApiResponse, ApiError } from '@shared/types';
+import { ApiResponse, ApiError } from '@kelseyabreu/shared';
 
 // Use shared API types instead of local definitions
 

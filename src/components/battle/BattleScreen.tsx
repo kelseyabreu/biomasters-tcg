@@ -39,7 +39,7 @@ import {
   rocket
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../../state/hybridGameStore';
-import { getCollectionStats, cardIdToNameId } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats, cardIdToNameId } from '@kelseyabreu/shared';
 import { EcosystemBoard } from '../game/EcosystemBoard';
 import { EventEffects } from '../game/EventEffects';
 import { TutorialSystem } from '../tutorial/TutorialSystem';

@@ -38,7 +38,7 @@ import {
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import { reauthenticateWithPassword } from '../../utils/auth';
 import { useUILocalization } from '../../hooks/useCardLocalization';
-import { UITextId } from '@shared/text-ids';
+import { UITextId } from '@kelseyabreu/shared';
 
 interface AccountDeletionModalProps {
   isOpen: boolean;

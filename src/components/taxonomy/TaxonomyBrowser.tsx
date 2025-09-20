@@ -8,8 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass
-} from '../../../shared/enums';
-import { CardData } from '../../../shared/types';
+} from '@kelseyabreu/shared';
+import { CardData } from '@kelseyabreu/shared';
 import { useLocalization } from '../../contexts/LocalizationContext';
 import './TaxonomyBrowser.css';
 

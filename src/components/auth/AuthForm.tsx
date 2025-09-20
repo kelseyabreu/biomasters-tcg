@@ -31,7 +31,7 @@ import { signInWithEmail, signUpWithEmail, signInWithGoogle, AuthError } from '.
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import { handleGuestConversion, canConvertGuest } from '../../utils/guestConversion';
 import { useUILocalization } from '../../hooks/useCardLocalization';
-import { UITextId } from '@shared/text-ids';
+import { UITextId } from '@kelseyabreu/shared';
 import { authApi } from '../../services/apiClient';
 import './AuthForm.css';
 

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
 import { flash, leaf, paw, skull, heart, eye, speedometer, library, thermometer, trash, close } from 'ionicons/icons';
 import { Card as CardType, TrophicRole, CONSERVATION_RARITY_DATA } from '../types';
-import { ConservationStatus } from '@shared/enums';
+import { ConservationStatus } from '@kelseyabreu/shared';
 import { useTheme } from '../theme/ThemeProvider';
 import { useLocalization } from '../contexts/LocalizationContext';
 

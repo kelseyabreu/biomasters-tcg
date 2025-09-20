@@ -1,6 +1,22 @@
-import { Card, PhyloGameBoard, PhyloCardPosition, TrophicRole, Habitat, createCardWithDefaults } from '../types';
-import { ConservationStatus } from '@shared/enums';
-import { PhyloGameState, PhyloPlayer, PhyloGameSettings, PhyloGameAction } from '@shared/types';
+import {
+  Card,
+  PhyloGameBoard,
+  PhyloCardPosition,
+  TrophicRole,
+  Habitat,
+  createCardWithDefaults,
+  TurnAction,
+  TurnResult,
+  mapActionType
+} from '../types';
+import {
+  ConservationStatus,
+  PhyloGameState,
+  PhyloPlayer,
+  PhyloGameSettings,
+  GameAction,
+  GameActionType
+} from '@kelseyabreu/shared';
 import { validateCardPlacement } from './phyloCompatibility';
 import { placeCardOnBoard, removeCardFromBoard } from './ecosystemBuilder';
 import { executeCardMovement, validateCardMovement } from './cardMovement';
@@ -8,23 +24,17 @@ import { executeEventCard, getRandomEventCard, EventCard } from './eventCards';
 import { calculatePlayerScore, determineWinCondition, ScientificChallenge, createScientificChallenge, resolveScientificChallenge } from './phyloScoring';
 
 /**
+ * Extended GameAction for frontend use with success/error tracking
+ */
+interface FrontendGameAction extends GameAction {
+  success: boolean;
+  error?: string;
+}
+
+/**
  * Game State Management for Phylo domino-style gameplay
  *
- * Note: Now uses shared types from @shared/types for consistency
- * - GameState -> PhyloGameState (from shared)
- * - Player -> PhyloPlayer (from shared)
- */
-
-// Re-export shared types for backward compatibility
-export type GameState = PhyloGameState;
-export type Player = PhyloPlayer;
-export type GameSettings = PhyloGameSettings;
-
-// Use shared PhyloGameAction instead of local interface
-export type GameAction = PhyloGameAction;
-
-export interface TurnAction {
-  type: 'place_card' | 'move_card' | 'challenge' | 'pass_turn' | 'drop_and_draw';
+ * Note: Now uses shared types from @kelseyabreu/shared'place_card' | 'move_card' | 'challenge' | 'pass_turn' | 'drop_and_draw';
   cardId?: string;
   position?: { x: number; y: number };
   targetPosition?: { x: number; y: number };
@@ -38,8 +48,8 @@ export interface TurnAction {
 
 export interface TurnResult {
   success: boolean;
-  gameState: GameState;
-  actionTaken: GameAction;
+  newGameState: PhyloGameState;
+  action: FrontendGameAction;
   nextPlayer?: string;
   gameEnded?: boolean;
   winCondition?: any;
@@ -92,12 +102,12 @@ function createHomeCard(playerId: string, playerIndex: number): Card {
  */
 export function createGameState(
   gameId: string,
-  players: Omit<Player, 'hand' | 'deck' | 'discardPile' | 'score' | 'isReady'>[],
+  players: Omit<PhyloPlayer, 'hand' | 'deck' | 'discardPile' | 'score' | 'isReady'>[],
   allCards: Map<string, Card>,
-  settings: GameSettings
-): GameState {
+  settings: PhyloGameSettings
+): PhyloGameState {
   // Initialize players with hands and decks
-  const initializedPlayers: Player[] = players.map(player => {
+  const initializedPlayers: PhyloPlayer[] = players.map(player => {
     const availableCards = Array.from(allCards.keys());
     const shuffledCards = shuffleArray([...availableCards]);
 
@@ -181,7 +191,7 @@ export function createGameState(
  * Executes a player's turn action
  */
 export function executeTurnAction(
-  gameState: GameState,
+  gameState: PhyloGameState,
   playerId: string,
   action: TurnAction
 ): TurnResult {
@@ -190,8 +200,8 @@ export function executeTurnAction(
   if (currentPlayer.id !== playerId) {
     return {
       success: false,
-      gameState,
-      actionTaken: createFailedAction(playerId, action.type, 'Not your turn'),
+      newGameState: gameState,
+      action: createFailedAction(playerId, mapActionType(action.type), 'Not your turn'),
       errorMessage: 'Not your turn'
     };
   }
@@ -200,8 +210,8 @@ export function executeTurnAction(
   if (gameState.gamePhase !== 'playing') {
     return {
       success: false,
-      gameState,
-      actionTaken: createFailedAction(playerId, action.type, 'Invalid game phase'),
+      newGameState: gameState,
+      action: createFailedAction(playerId, mapActionType(action.type), 'Invalid game phase'),
       errorMessage: 'Invalid game phase'
     };
   }
@@ -210,39 +220,39 @@ export function executeTurnAction(
   let actionResult: GameAction;
 
   switch (action.type) {
-    case 'place_card':
-      const placeResult = handlePlaceCard(newGameState, playerId, action.cardId!, action.position!);
+    case 'PLACE_CARD':
+      const placeResult = handlePlaceCard(newGameState, playerId, action.cardId!, action.targetPosition!);
       newGameState = placeResult.gameState;
       actionResult = placeResult.action;
       break;
 
-    case 'move_card':
+    case 'MOVE_CARD':
       const moveResult = handleMoveCard(newGameState, playerId, action.cardId!, action.targetPosition!);
       newGameState = moveResult.gameState;
       actionResult = moveResult.action;
       break;
 
-    case 'challenge':
+    case 'CHALLENGE':
       const challengeResult = handleChallenge(newGameState, playerId, action.challengeData!);
       newGameState = challengeResult.gameState;
       actionResult = challengeResult.action;
       break;
 
-    case 'pass_turn':
-      actionResult = createSuccessAction(playerId, 'pass_turn', {});
+    case 'PASS':
+    case 'END_TURN':
+      actionResult = createSuccessAction(playerId, GameActionType.PASS_TURN, {});
       break;
 
-    case 'drop_and_draw':
-      const dropResult = handleDropAndDraw(newGameState, playerId, action.cardId!);
-      newGameState = dropResult.gameState;
-      actionResult = dropResult.action;
+    case 'ACTIVATE_ABILITY':
+      // TODO: Implement ability activation
+      actionResult = createSuccessAction(playerId, GameActionType.ACTIVATE_ABILITY, {});
       break;
 
     default:
       return {
         success: false,
-        gameState,
-        actionTaken: createFailedAction(playerId, action.type, 'Unknown action type'),
+        newGameState: gameState,
+        action: createFailedAction(playerId, mapActionType(action.type), 'Unknown action type'),
         errorMessage: 'Unknown action type'
       };
   }
@@ -268,22 +278,22 @@ export function executeTurnAction(
     newGameState.gamePhase = 'game_over';
     return {
       success: true,
-      gameState: newGameState,
-      actionTaken: actionResult,
+      newGameState: newGameState,
+      action: actionResult,
       gameEnded: true,
       winCondition
     };
   }
 
   // Advance to next turn if action was successful
-  if (actionResult.result === 'success') {
+  if ((actionResult as FrontendGameAction).success) {
     const nextTurnResult = advanceToNextTurn(newGameState);
     newGameState = nextTurnResult.gameState;
 
     return {
       success: true,
-      gameState: newGameState,
-      actionTaken: actionResult,
+      newGameState: newGameState,
+      action: actionResult,
       nextPlayer: nextTurnResult.nextPlayer,
       gameEnded: nextTurnResult.gameEnded,
       winCondition: nextTurnResult.winCondition
@@ -292,9 +302,9 @@ export function executeTurnAction(
 
   return {
     success: false,
-    gameState: newGameState,
-    actionTaken: actionResult,
-    errorMessage: actionResult.errorMessage
+    newGameState: newGameState,
+    action: actionResult,
+    errorMessage: (actionResult as FrontendGameAction).error || 'Action failed'
   };
 }
 
@@ -313,29 +323,29 @@ function shuffleArray<T>(array: T[]): T[] {
 /**
  * Creates a successful action
  */
-function createSuccessAction(playerId: string, type: GameAction['type'], data: any): GameAction {
+function createSuccessAction(playerId: string, type: GameActionType, data: any): FrontendGameAction {
   return {
     id: generateActionId(),
     playerId,
     type,
-    timestamp: Date.now(),
-    data,
-    result: 'success'
+    timestamp: new Date(),
+    payload: data,
+    success: true
   };
 }
 
 /**
  * Creates a failed action
  */
-function createFailedAction(playerId: string, type: GameAction['type'], errorMessage: string): GameAction {
+function createFailedAction(playerId: string, type: GameActionType, errorMessage: string): FrontendGameAction {
   return {
     id: generateActionId(),
     playerId,
     type,
-    timestamp: Date.now(),
-    data: {},
-    result: 'failure',
-    errorMessage
+    timestamp: new Date(),
+    payload: {},
+    success: false,
+    error: errorMessage
   };
 }
 
@@ -350,17 +360,17 @@ function generateActionId(): string {
  * Handles dropping a card and drawing 3 new ones
  */
 function handleDropAndDraw(
-  gameState: GameState,
+  gameState: PhyloGameState,
   playerId: string,
   cardId: string
-): { gameState: GameState; action: GameAction } {
+): { gameState: PhyloGameState; action: GameAction } {
   const newGameState = { ...gameState };
   const playerIndex = newGameState.players.findIndex(p => p.id === playerId);
 
   if (playerIndex === -1) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'drop_and_draw', 'Player not found')
+      action: createFailedAction(playerId, GameActionType.DROP_AND_DRAW_THREE, 'Player not found')
     };
   }
 
@@ -370,7 +380,7 @@ function handleDropAndDraw(
   if (!player.hand.includes(cardId)) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'drop_and_draw', 'Card not in hand')
+      action: createFailedAction(playerId, GameActionType.DROP_AND_DRAW_THREE, 'Card not in hand')
     };
   }
 
@@ -378,7 +388,7 @@ function handleDropAndDraw(
   if (player.deck.length < 3) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'drop_and_draw', 'Not enough cards in deck')
+      action: createFailedAction(playerId, GameActionType.DROP_AND_DRAW_THREE, 'Not enough cards in deck')
     };
   }
 
@@ -398,7 +408,7 @@ function handleDropAndDraw(
 
   return {
     gameState: newGameState,
-    action: createSuccessAction(playerId, 'drop_and_draw', {
+    action: createSuccessAction(playerId, GameActionType.DROP_AND_DRAW_THREE, {
       droppedCard: cardId,
       drawnCards
     })
@@ -409,16 +419,16 @@ function handleDropAndDraw(
  * Handles placing a card on the board
  */
 function handlePlaceCard(
-  gameState: GameState,
+  gameState: PhyloGameState,
   playerId: string,
   cardId: string,
   position: { x: number; y: number }
-): { gameState: GameState; action: GameAction } {
+): { gameState: PhyloGameState; action: GameAction } {
   const player = gameState.players.find(p => p.id === playerId);
   if (!player) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'place_card', 'Player not found')
+      action: createFailedAction(playerId, GameActionType.PLAY_CARD, 'Player not found')
     };
   }
 
@@ -426,7 +436,7 @@ function handlePlaceCard(
   if (!player.hand.includes(cardId)) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'place_card', 'Card not in hand')
+      action: createFailedAction(playerId, GameActionType.PLAY_CARD, 'Card not in hand')
     };
   }
 
@@ -434,7 +444,7 @@ function handlePlaceCard(
   if (!card) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'place_card', 'Card not found')
+      action: createFailedAction(playerId, GameActionType.PLAY_CARD, 'Card not found')
     };
   }
 
@@ -444,7 +454,7 @@ function handlePlaceCard(
   if (!placeResult.success) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'place_card', placeResult.errorMessage || 'Failed to place card')
+      action: createFailedAction(playerId, GameActionType.PLAY_CARD, placeResult.errorMessage || 'Failed to place card')
     };
   }
 
@@ -470,7 +480,7 @@ function handlePlaceCard(
 
   return {
     gameState: newGameState,
-    action: createSuccessAction(playerId, 'place_card', { cardId, position })
+    action: createSuccessAction(playerId, GameActionType.PLAY_CARD, { cardId, position })
   };
 }
 
@@ -478,11 +488,11 @@ function handlePlaceCard(
  * Handles moving a card on the board
  */
 function handleMoveCard(
-  gameState: GameState,
+  gameState: PhyloGameState,
   playerId: string,
   cardId: string,
   targetPosition: { x: number; y: number }
-): { gameState: GameState; action: GameAction } {
+): { gameState: PhyloGameState; action: GameAction } {
   // Find the card's current position
   let currentPosition: PhyloCardPosition | null = null;
   for (const position of gameState.gameBoard.positions.values()) {
@@ -495,7 +505,7 @@ function handleMoveCard(
   if (!currentPosition) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'move_card', 'Card not found or not owned by player')
+      action: createFailedAction(playerId, GameActionType.MOVE_CARD, 'Card not found or not owned by player')
     };
   }
 
@@ -505,7 +515,7 @@ function handleMoveCard(
   if (!moveResult.success) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'move_card', moveResult.errorMessage || 'Failed to move card')
+      action: createFailedAction(playerId, GameActionType.MOVE_CARD, moveResult.errorMessage || 'Failed to move card')
     };
   }
 
@@ -515,7 +525,7 @@ function handleMoveCard(
 
   return {
     gameState: newGameState,
-    action: createSuccessAction(playerId, 'move_card', {
+    action: createSuccessAction(playerId, GameActionType.MOVE_CARD, {
       cardId,
       from: { x: currentPosition.x, y: currentPosition.y },
       to: targetPosition,
@@ -528,7 +538,7 @@ function handleMoveCard(
  * Handles creating a scientific challenge
  */
 function handleChallenge(
-  gameState: GameState,
+  gameState: PhyloGameState,
   playerId: string,
   challengeData: {
     targetCardId: string;
@@ -536,11 +546,11 @@ function handleChallenge(
     claimType: ScientificChallenge['claimType'];
     evidence: string;
   }
-): { gameState: GameState; action: GameAction } {
+): { gameState: PhyloGameState; action: GameAction } {
   if (!gameState.gameSettings.allowChallenges) {
     return {
       gameState,
-      action: createFailedAction(playerId, 'challenge', 'Challenges not allowed in this game')
+      action: createFailedAction(playerId, GameActionType.CHALLENGE, 'Challenges not allowed in this game')
     };
   }
 
@@ -560,15 +570,15 @@ function handleChallenge(
 
   return {
     gameState: newGameState,
-    action: createSuccessAction(playerId, 'challenge', challengeData)
+    action: createSuccessAction(playerId, GameActionType.CHALLENGE, challengeData)
   };
 }
 
 /**
  * Advances to the next turn
  */
-function advanceToNextTurn(gameState: GameState): {
-  gameState: GameState;
+function advanceToNextTurn(gameState: PhyloGameState): {
+  gameState: PhyloGameState;
   nextPlayer?: string;
   gameEnded?: boolean;
   winCondition?: any;
@@ -594,7 +604,7 @@ function advanceToNextTurn(gameState: GameState): {
       newGameState.gameStats.eventsTriggered++;
 
       // Add event to action history
-      newGameState.actionHistory.push(createSuccessAction('system', 'play_event', {
+      newGameState.actionHistory.push(createSuccessAction('system', GameActionType.ACTIVATE_ABILITY, {
         eventCard,
         result: eventResult
       }));
@@ -626,7 +636,7 @@ function advanceToNextTurn(gameState: GameState): {
 /**
  * Starts the game (transitions from setup to playing)
  */
-export function startGame(gameState: GameState): GameState {
+export function startGame(gameState: PhyloGameState): PhyloGameState {
   if (gameState.gamePhase !== 'setup') {
     throw new Error('Game is not in setup phase');
   }
@@ -647,7 +657,7 @@ export function startGame(gameState: GameState): GameState {
 /**
  * Sets a player as ready
  */
-export function setPlayerReady(gameState: GameState, playerId: string, ready: boolean): GameState {
+export function setPlayerReady(gameState: PhyloGameState, playerId: string, ready: boolean): PhyloGameState {
   const newGameState = { ...gameState };
   const playerIndex = newGameState.players.findIndex(p => p.id === playerId);
 
@@ -667,10 +677,10 @@ export function setPlayerReady(gameState: GameState, playerId: string, ready: bo
  * Resolves a pending challenge
  */
 export function resolveChallenge(
-  gameState: GameState,
+  gameState: PhyloGameState,
   challengeId: string,
   response?: string
-): GameState {
+): PhyloGameState {
   const newGameState = { ...gameState };
   const challengeIndex = newGameState.pendingChallenges.findIndex(c =>
     c.challengerId + c.targetCardId === challengeId
@@ -703,10 +713,10 @@ export function resolveChallenge(
 /**
  * Gets the current game status
  */
-export function getGameStatus(gameState: GameState): {
-  currentPlayer: Player;
+export function getGameStatus(gameState: PhyloGameState): {
+  currentPlayer: PhyloPlayer;
   scores: Array<{ playerId: string; score: number; rank: number }>;
-  gamePhase: GameState['gamePhase'];
+  gamePhase: PhyloGameState['gamePhase'];
   turnNumber: number;
   timeRemaining?: number;
 } {
@@ -744,7 +754,7 @@ export function getGameStatus(gameState: GameState): {
 /**
  * Gets valid actions for the current player
  */
-export function getValidActions(gameState: GameState, playerId: string): {
+export function getValidActions(gameState: PhyloGameState, playerId: string): {
   canPlaceCards: string[];
   canMoveCards: string[];
   canChallenge: boolean;

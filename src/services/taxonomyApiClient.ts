@@ -8,8 +8,8 @@
 import {
   TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass,
   TaxoOrder, TaxoFamily, TaxoGenus, TaxoSpecies
-} from '../../shared/enums';
-import { CardData } from '../../shared/types';
+} from '@kelseyabreu/shared';
+import { CardData } from '@kelseyabreu/shared';
 
 export interface TaxonomyFilterParams {
   // Existing filters

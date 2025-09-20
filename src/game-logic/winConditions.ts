@@ -1,4 +1,4 @@
-import { Player, WinCondition, WinConditionProgress, TrophicRole } from '../types';
+import { Player, WinCondition, WinConditionProgress, WinConditionType, TrophicRole } from '../types';
 
 /**
  * Checks Apex Predator win condition
@@ -11,7 +11,7 @@ export function checkApexPredator(player: Player, opponent: Player): WinConditio
   const eliminatedCards = initialDeckSize - opponentRemainingCards;
   
   return {
-    condition: WinCondition.APEX_PREDATOR,
+    condition: WinConditionType.APEX_PREDATOR,
     playerId: player.id,
     progress: eliminatedCards,
     target: 4,
@@ -33,7 +33,7 @@ export function checkEcosystemBalance(player: Player): WinConditionProgress {
   const progress = [hasProducer, hasHerbivore, hasCarnivore].filter(Boolean).length;
   
   return {
-    condition: WinCondition.ECOSYSTEM_BALANCE,
+    condition: WinConditionType.ECOSYSTEM_BALANCE,
     playerId: player.id,
     progress,
     target: 3,
@@ -50,7 +50,7 @@ export function checkConservationVictory(player: Player): WinConditionProgress {
   const progress = uniqueSpecies.size;
   
   return {
-    condition: WinCondition.CONSERVATION_VICTORY,
+    condition: WinConditionType.CONSERVATION_VICTORY,
     playerId: player.id,
     progress,
     target: 6,
@@ -66,7 +66,7 @@ export function checkSpeciesCollection(player: Player): WinConditionProgress {
   const progress = player.playedSpecies.size;
   
   return {
-    condition: WinCondition.SPECIES_COLLECTION,
+    condition: WinConditionType.SPECIES_COLLECTION,
     playerId: player.id,
     progress,
     target: 12,
@@ -91,7 +91,7 @@ export function checkAllWinConditions(player: Player, opponent: Player): WinCond
  */
 export function checkGameWinner(player1: Player, player2: Player): {
   winner: Player | null;
-  winCondition: WinCondition | null;
+  winCondition: WinConditionType | null;
   winConditionProgress: WinConditionProgress | null;
 } {
   // Check player 1 win conditions
@@ -128,15 +128,15 @@ export function checkGameWinner(player1: Player, player2: Player): {
 /**
  * Gets win condition descriptions for UI display
  */
-export function getWinConditionDescription(condition: WinCondition): string {
+export function getWinConditionDescription(condition: WinConditionType): string {
   switch (condition) {
-    case WinCondition.APEX_PREDATOR:
+    case WinConditionType.APEX_PREDATOR:
       return 'Eliminate 4 of your opponent\'s cards from the game';
-    case WinCondition.ECOSYSTEM_BALANCE:
+    case WinConditionType.ECOSYSTEM_BALANCE:
       return 'Have at least one Producer, Herbivore, and Carnivore on your field simultaneously';
-    case WinCondition.CONSERVATION_VICTORY:
+    case WinConditionType.CONSERVATION_VICTORY:
       return 'End your turn with 6 or more unique species cards in play';
-    case WinCondition.SPECIES_COLLECTION:
+    case WinConditionType.SPECIES_COLLECTION:
       return 'Play at least 12 unique species cards from your deck over the course of the game';
     default:
       return 'Unknown win condition';
@@ -150,13 +150,13 @@ export function getWinConditionProgressText(progress: WinConditionProgress): str
   const { condition, progress: current, target } = progress;
   
   switch (condition) {
-    case WinCondition.APEX_PREDATOR:
+    case WinConditionType.APEX_PREDATOR:
       return `${current}/${target} opponent cards eliminated`;
-    case WinCondition.ECOSYSTEM_BALANCE:
+    case WinConditionType.ECOSYSTEM_BALANCE:
       return `${current}/${target} trophic roles on field`;
-    case WinCondition.CONSERVATION_VICTORY:
+    case WinConditionType.CONSERVATION_VICTORY:
       return `${current}/${target} unique species in play`;
-    case WinCondition.SPECIES_COLLECTION:
+    case WinConditionType.SPECIES_COLLECTION:
       return `${current}/${target} unique species played`;
     default:
       return `${current}/${target}`;
@@ -176,16 +176,16 @@ export function getWinConditionPriority(progress: WinConditionProgress): number 
   // Base priorities by condition type
   let basePriority = 0;
   switch (condition) {
-    case WinCondition.APEX_PREDATOR:
+    case WinConditionType.APEX_PREDATOR:
       basePriority = 30; // Aggressive strategy
       break;
-    case WinCondition.ECOSYSTEM_BALANCE:
+    case WinConditionType.ECOSYSTEM_BALANCE:
       basePriority = 40; // Balanced strategy
       break;
-    case WinCondition.CONSERVATION_VICTORY:
+    case WinConditionType.CONSERVATION_VICTORY:
       basePriority = 35; // Control strategy
       break;
-    case WinCondition.SPECIES_COLLECTION:
+    case WinConditionType.SPECIES_COLLECTION:
       basePriority = 25; // Long-term strategy
       break;
   }
@@ -198,20 +198,20 @@ export function getWinConditionPriority(progress: WinConditionProgress): number 
  * Suggests actions to pursue a specific win condition
  */
 export function suggestActionsForWinCondition(
-  condition: WinCondition,
+  condition: WinConditionType,
   player: Player,
   opponent: Player
 ): string[] {
   const suggestions: string[] = [];
   
   switch (condition) {
-    case WinCondition.APEX_PREDATOR:
+    case WinConditionType.APEX_PREDATOR:
       suggestions.push('Focus on attacking opponent cards');
       suggestions.push('Play high-power carnivores');
       suggestions.push('Use combat abilities effectively');
       break;
-      
-    case WinCondition.ECOSYSTEM_BALANCE:
+
+    case WinConditionType.ECOSYSTEM_BALANCE:
       const fieldRoles = new Set(player.field.map(card => card.trophicRole));
       if (!fieldRoles.has(TrophicRole.PRODUCER)) {
         suggestions.push('Play a Producer card');
@@ -223,14 +223,14 @@ export function suggestActionsForWinCondition(
         suggestions.push('Play a Carnivore card');
       }
       break;
-      
-    case WinCondition.CONSERVATION_VICTORY:
+
+    case WinConditionType.CONSERVATION_VICTORY:
       suggestions.push('Play diverse species cards');
       suggestions.push('Avoid playing duplicate species');
       suggestions.push('Protect your field from attacks');
       break;
-      
-    case WinCondition.SPECIES_COLLECTION:
+
+    case WinConditionType.SPECIES_COLLECTION:
       suggestions.push('Play as many different species as possible');
       suggestions.push('Draw more cards to access variety');
       suggestions.push('Focus on card quantity over field control');

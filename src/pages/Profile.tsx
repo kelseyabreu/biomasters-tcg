@@ -45,7 +45,7 @@ import {
   eyeOff
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { getCollectionStats } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats } from '@kelseyabreu/shared';
 import { Avatar } from '../components/Avatar';
 import { updateProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../config/firebase';

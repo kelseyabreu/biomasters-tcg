@@ -4,7 +4,7 @@
  * Extracted from ClientGameEngine.ts for preservation during cleanup
  */
 
-import { GamePhase, TurnPhase } from '@shared/enums';
+import { GamePhase, TurnPhase } from '@kelseyabreu/shared';
 
 // Client-specific interfaces for UI compatibility
 export interface ClientGameState {

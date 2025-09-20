@@ -6,7 +6,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { UITextId, CardNameId } from '@shared/text-ids';
+import { UITextId, CardNameId } from '@kelseyabreu/shared';
 
 /**
  * Hook for card localization using LocalizationManager's built-in caching

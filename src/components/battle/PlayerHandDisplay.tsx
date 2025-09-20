@@ -29,7 +29,7 @@ import {
   swapHorizontalOutline
 } from 'ionicons/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BasePlayer } from '../../../shared/types';
+import { BasePlayer } from '@kelseyabreu/shared';
 import OrganismRenderer from '../OrganismRenderer';
 import './PlayerHandDisplay.css';
 

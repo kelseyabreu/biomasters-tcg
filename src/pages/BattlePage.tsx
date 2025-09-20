@@ -23,12 +23,12 @@ import TurnTimer from '../components/battle/TurnTimer';
 import GameLog, { GameLogEntry } from '../components/battle/GameLog';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { gameApi } from '../services/apiClient';
-import { TCGGameState, TCGGameSettings } from '@shared/types';
-import { ApiStatus, GamePhase } from '@shared/enums';
+import { TCGGameState, TCGGameSettings } from '@kelseyabreu/shared';
+import { ApiStatus, GamePhase } from '@kelseyabreu/shared';
 import { Card } from '../types';
 import { getGameSocket } from '../services/gameSocket';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { instanceIdToCardId, extractSpeciesNameFromInstanceId } from '@shared/utils/cardIdHelpers';
+import { instanceIdToCardId, extractSpeciesNameFromInstanceId } from '@kelseyabreu/shared';
 
 interface BattlePageParams {
   sessionId: string;

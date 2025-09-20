@@ -10,9 +10,6 @@ export default defineConfig({
     // legacy() // Temporarily disabled due to core-js issue
   ],
   resolve: {
-    alias: {
-      '@shared': path.resolve(__dirname, './shared')
-    },
     extensions: ['.ts', '.tsx', '.js', '.jsx']
   },
   assetsInclude: ['**/*.json'],

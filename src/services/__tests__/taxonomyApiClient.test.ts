@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TaxonomyApiClient } from '../taxonomyApiClient';
-import { TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass } from '../../../shared/enums';
+import { TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass } from '@kelseyabreu/shared';
 
 // Mock fetch globally
 global.fetch = vi.fn();

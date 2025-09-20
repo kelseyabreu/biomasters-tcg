@@ -28,7 +28,7 @@ import {
   star
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
-import { getCollectionStats } from '@shared/utils/cardIdHelpers';
+import { getCollectionStats } from '@kelseyabreu/shared';
 import { AuthModal } from './auth/AuthModal';
 import { Avatar } from './Avatar';
 import './UserProfile.css';

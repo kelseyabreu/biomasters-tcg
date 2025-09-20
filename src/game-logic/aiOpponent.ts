@@ -1,6 +1,5 @@
-import { TrophicRole, WinCondition, Habitat } from '../types';
-import { Card } from '../types'; // Legacy Card interface for AI logic
-import { GameState, Player } from './gameStateManager'; // Use Phylo-specific types
+import { TrophicRole, WinConditionType, Habitat, Card } from '../types';
+import { PhyloGameState, PhyloPlayer } from '@kelseyabreu/shared';
 import { simulateCombat } from './combatSystem';
 
 /**
@@ -36,7 +35,7 @@ export enum AIDifficulty {
  */
 interface AIStrategy {
   aggressionLevel: number; // 0-1, how likely to attack vs play defensively
-  winConditionFocus: WinCondition | null; // Preferred win condition
+  winConditionFocus: WinConditionType | null; // Preferred win condition
   riskTolerance: number; // 0-1, willingness to take risky plays
   cardValueThreshold: number; // Minimum value to consider playing a card
 }
@@ -56,14 +55,14 @@ function getAIStrategy(difficulty: AIDifficulty): AIStrategy {
     case AIDifficulty.MEDIUM:
       return {
         aggressionLevel: 0.6,
-        winConditionFocus: WinCondition.APEX_PREDATOR,
+        winConditionFocus: WinConditionType.APEX_PREDATOR,
         riskTolerance: 0.5,
         cardValueThreshold: 0.6
       };
     case AIDifficulty.HARD:
       return {
         aggressionLevel: 0.8,
-        winConditionFocus: WinCondition.ECOSYSTEM_BALANCE,
+        winConditionFocus: WinConditionType.ECOSYSTEM_BALANCE,
         riskTolerance: 0.7,
         cardValueThreshold: 0.8
       };
@@ -76,7 +75,7 @@ function getAIStrategy(difficulty: AIDifficulty): AIStrategy {
  * Evaluates the value of playing a card
  * Fixed for Phylo compatibility - uses hand cards instead of field
  */
-function evaluateCardPlay(card: Card, gameState: GameState, aiPlayer: Player): number {
+function evaluateCardPlay(card: Card, gameState: PhyloGameState, aiPlayer: PhyloPlayer): number {
   let value = 0;
 
   // Base value from card stats
@@ -110,8 +109,8 @@ function evaluateCardPlay(card: Card, gameState: GameState, aiPlayer: Player): n
 function evaluateAttack(
   attacker: Card,
   defender: Card,
-  gameState: GameState,
-  aiPlayer: Player
+  gameState: PhyloGameState,
+  aiPlayer: PhyloPlayer
 ): number {
   const simulation = simulateCombat(attacker, defender, stringToHabitat(gameState.environment || 'TEMPERATE'), [], 100);
 
@@ -139,9 +138,9 @@ function evaluateAttack(
  * Finds the best card to play
  * Fixed for Phylo compatibility - simplified without energy/field checks
  */
-function findBestCardToPlay(gameState: GameState, aiPlayer: Player, strategy: AIStrategy, cardDatabase: Card[]): Card | null {
+function findBestCardToPlay(gameState: PhyloGameState, aiPlayer: PhyloPlayer, strategy: AIStrategy, cardDatabase: Card[]): Card | null {
   // Convert card IDs to Card objects and filter playable ones
-  const handCards = aiPlayer.hand.map(cardId => cardDatabase.find(card => card.id === cardId)).filter(card => card !== undefined) as Card[];
+  const handCards = aiPlayer.hand.map((cardId: string) => cardDatabase.find((card: Card) => card.id === cardId)).filter((card: Card | undefined) => card !== undefined) as Card[];
 
   if (handCards.length === 0) return null;
 
@@ -164,9 +163,9 @@ function findBestCardToPlay(gameState: GameState, aiPlayer: Player, strategy: AI
  * Disabled for Phylo mode - returns null since Phylo doesn't use field combat
  */
 function findBestAttack(
-  gameState: GameState,
-  aiPlayer: Player,
-  opponent: Player,
+  gameState: PhyloGameState,
+  aiPlayer: PhyloPlayer,
+  opponent: PhyloPlayer,
   strategy: AIStrategy
 ): { attacker: Card; target: Card } | null {
   // Phylo mode doesn't use field-based combat, return null
@@ -177,7 +176,7 @@ function findBestAttack(
  * Evaluates current win condition progress
  * Disabled for Phylo mode - returns 0 since win conditions are different
  */
-function evaluateWinConditionProgress(gameState: GameState, aiPlayer: Player): number {
+function evaluateWinConditionProgress(gameState: PhyloGameState, aiPlayer: PhyloPlayer): number {
   // Phylo mode has different win conditions, return neutral value
   return 0;
 }
@@ -186,7 +185,7 @@ function evaluateWinConditionProgress(gameState: GameState, aiPlayer: Player): n
  * Makes an AI decision for the current turn
  */
 export function makeAIDecision(
-  gameState: GameState,
+  gameState: PhyloGameState,
   cardDatabase: Card[],
   difficulty: AIDifficulty = AIDifficulty.MEDIUM
 ): AIDecision {

@@ -100,13 +100,13 @@ app.get('/health', async (_req, res) => {
         }
       })(),
 
-      // Redis health check (using IORedis) - simplified to avoid timing issues
+      // Redis health check (using regular Redis client) - simplified to avoid timing issues
       (async () => {
         try {
-          const { isIORedisAvailable } = await import('./config/ioredis');
-          // Return true if IORedis is available, false otherwise
-          // Detailed health check is available at /health/ioredis endpoint
-          return isIORedisAvailable();
+          const { isRedisAvailable } = await import('./config/redis');
+          // Return true if Redis is available, false otherwise
+          // Detailed health check is available at /health/redis endpoint
+          return isRedisAvailable();
         } catch (error) {
           console.error('Redis health check error:', error);
           return false;

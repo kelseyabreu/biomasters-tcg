@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonButton, IonIcon } from '@ionic/react';
 import { add, remove } from 'ionicons/icons';
 import { motion } from 'framer-motion';
@@ -105,8 +105,8 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
     }
   }, [zoom, enablePanZoom, gameSettings.gridWidth, gameSettings.gridHeight, cellSize]);
 
-  // Generate grid cells
-  const renderGridCells = () => {
+  // Memoized grid cells generation for performance
+  const memoizedGridCells = useMemo(() => {
     // Debug: Log grid state for HOME card investigation
     const gridEntries = [];
     if (grid instanceof Map) {
@@ -180,7 +180,7 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
         );
       })
     );
-  };
+  }, [grid, gameSettings.gridWidth, gameSettings.gridHeight, highlightedPositions, getCardData, onGridPositionClick, localization, allSpeciesCards, cellSize]);
 
   const gridContent = (
     <div
@@ -224,7 +224,7 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
           whileDrag={{ cursor: 'grabbing' }}
           onDragStart={() => updateDragConstraints(zoom)}
         >
-          {renderGridCells()}
+          {memoizedGridCells}
         </motion.div>
       ) : (
         <div
@@ -241,7 +241,7 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
             flexShrink: 0 // Prevent flex shrinking
           }}
         >
-          {renderGridCells()}
+          {memoizedGridCells}
         </div>
       )}
 

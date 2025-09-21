@@ -3,7 +3,7 @@
  * Supports both player and opponent hands with different visibility modes
  */
 
-import React from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import {
   IonCard,
   IonCardHeader,
@@ -83,8 +83,8 @@ export const PlayerHandDisplay: React.FC<PlayerHandDisplayProps> = ({
   className = ''
 }) => {
   
-  // Render a single card based on visibility mode
-  const renderCard = (cardInstanceId: string, index: number) => {
+  // Memoized card rendering function for performance
+  const renderCard = useCallback((cardInstanceId: string, index: number) => {
     const cardData = getCardData(cardInstanceId);
     const isSelected = selectedCardId === cardInstanceId;
     
@@ -204,7 +204,14 @@ export const PlayerHandDisplay: React.FC<PlayerHandDisplayProps> = ({
         </div>
       </div>
     );
-  };
+  }, [getCardData, selectedCardId, visibilityMode, isInteractive, onCardSelect, getLocalizedCardName, getLocalizedScientificName]);
+
+  // Memoized hand cards for performance
+  const memoizedHandCards = useMemo(() => {
+    return player.hand.map((cardInstanceId, index) =>
+      renderCard(cardInstanceId, index)
+    );
+  }, [player.hand, renderCard]);
 
   const displayTitle = title || `${player.name} Hand (${player.hand.length})`;
 
@@ -277,9 +284,7 @@ export const PlayerHandDisplay: React.FC<PlayerHandDisplayProps> = ({
                   padding: '8px 0'
                 }}>
                   {player.hand.length > 0 ? (
-                    player.hand.map((cardInstanceId, index) => 
-                      renderCard(cardInstanceId, index)
-                    )
+                    memoizedHandCards
                   ) : (
                     <div className="no-cards-message">
                       <IonIcon icon={cardOutline} size="large" color="medium" />
@@ -325,4 +330,15 @@ export const PlayerHandDisplay: React.FC<PlayerHandDisplayProps> = ({
   );
 };
 
-export default PlayerHandDisplay;
+// Memoize PlayerHandDisplay to prevent unnecessary re-renders
+export default memo(PlayerHandDisplay, (prevProps, nextProps) => {
+  return (
+    prevProps.player.id === nextProps.player.id &&
+    prevProps.player.hand.length === nextProps.player.hand.length &&
+    prevProps.visibilityMode === nextProps.visibilityMode &&
+    prevProps.selectedCardId === nextProps.selectedCardId &&
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.isInteractive === nextProps.isInteractive &&
+    JSON.stringify(prevProps.player.hand) === JSON.stringify(nextProps.player.hand)
+  );
+});

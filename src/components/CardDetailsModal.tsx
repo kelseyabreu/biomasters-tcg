@@ -118,28 +118,24 @@ const CardDetailsModal: React.FC<CardDetailsModalProps> = ({
     if (e) {
       e.preventDefault();
       e.stopPropagation();
-    }
-    // Clear any focused elements before closing
-    if (document.activeElement && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    onClose();
-  };
+      }
 
-  const handleModalDismiss = () => {
-    // Clear any focused elements before closing
-    if (document.activeElement && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
+      // TODO figure out why this is necessary to re-enable interaction with the main UI after closing the modal
+      setTimeout(() => {
+          const inertOutlets = document.querySelectorAll('ion-router-outlet[inert]');
+          if (inertOutlets.length > 0) {
+              inertOutlets.forEach((outlet) => {
+                  outlet.removeAttribute('inert');
+              });
+          }
+      }, 200);
     onClose();
   };
 
   return (
     <IonModal
       isOpen={isOpen}
-      onDidDismiss={handleModalDismiss}
-      canDismiss={true}
-      backdropDismiss={true}
+      onDidDismiss={onClose}
     >
       <IonHeader>
         <IonToolbar>

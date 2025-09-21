@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and new features
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
@@ -116,7 +116,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE]); // Oak Tree as producer
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Test chemoautotroph placement
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -133,7 +133,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT]); // Oak Tree, European Rabbit
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place producer first
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -163,7 +163,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox (simpler than American Black Bear)
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place producer first
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -214,7 +214,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place terrestrial producer (Oak Tree)
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -257,7 +257,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [1, 4]); // Oak Tree, European Rabbit
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place terrestrial producer
       const terrestrialPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -287,7 +287,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [1, 2]); // Oak Tree, Giant Kelp
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place terrestrial producer
       const terrestrialPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -324,7 +324,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place terrestrial producer (Oak Tree)
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -372,7 +372,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [1, 4]); // Oak Tree, European Rabbit
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place producer
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -407,7 +407,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox (simpler than American Black Bear)
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place producer
       const producerPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -463,7 +463,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [6]); // American Black Bear
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Try to place apex predator without proper food chain
       const invalidPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -481,7 +481,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [1, 5]); // Oak Tree, Sockeye Salmon
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Place terrestrial producer
       const terrestrialPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -513,7 +513,7 @@ describe('BioMasters New Features - Modern', () => {
       addCardsToHand('alice', [1, 4, 6]); // Oak Tree, European Rabbit, American Black Bear
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Verify players start with sufficient energy
       const alice = gameState.players.find(p => p.id === 'alice');

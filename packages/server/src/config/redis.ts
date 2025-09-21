@@ -29,6 +29,15 @@ function getRedisConfig() {
     db: 0,
   };
 
+  // Special handling for test environment with tunnel
+  if (process.env['NODE_ENV'] === 'test' && config.host === 'localhost') {
+    console.log('🔴 [Redis] Test environment detected with localhost - adjusting settings for tunnel');
+    config.connectTimeout = 10000;
+    config.commandTimeout = 5000;
+    config.maxRetriesPerRequest = 1;
+    config.retryDelayOnFailover = 50;
+  }
+
   // Google Cloud Memorystore with transit encryption requires TLS
   console.log('🔴 [Redis] TLS setting:', process.env['REDIS_TLS']);
   if (process.env['REDIS_TLS'] === 'true') {
@@ -37,6 +46,12 @@ function getRedisConfig() {
     console.log('🔴 [Redis] TLS enabled for secure connection');
   } else {
     console.log('🔴 [Redis] TLS disabled');
+  }
+
+  // For test environment with localhost tunnel, disable TLS if not explicitly set
+  if (process.env['NODE_ENV'] === 'test' && config.host === 'localhost' && process.env['REDIS_TLS'] !== 'true') {
+    delete config.tls;
+    console.log('🔴 [Redis] Test environment with localhost - TLS disabled for tunnel');
   }
 
   console.log('🔴 [Redis] Config:', JSON.stringify({

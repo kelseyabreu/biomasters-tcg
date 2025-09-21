@@ -19,20 +19,26 @@ async function testMemorystoreConnection() {
   console.log(`   Password: ${process.env['REDIS_PASSWORD'] ? 'SET' : 'NOT SET'}`);
   console.log(`   TLS: ${process.env['REDIS_TLS'] || 'false'}`);
 
+  // Use tunnel-optimized configuration for localhost
+  const isLocalhost = process.env['REDIS_HOST'] === 'localhost';
+
   const redis = new Redis({
     host: process.env['REDIS_HOST'] || '10.36.239.107',
     port: parseInt(process.env['REDIS_PORT'] || '6378'),
-    password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5',
+    // Skip password for localhost tunnel to avoid protocol issues
+    ...(isLocalhost ? {} : { password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5' }),
 
-    // Memorystore-optimized settings
-    connectTimeout: 10000,
-    commandTimeout: 5000,
-    maxRetriesPerRequest: 3,
+    // Tunnel-optimized settings for localhost
+    connectTimeout: isLocalhost ? 15000 : 10000,
+    commandTimeout: isLocalhost ? 15000 : 5000,
+    maxRetriesPerRequest: isLocalhost ? null : 3,
     lazyConnect: true,
     keepAlive: 30000,
+    enableReadyCheck: isLocalhost ? false : true,
+    enableOfflineQueue: true, // Keep enabled to queue commands until connected
 
-    // Enable TLS if needed
-    ...(process.env['REDIS_TLS'] === 'true' ? { tls: { rejectUnauthorized: false } } : {}),
+    // Enable TLS if needed (but not for localhost tunnel)
+    ...(process.env['REDIS_TLS'] === 'true' && !isLocalhost ? { tls: { rejectUnauthorized: false } } : {}),
 
     family: 4, // Force IPv4
     db: 0,
@@ -40,7 +46,23 @@ async function testMemorystoreConnection() {
 
   try {
     console.log('🔄 Connecting to Redis...');
-    
+
+    // For localhost tunnel, wait for connection to be ready
+    if (isLocalhost) {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 20000);
+        redis.on('ready', () => {
+          clearTimeout(timeout);
+          resolve(void 0);
+        });
+        redis.on('error', (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+      });
+      console.log('✅ Redis connection ready');
+    }
+
     // Test basic connection
     const pong = await redis.ping();
     console.log(`✅ PING response: ${pong}`);

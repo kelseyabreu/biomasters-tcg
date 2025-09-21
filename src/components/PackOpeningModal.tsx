@@ -229,13 +229,23 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     setPackResult(null);
     setShowCards(false);
     isOpeningRef.current = false;
-    hasOpenedRef.current = false;
+      hasOpenedRef.current = false;
+
+      // TODO figure out why this is necessary to re-enable interaction with the main UI after closing the modal
+      setTimeout(() => {
+          const inertOutlets = document.querySelectorAll('ion-router-outlet[inert]');
+          if (inertOutlets.length > 0) {
+              inertOutlets.forEach((outlet) => {
+                  outlet.removeAttribute('inert');
+              });
+          }
+      }, 200);
     onClose();
   };
 
   return (
-    <IonModal 
-      isOpen={isOpen} 
+    <IonModal
+      isOpen={isOpen}
       onDidDismiss={handleClose}
       className="pack-opening-modal"
     >

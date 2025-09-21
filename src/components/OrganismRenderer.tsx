@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo, useMemo } from 'react';
 import { IonButton, IonIcon } from '@ionic/react';
 import { add, remove, refresh } from 'ionicons/icons';
 import { Card as CardType } from '../types';
@@ -54,25 +54,29 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  // Memoized organism data for performance
+  const memoizedOrganismData = useMemo(() => {
+    const localizedName = localization.getCardName(card.nameId as any);
+    return {
+      size: size,
+      type: card.trophicRole?.toLowerCase() || 'unknown',
+      species: card.nameId?.toLowerCase() || 'unknown',
+      displayName: localizedName?.toLowerCase() || 'unknown',
+      // Add variation based on card properties
+      health: card.health || 1,
+      power: card.power || 1,
+      speed: card.speed || 1
+    };
+  }, [card.trophicRole, card.nameId, card.health, card.power, card.speed, localization, size]);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
     // Add a small delay to ensure DOM is fully rendered
     const renderOrganism = async () => {
-      // Get localized names
-      const localizedName = localization.getCardName(card.nameId as any);
 
       // Create organism data structure expected by the renderer
-      const organism = {
-        size: size,
-        type: card.trophicRole?.toLowerCase() || 'unknown',
-        species: card.nameId?.toLowerCase() || 'unknown',
-        displayName: localizedName?.toLowerCase() || 'unknown',
-        // Add variation based on card properties
-        health: card.health || 1,
-        power: card.power || 1,
-        speed: card.speed || 1
-      };
+      const organism = memoizedOrganismData;
 
       // Find the appropriate organism renderer
       let renderer = null;
@@ -296,4 +300,12 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
   );
 };
 
-export default OrganismRenderer;
+// Memoize OrganismRenderer to prevent unnecessary re-renders
+export default memo(OrganismRenderer, (prevProps, nextProps) => {
+  return (
+    prevProps.card.cardId === nextProps.card.cardId &&
+    prevProps.size === nextProps.size &&
+    prevProps.showControls === nextProps.showControls &&
+    prevProps.className === nextProps.className
+  );
+});

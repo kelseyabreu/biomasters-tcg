@@ -3,7 +3,7 @@
  * Dedicated page for online battles with session ID from URL
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import {
   IonPage,
@@ -76,6 +76,25 @@ export const BattlePage: React.FC = () => {
   // Get auth state from store
   const isAuthenticated = useHybridGameStore(state => state.isAuthenticated);
   const userId = useHybridGameStore(state => state.userId);
+
+  // Memoized game state processing for performance
+  const memoizedGameState = useMemo(() => {
+    return sessionData?.gameState || null;
+  }, [sessionData?.gameState]);
+
+  const memoizedPlayers = useMemo(() => {
+    return sessionData?.gameState?.players || [];
+  }, [sessionData?.gameState?.players]);
+
+  const memoizedCurrentPlayer = useMemo(() => {
+    if (!memoizedGameState || memoizedGameState.currentPlayerIndex === undefined) return null;
+    return memoizedPlayers[memoizedGameState.currentPlayerIndex] || null;
+  }, [memoizedGameState?.currentPlayerIndex, memoizedPlayers]);
+
+  const memoizedIsPlayerTurn = useMemo(() => {
+    if (!memoizedCurrentPlayer || !userId) return false;
+    return memoizedCurrentPlayer.id === userId;
+  }, [memoizedCurrentPlayer, userId]);
 
   // 👤 DEBUG: Log authentication state
   console.log('👤 [BATTLE PAGE AUTH] Authentication state:', {
@@ -506,11 +525,40 @@ export const BattlePage: React.FC = () => {
     addGameLogEntry('pass_turn');
   };
 
-  // Helper function to get card data
-  const getCardData = (cardInput: string | any): any => {
-    console.log('🔍 [BattlePage] getCardData called with cardInput:', cardInput, 'type:', typeof cardInput);
-    console.log('🔍 [BattlePage] allSpeciesCards length:', allSpeciesCards?.length || 0);
-    console.log('🔍 [BattlePage] speciesLoaded:', speciesLoaded);
+  // Memoized card data cache for performance
+  const cardDataCache = useMemo(() => {
+    if (!allSpeciesCards || !speciesLoaded) return new Map();
+
+    const cache = new Map();
+    allSpeciesCards.forEach(card => {
+      if (card.cardId) {
+        const localizedName = localization?.getCardName(card.nameId as any) || card.nameId || 'Unknown';
+        const localizedScientificName = localization?.getScientificName(card.scientificNameId as any) || card.scientificNameId || '';
+
+        cache.set(card.cardId, {
+          name: localizedName,
+          scientificName: localizedScientificName,
+          VictoryPoints: card.victoryPoints || 1,
+          TrophicLevel: card.trophicLevel || 0,
+          trophicRole: card.trophicLevel === 0 ? 'Producer' :
+                      card.trophicLevel === 1 ? 'Primary Consumer' :
+                      card.trophicLevel === 2 ? 'Secondary Consumer' : 'Tertiary Consumer',
+          power: card.power || 0,
+          health: card.health || 1,
+          cardId: card.cardId,
+          nameId: card.nameId,
+          scientificNameId: card.scientificNameId
+        });
+      }
+    });
+
+    console.log('🔄 [BattlePage] Card data cache rebuilt with', cache.size, 'entries');
+    return cache;
+  }, [allSpeciesCards, speciesLoaded, localization]);
+
+  // Helper function to get card data - memoized for performance
+  const getCardData = useCallback((cardInput: string | any): any => {
+    // Reduced logging for performance - only log cache misses or special cases
 
     // Handle hidden cards from privacy filter
     if (typeof cardInput === 'object' && cardInput?.isHidden) {
@@ -598,32 +646,15 @@ export const BattlePage: React.FC = () => {
       }
     }
 
-    console.log('🔍 [BattlePage] Extracted speciesName:', speciesName, 'cardId:', cardId);
+    // console.log('🔍 [BattlePage] Extracted speciesName:', speciesName, 'cardId:', cardId);
 
-    // Find card data from the species cards store
-    if (cardId && allSpeciesCards && allSpeciesCards.length > 0) {
-      const cardData = allSpeciesCards.find(card => card.cardId === cardId);
-      if (cardData) {
-        // Use localization to get proper names
-        const localizedName = localization?.getCardName(cardData.nameId as any) || cardData.nameId || 'Unknown';
-        const localizedScientificName = localization?.getScientificName(cardData.scientificNameId as any) || cardData.scientificNameId || '';
-
-        return {
-          id: instanceId,
-          name: localizedName,
-          scientificName: localizedScientificName,
-          VictoryPoints: cardData.victoryPoints || 1,
-          TrophicLevel: cardData.trophicLevel || 0,
-          trophicRole: cardData.trophicLevel === 0 ? 'Producer' :
-                      cardData.trophicLevel === 1 ? 'Primary Consumer' :
-                      cardData.trophicLevel === 2 ? 'Secondary Consumer' : 'Tertiary Consumer',
-          power: cardData.power || 0,
-          health: cardData.health || 1,
-          cardId: cardData.cardId,
-          nameId: cardData.nameId,
-          scientificNameId: cardData.scientificNameId
-        };
-      }
+    // Use cached card data for performance
+    if (cardId && cardDataCache.has(cardId)) {
+      const cachedData = cardDataCache.get(cardId);
+      return {
+        id: instanceId,
+        ...cachedData
+      };
     }
 
     // Fallback for unknown cards
@@ -642,7 +673,7 @@ export const BattlePage: React.FC = () => {
       health: 1,
       cardId: 0
     };
-  };
+  }, [cardDataCache]);
 
   // Add game log entry helper
   const addGameLogEntry = React.useCallback((action: GameLogEntry['action'], details: GameLogEntry['details'] = {}) => {

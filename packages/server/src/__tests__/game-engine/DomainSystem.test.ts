@@ -1,8 +1,8 @@
-import { BioMastersEngine, GameSettings, CardData } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, CardData } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { Domain } from '@kelseyabreu/shared';
-import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '../../../../shared/text-ids';
+import { CardNameId, ScientificNameId, CardDescriptionId, TaxonomyId } from '@kelseyabreu/shared';
 
 describe('Domain System Tests', () => {
   let gameData: any;

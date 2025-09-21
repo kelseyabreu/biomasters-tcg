@@ -3,7 +3,7 @@
  * Displays individual species cards with ownership status
  */
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonIcon, IonText, IonButton } from '@ionic/react';
 import { lockClosed, checkmarkCircle, star, add, remove } from 'ionicons/icons';
 import { Card, ConservationStatus } from '../../types';
@@ -52,16 +52,18 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   deckControls
 }) => {
   const localization = useLocalization();
-  // Get localized card data using enum-based localization system
-  const localizedCard = {
+
+  // Memoized localized card data for performance
+  const localizedCard = useMemo(() => ({
     displayName: localization.getCardName(species.nameId as any),
     displayScientificName: localization.getScientificName(species.scientificNameId as any),
     nameId: species.nameId,
     scientificNameId: species.scientificNameId,
     descriptionId: species.descriptionId
-  };
-  const isStarter = starterPackService.isStarterCard(species.cardId);
-  const educationalInfo = starterPackService.getEducationalInfo(species.cardId);
+  }), [species.nameId, species.scientificNameId, species.descriptionId, localization]);
+
+  const isStarter = useMemo(() => starterPackService.isStarterCard(species.cardId), [species.cardId]);
+  const educationalInfo = useMemo(() => starterPackService.getEducationalInfo(species.cardId), [species.cardId]);
 
   const getRarityColor = (conservationStatus: ConservationStatus): string => {
     switch (conservationStatus) {
@@ -240,4 +242,13 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   );
 };
 
-export default CollectionCard;
+// Memoize CollectionCard to prevent unnecessary re-renders
+export default memo(CollectionCard, (prevProps, nextProps) => {
+  return (
+    prevProps.species.cardId === nextProps.species.cardId &&
+    prevProps.isOwned === nextProps.isOwned &&
+    prevProps.quantity === nextProps.quantity &&
+    prevProps.showBasicInfo === nextProps.showBasicInfo &&
+    JSON.stringify(prevProps.propertyFilter) === JSON.stringify(nextProps.propertyFilter)
+  );
+});

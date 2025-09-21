@@ -1,6 +1,10 @@
 import { Card, PhyloGameBoard, PhyloCardPosition } from '../types';
 import { validateCardPlacement } from './phyloCompatibility';
 
+// Cache for position calculations to improve performance
+const positionCache = new Map<string, any>();
+const CACHE_TTL = 5000; // 5 seconds cache TTL
+
 /**
  * Position highlighting system for card placement
  */
@@ -51,7 +55,7 @@ function getAdjacentCards(
 }
 
 /**
- * Calculates valid and invalid positions for placing a card
+ * Calculates valid and invalid positions for placing a card with caching
  */
 export function calculatePlacementHighlights(
   selectedCard: Card,
@@ -60,6 +64,13 @@ export function calculatePlacementHighlights(
   boardRows: number = 9,
   boardCols: number = 10
 ): PlacementHighlights {
+  // Create cache key based on card and board state
+  const cacheKey = `placement_${selectedCard.cardId}_${gameBoard.positions.size}_${cards.size}`;
+  const cached = positionCache.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
   const validPositions: HighlightedPosition[] = [];
   const invalidPositions: HighlightedPosition[] = [];
 
@@ -110,7 +121,15 @@ export function calculatePlacementHighlights(
     }
   }
 
-  return { validPositions, invalidPositions };
+  const result = { validPositions, invalidPositions };
+
+  // Cache the result
+  positionCache.set(cacheKey, {
+    data: result,
+    timestamp: Date.now()
+  });
+
+  return result;
 }
 
 /**

@@ -4,7 +4,7 @@
  * Based on BioMasterEngine.txt and RulesForBiomasters.txt
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
@@ -172,7 +172,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE]); // Oak Tree
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const adjacentPosition = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result = engine.processAction({
@@ -191,7 +191,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Build terrestrial food chain: Oak Tree -> European Rabbit -> Red Fox
 
@@ -236,7 +236,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Build terrestrial food chain: Oak Tree -> European Rabbit -> Red Fox
 
@@ -308,7 +308,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       expect(gameState.actionsRemaining).toBe(3);
 
       // Play a card (consumes 1 action)
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const adjacentPosition = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result = engine.processAction({
@@ -329,7 +329,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       const gameState = engine.getGameState();
       gameState.actionsRemaining = 0;
 
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const adjacentPosition = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result = engine.processAction({
@@ -355,7 +355,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Build food chain: Oak Tree -> Rabbit -> Fox
       const oakPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -402,7 +402,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.RED_FOX]); // Oak Tree, European Rabbit, Red Fox
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Build food chain to Red Fox (scavenger)
       const oakPos = { x: aliceHome!.position.x, y: aliceHome!.position.y - 1 };
@@ -461,7 +461,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
 
       // Play a card
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const adjacentPosition = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result = engine.processAction({
@@ -482,7 +482,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
 
       // Play Oak Tree (cardId 1 - we know it's in the hand from addCardsToHand)
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const adjacentPosition = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result = engine.processAction({
@@ -503,7 +503,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
 
       // Alice plays a card
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const alicePos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
 
       const result1 = engine.processAction({
@@ -523,7 +523,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       expect(result2.newState?.currentPlayerIndex).toBe(1);
 
       // Bob plays a card
-      const bobHome = Array.from(result2.newState!.grid.values()).find(card => card.isHOME && card.ownerId === 'bob');
+      const bobHome = Array.from(result2.newState!.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'bob');
       const bobPos = { x: bobHome!.position.x + 1, y: bobHome!.position.y };
 
       const result3 = engine.processAction({

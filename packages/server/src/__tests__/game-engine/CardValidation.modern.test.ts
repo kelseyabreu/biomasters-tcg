@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and correct biological validation
  */
 
-import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,
@@ -245,7 +245,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should prevent placing cards on occupied positions', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       const playCardAction = {
         type: GameActionType.PLAY_CARD,
@@ -283,7 +283,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       console.log('🚀 Starting CardValidation test: should allow producers adjacent to HOME');
       const gameState = engine.getGameState();
       console.log('🏠 All HOME cards in grid:', Array.from(gameState.grid.values()).filter(card => card.isHOME).map(c => ({ ownerId: c.ownerId, position: c.position })));
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       console.log('🎯 Player1 HOME found:', player1Home);
       if (!player1Home) {
         console.log('❌ No player1 HOME found! Available HOME cards:', Array.from(gameState.grid.values()).filter(card => card.isHOME));
@@ -309,7 +309,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should validate trophic level connections', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       
       // First, play a producer
       const producerPos = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -336,7 +336,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should reject invalid trophic connections', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       
       // Try to play secondary consumer without proper food source
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -358,7 +358,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
   describe('Biological Accuracy Validation', () => {
     test('should validate habitat compatibility', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // Play aquatic producer first
       const aquaticPos = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -381,7 +381,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should handle amphibious species correctly', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // Play producer first
       const producerPos = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -421,7 +421,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should validate scientific accuracy of food chains', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // Build a scientifically accurate marine food chain: Kelp -> Sea Urchin -> Sea Otter
 
@@ -468,7 +468,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       const initialSize = initialGrid.size;
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const result = engine.processAction({
@@ -487,7 +487,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should validate player ownership', () => {
       const gameState = engine.getGameState();
-      const player2Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player2');
+      const player2Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player2');
       const adjacentPosition = { x: player2Home!.position.x + 1, y: player2Home!.position.y };
 
       // Player 1 trying to play near Player 2's HOME
@@ -507,7 +507,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
 
     test('should track card instances correctly', () => {
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const result = engine.processAction({
@@ -533,7 +533,7 @@ describe('Card Validation and Biological Accuracy - Modern', () => {
       expect(gameState.currentPlayerIndex).toBe(0);
 
       // Player 2 trying to play out of turn
-      const player2Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player2');
+      const player2Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player2');
       const adjacentPosition = { x: player2Home!.position.x + 1, y: player2Home!.position.y };
 
       const playCardAction = {

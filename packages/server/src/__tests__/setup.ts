@@ -16,6 +16,7 @@ process.env['JWT_SECRET'] = process.env['JWT_SECRET'] || 'test-secret';
 // Import real database connection for integration testing
 import { db, closeSingletonPool } from '../database/kysely';
 import { initializeDatabase, closeDatabase, checkDatabaseHealth } from '../config/database';
+import { initializeRedis } from '../config/redis';
 
 // Global database setup for real integration testing
 let databaseAvailable = false;
@@ -28,6 +29,15 @@ beforeAll(async () => {
 
     if (!databaseAvailable) {
       console.warn('⚠️ Database health check failed - some tests will be skipped');
+    }
+
+    // Try to initialize Redis connection for tests
+    try {
+      console.log('🔴 [TEST SETUP] Initializing Redis for tests...');
+      await initializeRedis();
+      console.log('✅ [TEST SETUP] Redis initialized successfully');
+    } catch (error) {
+      console.warn('⚠️ [TEST SETUP] Redis initialization failed - tests will run without Redis:', error);
     }
   } catch (error) {
     console.warn('⚠️ Database connection failed - tests will run with mocked data:', error);

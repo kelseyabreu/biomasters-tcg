@@ -3,7 +3,7 @@
  * Updated to use proper enums, data-driven approach, and correct cost payment mechanics
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
@@ -256,7 +256,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [CardId.OAK_TREE]); // Oak Tree
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const playCardAction = {
@@ -278,7 +278,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [CardId.OAK_TREE, CardId.GIANT_KELP]); // Oak Tree, Giant Kelp
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // Play first producer (Oak Tree - CardId.OAK_TREE = 1)
       const position1 = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -306,7 +306,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [CardId.EUROPEAN_RABBIT]); // European Rabbit
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const playCardAction = {
@@ -328,7 +328,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [1, 4]); // Oak Tree, European Rabbit
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // First, play a producer (Oak Tree)
       const producerPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
@@ -361,7 +361,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [7]); // Great White Shark
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const playCardAction = {
@@ -387,7 +387,7 @@ describe('Cost Payment System - Modern', () => {
       const initialEnergy = engine.getGameState().players[0]?.energy || 0;
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const result = engine.processAction({
@@ -405,7 +405,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [1]); // Oak Tree
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const result = engine.processAction({
@@ -432,7 +432,7 @@ describe('Cost Payment System - Modern', () => {
       // Capture hand size before play
       const handSizeBeforePlay = player1?.hand.length || 0;
 
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       const adjacentPosition = { x: player1Home!.position.x - 1, y: player1Home!.position.y };
 
       const result = engine.processAction({
@@ -452,7 +452,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [1, 4]); // Oak Tree, European Rabbit
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // Build a food chain: Producer -> Primary Consumer -> Secondary Consumer
 
@@ -494,7 +494,7 @@ describe('Cost Payment System - Modern', () => {
       addCardsToHand('player1', [1, 7]); // Oak Tree, Great White Shark
 
       const gameState = engine.getGameState();
-      const player1Home = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const player1Home = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
       
       // Play producer first
       const producerPos = { x: player1Home!.position.x - 1, y: player1Home!.position.y };

@@ -29,8 +29,14 @@ describe('UnifiedDataLoader Performance & Reliability', () => {
 
     beforeEach(() => {
       // Calculate correct path to project root from packages/server/src/__tests__/performance/
-      const projectRoot = path.join(__dirname, '../../../../../');
+      // From packages/server/src/__tests__/performance/ we need to go up 5 levels to reach project root
+      const projectRoot = path.resolve(__dirname, '../../../../../');
       const dataPath = path.join(projectRoot, 'public/data');
+
+      console.log('🔍 DataLoader test paths:');
+      console.log('  - __dirname:', __dirname);
+      console.log('  - projectRoot:', projectRoot);
+      console.log('  - dataPath:', dataPath);
 
       serverLoader = createUnifiedDataLoader({
         environment: 'server', // Force server environment to enable caching
@@ -40,8 +46,6 @@ describe('UnifiedDataLoader Performance & Reliability', () => {
         cacheConfig: { ttl: 300000, maxSize: 100 }, // 5 minutes, 100 items max
         retryConfig: { maxRetries: 3, retryDelay: 100, backoffMultiplier: 2 }
       });
-
-
     });
 
     test('should load data successfully and verify sophisticated features', async () => {
@@ -73,16 +77,18 @@ describe('UnifiedDataLoader Performance & Reliability', () => {
     let serverLoader: any;
 
     beforeEach(() => {
+      // Use the same path calculation as the basic functionality test
+      const projectRoot = path.resolve(__dirname, '../../../../../');
+      const dataPath = path.join(projectRoot, 'public/data');
+
       serverLoader = createUnifiedDataLoader({
         environment: 'server', // Force server environment to enable caching
         source: 'filesystem',
-        dataPath: '../public/data', // Correct path from server directory
+        dataPath: dataPath, // Correct path to project root public/data
         enableCaching: true, // Explicitly enable caching for performance tests
         cacheConfig: { ttl: 300000, maxSize: 100 }, // 5 minutes, 100 items max
         retryConfig: { maxRetries: 3, retryDelay: 100, backoffMultiplier: 2 }
       });
-
-
     });
 
     test('should demonstrate filesystem vs cache performance (50ms → 1-5ms)', async () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { IonCard, IonCardContent, IonBadge, IonIcon, IonButton } from '@ionic/react';
 import { flash, leaf, paw, skull, heart, eye, speedometer, library, thermometer, trash, close } from 'ionicons/icons';
@@ -60,14 +60,14 @@ const Card: React.FC<CardProps> = ({
   const { currentTheme, organismRenderMode } = useTheme();
   const localization = useLocalization();
 
-  // Get localized card data using enum-based localization system
-  const localizedCard = {
+  // Memoized localized card data for performance
+  const localizedCard = useMemo(() => ({
     displayName: localization.getCardName(card.nameId as any),
     displayScientificName: localization.getScientificName(card.scientificNameId as any),
     nameId: card.nameId,
     scientificNameId: card.scientificNameId,
     descriptionId: card.descriptionId
-  };
+  }), [card.nameId, card.scientificNameId, card.descriptionId, localization]);
 
   const getConservationRarity = (status: ConservationStatus) => {
     return CONSERVATION_RARITY_DATA[status] || CONSERVATION_RARITY_DATA[ConservationStatus.NOT_EVALUATED];
@@ -212,10 +212,6 @@ const Card: React.FC<CardProps> = ({
   };
 
   const handleCloseModal = () => {
-    // Clear any focused elements before closing modal
-    if (document.activeElement && document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
     setShowDetailsModal(false);
   };
 
@@ -534,4 +530,16 @@ const Card: React.FC<CardProps> = ({
   );
 };
 
-export default Card;
+// Memoize Card component to prevent unnecessary re-renders
+export default memo(Card, (prevProps, nextProps) => {
+  return (
+    prevProps.card.cardId === nextProps.card.cardId &&
+    prevProps.isPlayable === nextProps.isPlayable &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isAttackTarget === nextProps.isAttackTarget &&
+    prevProps.showActions === nextProps.showActions &&
+    prevProps.size === nextProps.size &&
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.context === nextProps.context
+  );
+});

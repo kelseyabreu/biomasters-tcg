@@ -4,7 +4,7 @@
  * Validates biological accuracy and game balance
  */
 
-import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
@@ -99,7 +99,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'alice', payload: {} });
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       // Note: Building simple 2-level marine food chain since no marine trophic level 3 cards exist
@@ -153,7 +153,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       // Use Red Fox which has no cost requirement for a simple 3-card food chain
@@ -202,7 +202,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT]); // Oak Tree, European Rabbit
@@ -255,7 +255,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       addCardsToHand('alice', [CardId.GIANT_KELP, CardId.OAK_TREE]); // Giant Kelp, Oak Tree
@@ -284,7 +284,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
 
     test('should maintain ecosystem integrity', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       // Use terrestrial ecosystem for consistency (all same domain)
@@ -347,7 +347,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
 
     test('should trigger keystone species ability', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       // Use terrestrial ecosystem for consistency (all same domain)
@@ -399,7 +399,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT]); // Predator-prey test
@@ -443,7 +443,7 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       engine.processAction({ type: GameActionType.PLAYER_READY, playerId: 'bob', payload: {} });
 
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
 
       // Add required cards to player's hand AFTER game is ready
       addCardsToHand('alice', [CardId.OAK_TREE, CardId.EUROPEAN_RABBIT, CardId.GREAT_WHITE_SHARK]); // Victory points test
@@ -501,8 +501,8 @@ describe('BioMasters Real Data Gameplay - Modern', () => {
       expect(alicePlayer?.hand.length).toBe(bobPlayer?.hand.length);
 
       // Both players should have HOME cards
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
-      const bobHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'bob');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
+      const bobHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'bob');
 
       expect(aliceHome).toBeDefined();
       expect(bobHome).toBeDefined();

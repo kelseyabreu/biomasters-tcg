@@ -5,7 +5,7 @@
  * NO MOCKS - Full end-to-end testing
  */
 
-import { BioMastersEngine } from '@kelseyabreu/shared';
+import { BioMastersEngine, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
@@ -251,7 +251,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should allow producers adjacent to HOME', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
       
       // Place Oak Tree (Producer +1) adjacent to HOME
       const result = engine.processAction({
@@ -269,7 +269,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should build complete food chain: Producer → Herbivore → Carnivore → Apex', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
       
       // 1. Oak Tree (+1 Producer)
       const oakPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -333,7 +333,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should handle preferred diet bonuses (cards enter ready)', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // First place Oak Tree (producer)
       const oakResult = engine.processAction({
@@ -372,7 +372,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should reject producer not adjacent to HOME or other producer', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
       
       // Try to place Oak Tree far from HOME
       const result = engine.processAction({
@@ -390,7 +390,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should reject trophic level violations (+3 cannot connect to +1)', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Place Oak Tree
       const oakPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -456,7 +456,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should reject domain mismatches (terrestrial cannot connect to marine)', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Place Oak Tree (Terrestrial)
       const oakPos = { x: aliceHome!.position.x - 1, y: aliceHome!.position.y };
@@ -501,7 +501,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should reject insufficient cost payment', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // First place a producer (Oak Tree) adjacent to HOME so rabbit can connect to it
       const producerResult = engine.processAction({
@@ -546,7 +546,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       console.log('🧪🧪🧪 STARTING SAPROTROPH PLACEMENT TEST 🧪🧪🧪');
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
       console.log('🧪 Alice HOME position:', aliceHome?.position);
 
       // Ensure Alice has the cards she needs for this test
@@ -660,7 +660,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should reject saprotroph placement without detritus tile (bad path)', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Ensure Alice has the Mycena Mushroom in her hand for this test
       const alicePlayer2 = gameState.players.find(p => p.id === 'Alice');
@@ -686,7 +686,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should enforce action limits (3 actions per turn)', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Alice should have 3 actions
       expect(gameState.actionsRemaining).toBe(3);
@@ -755,7 +755,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should reject actions from wrong player', () => {
       startGame();
       const gameState = engine.getGameState();
-      const bobHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Bob');
+      const bobHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Bob');
 
       // It's Alice's turn, but Bob tries to play a card
       const result = engine.processAction({
@@ -784,7 +784,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
 
     test('should reject card plays during SETUP phase', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Try to play card before game starts
       const result = engine.processAction({
@@ -804,7 +804,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should track victory points correctly', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Play Oak Tree (1 VP)
       const result = engine.processAction({
@@ -844,7 +844,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
     test('should trigger abilities on card play', () => {
       startGame();
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Play card with ability (Kelp Forest has abilities)
       const result = engine.processAction({
@@ -871,7 +871,7 @@ describe('Comprehensive Game Rules - Integration Tests', () => {
       const initialGridSize = gameState.grid.size;
 
       // Play multiple cards
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       const result1 = engine.processAction({
         type: GameActionType.PLAY_CARD,

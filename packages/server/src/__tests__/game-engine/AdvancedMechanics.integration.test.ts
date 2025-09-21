@@ -4,7 +4,7 @@
  * Uses only real card data - no mocks
  */
 
-import { BioMastersEngine } from '@kelseyabreu/shared';
+import { BioMastersEngine, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { GameActionType } from '@kelseyabreu/shared';
@@ -62,7 +62,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
   describe('🦠 Chemoautotroph Rules', () => {
     test('should allow chemoautotroph placement adjacent to HOME (good path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Add the required card to Alice's hand
       addCardsToHand('Alice', [15]); // Deep Sea Hydrothermal Vent Bacteria
@@ -90,7 +90,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
 
     test('should allow opportunistic chemoautotroph with Chemical Opportunist ability (good path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Add the required card to Alice's hand
       addCardsToHand('Alice', [26]); // Nitrifying Soil Bacteria
@@ -118,7 +118,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
 
     test('should reject chemoautotroph placement in isolation (bad path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Try to place Deep Sea Hydrothermal Vent Bacteria (Chemoautotroph) in isolation
       const isolatedPos = { x: aliceHome!.position.x - 3, y: aliceHome!.position.y - 3 };
@@ -140,7 +140,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
   describe('🪱 Detritivore Rules', () => {
     test('should allow detritivore placement adjacent to saprotroph (good path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Add required cards to Alice's hand
       addCardsToHand('Alice', [1, 13, 11]); // Oak Tree, Soil Bacteria, Common Earthworm
@@ -196,7 +196,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
 
     test('should reject detritivore placement without adjacent saprotroph (bad path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Try to place Common Earthworm (Detritivore) in isolation
       const isolatedPos = { x: aliceHome!.position.x - 3, y: aliceHome!.position.y - 3 };
@@ -218,7 +218,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
   describe('🤝 Mutualist Attachment Rules', () => {
     test('should allow mutualist attachment to compatible host (good path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Add required cards to Alice's hand
       addCardsToHand('Alice', [1, 17]); // Oak Tree, Mycorrhizal Fungi
@@ -256,7 +256,7 @@ describe('🧬 Advanced Mechanics Integration Tests', () => {
 
     test('should reject mutualist attachment with domain mismatch (bad path)', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'Alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'Alice');
 
       // Add required cards to Alice's hand
       addCardsToHand('Alice', [2, 17]); // Giant Kelp, Mycorrhizal Fungi

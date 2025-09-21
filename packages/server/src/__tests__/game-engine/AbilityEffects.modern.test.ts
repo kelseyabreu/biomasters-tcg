@@ -4,7 +4,7 @@
  * Updated to use proper enums, data-driven approach, and modern interfaces
  */
 
-import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
@@ -63,7 +63,7 @@ describe('Ability Effects and Triggers - Modern', () => {
   describe('Basic Ability Triggers', () => {
     test('should trigger on-play abilities', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       
       // Add Oak Tree to Alice's hand
       addCardsToHand('alice', [1]); // Oak Tree
@@ -86,7 +86,7 @@ describe('Ability Effects and Triggers - Modern', () => {
 
     test('should handle passive abilities', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       
       // Add Oak Tree to Alice's hand
       addCardsToHand('alice', [1]); // Oak Tree
@@ -111,7 +111,7 @@ describe('Ability Effects and Triggers - Modern', () => {
   describe('Complex Ability Interactions', () => {
     test('should handle pack hunting abilities', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       
       // Add Oak Trees to Alice's hand
       addCardsToHand('alice', [1, 1]); // Two Oak Trees
@@ -158,7 +158,7 @@ describe('Ability Effects and Triggers - Modern', () => {
   describe('Keystone Species and Ecosystem Effects', () => {
     test('should handle keystone species abilities', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       
       // Add Oak Tree to Alice's hand
       addCardsToHand('alice', [1]); // Oak Tree
@@ -180,7 +180,7 @@ describe('Ability Effects and Triggers - Modern', () => {
 
     test('should handle ecosystem engineering effects', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       
       // Add Oak Tree to Alice's hand
       addCardsToHand('alice', [1]); // Oak Tree
@@ -204,7 +204,7 @@ describe('Ability Effects and Triggers - Modern', () => {
   describe('Ability Error Handling', () => {
     test('should handle invalid ability triggers gracefully', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       
       // Add Oak Tree to Alice's hand
       addCardsToHand('alice', [1]); // Oak Tree
@@ -226,7 +226,7 @@ describe('Ability Effects and Triggers - Modern', () => {
 
     test('should maintain game state consistency with abilities', () => {
       const gameState = engine.getGameState();
-      const aliceHome = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'alice');
+      const aliceHome = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'alice');
       const initialGridSize = gameState.grid.size;
       
       // Add Oak Trees to Alice's hand

@@ -3,7 +3,7 @@
  * Reusable battle component that works for both online and offline games
  */
 
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -244,108 +244,72 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
     return player.name || 'Unknown Player';
   };
 
-  // Debug: Log the actual game state structure
-  console.log('🔍 [UnifiedBattleInterface] Game state structure:', {
-    gamePhase: gameState.gamePhase,
-    hasGameSettings: !!gameState.gameSettings,
-    hasGrid: !!(gameState.grid || gameState.engineState?.grid),
-    hasPlayers: !!gameState.players,
-    playersCount: gameState.players?.length,
-    hasEngineState: !!gameState.engineState,
-    engineInitialized: gameState.engineInitialized,
-    deckSelectionCompleted: gameState.deckSelectionCompleted,
-    gameStateKeys: Object.keys(gameState),
-    engineStateKeys: gameState.engineState ? Object.keys(gameState.engineState) : []
-  });
+  // Memoized debug analysis - only runs when game state changes
+  const debugAnalysis = useMemo(() => {
+    // Only log when game state actually changes, not on every render
+    const analysis = {
+      gamePhase: gameState.gamePhase,
+      hasGameSettings: !!gameState.gameSettings,
+      hasGrid: !!(gameState.grid || gameState.engineState?.grid),
+      hasPlayers: !!gameState.players,
+      playersCount: gameState.players?.length,
+      hasEngineState: !!gameState.engineState,
+      engineInitialized: gameState.engineInitialized,
+      deckSelectionCompleted: gameState.deckSelectionCompleted,
+      gameStateKeys: Object.keys(gameState),
+      engineStateKeys: gameState.engineState ? Object.keys(gameState.engineState) : []
+    };
 
-  // 🏠 DEBUG: HOME CARDS ANALYSIS
-  console.log('🏠 [GRID LOCATION DEBUG] Checking grid locations:', {
-    hasDirectGrid: !!gameState.grid,
-    hasEngineState: !!gameState.engineState,
-    hasEngineGrid: !!(gameState.engineState?.grid),
-    directGridType: gameState.grid ? typeof gameState.grid : 'undefined',
-    engineGridType: gameState.engineState?.grid ? typeof gameState.engineState.grid : 'undefined',
-    directGridKeys: gameState.grid && typeof gameState.grid === 'object' ? Object.keys(gameState.grid) : 'N/A',
-    engineGridKeys: gameState.engineState?.grid && typeof gameState.engineState.grid === 'object' ? Object.keys(gameState.engineState.grid) : 'N/A'
-  });
+    // Only log once per game state change
+    console.log('🔍 [UnifiedBattleInterface] Game state structure:', analysis);
 
-  // 🔍 DEBUG: Full game state structure
-  console.log('🔍 [FULL GAME STATE] Complete structure:', {
-    topLevelKeys: Object.keys(gameState),
-    engineStateKeys: gameState.engineState ? Object.keys(gameState.engineState) : 'No engine state',
-    gamePhase: gameState.gamePhase,
-    engineGamePhase: gameState.engineState?.gamePhase,
-    currentPlayerIndex: gameState.currentPlayerIndex,
-    engineCurrentPlayerIndex: gameState.engineState?.currentPlayerIndex,
-    hasPlayers: !!gameState.players,
-    playersCount: gameState.players?.length,
-    enginePlayersCount: gameState.engineState?.players?.length,
-    turnNumber: gameState.turnNumber,
-    engineTurnNumber: gameState.engineState?.turnNumber
-  });
+    return analysis;
+  }, [gameState.gamePhase, gameState.engineInitialized, gameState.deckSelectionCompleted, gameState.players?.length]);
 
-  // 🔍 DEBUG: Check if game needs to be started
-  if (gameState.engineState?.gamePhase === 'setup' && gameState.gamePhase === 'playing') {
-    console.log('🚨 [GAME STATE MISMATCH] Engine is in setup but game is playing - this might be why grid is empty');
-    console.log('🔧 [GAME STATE MISMATCH] Possible solutions: 1) Start the engine game, 2) Wait for engine to catch up');
-  }
+  // Memoized grid analysis - only runs when grid changes
+  const gridAnalysis = useMemo(() => {
+    const grid = gameState.grid || gameState.engineState?.grid;
+    if (!grid) return null;
 
-  const grid = gameState.grid || gameState.engineState?.grid;
-  if (grid) {
-    console.log('🏠 [HOME CARDS DEBUG] Grid analysis:', {
+    // Only log when grid actually changes
+    console.log('🏠 [GRID LOCATION DEBUG] Grid analysis (memoized):', {
       gridSize: grid.size,
       gridType: grid.constructor.name,
-      hasEntries: grid.size > 0,
-      isMap: grid instanceof Map,
-      isObject: typeof grid === 'object',
-      objectKeys: typeof grid === 'object' && !(grid instanceof Map) ? Object.keys(grid) : 'N/A'
+      hasEntries: grid.size > 0
     });
 
-    // Handle both Map and Object formats
-    let gridEntries: [string, any][] = [];
+    return grid;
+  }, [gameState.grid, gameState.engineState?.grid]);
 
-    if (grid instanceof Map) {
-      // Grid is a proper Map
-      gridEntries = Array.from(grid.entries()) as [string, any][];
-    } else if (typeof grid === 'object' && grid !== null) {
-      // Grid is a plain object (serialized from server)
-      gridEntries = Object.entries(grid);
+  // Memoized game state mismatch check - only log when phases actually change
+  const phaseMismatch = useMemo(() => {
+    const mismatch = gameState.engineState?.gamePhase === 'setup' && gameState.gamePhase === 'playing';
+    if (mismatch) {
+      console.log('🚨 [GAME STATE MISMATCH] Engine is in setup but game is playing - this might be why grid is empty');
+      console.log('🔧 [GAME STATE MISMATCH] Possible solutions: 1) Start the engine game, 2) Wait for engine to catch up');
     }
+    return mismatch;
+  }, [gameState.gamePhase, gameState.engineState?.gamePhase]);
 
-    console.log('🏠 [HOME CARDS DEBUG] All grid entries:', gridEntries.map(([key, card]) => ({
-      position: key,
-      cardId: card.cardId,
-      instanceId: card.instanceId,
-      ownerId: card.ownerId,
-      isHOME: card.isHOME,
-      cardType: card.isHOME ? 'HOME' : 'REGULAR'
-    })));
+  // Use the memoized grid analysis instead of recalculating every render
+  const grid = gridAnalysis;
 
-    // Specifically look for HOME cards
-    const homeCards = gridEntries.filter(([_, card]) => card.isHOME || card.cardId === 0);
-    console.log('🏠 [HOME CARDS DEBUG] HOME cards found:', homeCards.length, homeCards.map(([key, card]) => ({
-      position: key,
-      cardId: card.cardId,
-      instanceId: card.instanceId,
-      ownerId: card.ownerId,
-      isHOME: card.isHOME
-    })));
-
-    if (homeCards.length === 0) {
-      console.error('🚨 [HOME CARDS ERROR] No HOME cards found in grid! This should not happen.');
-      console.log('🔍 [HOME CARDS DEBUG] Grid contents:', gridEntries);
-    }
-  } else {
+  // Only log grid errors when they actually occur (not on every render)
+  if (!grid && gameState.gamePhase === 'playing') {
     console.error('🚨 [HOME CARDS ERROR] No grid found in game state!');
   }
 
-  // 👤 DEBUG: USER IDENTIFICATION ANALYSIS
-  console.log('👤 [USER ID DEBUG] User identification analysis:', {
-    userIdProp: userId,
-    userIdType: typeof userId,
-    sessionId: sessionId,
-    isOnlineMode: isOnlineMode
-  });
+  // Memoized user identification analysis - only log when user data changes
+  const userAnalysis = useMemo(() => {
+    const analysis = {
+      userIdProp: userId,
+      userIdType: typeof userId,
+      sessionId: sessionId,
+      isOnlineMode: isOnlineMode
+    };
+    console.log('👤 [USER ID DEBUG] User identification analysis (memoized):', analysis);
+    return analysis;
+  }, [userId, sessionId, isOnlineMode]);
 
   // Debug: Compare regular players vs engine players
   if (gameState.engineState?.players) {
@@ -706,15 +670,8 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
               >
                 {/* All Player Cards as Siblings */}
                 {allPlayers.map((player: any) => {
-                  // 👤 ENHANCED DEBUG: User identification analysis
-                  console.log(`👤 [PLAYER ANALYSIS] Analyzing player:`, {
-                    playerId: player.id,
-                    playerName: player.name,
-                    handSize: player.hand?.length || 0,
-                    deckSize: player.deck?.length || 0,
-                    energy: player.energy,
-                    hasCards: !!(player.hand && player.hand.length > 0)
-                  });
+                  // Reduced logging for performance - only log when needed
+                  // console.log(`👤 [PLAYER ANALYSIS] Analyzing player:`, player.id);
 
                   // Find current user in regular players array (which has database IDs)
                   // The session data shows the mapping between Firebase UID and database ID
@@ -724,27 +681,8 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                   const sessionData = (window as any).sessionData || {};
                   const sessionPlayers = sessionData.players || [];
 
-                  console.log('👤 [USER MAPPING] Detailed mapping analysis:', {
-                    userIdProp: userId,
-                    userIdType: typeof userId,
-                    sessionPlayersCount: sessionPlayers.length,
-                    regularPlayersCount: regularPlayers.length,
-                    sessionPlayers: sessionPlayers.map((p: any) => ({
-                      id: p.id,
-                      playerId: p.playerId,
-                      firebaseUid: p.firebaseUid,
-                      uid: p.uid,
-                      userId: p.userId,
-                      user_id: p.user_id,
-                      name: p.name,
-                      allKeys: Object.keys(p)
-                    })),
-                    regularPlayers: regularPlayers.map((p: any) => ({
-                      id: p.id,
-                      name: p.name,
-                      allKeys: Object.keys(p)
-                    }))
-                  });
+                  // Reduced user mapping logging for performance
+                  // console.log('👤 [USER MAPPING] Mapping players...');
 
                   // Try to find the current user by checking session players
                   // Session players should have the Firebase UID mapping
@@ -759,23 +697,14 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                   if (sessionPlayer) {
                     currentUserDatabaseId = sessionPlayer.playerId || sessionPlayer.id;
                     identificationMethod = 'session_data';
-                    console.log('👤 [USER MAPPING] ✅ Found via session data:', {
-                      sessionPlayer,
-                      mappedDatabaseId: currentUserDatabaseId
-                    });
+                    // console.log('👤 [USER MAPPING] ✅ Found via session data');
                   } else {
                     // Fallback: use the player who has cards (since guest player has no cards)
                     const playerWithCards = allPlayers.find((p: any) => p.hand && p.hand.length > 0);
                     if (playerWithCards) {
                       currentUserDatabaseId = playerWithCards.id;
                       identificationMethod = 'fallback_cards';
-                      console.log('👤 [USER MAPPING] ⚠️ Fallback to player with cards:', {
-                        playerWithCards: {
-                          id: playerWithCards.id,
-                          name: playerWithCards.name,
-                          handSize: playerWithCards.hand?.length
-                        }
-                      });
+                      // console.log('👤 [USER MAPPING] ⚠️ Fallback to player with cards');
 
                       // Fix player name - use actual username instead of ID-based name
                       if (playerWithCards.name && playerWithCards.name.startsWith('Player ')) {
@@ -784,21 +713,12 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                                              sessionData.currentUser?.name ||
                                              'You';
                         playerWithCards.name = actualUsername;
-                        console.log('👤 [USER MAPPING] Fixed player name:', {
-                          oldName: playerWithCards.name,
-                          newName: actualUsername
-                        });
+                        // console.log('👤 [USER MAPPING] Fixed player name');
                       }
                     }
                   }
 
-                  console.log(`👤 [USER MAPPING] Final mapping result:`, {
-                    firebaseUid: userId,
-                    databaseId: currentUserDatabaseId,
-                    identificationMethod,
-                    currentPlayerId: player.id,
-                    isMatch: player.id === currentUserDatabaseId
-                  });
+                  // console.log(`👤 [USER MAPPING] Final mapping result for player:`, player.id);
 
                   const isCurrentPlayerCard = player.id === currentUserDatabaseId;
 

@@ -19,6 +19,13 @@ export class MatchmakingService {
     private getRedis() {
         const client = getRedisClient();
         if (!client || !isRedisAvailable()) {
+            // In test environment, provide more detailed error information
+            if (process.env['NODE_ENV'] === 'test') {
+                console.error('🔴 [MatchmakingService] Redis not available in test environment');
+                console.error('🔴 [MatchmakingService] Client exists:', !!client);
+                console.error('🔴 [MatchmakingService] Redis available:', isRedisAvailable());
+                throw new Error('Redis not available for matchmaking - check tunnel connection');
+            }
             throw new Error('Redis not available for matchmaking');
         }
         return client;

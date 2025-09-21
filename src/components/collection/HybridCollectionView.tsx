@@ -4,7 +4,7 @@
  * Integrates JSON data with database ownership
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonSearchbar, IonGrid, IonRow, IonCol, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonBadge, IonButton, IonIcon, IonProgressBar, IonText, IonSelect, IonSelectOption, IonModal, IonButtons, IonCheckbox, IonItem, IonList, IonLabel } from '@ionic/react';
 import { search, filter, statsChart, sync, options, close } from 'ionicons/icons';
 import { Card, ConservationStatus } from '../../types';
@@ -90,107 +90,73 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
     loadData();
   }, [speciesLoaded, loadSpeciesData, loadOfflineCollection]);
 
-  // Advanced filter and search logic
-  const filteredSpecies = useMemo(() => {
-    let filtered = allSpeciesCards;
-
-    // Apply ownership filter
+  // Memoized individual filter functions for performance
+  const ownershipFilter = useCallback((species: Card) => {
     if (selectedFilter === 'owned') {
-      filtered = filtered.filter(species =>
-        isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {})
-      );
+      return isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {});
     } else if (selectedFilter === 'unowned') {
-      filtered = filtered.filter(species =>
-        !isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {})
-      );
+      return !isCardOwnedByNameId(species.nameId, offlineCollection?.cards_owned || {});
     }
+    return true;
+  }, [selectedFilter, offlineCollection?.cards_owned]);
 
-    // Apply rarity filter (using conservationStatus as rarity)
-    if (rarityFilter !== 'all') {
-      filtered = filtered.filter(species => species.conservationStatus === rarityFilter);
+  const rarityFilterFn = useCallback((species: Card) => {
+    return rarityFilter === 'all' || species.conservationStatus === rarityFilter;
+  }, [rarityFilter]);
+
+  const typeFilterFn = useCallback((species: Card) => {
+    return typeFilter === 'all' || species.trophicRole === typeFilter;
+  }, [typeFilter]);
+
+  const trophicRoleFilterFn = useCallback((species: Card) => {
+    return trophicRoleFilter === 'all' || species.trophicRole === trophicRoleFilter;
+  }, [trophicRoleFilter]);
+
+  const searchFilterFn = useCallback((species: Card) => {
+    if (!searchText.trim()) return true;
+    const searchLower = searchText.toLowerCase();
+    const localizedName = localization.getCardName(species.nameId as any);
+    const localizedScientificName = localization.getScientificName(species.scientificNameId as any);
+    return localizedName.toLowerCase().includes(searchLower) ||
+           localizedScientificName.toLowerCase().includes(searchLower) ||
+           species.habitat.toString().toLowerCase().includes(searchLower) ||
+           species.trophicRole.toString().toLowerCase().includes(searchLower);
+  }, [searchText, localization]);
+
+  const sortFunction = useCallback((a: Card, b: Card) => {
+    let comparison = 0;
+    switch (sortBy) {
+      case 'name':
+        const localizedA = localization.getCardName(a.nameId as any);
+        const localizedB = localization.getCardName(b.nameId as any);
+        comparison = localizedA.localeCompare(localizedB);
+        break;
+      case 'rarity':
+        comparison = a.conservationStatus - b.conservationStatus;
+        break;
+      case 'attack':
+        comparison = a.power - b.power;
+        break;
+      case 'health':
+        comparison = a.health - b.health;
+        break;
+      case 'cost':
+        comparison = a.energyCost - b.energyCost;
+        break;
     }
+    return sortOrder === 'desc' ? -comparison : comparison;
+  }, [sortBy, sortOrder, localization]);
 
-    // Apply type filter (using trophicRole)
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(species => species.trophicRole === typeFilter);
-    }
-
-    // Apply trophic role filter
-    if (trophicRoleFilter !== 'all') {
-      filtered = filtered.filter(species => species.trophicRole === trophicRoleFilter);
-    }
-
-    // Apply search filter
-    if (searchText.trim()) {
-      const searchLower = searchText.toLowerCase();
-      filtered = filtered.filter(species => {
-        const localizedCard = {
-          displayName: localization.getCardName(species.nameId as any),
-          displayScientificName: localization.getScientificName(species.scientificNameId as any),
-        };
-        return (
-          localizedCard.displayName.toLowerCase().includes(searchLower) ||
-          localizedCard.displayScientificName.toLowerCase().includes(searchLower) ||
-          species.habitat.toString().toLowerCase().includes(searchLower) ||
-          species.trophicRole.toString().toLowerCase().includes(searchLower)
-        );
-      });
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortBy) {
-        case 'name':
-          const localizedA = {
-            displayName: localization.getCardName(a.nameId as any),
-          };
-          const localizedB = {
-            displayName: localization.getCardName(b.nameId as any),
-          };
-          comparison = localizedA.displayName.localeCompare(localizedB.displayName);
-          break;
-        case 'rarity':
-          // Use the enum values directly for sorting (higher numbers = rarer)
-          comparison = a.conservationStatus - b.conservationStatus;
-          break;
-        case 'attack':
-          comparison = a.power - b.power;
-          break;
-        case 'health':
-          comparison = a.health - b.health;
-          break;
-        case 'cost':
-          comparison = a.energyCost - b.energyCost;
-          break;
-      }
-
-      // Apply sort order
-      if (sortOrder === 'desc') comparison *= -1;
-
-      // Secondary sort by ownership (owned first) if primary sort is equal
-      if (comparison === 0) {
-        const aOwned = isCardOwnedByNameId(a.nameId, offlineCollection?.cards_owned || {});
-        const bOwned = isCardOwnedByNameId(b.nameId, offlineCollection?.cards_owned || {});
-
-        if (aOwned && !bOwned) return -1;
-        if (!aOwned && bOwned) return 1;
-
-        const localizedA = {
-          displayName: localization.getCardName(a.nameId as any),
-        };
-        const localizedB = {
-          displayName: localization.getCardName(b.nameId as any),
-        };
-        return localizedA.displayName.localeCompare(localizedB.displayName);
-      }
-
-      return comparison;
-    });
-
-    return filtered;
-  }, [allSpeciesCards, offlineCollection, selectedFilter, searchText, rarityFilter, typeFilter, trophicRoleFilter, sortBy, sortOrder, localization]);
+  // Advanced filter and search logic with memoized filters
+  const filteredSpecies = useMemo(() => {
+    return allSpeciesCards
+      .filter(ownershipFilter)
+      .filter(rarityFilterFn)
+      .filter(typeFilterFn)
+      .filter(trophicRoleFilterFn)
+      .filter(searchFilterFn)
+      .sort(sortFunction);
+  }, [allSpeciesCards, ownershipFilter, rarityFilterFn, typeFilterFn, trophicRoleFilterFn, searchFilterFn, sortFunction]);
 
   // Collection statistics
   const collectionStats = useMemo(() => {

@@ -4,7 +4,7 @@
  * NO MOCKS - Tests the complete flow: Database → GameDataManager → Engine → Game Logic
  */
 
-import { BioMastersEngine, GameSettings } from '@kelseyabreu/shared';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
@@ -172,7 +172,7 @@ describe('Basic Card Playing - Integration Tests', () => {
 
     // Verify card was placed on grid and enters exhausted
     const newState = result.newState!;
-    const placedCard = Array.from(newState.grid.values()).find(card =>
+    const placedCard = Array.from(newState.grid.values()).find((card: CardInstance) =>
       card.cardId === oakTreeId
     );
     expect(placedCard).toBeDefined();
@@ -255,7 +255,7 @@ describe('Basic Card Playing - Integration Tests', () => {
       oakResult.newState.players[0]?.hand.push(rabbitId.toString());
 
       // Make Oak Tree ready so it can pay for the rabbit
-      const oakCard = Array.from(oakResult.newState.grid.values()).find(card =>
+      const oakCard = Array.from(oakResult.newState.grid.values()).find((card: CardInstance) =>
         card.cardId === oakTreeId
       );
       if (oakCard) {
@@ -299,10 +299,10 @@ describe('Basic Card Playing - Integration Tests', () => {
 
     // Verify both cards are placed and Oak Tree is exhausted (paid as cost)
     const finalState = rabbitResult.newState!;
-    const placedRabbit = Array.from(finalState.grid.values()).find(card =>
+    const placedRabbit = Array.from(finalState.grid.values()).find((card: CardInstance) =>
       card.cardId === rabbitId
     );
-    const exhaustedOak = Array.from(finalState.grid.values()).find(card =>
+    const exhaustedOak = Array.from(finalState.grid.values()).find((card: CardInstance) =>
       card.cardId === oakTreeId
     );
 

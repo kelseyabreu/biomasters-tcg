@@ -3,7 +3,7 @@
  * Updated to use proper enums and interfaces from shared module
  */
 
-import { BioMastersEngine, GameSettings } from '../../../../shared/game-engine/BioMastersEngine';
+import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
@@ -116,7 +116,7 @@ describe('BioMasters Engine Modern Tests', () => {
       addCardsToHand('player1', [2]); // Giant Kelp
 
       // Need to place adjacent to HOME card for valid placement
-      const homeCard = Array.from(gameState.grid.values()).find(card => card.isHOME && card.ownerId === 'player1');
+      const homeCard = Array.from(gameState.grid.values()).find((card: CardInstance) => card.isHOME && card.ownerId === 'player1');
 
       // Find a free adjacent position to HOME
       let adjacentPosition = { x: 2, y: 5 }; // Default position adjacent to player1's HOME

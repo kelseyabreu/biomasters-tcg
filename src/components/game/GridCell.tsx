@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { ClientGridCard } from '../../types/ClientGameTypes';
 import { Card } from '../../types';
 import { useLocalization } from '../../contexts/LocalizationContext';
@@ -79,4 +79,14 @@ const GridCell: React.FC<GridCellProps> = ({
   );
 };
 
-export default GridCell;
+// Memoize GridCell to prevent unnecessary re-renders
+export default memo(GridCell, (prevProps, nextProps) => {
+  return (
+    prevProps.x === nextProps.x &&
+    prevProps.y === nextProps.y &&
+    prevProps.card?.instanceId === nextProps.card?.instanceId &&
+    prevProps.cardData?.cardId === nextProps.cardData?.cardId &&
+    prevProps.isValidPosition === nextProps.isValidPosition &&
+    prevProps.cellSize === nextProps.cellSize
+  );
+});

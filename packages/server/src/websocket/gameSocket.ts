@@ -506,7 +506,17 @@ export function setupGameSocket(server: HTTPServer) {
         }
 
         console.log(`✅ Found session: ${sessionId}, status: ${session.status}`);
-        const gameState = session.game_state as any; // JSONB is already an object
+
+        // Deserialize game state to restore Maps properly
+        const rawGameState = session.game_state as any; // JSONB is already an object
+        const gameState = deepDeserialize(rawGameState);
+
+        console.log('🔄 [JOIN SESSION] Deserializing game state:', {
+          hasEngineState: !!gameState.engineState,
+          hasEngineGrid: !!(gameState.engineState?.grid),
+          engineGridType: gameState.engineState?.grid ? gameState.engineState.grid.constructor.name : 'undefined',
+          engineGridSize: gameState.engineState?.grid instanceof Map ? gameState.engineState.grid.size : 'not a Map'
+        });
         console.log(`🔍 Game state players:`, gameState.players.map((p: any) => ({ id: p.id, playerId: p.playerId, name: p.name })));
         console.log(`🔍 Socket user ID: ${socket.userId}`);
         console.log(`🔍 Socket user ID type: ${typeof socket.userId}`);
@@ -1063,8 +1073,17 @@ export function setupGameSocket(server: HTTPServer) {
           return;
         }
 
-        const gameState = session.game_state as any;
+        // Deserialize game state to restore Maps properly
+        const rawGameState = session.game_state as any;
+        const gameState = deepDeserialize(rawGameState);
         const players = gameState.players || [];
+
+        console.log('🔄 [DECK SELECTION] Deserializing game state:', {
+          hasEngineState: !!gameState.engineState,
+          hasEngineGrid: !!(gameState.engineState?.grid),
+          engineGridType: gameState.engineState?.grid ? gameState.engineState.grid.constructor.name : 'undefined',
+          engineGridSize: gameState.engineState?.grid instanceof Map ? gameState.engineState.grid.size : 'not a Map'
+        });
         const playerIndex = players.findIndex((p: any) => p.playerId === socket.userId || p.id === socket.userId);
 
         if (playerIndex === -1) {
@@ -1105,11 +1124,23 @@ export function setupGameSocket(server: HTTPServer) {
           delete gameState.deckSelectionDeadline;
         }
 
-        // Update database
+        // Serialize game state before storing (to handle Maps properly)
+        const serializedGameState = deepSerialize(gameState);
+
+        console.log('💾 [WEBSOCKET] Serializing game state for database storage:', {
+          hasEngineState: !!gameState.engineState,
+          hasEngineGrid: !!(gameState.engineState?.grid),
+          engineGridSize: gameState.engineState?.grid instanceof Map ? gameState.engineState.grid.size : 'not a Map',
+          serializedEngineGridType: serializedGameState.engineState?.grid?.__type,
+          serializedEngineGridEntries: serializedGameState.engineState?.grid?.entries?.length || 0
+        });
+
+        // Update database with new game state and status
         await db
           .updateTable('game_sessions')
           .set({
-            game_state: gameState,
+            game_state: serializedGameState,
+            status: allPlayersSelected ? 'playing' : 'waiting',
             updated_at: new Date()
           })
           .where('id', '=', socket.sessionId)
@@ -1137,13 +1168,23 @@ export function setupGameSocket(server: HTTPServer) {
         });
 
         if (allPlayersSelected) {
-          // Broadcast game initialization
+          // Broadcast game initialization with properly serialized game state
           io.to(socket.sessionId).emit('game_initialized', {
             type: 'game_initialized',
             sessionId: socket.sessionId,
             data: {
-              gameState: gameState,
+              gameState: serializeGameStateForTransmission(gameState),
               message: 'All decks selected! Game initialized.'
+            },
+            timestamp: Date.now()
+          });
+
+          // Also send a game_state_update to ensure clients get the latest state
+          io.to(socket.sessionId).emit('game_state_update', {
+            type: 'game_state_update',
+            sessionId: socket.sessionId,
+            data: {
+              gameState: serializeGameStateForTransmission(gameState)
             },
             timestamp: Date.now()
           });
@@ -1526,11 +1567,22 @@ export function setupGameSocket(server: HTTPServer) {
                   delete currentGameState.deckSelectionTimeRemaining;
                   delete currentGameState.deckSelectionDeadline;
 
+                  // Serialize game state before storing (to handle Maps properly)
+                  const serializedCurrentGameState = deepSerialize(currentGameState);
+
+                  console.log('💾 [AUTO-SELECTION] Serializing game state for database storage:', {
+                    hasEngineState: !!currentGameState.engineState,
+                    hasEngineGrid: !!(currentGameState.engineState?.grid),
+                    engineGridSize: currentGameState.engineState?.grid instanceof Map ? currentGameState.engineState.grid.size : 'not a Map',
+                    serializedEngineGridType: serializedCurrentGameState.engineState?.grid?.__type,
+                    serializedEngineGridEntries: serializedCurrentGameState.engineState?.grid?.entries?.length || 0
+                  });
+
                   // Update database
                   await db
                     .updateTable('game_sessions')
                     .set({
-                      game_state: currentGameState,
+                      game_state: serializedCurrentGameState,
                       status: 'playing',
                       updated_at: new Date()
                     })
@@ -1554,8 +1606,18 @@ export function setupGameSocket(server: HTTPServer) {
                     type: 'game_initialized',
                     sessionId,
                     data: {
-                      gameState: currentGameState,
+                      gameState: serializeGameStateForTransmission(currentGameState),
                       message: 'Game initialized with auto-selected decks!'
+                    },
+                    timestamp: Date.now()
+                  });
+
+                  // Also send a game_state_update to ensure clients get the latest state
+                  io.to(sessionId).emit('game_state_update', {
+                    type: 'game_state_update',
+                    sessionId,
+                    data: {
+                      gameState: serializeGameStateForTransmission(currentGameState)
                     },
                     timestamp: Date.now()
                   });

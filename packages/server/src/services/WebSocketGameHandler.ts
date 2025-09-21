@@ -40,9 +40,13 @@ export class WebSocketGameHandler {
     this.io.on('connection', (socket: Socket) => {
       logger.debug(`Player connected: ${socket.id}`);
 
-      // Handle player joining a game session
-      socket.on('join_session', async (data: { sessionId: string; playerId: string }) => {
-        await this.handleJoinSession(socket, data);
+      // Handle player joining a game session - support both data formats
+      socket.on('join_session', async (data: { sessionId: string; playerId: string } | string) => {
+        // Handle both object format and string format
+        const sessionId = typeof data === 'string' ? data : data.sessionId;
+        const playerId = typeof data === 'string' ? (socket as any).userId : data.playerId;
+
+        await this.handleJoinSession(socket, { sessionId, playerId });
       });
 
       // Handle player leaving a game session
@@ -74,7 +78,7 @@ export class WebSocketGameHandler {
     const { sessionId, playerId } = data;
     
     try {
-      // Verify session exists and is active
+      // Verify session exists and is active (waiting = deck selection, playing = game active)
       const session = await db
         .selectFrom('game_sessions')
         .selectAll()

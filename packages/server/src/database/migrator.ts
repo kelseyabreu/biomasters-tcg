@@ -164,7 +164,12 @@ export class KyselyMigrator {
       const matchHistorySql = readFileSync(matchHistoryPath, 'utf8');
       await this.executeMigration('014_add_match_history', matchHistorySql);
 
-      // 015: Add quest system
+      // 015: Add game sessions end columns (end_reason, ended_at)
+      const gameSessionsEndPath = join(__dirname, 'migrations/015_add_game_sessions_end_columns.sql');
+      const gameSessionsEndSql = readFileSync(gameSessionsEndPath, 'utf8');
+      await this.executeMigration('015_add_game_sessions_end_columns', gameSessionsEndSql);
+
+      // 015b: Add quest system
       const questSystemPath = join(__dirname, 'migrations/015_add_quest_system.sql');
       const questSystemSql = readFileSync(questSystemPath, 'utf8');
       await this.executeMigration('015_add_quest_system', questSystemSql);

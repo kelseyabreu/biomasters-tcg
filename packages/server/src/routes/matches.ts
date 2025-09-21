@@ -733,6 +733,8 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
 
     const userId = req.user?.id;
     console.log('🔍 [GET MATCH DEBUG] User ID from req.user?.id:', userId);
+    console.log('🔍 [GET MATCH DEBUG] req.user object:', req.user);
+    console.log('🔍 [GET MATCH DEBUG] req.user type:', typeof req.user);
 
     if (!sessionId) {
       return res.status(400).json({
@@ -769,27 +771,29 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
 
     // If userId is undefined, check if this is a system/guest user scenario
     let effectiveUserId = userId;
+    let userInSession = {};
+
     if (!effectiveUserId) {
-      // Check if this is a guest user or system user
       if (req.guestUser?.userId) {
         effectiveUserId = req.guestUser.userId;
+        directPlayers.some(p => p.guestId === effectiveUserId) ||gameStatePlayers.some((p: any) => p.guestId === effectiveUserId || p.guestId === effectiveUserId);
         console.log('🔍 [GET MATCH DEBUG] Using guest user ID:', effectiveUserId);
       } else if (req.firebaseUser?.uid) {
         effectiveUserId = req.firebaseUser.uid;
-        console.log('🔍 [GET MATCH DEBUG] Using Firebase UID as fallback:', effectiveUserId);
+        directPlayers.some(p => p.firebaseUid === effectiveUserId) ||gameStatePlayers.some((p: any) => p.firebaseUid === effectiveUserId || p.firebaseUid === effectiveUserId);
       } else {
-        // System user fallback
-        effectiveUserId = '00000000-0000-0000-0000-000000000000';
-        console.log('🔍 [GET MATCH DEBUG] Using system user fallback:', effectiveUserId);
+        userInSession = directPlayers.some(p => p.playerId === effectiveUserId) || gameStatePlayers.some((p: any) => p.playerId === effectiveUserId || p.id === effectiveUserId);        console.log('🔍 [GET MATCH DEBUG] Using system user fallback:', effectiveUserId);
       }
     }
 
-    const userInSession = directPlayers.some(p => p.playerId === effectiveUserId) ||
-                         gameStatePlayers.some((p: any) => p.playerId === effectiveUserId || p.id === effectiveUserId);
-
     console.log('🔍 [GET MATCH DEBUG] User in session result:', userInSession);
+    console.log('🔍 [GET MATCH DEBUG] effectiveUserId:', effectiveUserId);
+    console.log('🔍 [GET MATCH DEBUG] directPlayers check:', directPlayers.map(p => ({ playerId: p.playerId, matches: p.playerId === effectiveUserId })));
+    console.log('🔍 [GET MATCH DEBUG] gameStatePlayers check:', gameStatePlayers.map((p: any) => ({ playerId: p.playerId, id: p.id, matchesPlayerId: p.playerId === effectiveUserId, matchesId: p.id === effectiveUserId })));
 
     if (!userInSession) {
+      console.log('🚨 [GET MATCH DEBUG] 403 TRIGGERED - Access denied for user:', effectiveUserId);
+      console.log('🚨 [GET MATCH DEBUG] Session players:', { directPlayers, gameStatePlayers });
       return res.status(403).json({
         status: 'error',
         success: false,

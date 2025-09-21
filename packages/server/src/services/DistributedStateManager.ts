@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 import { db } from '../database/kysely';
+import { deepSerialize, deepDeserialize } from '@kelseyabreu/shared';
 
 // Simple logger for now
 const logger = {
@@ -35,10 +36,13 @@ export class DistributedStateManager {
 
       // 2. Save to PostgreSQL (source of truth) - wrapped in transaction
       await db.transaction().execute(async (trx) => {
+        // Serialize game state to handle Maps properly before storing in JSONB
+        const serializedGameState = deepSerialize(gameState);
+
         await trx
           .updateTable('game_sessions')
           .set({
-            game_state: gameState, // Store as JSONB
+            game_state: serializedGameState, // Store serialized state as JSONB
             last_action_at: new Date(),
             updated_at: new Date()
           } as any)
@@ -65,7 +69,9 @@ export class DistributedStateManager {
       // 3. Update Redis cache (can fail without breaking the game)
       try {
         const cacheKey = `session:${sessionId}:state`;
-        await this.redis.setex(cacheKey, this.cacheExpirySeconds, JSON.stringify(gameState));
+        // Serialize game state to handle Maps properly
+        const serializedGameState = deepSerialize(gameState);
+        await this.redis.setex(cacheKey, this.cacheExpirySeconds, JSON.stringify(serializedGameState));
         logger.debug(`Game state cached for session ${sessionId}`);
       } catch (cacheError) {
         logger.warn(`Failed to cache game state for session ${sessionId}:`, cacheError);
@@ -99,7 +105,9 @@ export class DistributedStateManager {
       const cachedState = await this.redis.get(cacheKey);
 
       if (cachedState) {
-        const gameState = JSON.parse(cachedState);
+        const serializedGameState = JSON.parse(cachedState);
+        // Deserialize to restore Maps properly
+        const gameState = deepDeserialize(serializedGameState);
         this.sessionStates.set(sessionId, gameState); // Cache in memory
         logger.debug(`Game state loaded from cache for session ${sessionId}`);
         return gameState;
@@ -119,15 +127,20 @@ export class DistributedStateManager {
       // PostgreSQL JSONB columns are already parsed objects, not strings
       logger.debug(`[DistributedStateManager] Raw game_state type: ${typeof session.game_state}, value: ${JSON.stringify(session.game_state).substring(0, 100)}...`);
 
-      const gameState = typeof session.game_state === 'string'
+      const rawGameState = typeof session.game_state === 'string'
         ? JSON.parse(session.game_state)
         : session.game_state;
+
+      // Deserialize to restore Maps properly
+      const gameState = deepDeserialize(rawGameState);
 
       logger.debug(`[DistributedStateManager] Processed game state for session ${sessionId}, keys: ${Object.keys(gameState || {}).join(', ')}`);
 
       // 4. Populate caches for next time
       try {
-        await this.redis.setex(cacheKey, this.cacheExpirySeconds, JSON.stringify(gameState));
+        // Serialize for Redis storage
+        const serializedGameState = deepSerialize(gameState);
+        await this.redis.setex(cacheKey, this.cacheExpirySeconds, JSON.stringify(serializedGameState));
         this.sessionStates.set(sessionId, gameState);
         logger.debug(`Game state cached from database for session ${sessionId}`);
       } catch (cacheError) {

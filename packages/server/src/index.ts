@@ -195,7 +195,8 @@ async function initializeServices() {
 
       // In production (Docker), the public directory is copied to /app/public
       // and we're running from /app/packages/server, so we use absolute path
-      const defaultDataPath = isProduction ? '/app/public/data' : './public/data';
+      // In development, we need to go up two levels to reach the root public directory
+      const defaultDataPath = isProduction ? '/app/public/data' : '../../public/data';
       const dataPath = process.env['GAME_DATA_PATH'] || defaultDataPath;
 
       console.log(`📂 Using data path: ${dataPath}`);

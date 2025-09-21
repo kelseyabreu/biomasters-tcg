@@ -107,8 +107,22 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
 
       console.log('🔍 [AUTH MIDDLEWARE] Checking cache for user:', cacheKey);
       try {
-        dbUser = await CacheManager.get<DatabaseUser>(cacheKey);
-        console.log('🔍 [AUTH MIDDLEWARE] Cache result:', dbUser ? 'User found in cache' : 'User not in cache');
+        const cachedUser = await CacheManager.get<DatabaseUser>(cacheKey);
+        console.log('🔍 [AUTH MIDDLEWARE] Cache result:', cachedUser ? 'User found in cache' : 'User not in cache');
+        console.log('🔍 [AUTH MIDDLEWARE] Cached user type:', typeof cachedUser);
+        console.log('🔍 [AUTH MIDDLEWARE] Cached user value:', cachedUser);
+
+        // Ensure cached user is properly deserialized
+        if (cachedUser && typeof cachedUser === 'object' && cachedUser.id) {
+          dbUser = cachedUser;
+        } else if (cachedUser && typeof cachedUser === 'string') {
+          try {
+            dbUser = JSON.parse(cachedUser);
+          } catch (parseError) {
+            console.log('🔍 [AUTH MIDDLEWARE] Failed to parse cached user, will fetch from DB');
+            dbUser = null;
+          }
+        }
       } catch (cacheError) {
         console.log('⚠️ [AUTH MIDDLEWARE] Cache error:', (cacheError as Error).message);
         if (process.env['NODE_ENV'] === 'test') {
@@ -129,8 +143,12 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
         if (fetchedUser) {
           dbUser = adaptDatabaseUserToUnified(fetchedUser);
           try {
-            await CacheManager.set(cacheKey, dbUser, 300); // Cache for 5 mins
+            // Ensure we're caching a properly serializable object
+            const cacheableUser = JSON.parse(JSON.stringify(dbUser));
+            await CacheManager.set(cacheKey, cacheableUser, 300); // Cache for 5 mins
+            console.log('🔍 [AUTH MIDDLEWARE] User cached successfully');
           } catch (cacheError) {
+            console.log('🔍 [AUTH MIDDLEWARE] Cache error:', (cacheError as Error).message);
             if (process.env['NODE_ENV'] !== 'test') {
               throw cacheError;
             }

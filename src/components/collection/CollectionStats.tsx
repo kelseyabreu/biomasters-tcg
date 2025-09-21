@@ -6,6 +6,8 @@
 import React from 'react';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonProgressBar, IonText, IonGrid, IonRow, IonCol, IonIcon } from '@ionic/react';
 import { trophy, library, card, statsChart } from 'ionicons/icons';
+import { useUILocalization } from '../../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 
 interface CollectionStatsProps {
   stats: {
@@ -17,6 +19,7 @@ interface CollectionStatsProps {
 }
 
 export const CollectionStats: React.FC<CollectionStatsProps> = ({ stats }) => {
+  const { getUIText } = useUILocalization();
   return (
     <IonCard className="collection-stats-card">
       <IonCardHeader>
@@ -50,7 +53,7 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({ stats }) => {
               </div>
               <div className="stat-content">
                 <IonText color="medium">
-                  <small>Species</small>
+                  <small>{getUIText(UITextId.UI_SPECIES)}</small>
                 </IonText>
                 <IonText>
                   <h4>{stats.ownedSpecies}</h4>
@@ -64,7 +67,7 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({ stats }) => {
               </div>
               <div className="stat-content">
                 <IonText color="medium">
-                  <small>Total Cards</small>
+                  <small>{getUIText(UITextId.UI_TOTAL_CARDS)}</small>
                 </IonText>
                 <IonText>
                   <h4>{stats.totalCards}</h4>
@@ -78,7 +81,7 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({ stats }) => {
               </div>
               <div className="stat-content">
                 <IonText color="medium">
-                  <small>Complete</small>
+                  <small>{getUIText(UITextId.UI_COMPLETE)}</small>
                 </IonText>
                 <IonText>
                   <h4>{stats.completionPercentage}%</h4>
@@ -92,11 +95,11 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({ stats }) => {
         <div className="milestones">
           <IonText color="medium">
             <small>
-              {stats.completionPercentage < 25 && "Keep collecting to reach 25% completion!"}
-              {stats.completionPercentage >= 25 && stats.completionPercentage < 50 && "Great progress! Halfway to 50%!"}
-              {stats.completionPercentage >= 50 && stats.completionPercentage < 75 && "Amazing! You're over halfway there!"}
-              {stats.completionPercentage >= 75 && stats.completionPercentage < 100 && "So close! Almost a complete collection!"}
-              {stats.completionPercentage === 100 && "🎉 Perfect! You've collected every species!"}
+              {stats.completionPercentage < 25 && getUIText(UITextId.UI_KEEP_COLLECTING_25)}
+              {stats.completionPercentage >= 25 && stats.completionPercentage < 50 && getUIText(UITextId.UI_GREAT_PROGRESS_50)}
+              {stats.completionPercentage >= 50 && stats.completionPercentage < 75 && getUIText(UITextId.UI_AMAZING_HALFWAY)}
+              {stats.completionPercentage >= 75 && stats.completionPercentage < 100 && getUIText(UITextId.UI_SO_CLOSE_COMPLETE)}
+              {stats.completionPercentage === 100 && getUIText(UITextId.UI_PERFECT_COLLECTION)}
             </small>
           </IonText>
         </div>

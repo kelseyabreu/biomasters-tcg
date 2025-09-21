@@ -118,8 +118,8 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
         <div className="cta-content-compact">
           <IonIcon icon={warning} color="warning" />
           <div className="cta-text-compact">
-            <span className="cta-title-compact">Unsaved Progress</span>
-            <span className="cta-subtitle-compact">Secure your account</span>
+            <span className="cta-title-compact">{getUIText(UITextId.UI_UNSAVED_PROGRESS)}</span>
+            <span className="cta-subtitle-compact">{getUIText(UITextId.UI_SECURE_YOUR_ACCOUNT)}</span>
           </div>
         </div>
         <IonButton
@@ -128,7 +128,7 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
           onClick={handleProtectProgress}
         >
           <IonIcon icon={shield} slot="start" />
-          Protect
+          {getUIText(UITextId.UI_PROTECT)}
         </IonButton>
 
         <AuthModal
@@ -173,7 +173,7 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
                       <div className="stat-highlight">
                         <IonIcon icon={trophy} color="primary" />
                         <span className="stat-value">{ownedSpecies}</span>
-                        <span className="stat-label">Species</span>
+                        <span className="stat-label">{getUIText(UITextId.UI_SPECIES)}</span>
                       </div>
                     </IonCol>
                   )}
@@ -182,7 +182,7 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
                       <div className="stat-highlight">
                         <IonIcon icon={leaf} color="success" />
                         <span className="stat-value">{credits}</span>
-                        <span className="stat-label">Credits</span>
+                        <span className="stat-label">{getUIText(UITextId.UI_CREDITS)}</span>
                       </div>
                     </IonCol>
                   )}
@@ -208,7 +208,7 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
             className="protection-button"
           >
             <IonIcon icon={shield} slot="start" />
-            Create Free Account
+            {getUIText(UITextId.UI_CREATE_FREE_ACCOUNT_BUTTON)}
           </IonButton>
 
           <div className="benefits-list">
@@ -266,7 +266,7 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
           className="banner-button"
         >
           <IonIcon icon={shield} slot="start" />
-          Secure Account
+          {getUIText(UITextId.UI_SECURE_ACCOUNT)}
         </IonButton>
       </div>
 

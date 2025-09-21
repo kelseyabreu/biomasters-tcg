@@ -49,6 +49,7 @@ import {
 import { useTheme, GridCellStyle, CardVisualStyle } from '../theme/ThemeProvider';
 import { ThemeConfig, PREDEFINED_THEMES } from '../theme/themeSystem';
 import EnhancedEcosystemCard from '../components/battle/EnhancedEcosystemCard';
+import { useUILocalization } from '../hooks/useCardLocalization';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { LanguageSelector } from '../components/localization/LanguageSelector';
 import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
@@ -79,7 +80,8 @@ const Settings: React.FC = () => {
     setCardVisualStyle
   } = useTheme();
 
-  const localization = useLocalization();
+  const { getUIText } = useUILocalization();
+  const { currentLanguage, changeLanguage } = useLocalization();
 
   // Sample card data for preview
   const sampleGridCard = {
@@ -103,12 +105,7 @@ const Settings: React.FC = () => {
     attachments: []
   };
 
-  const {
-    currentLanguage,
-    changeLanguage,
-    availableLanguages,
-    getUIText
-  } = useLocalization();
+  // Language functionality will be handled by the LanguageSelector component
 
   const [showCustomThemeModal, setShowCustomThemeModal] = useState(false);
   const [customThemeName, setCustomThemeName] = useState('');

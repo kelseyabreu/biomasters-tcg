@@ -35,6 +35,8 @@ import {
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import PackOpeningModal from '../components/PackOpeningModal';
+import { useUILocalization } from '../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 import './PackOpening.css';
 
 const PackOpening: React.FC = () => {
@@ -46,6 +48,8 @@ const PackOpening: React.FC = () => {
     openStarterPack,
     hasStarterPack
   } = useHybridGameStore();
+
+  const { getUIText } = useUILocalization();
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -59,8 +63,8 @@ const PackOpening: React.FC = () => {
   const packTypes = [
     {
       id: 'starter',
-      name: 'Starter Pack',
-      description: 'Get your first 5 species to begin your journey',
+      name: getUIText(UITextId.UI_STARTER_PACK),
+      description: getUIText(UITextId.UI_STARTER_PACK_DESCRIPTION),
       cost: 0,
       cards: 5,
       icon: star,
@@ -70,8 +74,8 @@ const PackOpening: React.FC = () => {
     },
     {
       id: 'basic',
-      name: 'Basic Pack',
-      description: 'Common species with a chance for rare finds',
+      name: getUIText(UITextId.UI_BASIC_PACK),
+      description: getUIText(UITextId.UI_BASIC_PACK_DESCRIPTION),
       cost: 50,
       cards: 3,
       icon: gift,
@@ -81,8 +85,8 @@ const PackOpening: React.FC = () => {
     },
     {
       id: 'premium',
-      name: 'Premium Pack',
-      description: 'Higher chance of rare and endangered species',
+      name: getUIText(UITextId.UI_PREMIUM_PACK),
+      description: getUIText(UITextId.UI_PREMIUM_PACK_DESCRIPTION),
       cost: 100,
       cards: 5,
       icon: diamond,
@@ -92,8 +96,8 @@ const PackOpening: React.FC = () => {
     },
     {
       id: 'legendary',
-      name: 'Legendary Pack',
-      description: 'Guaranteed rare species and exclusive variants',
+      name: getUIText(UITextId.UI_LEGENDARY_PACK),
+      description: getUIText(UITextId.UI_LEGENDARY_PACK_DESCRIPTION),
       cost: 200,
       cards: 7,
       icon: trophy,
@@ -103,8 +107,8 @@ const PackOpening: React.FC = () => {
     },
     {
       id: 'conservation',
-      name: 'Conservation Pack',
-      description: 'Focus on endangered species education',
+      name: getUIText(UITextId.UI_CONSERVATION_PACK),
+      description: getUIText(UITextId.UI_CONSERVATION_PACK_DESCRIPTION),
       cost: 150,
       cards: 6,
       icon: sparkles,
@@ -132,13 +136,13 @@ const PackOpening: React.FC = () => {
     }
 
     if (!isAuthenticated) {
-      setToastMessage('Please sign in first!');
+      setToastMessage(getUIText(UITextId.UI_PLEASE_SIGN_IN_FIRST));
       setShowToast(true);
       return;
     }
 
     if (!offlineCollection) {
-      setToastMessage('Please initialize your collection first!');
+      setToastMessage(getUIText(UITextId.UI_PLEASE_INITIALIZE_COLLECTION));
       setShowToast(true);
       return;
     }
@@ -147,7 +151,7 @@ const PackOpening: React.FC = () => {
     if (!pack) return;
 
     if (packType !== 'starter' && credits < pack.cost) {
-      setToastMessage(`Not enough credits! Need ${pack.cost}, have ${credits}`);
+      setToastMessage(getUIText(UITextId.UI_NOT_ENOUGH_CREDITS).replace('{cost}', pack.cost.toString()).replace('{credits}', credits.toString()));
       setShowToast(true);
       return;
     }
@@ -169,7 +173,7 @@ const PackOpening: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/home" />
           </IonButtons>
-          <IonTitle>🎁 Open Packs</IonTitle>
+          <IonTitle>{getUIText(UITextId.UI_OPEN_PACKS)}</IonTitle>
         </IonToolbar>
       </IonHeader>
       
@@ -179,10 +183,10 @@ const PackOpening: React.FC = () => {
           <IonCardContent>
             <div className="credits-display">
               <IonText color="primary">
-                <h2>💰 Eco Credits: {credits}</h2>
+                <h2>{getUIText(UITextId.UI_ECO_CREDITS)}: {credits}</h2>
               </IonText>
               <IonText color="medium">
-                <p>Earn credits by playing battles and completing achievements</p>
+                <p>{getUIText(UITextId.UI_EARN_CREDITS_DESCRIPTION)}</p>
               </IonText>
             </div>
           </IonCardContent>
@@ -216,16 +220,16 @@ const PackOpening: React.FC = () => {
                       
                       <div className="pack-stats">
                         <IonBadge color="primary">
-                          {pack.cards} Cards
+                          {pack.cards} {getUIText(UITextId.UI_CARDS)}
                         </IonBadge>
                         {pack.cost > 0 && (
                           <IonBadge color={pack.color}>
-                            {pack.cost} Credits
+                            {pack.cost} {getUIText(UITextId.UI_CREDITS)}
                           </IonBadge>
                         )}
                         {pack.cost === 0 && (
                           <IonBadge color="success">
-                            FREE
+                            {getUIText(UITextId.UI_FREE)}
                           </IonBadge>
                         )}
                       </div>
@@ -246,11 +250,11 @@ const PackOpening: React.FC = () => {
                           icon={isOpening === pack.id ? sparkles : pack.icon} 
                           slot="start" 
                         />
-                        {isOpening === pack.id 
-                          ? 'Opening...' 
-                          : pack.available 
-                            ? `Open ${pack.name}`
-                            : 'Not Available'
+                        {isOpening === pack.id
+                          ? getUIText(UITextId.UI_OPENING)
+                          : pack.available
+                            ? getUIText(UITextId.UI_OPEN_PACK).replace('{packName}', pack.name)
+                            : getUIText(UITextId.UI_NOT_AVAILABLE)
                         }
                       </IonButton>
                     </div>
@@ -266,15 +270,15 @@ const PackOpening: React.FC = () => {
           <IonCard>
             <IonCardContent>
               <IonText color="warning">
-                <h3>🔐 Sign In Required</h3>
-                <p>Please sign in to open packs and save your collection.</p>
+                <h3>{getUIText(UITextId.UI_SIGN_IN_REQUIRED)}</h3>
+                <p>{getUIText(UITextId.UI_SIGN_IN_TO_OPEN_PACKS)}</p>
               </IonText>
               <IonButton
                 expand="block"
                 routerLink="/auth"
                 color="primary"
               >
-                Go to Sign In
+                {getUIText(UITextId.UI_GO_TO_SIGN_IN)}
               </IonButton>
             </IonCardContent>
           </IonCard>
@@ -285,11 +289,11 @@ const PackOpening: React.FC = () => {
           <IonCard>
             <IonCardContent>
               <IonText color="warning">
-                <h3>📦 Collection Not Initialized</h3>
+                <h3>{getUIText(UITextId.UI_COLLECTION_NOT_INITIALIZED)}</h3>
                 <p>
                   {isGuestMode
-                    ? "Your guest collection needs to be initialized to start playing."
-                    : "Your collection needs to be initialized to start playing."
+                    ? getUIText(UITextId.UI_GUEST_COLLECTION_NEEDS_INIT)
+                    : getUIText(UITextId.UI_COLLECTION_NEEDS_INIT)
                   }
                 </p>
               </IonText>
@@ -298,7 +302,7 @@ const PackOpening: React.FC = () => {
                 routerLink="/home"
                 color="primary"
               >
-                Go to Home to Initialize
+                {getUIText(UITextId.UI_GO_TO_HOME_TO_INITIALIZE)}
               </IonButton>
             </IonCardContent>
           </IonCard>

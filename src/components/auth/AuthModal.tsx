@@ -23,7 +23,8 @@ import {
 import { close, shield, trophy, leaf, star } from 'ionicons/icons';
 import { AuthForm } from './AuthForm';
 import { useHybridGameStore } from '../../state/hybridGameStore';
-import { getCollectionStats } from '@kelseyabreu/shared';
+import { getCollectionStats, UITextId } from '@kelseyabreu/shared';
+import { useUILocalization } from '../../hooks/useCardLocalization';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
   mode = 'auth'
 }) => {
+  const { getUIText } = useUILocalization();
   const {
     isGuestMode,
     offlineCollection,
@@ -63,9 +65,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const getModalTitle = () => {
     if (isGuestConversion) {
-      return 'Protect Your Progress';
+      return getUIText(UITextId.UI_PROTECT_PROGRESS);
     }
-    return 'Authentication';
+    return getUIText(UITextId.UI_AUTHENTICATION);
   };
 
   const getGuestUsername = () => {
@@ -97,9 +99,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="conversion-header">
                 <IonIcon icon={shield} color="warning" size="large" />
                 <div className="conversion-text">
-                  <h3>Create an account to permanently save:</h3>
+                  <h3>{getUIText(UITextId.UI_CREATE_ACCOUNT_TO_SAVE)}</h3>
                   <IonText color="medium">
-                    <p>Your collection as <strong>{getGuestUsername()}</strong></p>
+                    <p>{getUIText(UITextId.UI_YOUR_COLLECTION_AS)} <strong>{getGuestUsername()}</strong></p>
                   </IonText>
                 </div>
               </div>
@@ -114,7 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <div className="stat-preview">
                             <IonIcon icon={trophy} color="primary" />
                             <div className="stat-value">{ownedSpecies}</div>
-                            <div className="stat-label">Species</div>
+                            <div className="stat-label">{getUIText(UITextId.UI_SPECIES)}</div>
                           </div>
                         </IonCol>
                       )}
@@ -123,7 +125,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <div className="stat-preview">
                             <IonIcon icon={trophy} color="secondary" />
                             <div className="stat-value">{totalCards}</div>
-                            <div className="stat-label">Cards</div>
+                            <div className="stat-label">{getUIText(UITextId.UI_CARDS)}</div>
                           </div>
                         </IonCol>
                       )}
@@ -132,7 +134,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <div className="stat-preview">
                             <IonIcon icon={leaf} color="success" />
                             <div className="stat-value">{credits}</div>
-                            <div className="stat-label">Credits</div>
+                            <div className="stat-label">{getUIText(UITextId.UI_CREDITS)}</div>
                           </div>
                         </IonCol>
                       )}
@@ -151,9 +153,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               )}
 
               <div className="conversion-benefits">
-                <IonBadge color="success">✓ Keep all progress</IonBadge>
-                <IonBadge color="success">✓ Play on any device</IonBadge>
-                <IonBadge color="success">✓ Never lose data</IonBadge>
+                <IonBadge color="success">{getUIText(UITextId.UI_KEEP_ALL_PROGRESS)}</IonBadge>
+                <IonBadge color="success">{getUIText(UITextId.UI_PLAY_ON_ANY_DEVICE)}</IonBadge>
+                <IonBadge color="success">{getUIText(UITextId.UI_NEVER_LOSE_DATA)}</IonBadge>
               </div>
             </IonCardContent>
           </IonCard>

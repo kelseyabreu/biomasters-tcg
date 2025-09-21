@@ -357,7 +357,7 @@ const DeckBuilder: React.FC = () => {
   const handleCreateNewDeck = () => {
     setCurrentDeck({
       id: '',
-      name: 'New Deck',
+      name: getUIText(UITextId.UI_NEW_DECK),
       cards: [],
       isValid: false
     });

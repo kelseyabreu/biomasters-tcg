@@ -98,6 +98,7 @@ export interface UILocalizationData {
   settingsPage: Record<string, string>;
   collectionPage: Record<string, string>;
   commonMessages: Record<string, string>;
+  onlineMultiplayer: Record<string, string>;
 }
 
 /**
@@ -422,6 +423,7 @@ export class LocalizationManager implements ILocalizationManager {
            ui.settingsPage[textId] ??
            ui.collectionPage[textId] ??
            ui.commonMessages[textId] ??
+           ui.onlineMultiplayer[textId] ??
            `[${textId}]`;
   }
 

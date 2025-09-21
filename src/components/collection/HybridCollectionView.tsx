@@ -9,8 +9,8 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonSearchbar, Ion
 import { search, filter, statsChart, sync, options, close } from 'ionicons/icons';
 import { Card, ConservationStatus } from '../../types';
 import { useHybridGameStore } from '../../state/hybridGameStore';
-import { useLocalization } from '../../contexts/LocalizationContext';
-import { getCollectionStats, isCardOwnedByNameId, getCardOwnershipByNameId } from '@kelseyabreu/shared';
+import { useUILocalization, useCardLocalization } from '../../hooks/useCardLocalization';
+import { getCollectionStats, isCardOwnedByNameId, getCardOwnershipByNameId, UITextId } from '@kelseyabreu/shared';
 
 import { CollectionCard, CardPropertyFilter } from './CollectionCard';
 import { CollectionStats } from './CollectionStats';
@@ -28,7 +28,8 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   onCardSelect,
   showOnlyOwned = false
 }) => {
-  const localization = useLocalization();
+  const { getUIText } = useUILocalization();
+  const { getCardName, getScientificName } = useCardLocalization();
   const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'owned' | 'unowned'>('all');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -115,20 +116,20 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
   const searchFilterFn = useCallback((species: Card) => {
     if (!searchText.trim()) return true;
     const searchLower = searchText.toLowerCase();
-    const localizedName = localization.getCardName(species.nameId as any);
-    const localizedScientificName = localization.getScientificName(species.scientificNameId as any);
+    const localizedName = getCardName(species.nameId as any);
+    const localizedScientificName = getScientificName(species.scientificNameId as any);
     return localizedName.toLowerCase().includes(searchLower) ||
            localizedScientificName.toLowerCase().includes(searchLower) ||
            species.habitat.toString().toLowerCase().includes(searchLower) ||
            species.trophicRole.toString().toLowerCase().includes(searchLower);
-  }, [searchText, localization]);
+  }, [searchText, getCardName, getScientificName]);
 
   const sortFunction = useCallback((a: Card, b: Card) => {
     let comparison = 0;
     switch (sortBy) {
       case 'name':
-        const localizedA = localization.getCardName(a.nameId as any);
-        const localizedB = localization.getCardName(b.nameId as any);
+        const localizedA = getCardName(a.nameId as any);
+        const localizedB = getCardName(b.nameId as any);
         comparison = localizedA.localeCompare(localizedB);
         break;
       case 'rarity':
@@ -145,7 +146,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
         break;
     }
     return sortOrder === 'desc' ? -comparison : comparison;
-  }, [sortBy, sortOrder, localization]);
+  }, [sortBy, sortOrder, getCardName]);
 
   // Advanced filter and search logic with memoized filters
   const filteredSpecies = useMemo(() => {
@@ -215,15 +216,15 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
       <IonPage>
         <IonHeader>
           <IonToolbar>
-            <IonTitle>Collection</IonTitle>
+            <IonTitle>{getUIText(UITextId.UI_TAB_COLLECTION)}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent>
           <div className="loading-container">
             <IonProgressBar type="indeterminate" />
-            <IonText>Loading species data...</IonText>
+            <IonText>{getUIText(UITextId.UI_LOADING_SPECIES_DATA)}</IonText>
             <p style={{ textAlign: 'center', marginTop: '20px' }}>
-              If this takes too long, try refreshing the page.
+              {getUIText(UITextId.UI_LOADING_TIMEOUT_MESSAGE)}
             </p>
           </div>
         </IonContent>
@@ -237,24 +238,24 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
       <IonPage>
         <IonHeader>
           <IonToolbar>
-            <IonTitle>Collection</IonTitle>
+            <IonTitle>{getUIText(UITextId.UI_TAB_COLLECTION)}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
           <div style={{ textAlign: 'center', marginTop: '50px' }}>
-            <h2>⚠️ Loading Failed</h2>
-            <p>Failed to load species data. This might be due to:</p>
+            <h2>{getUIText(UITextId.UI_LOADING_FAILED)}</h2>
+            <p>{getUIText(UITextId.UI_LOADING_FAILED_REASONS)}</p>
             <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>
-              <li>Network connectivity issues</li>
-              <li>Missing species data files</li>
-              <li>Browser compatibility issues</li>
+              <li>{getUIText(UITextId.UI_NETWORK_ISSUES)}</li>
+              <li>{getUIText(UITextId.UI_MISSING_DATA_FILES)}</li>
+              <li>{getUIText(UITextId.UI_BROWSER_COMPATIBILITY)}</li>
             </ul>
             <IonButton
               expand="block"
               onClick={() => window.location.reload()}
               style={{ marginTop: '20px' }}
             >
-              Refresh Page
+              {getUIText(UITextId.UI_REFRESH_PAGE)}
             </IonButton>
           </div>
         </IonContent>
@@ -266,7 +267,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Collection</IonTitle>
+          <IonTitle>{getUIText(UITextId.UI_TAB_COLLECTION)}</IonTitle>
         </IonToolbar>
       </IonHeader>
       
@@ -289,7 +290,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
           <IonSearchbar
             value={searchText}
             onIonInput={(e) => setSearchText(e.detail.value!)}
-            placeholder="Search species..."
+            placeholder={getUIText(UITextId.UI_SEARCH_SPECIES)}
             showClearButton="focus"
           />
           
@@ -299,21 +300,21 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
               size="small"
               onClick={() => setSelectedFilter('all')}
             >
-              All ({allSpeciesCards.length})
+              {getUIText(UITextId.UI_ALL)} ({allSpeciesCards.length})
             </IonButton>
             <IonButton
               fill={selectedFilter === 'owned' ? 'solid' : 'outline'}
               size="small"
               onClick={() => setSelectedFilter('owned')}
             >
-              Owned ({collectionStats.ownedSpecies})
+              {getUIText(UITextId.UI_OWNED)} ({collectionStats.ownedSpecies})
             </IonButton>
             <IonButton
               fill={selectedFilter === 'unowned' ? 'solid' : 'outline'}
               size="small"
               onClick={() => setSelectedFilter('unowned')}
             >
-              Unowned ({collectionStats.totalSpecies - collectionStats.ownedSpecies})
+              {getUIText(UITextId.UI_UNOWNED)} ({collectionStats.totalSpecies - collectionStats.ownedSpecies})
             </IonButton>
 
             {/* Property Filter Button */}
@@ -323,7 +324,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
               onClick={() => setShowPropertyModal(true)}
             >
               <IonIcon icon={options} slot="start" />
-              Properties
+              {getUIText(UITextId.UI_PROPERTIES)}
             </IonButton>
           </div>
 
@@ -334,15 +335,15 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
                 <IonCol size="6" sizeMd="3">
                   <IonSelect
                     value={rarityFilter}
-                    placeholder="Conservation Status"
+                    placeholder={getUIText(UITextId.UI_CONSERVATION_STATUS)}
                     onIonChange={(e) => setRarityFilter(e.detail.value)}
                   >
-                    <IonSelectOption value="all">All Status</IonSelectOption>
-                    <IonSelectOption value={ConservationStatus.LEAST_CONCERN}>Least Concern</IonSelectOption>
-                    <IonSelectOption value={ConservationStatus.NEAR_THREATENED}>Near Threatened</IonSelectOption>
-                    <IonSelectOption value={ConservationStatus.VULNERABLE}>Vulnerable</IonSelectOption>
-                    <IonSelectOption value={ConservationStatus.ENDANGERED}>Endangered</IonSelectOption>
-                    <IonSelectOption value={ConservationStatus.CRITICALLY_ENDANGERED}>Critically Endangered</IonSelectOption>
+                    <IonSelectOption value="all">{getUIText(UITextId.UI_ALL_STATUS)}</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.LEAST_CONCERN}>{getUIText(UITextId.UI_LEAST_CONCERN)}</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.NEAR_THREATENED}>{getUIText(UITextId.UI_NEAR_THREATENED)}</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.VULNERABLE}>{getUIText(UITextId.UI_VULNERABLE)}</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.ENDANGERED}>{getUIText(UITextId.UI_ENDANGERED)}</IonSelectOption>
+                    <IonSelectOption value={ConservationStatus.CRITICALLY_ENDANGERED}>{getUIText(UITextId.UI_CRITICALLY_ENDANGERED)}</IonSelectOption>
                     <IonSelectOption value={ConservationStatus.EXTINCT}>Extinct</IonSelectOption>
                     <IonSelectOption value={ConservationStatus.EXTINCT_IN_WILD}>Extinct in Wild</IonSelectOption>
                     <IonSelectOption value={ConservationStatus.DATA_DEFICIENT}>Data Deficient</IonSelectOption>
@@ -352,28 +353,28 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
                 <IonCol size="6" sizeMd="3">
                   <IonSelect
                     value={trophicRoleFilter}
-                    placeholder="Trophic Role"
+                    placeholder={getUIText(UITextId.UI_TROPHIC_ROLE)}
                     onIonChange={(e) => setTrophicRoleFilter(e.detail.value)}
                   >
-                    <IonSelectOption value="all">All Roles</IonSelectOption>
-                    <IonSelectOption value="Producer">Producer</IonSelectOption>
-                    <IonSelectOption value="Herbivore">Herbivore</IonSelectOption>
-                    <IonSelectOption value="Carnivore">Carnivore</IonSelectOption>
-                    <IonSelectOption value="Omnivore">Omnivore</IonSelectOption>
-                    <IonSelectOption value="Decomposer">Decomposer</IonSelectOption>
+                    <IonSelectOption value="all">{getUIText(UITextId.UI_ALL_ROLES)}</IonSelectOption>
+                    <IonSelectOption value="Producer">{getUIText(UITextId.UI_PRODUCER)}</IonSelectOption>
+                    <IonSelectOption value="Herbivore">{getUIText(UITextId.UI_HERBIVORE)}</IonSelectOption>
+                    <IonSelectOption value="Carnivore">{getUIText(UITextId.UI_CARNIVORE)}</IonSelectOption>
+                    <IonSelectOption value="Omnivore">{getUIText(UITextId.UI_OMNIVORE)}</IonSelectOption>
+                    <IonSelectOption value="Decomposer">{getUIText(UITextId.UI_DECOMPOSER)}</IonSelectOption>
                   </IonSelect>
                 </IonCol>
                 <IonCol size="6" sizeMd="3">
                   <IonSelect
                     value={sortBy}
-                    placeholder="Sort By"
+                    placeholder={getUIText(UITextId.UI_SORT_BY)}
                     onIonChange={(e) => setSortBy(e.detail.value)}
                   >
-                    <IonSelectOption value="name">Name</IonSelectOption>
-                    <IonSelectOption value="rarity">Conservation Status</IonSelectOption>
-                    <IonSelectOption value="attack">Power</IonSelectOption>
-                    <IonSelectOption value="health">Health</IonSelectOption>
-                    <IonSelectOption value="cost">Energy Cost</IonSelectOption>
+                    <IonSelectOption value="name">{getUIText(UITextId.UI_NAME)}</IonSelectOption>
+                    <IonSelectOption value="rarity">{getUIText(UITextId.UI_CONSERVATION_STATUS)}</IonSelectOption>
+                    <IonSelectOption value="attack">{getUIText(UITextId.UI_POWER)}</IonSelectOption>
+                    <IonSelectOption value="health">{getUIText(UITextId.UI_HEALTH)}</IonSelectOption>
+                    <IonSelectOption value="cost">{getUIText(UITextId.UI_ENERGY_COST)}</IonSelectOption>
                   </IonSelect>
                 </IonCol>
                 <IonCol size="6" sizeMd="3">
@@ -382,7 +383,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
                     size="small"
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   >
-                    {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
+                    {sortOrder === 'asc' ? getUIText(UITextId.UI_ASCENDING) : getUIText(UITextId.UI_DESCENDING)}
                   </IonButton>
                 </IonCol>
               </IonRow>
@@ -419,8 +420,8 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
           <div className="empty-state">
             <IonIcon icon={search} size="large" />
             <IonText>
-              <h3>No species found</h3>
-              <p>Try adjusting your search or filter criteria</p>
+              <h3>{getUIText(UITextId.UI_NO_SPECIES_FOUND)}</h3>
+              <p>{getUIText(UITextId.UI_ADJUST_SEARCH_FILTER)}</p>
             </IonText>
           </div>
         )}

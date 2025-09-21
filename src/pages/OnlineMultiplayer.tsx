@@ -46,11 +46,14 @@ import { useHistory } from 'react-router-dom';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { notificationService } from '../services/notificationService';
 import { getGameSocket } from '../services/gameSocket';
+import { useUILocalization } from '../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 
 import './OnlineMultiplayer.css';
 
 const OnlineMultiplayer: React.FC = () => {
   const history = useHistory();
+  const { getUIText } = useUILocalization();
   const {
     online,
     isAuthenticated,
@@ -208,7 +211,7 @@ const OnlineMultiplayer: React.FC = () => {
           console.error('❌ No sessionId provided in game_starting event');
           setShowToast({
             show: true,
-            message: 'Error: No session ID provided',
+            message: getUIText(UITextId.UI_ERROR_NO_SESSION_ID),
             color: 'danger'
           });
         }
@@ -281,7 +284,7 @@ const OnlineMultiplayer: React.FC = () => {
     if (!isAuthenticated) {
       setShowToast({
         show: true,
-        message: 'Please sign in to play online matches',
+        message: getUIText(UITextId.UI_PLEASE_SIGN_IN_TO_PLAY_ONLINE),
         color: 'warning'
       });
       return;
@@ -290,7 +293,7 @@ const OnlineMultiplayer: React.FC = () => {
     if (!isOnline) {
       setShowToast({
         show: true,
-        message: 'You need an internet connection to find matches',
+        message: getUIText(UITextId.UI_NEED_INTERNET_CONNECTION),
         color: 'warning'
       });
       return;
@@ -337,14 +340,14 @@ const OnlineMultiplayer: React.FC = () => {
 
       setShowToast({
         show: true,
-        message: `Searching for ${selectedGameMode} match...`,
+        message: getUIText(UITextId.UI_SEARCHING_FOR_MATCH_MODE).replace('{gameMode}', selectedGameMode),
         color: 'primary'
       });
     } catch (error) {
       notificationService.matchmaking.searchFailed('Failed to start matchmaking');
       setShowToast({
         show: true,
-        message: 'Failed to start matchmaking',
+        message: getUIText(UITextId.UI_FAILED_TO_START_MATCHMAKING),
         color: 'danger'
       });
     }
@@ -381,13 +384,13 @@ const OnlineMultiplayer: React.FC = () => {
 
       setShowToast({
         show: true,
-        message: 'Matchmaking cancelled',
+        message: getUIText(UITextId.UI_MATCHMAKING_CANCELLED),
         color: 'medium'
       });
     } catch (error) {
       setShowToast({
         show: true,
-        message: 'Failed to cancel matchmaking',
+        message: getUIText(UITextId.UI_FAILED_TO_CANCEL_MATCHMAKING),
         color: 'danger'
       });
     }
@@ -416,14 +419,14 @@ const OnlineMultiplayer: React.FC = () => {
 
       setShowToast({
         show: true,
-        message: 'Match accepted! Waiting for other players...',
+        message: getUIText(UITextId.UI_MATCH_ACCEPTED_WAITING),
         color: 'success'
       });
     } catch (error) {
       console.error('❌ Failed to accept match:', error);
       setShowToast({
         show: true,
-        message: 'Failed to accept match',
+        message: getUIText(UITextId.UI_FAILED_TO_ACCEPT_MATCH),
         color: 'danger'
       });
     }
@@ -442,7 +445,7 @@ const OnlineMultiplayer: React.FC = () => {
 
     setShowToast({
       show: true,
-      message: 'Match declined',
+      message: getUIText(UITextId.UI_MATCH_DECLINED),
       color: 'medium'
     });
   };
@@ -473,9 +476,9 @@ const OnlineMultiplayer: React.FC = () => {
   };
 
   const getRankName = (rating: number): string => {
-    if (rating >= 2000) return 'Gold';
-    if (rating >= 1500) return 'Silver';
-    return 'Bronze';
+    if (rating >= 2000) return getUIText(UITextId.UI_GOLD_RANK);
+    if (rating >= 1500) return getUIText(UITextId.UI_SILVER_RANK);
+    return getUIText(UITextId.UI_BRONZE_RANK);
   };
 
   if (!isAuthenticated) {
@@ -483,16 +486,16 @@ const OnlineMultiplayer: React.FC = () => {
       <IonPage data-testid="online-multiplayer-page-unauthenticated">
         <IonHeader>
           <IonToolbar>
-            <IonTitle>Online Multiplayer</IonTitle>
+            <IonTitle>{getUIText(UITextId.UI_ONLINE_MULTIPLAYER)}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
           <div className="auth-required">
             <IonIcon icon={people} size="large" color="medium" />
-            <h2>Sign In Required</h2>
-            <p>Please sign in to access online multiplayer features</p>
+            <h2>{getUIText(UITextId.UI_SIGN_IN_REQUIRED)}</h2>
+            <p>{getUIText(UITextId.UI_SIGN_IN_TO_PLAY_ONLINE)}</p>
             <IonButton routerLink="/auth" fill="solid" color="primary">
-              Sign In
+              {getUIText(UITextId.UI_SIGN_IN)}
             </IonButton>
           </div>
         </IonContent>
@@ -504,7 +507,7 @@ const OnlineMultiplayer: React.FC = () => {
     <IonPage data-testid="online-multiplayer-page">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Online Multiplayer</IonTitle>
+          <IonTitle>{getUIText(UITextId.UI_ONLINE_MULTIPLAYER)}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -520,19 +523,19 @@ const OnlineMultiplayer: React.FC = () => {
         >
           <IonSegmentButton value="matchmaking">
             <IonIcon icon={search} />
-            <IonLabel>Find Match</IonLabel>
+            <IonLabel>{getUIText(UITextId.UI_FIND_MATCH)}</IonLabel>
           </IonSegmentButton>
           <IonSegmentButton value="rating">
             <IonIcon icon={trophy} />
-            <IonLabel>Rating</IonLabel>
+            <IonLabel>{getUIText(UITextId.UI_RATING)}</IonLabel>
           </IonSegmentButton>
           <IonSegmentButton value="quests">
             <IonIcon icon={star} />
-            <IonLabel>Quests</IonLabel>
+            <IonLabel>{getUIText(UITextId.UI_QUESTS)}</IonLabel>
           </IonSegmentButton>
           <IonSegmentButton value="leaderboard">
             <IonIcon icon={statsChart} />
-            <IonLabel>Leaderboard</IonLabel>
+            <IonLabel>{getUIText(UITextId.UI_LEADERBOARD)}</IonLabel>
           </IonSegmentButton>
         </IonSegment>
 
@@ -541,7 +544,7 @@ const OnlineMultiplayer: React.FC = () => {
           <div className="tab-content" data-testid="matchmaking-section">
             <IonCard>
               <IonCardHeader>
-                <IonCardTitle>Find Match</IonCardTitle>
+                <IonCardTitle>{getUIText(UITextId.UI_FIND_MATCH)}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 {/* Game Mode Selection */}
@@ -551,16 +554,16 @@ const OnlineMultiplayer: React.FC = () => {
                   disabled={online.matchmaking.isSearching}
                 >
                   <IonSegmentButton value="ranked_1v1" data-testid="game-mode-ranked_1v1">
-                    <IonLabel>Ranked 1v1</IonLabel>
+                    <IonLabel>{getUIText(UITextId.UI_RANKED_1V1)}</IonLabel>
                   </IonSegmentButton>
                   <IonSegmentButton value="casual_1v1" data-testid="game-mode-casual_1v1">
-                    <IonLabel>Casual 1v1</IonLabel>
+                    <IonLabel>{getUIText(UITextId.UI_CASUAL_1V1)}</IonLabel>
                   </IonSegmentButton>
                   <IonSegmentButton value="team_2v2" data-testid="game-mode-team_2v2">
-                    <IonLabel>Team 2v2</IonLabel>
+                    <IonLabel>{getUIText(UITextId.UI_TEAM_2V2)}</IonLabel>
                   </IonSegmentButton>
                   <IonSegmentButton value="ffa_4p" data-testid="game-mode-ffa_4p">
-                    <IonLabel>4P Free-for-All</IonLabel>
+                    <IonLabel>{getUIText(UITextId.UI_4P_FREE_FOR_ALL)}</IonLabel>
                   </IonSegmentButton>
                 </IonSegment>
 
@@ -568,9 +571,9 @@ const OnlineMultiplayer: React.FC = () => {
                 {online.matchmaking.isSearching ? (
                   <div className="matchmaking-status">
                     <IonSpinner name="dots" color="primary" />
-                    <h3>Searching for match...</h3>
-                    <p>Game Mode: {selectedGameMode}</p>
-                    <p>Queue Time: {formatTime(online.matchmaking.queueTime)}</p>
+                    <h3>{getUIText(UITextId.UI_SEARCHING_FOR_MATCH)}</h3>
+                    <p>{getUIText(UITextId.UI_GAME_MODE)}: {selectedGameMode}</p>
+                    <p>{getUIText(UITextId.UI_QUEUE_TIME)}: {formatTime(online.matchmaking.queueTime)}</p>
                     <IonProgressBar type="indeterminate" color="primary" />
                     <IonButton
                       fill="outline"
@@ -580,7 +583,7 @@ const OnlineMultiplayer: React.FC = () => {
                       data-testid="cancel-search-button"
                     >
                       <IonIcon icon={close} slot="start" />
-                      Cancel Search
+                      {getUIText(UITextId.UI_CANCEL_SEARCH)}
                     </IonButton>
                   </div>
                 ) : (
@@ -594,11 +597,11 @@ const OnlineMultiplayer: React.FC = () => {
                       data-testid="find-match-button"
                     >
                       <IonIcon icon={search} slot="start" />
-                      Find {selectedGameMode} Match
+                      {getUIText(UITextId.UI_FIND_MATCH_BUTTON).replace('{gameMode}', selectedGameMode)}
                     </IonButton>
                     {!isOnline && (
                       <IonText color="warning">
-                        <p>Offline - Connect to internet to find matches</p>
+                        <p>{getUIText(UITextId.UI_OFFLINE_CONNECT_TO_INTERNET)}</p>
                       </IonText>
                     )}
                   </div>
@@ -613,7 +616,7 @@ const OnlineMultiplayer: React.FC = () => {
           <div className="tab-content">
             <IonCard>
               <IonCardHeader>
-                <IonCardTitle>Your Rating</IonCardTitle>
+                <IonCardTitle>{getUIText(UITextId.UI_YOUR_RATING)}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 <div className="rating-overview">
@@ -621,32 +624,32 @@ const OnlineMultiplayer: React.FC = () => {
                     <div className="stat-value" style={{ color: `var(--ion-color-${getRankColor(online.rating.current)})` }}>
                       {online.rating.current}
                     </div>
-                    <div className="stat-label">Current Rating</div>
+                    <div className="stat-label">{getUIText(UITextId.UI_CURRENT_RATING)}</div>
                   </div>
                   <div className="rating-stat">
                     <div className="stat-value">{online.rating.peak}</div>
-                    <div className="stat-label">Peak Rating</div>
+                    <div className="stat-label">{getUIText(UITextId.UI_PEAK_RATING)}</div>
                   </div>
                   <div className="rating-stat">
                     <div className="stat-value">{online.rating.gamesPlayed}</div>
-                    <div className="stat-label">Games Played</div>
+                    <div className="stat-label">{getUIText(UITextId.UI_GAMES_PLAYED)}</div>
                   </div>
                   <div className="rating-stat">
                     <div className="stat-value">{online.rating.winRate.toFixed(1)}%</div>
-                    <div className="stat-label">Win Rate</div>
+                    <div className="stat-label">{getUIText(UITextId.UI_WIN_RATE)}</div>
                   </div>
                 </div>
 
                 <div className={`rank-badge ${getRankColor(online.rating.current)}`}>
                   <IonIcon icon={medal} />
-                  {getRankName(online.rating.current)} Rank
+                  {getRankName(online.rating.current)} {getUIText(UITextId.UI_RANK)}
                 </div>
 
                 {online.rating.winStreak > 0 && (
                   <div style={{ marginTop: '16px', textAlign: 'center' }}>
                     <IonBadge color="success">
                       <IonIcon icon={flash} style={{ marginRight: '4px' }} />
-                      {online.rating.winStreak} Win Streak
+                      {getUIText(UITextId.UI_WIN_STREAK).replace('{streak}', online.rating.winStreak.toString())}
                     </IonBadge>
                   </div>
                 )}
@@ -660,7 +663,7 @@ const OnlineMultiplayer: React.FC = () => {
           <div className="tab-content">
             <IonCard>
               <IonCardHeader>
-                <IonCardTitle>Daily Quests</IonCardTitle>
+                <IonCardTitle>{getUIText(UITextId.UI_DAILY_QUESTS)}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 <div className="quest-grid">
@@ -675,15 +678,15 @@ const OnlineMultiplayer: React.FC = () => {
                             {quest.isClaimed ? (
                               <>
                                 <IonIcon icon={checkmark} />
-                                Claimed
+                                {getUIText(UITextId.UI_CLAIMED)}
                               </>
                             ) : quest.isCompleted ? (
                               <>
                                 <IonIcon icon={gift} />
-                                Ready
+                                {getUIText(UITextId.UI_READY)}
                               </>
                             ) : (
-                              'In Progress'
+                              getUIText(UITextId.UI_IN_PROGRESS)
                             )}
                           </div>
                         </div>
@@ -704,13 +707,13 @@ const OnlineMultiplayer: React.FC = () => {
                             {quest.rewards.eco_credits && (
                               <div className="reward-item">
                                 <IonIcon icon={star} />
-                                {quest.rewards.eco_credits} Credits
+                                {quest.rewards.eco_credits} {getUIText(UITextId.UI_CREDITS)}
                               </div>
                             )}
                             {quest.rewards.xp_points && (
                               <div className="reward-item">
                                 <IonIcon icon={flash} />
-                                {quest.rewards.xp_points} XP
+                                {quest.rewards.xp_points} {getUIText(UITextId.UI_XP)}
                               </div>
                             )}
                           </div>
@@ -732,7 +735,7 @@ const OnlineMultiplayer: React.FC = () => {
                             style={{ marginTop: '12px' }}
                           >
                             <IonIcon icon={gift} slot="start" />
-                            Claim Reward
+                            {getUIText(UITextId.UI_CLAIM_REWARD)}
                           </IonButton>
                         )}
                       </IonCardContent>
@@ -743,19 +746,19 @@ const OnlineMultiplayer: React.FC = () => {
                 {Object.keys(online.quests.dailyQuests).length === 0 && (
                   <div style={{ textAlign: 'center', padding: '32px', color: 'var(--ion-color-medium)' }}>
                     <IonIcon icon={star} size="large" />
-                    <p>No daily quests available</p>
+                    <p>{getUIText(UITextId.UI_NO_DAILY_QUESTS)}</p>
                     <IonButton fill="outline" onClick={refreshDailyQuests}>
-                      Refresh Quests
+                      {getUIText(UITextId.UI_REFRESH_QUESTS)}
                     </IonButton>
                   </div>
                 )}
 
                 <div style={{ marginTop: '16px', textAlign: 'center' }}>
                   <IonBadge color="secondary">
-                    Quest Streak: {online.quests.questStreak}
+                    {getUIText(UITextId.UI_QUEST_STREAK).replace('{streak}', online.quests.questStreak.toString())}
                   </IonBadge>
                   <IonBadge color="tertiary" style={{ marginLeft: '8px' }}>
-                    Total Completed: {online.quests.totalQuestsCompleted}
+                    {getUIText(UITextId.UI_TOTAL_COMPLETED).replace('{total}', online.quests.totalQuestsCompleted.toString())}
                   </IonBadge>
                 </div>
               </IonCardContent>
@@ -768,7 +771,7 @@ const OnlineMultiplayer: React.FC = () => {
           <div className="tab-content">
             <IonCard>
               <IonCardHeader>
-                <IonCardTitle>Leaderboard</IonCardTitle>
+                <IonCardTitle>{getUIText(UITextId.UI_LEADERBOARD)}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 {online.leaderboard.data.length > 0 ? (
@@ -780,10 +783,10 @@ const OnlineMultiplayer: React.FC = () => {
                         </div>
                         <div className="leaderboard-player">
                           <div className="leaderboard-player-name">
-                            {player.username || player.display_name || 'Anonymous'}
+                            {player.username || player.display_name || getUIText(UITextId.UI_ANONYMOUS)}
                           </div>
                           <div className="leaderboard-player-stats">
-                            {player.games_played || 0} games • {((player.win_rate || 0)).toFixed(1)}% win rate
+                            {player.games_played || 0} {getUIText(UITextId.UI_GAMES)} • {((player.win_rate || 0)).toFixed(1)}% {getUIText(UITextId.UI_WIN_RATE).toLowerCase()}
                           </div>
                         </div>
                         <div className="leaderboard-rating">
@@ -795,9 +798,9 @@ const OnlineMultiplayer: React.FC = () => {
                 ) : (
                   <div style={{ textAlign: 'center', padding: '32px', color: 'var(--ion-color-medium)' }}>
                     <IonIcon icon={statsChart} size="large" />
-                    <p>No leaderboard data available</p>
+                    <p>{getUIText(UITextId.UI_NO_LEADERBOARD_DATA)}</p>
                     <IonButton fill="outline" onClick={() => refreshLeaderboard(selectedGameMode)}>
-                      Refresh Leaderboard
+                      {getUIText(UITextId.UI_REFRESH_LEADERBOARD)}
                     </IonButton>
                   </div>
                 )}
@@ -818,20 +821,20 @@ const OnlineMultiplayer: React.FC = () => {
         <IonModal isOpen={showMatchModal} onDidDismiss={() => setShowMatchModal(false)} data-testid="match-found-modal">
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Match Found!</IonTitle>
+              <IonTitle>{getUIText(UITextId.UI_MATCH_FOUND)}</IonTitle>
             </IonToolbar>
           </IonHeader>
           <IonContent className="ion-padding">
             {matchFound && (
               <div style={{ textAlign: 'center' }}>
                 <IonIcon icon={gameController} size="large" color="success" style={{ marginBottom: '16px' }} />
-                <h2>Match Found!</h2>
-                <p>Game Mode: {matchFound.gameMode}</p>
+                <h2>{getUIText(UITextId.UI_MATCH_FOUND)}</h2>
+                <p>{getUIText(UITextId.UI_GAME_MODE)}: {matchFound.gameMode}</p>
 
                 {/* Show opponent info for 1v1 matches */}
                 {matchFound.players && matchFound.players.length === 2 && (
                   <div style={{ margin: '20px 0' }} data-testid="opponent-info">
-                    <h3>Opponent</h3>
+                    <h3>{getUIText(UITextId.UI_OPPONENT)}</h3>
                     {matchFound.players.map((player: any) => {
                       if (player.id !== useHybridGameStore.getState().userId) {
                         return (
@@ -843,7 +846,7 @@ const OnlineMultiplayer: React.FC = () => {
                             margin: '8px 0'
                           }}>
                             <IonIcon icon={person} />
-                            <span>{player.username || 'Anonymous'}</span>
+                            <span>{player.username || getUIText(UITextId.UI_ANONYMOUS)}</span>
                             <IonBadge color="medium">Rating: {player.rating || 1000}</IonBadge>
                           </div>
                         );
@@ -856,7 +859,7 @@ const OnlineMultiplayer: React.FC = () => {
                 {/* Show all players for multi-player matches */}
                 {matchFound.players && matchFound.players.length > 2 && (
                   <div style={{ margin: '20px 0' }}>
-                    <h3>Players ({matchFound.players.length})</h3>
+                    <h3>{getUIText(UITextId.UI_PLAYERS).replace('{count}', matchFound.players.length.toString())}</h3>
                     {matchFound.players.map((player: any) => (
                       <div key={player.id} style={{
                         display: 'flex',
@@ -866,7 +869,7 @@ const OnlineMultiplayer: React.FC = () => {
                         margin: '4px 0'
                       }}>
                         <IonIcon icon={person} />
-                        <span>{player.username || 'Anonymous'}</span>
+                        <span>{player.username || getUIText(UITextId.UI_ANONYMOUS)}</span>
                         <IonBadge color="medium">Rating: {player.rating || 1000}</IonBadge>
                       </div>
                     ))}
@@ -877,7 +880,7 @@ const OnlineMultiplayer: React.FC = () => {
                 {acceptTimer > 0 && !matchAccepted && (
                   <div style={{ margin: '20px 0', textAlign: 'center' }}>
                     <IonText color={acceptTimer <= 10 ? 'danger' : 'primary'}>
-                      <h3>Accept in: {acceptTimer}s</h3>
+                      <h3>{getUIText(UITextId.UI_ACCEPT_IN).replace('{seconds}', acceptTimer.toString())}</h3>
                     </IonText>
                     <IonProgressBar
                       value={acceptTimer / 30}
@@ -890,8 +893,8 @@ const OnlineMultiplayer: React.FC = () => {
                 {matchAccepted && (
                   <div style={{ margin: '20px 0', textAlign: 'center' }}>
                     <IonText color="success">
-                      <h3>✅ Match Accepted!</h3>
-                      <p>Waiting for other players...</p>
+                      <h3>{getUIText(UITextId.UI_MATCH_ACCEPTED)}</h3>
+                      <p>{getUIText(UITextId.UI_WAITING_FOR_OTHER_PLAYERS)}</p>
                     </IonText>
                     <IonSpinner name="dots" color="success" />
                   </div>
@@ -906,7 +909,7 @@ const OnlineMultiplayer: React.FC = () => {
                     data-testid="accept-match-button"
                   >
                     <IonIcon icon={checkmark} slot="start" />
-                    {matchAccepted ? 'Accepted' : 'Accept Match'}
+                    {matchAccepted ? getUIText(UITextId.UI_ACCEPTED) : getUIText(UITextId.UI_ACCEPT_MATCH)}
                   </IonButton>
                   {!matchAccepted && (
                     <IonButton
@@ -917,7 +920,7 @@ const OnlineMultiplayer: React.FC = () => {
                       data-testid="decline-match-button"
                     >
                       <IonIcon icon={close} slot="start" />
-                      Decline
+                      {getUIText(UITextId.UI_DECLINE)}
                     </IonButton>
                   )}
                 </div>

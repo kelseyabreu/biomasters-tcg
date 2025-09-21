@@ -140,6 +140,7 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
 
       if (dbUser) {
         console.log('🔐 [Auth] User found in database:', dbUser.username);
+        console.log('🔍 [Auth] Full user object:', JSON.stringify(dbUser, null, 2));
         req.user = dbUser;
       } else {
         console.log('🔐 [Auth] User not found in database for Firebase UID:', decodedToken.uid);

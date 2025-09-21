@@ -192,7 +192,13 @@ async function initializeServices() {
 
       // Create data loader based on environment
       const isProduction = process.env['NODE_ENV'] === 'production';
-      const dataPath = process.env['GAME_DATA_PATH'] || undefined;
+
+      // In production (Docker), the public directory is copied to /app/public
+      // and we're running from /app/packages/server, so we use absolute path
+      const defaultDataPath = isProduction ? '/app/public/data' : './public/data';
+      const dataPath = process.env['GAME_DATA_PATH'] || defaultDataPath;
+
+      console.log(`📂 Using data path: ${dataPath}`);
 
       const serverDataLoader = isProduction
         ? createProductionDataLoader(dataPath)

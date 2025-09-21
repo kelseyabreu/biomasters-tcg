@@ -498,7 +498,6 @@ export class UnifiedGameService {
         result.metadata = {
           ...result.metadata,
           ratingEnabled: true,
-          initialRatings: await this.getPlayerRatings(payload.players)
         };
       }
 

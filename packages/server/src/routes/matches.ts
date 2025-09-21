@@ -231,9 +231,13 @@ router.post('/:sessionId/forfeit', requireAuth, async (req: Request, res: Respon
       } as ApiResponse);
     }
 
-    // Check if user is part of this session
-    const players = session.players as any[];
-    const userInSession = players.some(p => p.playerId === userId);
+    // Check if user is part of this session (check both locations)
+    const directPlayers = session.players as any[] || [];
+    const gameState = session.game_state as any;
+    const gameStatePlayers = gameState?.players || [];
+
+    const userInSession = directPlayers.some(p => p.playerId === userId) ||
+                         gameStatePlayers.some((p: any) => p.playerId === userId || p.id === userId);
 
     if (!userInSession) {
       return res.status(403).json({
@@ -255,8 +259,10 @@ router.post('/:sessionId/forfeit', requireAuth, async (req: Request, res: Respon
     }
 
     // Update game session to finished
-    const gameState = session.game_state as any;
-    const winnerId = players.find(p => p.playerId !== userId)?.playerId || null;
+    // gameState already declared above, reuse it
+    const winnerId = directPlayers.find(p => p.playerId !== userId)?.playerId ||
+                    gameStatePlayers.find((p: any) => (p.playerId !== userId && p.playerId) || (p.id !== userId && p.id))?.playerId ||
+                    gameStatePlayers.find((p: any) => (p.playerId !== userId && p.playerId) || (p.id !== userId && p.id))?.id || null;
     
     gameState.gamePhase = 'completed';
     gameState.winner = winnerId;
@@ -277,8 +283,12 @@ router.post('/:sessionId/forfeit', requireAuth, async (req: Request, res: Respon
     const matchDuration = Math.floor((Date.now() - new Date(session.created_at).getTime()) / 1000);
     const gameMode = session.game_mode || 'casual_1v1';
 
-    for (const player of players) {
-      const isWinner = player.playerId === winnerId;
+    // Use the appropriate players array (prefer game state players if available)
+    const allPlayers = gameStatePlayers.length > 0 ? gameStatePlayers : directPlayers;
+
+    for (const player of allPlayers) {
+      const playerId = player.playerId || player.id;
+      const isWinner = playerId === winnerId;
       const result = isWinner ? 'win' : 'loss';
       const ratingChange = isWinner ? 16 : -16; // Standard forfeit rating change
       const oldRating = player.rating || 1000;
@@ -289,8 +299,8 @@ router.post('/:sessionId/forfeit', requireAuth, async (req: Request, res: Respon
         .insertInto('match_results')
         .values({
           session_id: sessionId,
-          player_user_id: player.playerId,
-          opponent_user_id: players.find(p => p.playerId !== player.playerId)?.playerId || null,
+          player_user_id: playerId,
+          opponent_user_id: allPlayers.find(p => (p.playerId || p.id) !== playerId)?.playerId || allPlayers.find(p => (p.playerId || p.id) !== playerId)?.id || null,
           game_mode: gameMode,
           result,
           rating_before: oldRating,
@@ -373,8 +383,13 @@ router.get('/:sessionId/decks', requireAuth, async (req: Request, res: Response)
       } as ApiResponse);
     }
 
-    const players = session.players as any[];
-    const userInSession = players.some(p => p.playerId === userId);
+    // Check both session.players (before game init) and session.game_state.players (after game init)
+    const directPlayers = session.players as any[] || [];
+    const gameState = session.game_state as any;
+    const gameStatePlayers = gameState?.players || [];
+
+    const userInSession = directPlayers.some(p => p.playerId === userId) ||
+                         gameStatePlayers.some((p: any) => p.playerId === userId || p.id === userId);
 
     if (!userInSession) {
       return res.status(403).json({
@@ -708,7 +723,16 @@ router.post('/:sessionId/select-deck', requireAuth, async (req: Request, res: Re
 router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user!.id;
+
+    console.log('🔍 [GET MATCH DEBUG] Session ID:', sessionId);
+    console.log('🔍 [GET MATCH DEBUG] req.user exists:', !!req.user);
+    console.log('🔍 [GET MATCH DEBUG] req.user:', JSON.stringify(req.user, null, 2));
+    console.log('🔍 [GET MATCH DEBUG] req.firebaseUser:', JSON.stringify(req.firebaseUser, null, 2));
+    console.log('🔍 [GET MATCH DEBUG] req.guestUser:', JSON.stringify(req.guestUser, null, 2));
+    console.log('🔍 [GET MATCH DEBUG] req.isGuestAuth:', req.isGuestAuth);
+
+    const userId = req.user?.id;
+    console.log('🔍 [GET MATCH DEBUG] User ID from req.user?.id:', userId);
 
     if (!sessionId) {
       return res.status(400).json({
@@ -734,10 +758,36 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
       } as ApiResponse);
     }
 
-    // Check if user has access to this session
+    // Check if user has access to this session (check both locations)
+    const directPlayers = session.players as any[] || [];
     const gameState = session.game_state as any;
-    const players = gameState.players || [];
-    const userInSession = players.some((p: any) => p.playerId === userId || p.id === userId);
+    const gameStatePlayers = gameState?.players || [];
+
+    console.log('🔍 [GET MATCH DEBUG] Direct players:', JSON.stringify(directPlayers, null, 2));
+    console.log('🔍 [GET MATCH DEBUG] Game state players:', JSON.stringify(gameStatePlayers, null, 2));
+    console.log('🔍 [GET MATCH DEBUG] Looking for user ID:', userId);
+
+    // If userId is undefined, check if this is a system/guest user scenario
+    let effectiveUserId = userId;
+    if (!effectiveUserId) {
+      // Check if this is a guest user or system user
+      if (req.guestUser?.userId) {
+        effectiveUserId = req.guestUser.userId;
+        console.log('🔍 [GET MATCH DEBUG] Using guest user ID:', effectiveUserId);
+      } else if (req.firebaseUser?.uid) {
+        effectiveUserId = req.firebaseUser.uid;
+        console.log('🔍 [GET MATCH DEBUG] Using Firebase UID as fallback:', effectiveUserId);
+      } else {
+        // System user fallback
+        effectiveUserId = '00000000-0000-0000-0000-000000000000';
+        console.log('🔍 [GET MATCH DEBUG] Using system user fallback:', effectiveUserId);
+      }
+    }
+
+    const userInSession = directPlayers.some(p => p.playerId === effectiveUserId) ||
+                         gameStatePlayers.some((p: any) => p.playerId === effectiveUserId || p.id === effectiveUserId);
+
+    console.log('🔍 [GET MATCH DEBUG] User in session result:', userInSession);
 
     if (!userInSession) {
       return res.status(403).json({
@@ -756,7 +806,8 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
     }
 
     // Get user details for proper player mapping
-    const playerIds = players.map((p: any) => p.playerId || p.id);
+    const allPlayers = gameStatePlayers.length > 0 ? gameStatePlayers : directPlayers;
+    const playerIds = allPlayers.map((p: any) => p.playerId || p.id);
     const userDetails = await db
       .selectFrom('users')
       .select(['id', 'username', 'display_name', 'firebase_uid'])
@@ -766,7 +817,7 @@ router.get('/:sessionId', requireAuth, async (req: Request, res: Response) => {
     console.log('🔍 [GET MATCH] User details for player mapping:', userDetails);
 
     // Create enhanced players array with Firebase UID mapping
-    const enhancedPlayers = players.map((player: any) => {
+    const enhancedPlayers = allPlayers.map((player: any) => {
       const userDetail = userDetails.find(u => u.id === (player.playerId || player.id));
       return {
         ...player,

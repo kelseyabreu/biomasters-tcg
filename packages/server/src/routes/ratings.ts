@@ -68,13 +68,21 @@ router.get('/user', authenticateToken, async (req: Request, res: Response) => {
  */
 router.post('/players', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { players } = req.body;
+    // Support both 'players' and 'playerIds' for backward compatibility
+    const { players, playerIds } = req.body;
+    const playerArray = players || playerIds;
 
-    if (!Array.isArray(players) || players.length === 0) {
-      return res.status(500).json({
+    console.log('🔍 [RATINGS DEBUG] POST /players request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 [RATINGS DEBUG] Players array:', playerArray);
+    console.log('🔍 [RATINGS DEBUG] Is array?', Array.isArray(playerArray));
+    console.log('🔍 [RATINGS DEBUG] Length:', playerArray?.length);
+
+    if (!Array.isArray(playerArray) || playerArray.length === 0) {
+      console.log('❌ [RATINGS DEBUG] Invalid players array');
+      return res.status(400).json({
       status: 'error',
       success: false,
-        error: 'Players array is required',
+        error: 'Players array (players or playerIds) is required',
         data: null
       } as ApiResponse);
     }
@@ -83,11 +91,13 @@ router.post('/players', authenticateToken, async (req: Request, res: Response) =
     const validPlayerIds: string[] = [];
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    players.forEach(player => {
-      if (player.id && uuidRegex.test(player.id)) {
-        validPlayerIds.push(player.id);
+    playerArray.forEach(player => {
+      // Handle both object format {id: "..."} and string format "..."
+      const playerId = typeof player === 'string' ? player : player.id;
+      if (playerId && uuidRegex.test(playerId)) {
+        validPlayerIds.push(playerId);
       } else {
-        console.warn(`⚠️ Invalid UUID format for player: ${player.id}`);
+        console.warn(`⚠️ Invalid UUID format for player: ${playerId}`);
       }
     });
 

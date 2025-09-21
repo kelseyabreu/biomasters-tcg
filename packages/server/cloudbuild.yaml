@@ -5,7 +5,7 @@ steps:
 
   # Step 2: Build Docker image (credential helper handles authentication automatically)
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'packages/server/Dockerfile.parent', '-t', 'gcr.io/$PROJECT_ID/biomasters-api', '.']
+    args: ['build', '-f', 'packages/server/Dockerfile', '-t', 'gcr.io/$PROJECT_ID/biomasters-api', '.']
 
   # Step 3: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'

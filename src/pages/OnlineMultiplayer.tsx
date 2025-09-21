@@ -259,9 +259,9 @@ const OnlineMultiplayer: React.FC = () => {
       // Initialize WebSocket connection
       useHybridGameStore.getState().initializeWebSocket();
 
-      refreshRating();
+      //refreshRating();
       refreshDailyQuests();
-      refreshLeaderboard('ranked_1v1');
+      //refreshLeaderboard('ranked_1v1');
     }
   }, [isAuthenticated, isOnline]);
 
@@ -452,9 +452,9 @@ const OnlineMultiplayer: React.FC = () => {
   const handleRefresh = async (event: CustomEvent) => {
     if (isAuthenticated && isOnline) {
       await Promise.all([
-        refreshRating(),
+        //refreshRating(),
         refreshDailyQuests(),
-        refreshLeaderboard(selectedGameMode)
+        //refreshLeaderboard(selectedGameMode)
       ]);
     }
     event.detail.complete();

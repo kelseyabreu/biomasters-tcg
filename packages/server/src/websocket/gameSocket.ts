@@ -271,9 +271,24 @@ export async function initializeBioMastersGame(sessionId: string, gameState: any
 }
 
 export function setupGameSocket(server: HTTPServer) {
+  // Configure CORS origins for Socket.IO
+  const allowedOrigins = [
+    "https://biomasters.app",  // Production frontend
+    "http://localhost:5173",   // Vite dev server
+    "http://localhost:3000",   // Alternative dev server
+    "http://localhost:3001"    // Alternative dev server
+  ];
+
+  // Add FRONTEND_URL if it's set and not already in the list
+  if (process.env['FRONTEND_URL'] && !allowedOrigins.includes(process.env['FRONTEND_URL'])) {
+    allowedOrigins.push(process.env['FRONTEND_URL']);
+  }
+
+  console.log('🔌 [Socket.IO] Configuring CORS for origins:', allowedOrigins);
+
   const io = new SocketIOServer(server, {
     cors: {
-      origin: process.env['FRONTEND_URL'] || ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"],
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true
     }

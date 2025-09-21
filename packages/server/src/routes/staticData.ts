@@ -11,8 +11,14 @@ import crypto from 'crypto';
 const router = Router();
 
 // Base path for static data files
-const DATA_BASE_PATH = path.join(__dirname, '../../../public/data/game-config');
+// In production (Docker), use absolute path; in development, use relative path
+const isProduction = process.env['NODE_ENV'] === 'production';
+const DATA_BASE_PATH = isProduction
+  ? '/app/public/data/game-config'
+  : path.join(__dirname, '../../../public/data/game-config');
 const VERSION_FILE = path.join(DATA_BASE_PATH, 'version.json');
+
+console.log(`📁 [StaticData] Using data path: ${DATA_BASE_PATH}`);
 
 /**
  * Calculate SHA256 checksum of a file

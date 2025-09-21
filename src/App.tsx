@@ -30,6 +30,8 @@ import { ThemeProvider } from './theme/ThemeProvider';
 import { useHybridGameStore } from './state/hybridGameStore';
 import { ActiveBattleIndicator } from './components/navigation/ActiveBattleIndicator';
 import { LocalizationProvider } from './contexts/LocalizationContext';
+import { useUILocalization } from './hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 import { gameStateManager } from './services/GameStateManager';
 
 import { ConnectivityIndicator, OfflineBanner } from './components/ui/ConnectivityIndicator';
@@ -141,7 +143,9 @@ const setupMobileLifecycle = () => {
   });
 };
 
-const App: React.FC = () => {
+// Inner component that uses localization hooks
+const AppContent: React.FC = () => {
+  const { getUIText } = useUILocalization();
   const {
     isAuthenticated,
     firebaseUser,
@@ -225,9 +229,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <ThemeProvider>
-      <LocalizationProvider basePath="/data/localization">
-        <IonApp>
+    <IonApp>
         <IonReactRouter>
           {/* Global UI Components */}
           <OfflineBanner />
@@ -283,23 +285,23 @@ const App: React.FC = () => {
           <IonTabBar slot="bottom">
             <IonTabButton tab="home" href="/home">
               <IonIcon aria-hidden="true" icon={trophy} />
-              <IonLabel>Home</IonLabel>
+              <IonLabel>{getUIText(UITextId.UI_TAB_HOME)}</IonLabel>
             </IonTabButton>
             <IonTabButton tab="collection" href="/collection">
               <IonIcon aria-hidden="true" icon={library} />
-              <IonLabel>Collection</IonLabel>
+              <IonLabel>{getUIText(UITextId.UI_TAB_COLLECTION)}</IonLabel>
             </IonTabButton>
             <IonTabButton tab="online" href="/online" data-testid="online-multiplayer-button">
               <IonIcon aria-hidden="true" icon={people} />
-              <IonLabel>Online</IonLabel>
+              <IonLabel>{getUIText(UITextId.UI_TAB_ONLINE)}</IonLabel>
             </IonTabButton>
             <IonTabButton tab="deck-builder" href="/deck-builder">
               <IonIcon aria-hidden="true" icon={construct} />
-              <IonLabel>Deck Builder</IonLabel>
+              <IonLabel>{getUIText(UITextId.UI_TAB_DECK_BUILDER)}</IonLabel>
             </IonTabButton>
             <IonTabButton tab="settings" href="/settings">
               <IonIcon aria-hidden="true" icon={settings} />
-              <IonLabel>Settings</IonLabel>
+              <IonLabel>{getUIText(UITextId.UI_TAB_SETTINGS)}</IonLabel>
             </IonTabButton>
           </IonTabBar>
           </IonTabs>
@@ -320,7 +322,16 @@ const App: React.FC = () => {
           />
 
         </IonReactRouter>
-        </IonApp>
+    </IonApp>
+  );
+};
+
+// Main App component that provides localization context
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <LocalizationProvider basePath="/data/localization">
+        <AppContent />
       </LocalizationProvider>
     </ThemeProvider>
   );

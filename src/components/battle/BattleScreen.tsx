@@ -48,6 +48,8 @@ import { calculatePlacementHighlights, calculateMovementHighlights, convertHighl
 import { calculateEventTargets, convertEventHighlightsToPositions, getEventAction } from '../../game-logic/eventTargeting';
 import { AIDifficulty } from '../../game-logic/aiOpponent';
 import { Card, createCardWithDefaults, TrophicRole, Habitat, ConservationStatus } from '../../types';
+import { useUILocalization } from '../../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 
 type GameMode = 'campaign' | 'online' | 'scenarios' | 'tutorial';
 type BattlePhase = 'mode_selection' | 'lobby' | 'game_setup' | 'playing' | 'game_over';
@@ -95,6 +97,9 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
     createDeck,
     setActiveDeck
   } = useHybridGameStore();
+
+  // Get localization
+  const { getUIText } = useUILocalization();
 
   // Local UI state (non-game related)
   const [selectedMode, setSelectedMode] = React.useState<GameMode>('campaign');
@@ -244,30 +249,30 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
     const levels: CampaignLevel[] = [
       {
         id: 'forest_basics',
-        name: 'Forest Ecosystem Basics',
-        description: 'Learn the fundamentals of ecosystem building in a temperate forest.',
+        name: getUIText(UITextId.UI_FOREST_ECOSYSTEM_BASICS),
+        description: getUIText(UITextId.UI_FOREST_DESCRIPTION),
         difficulty: AIDifficulty.EASY,
         unlocked: true,
         completed: false,
         stars: 0,
         maxStars: 3,
-        rewards: ['Forest Starter Pack', '50 Eco Credits']
+        rewards: [getUIText(UITextId.UI_FOREST_STARTER_PACK), `50 ${getUIText(UITextId.UI_ECO_CREDITS)}`]
       },
       {
         id: 'ocean_depths',
-        name: 'Ocean Depths Challenge',
-        description: 'Explore marine ecosystems and food webs in the deep ocean.',
+        name: getUIText(UITextId.UI_OCEAN_DEPTHS_CHALLENGE),
+        description: getUIText(UITextId.UI_OCEAN_DESCRIPTION),
         difficulty: AIDifficulty.EASY,
         unlocked: true,
         completed: false,
         stars: 0,
         maxStars: 3,
-        rewards: ['Ocean Starter Pack', '75 Eco Credits']
+        rewards: [getUIText(UITextId.UI_OCEAN_STARTER_PACK), `75 ${getUIText(UITextId.UI_ECO_CREDITS)}`]
       },
       {
         id: 'grassland_balance',
-        name: 'Grassland Balance',
-        description: 'Master the delicate balance of predator and prey relationships.',
+        name: getUIText(UITextId.UI_GRASSLAND_BALANCE),
+        description: getUIText(UITextId.UI_GRASSLAND_DESCRIPTION),
         difficulty: AIDifficulty.MEDIUM,
         unlocked: false,
         completed: false,
@@ -366,7 +371,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
 
     if (!level.unlocked) {
       console.log('❌ Level not unlocked');
-      setAlertMessage('This level is not yet unlocked!');
+      setAlertMessage(getUIText(UITextId.UI_LEVEL_NOT_UNLOCKED));
       setShowAlert(true);
       return;
     }
@@ -593,7 +598,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
     setCurrentTutorialLesson(null);
     setCurrentTutorialStep(0);
 
-    setAlertMessage(`Tutorial completed! You scored ${score} points.`);
+    setAlertMessage(getUIText(UITextId.UI_TUTORIAL_COMPLETED).replace('{score}', score.toString()));
     setShowAlert(true);
   };
 
@@ -624,7 +629,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
     // Show confirmation message
     setTimeout(() => {
       console.log('🏳️ Showing forfeit confirmation message');
-      setAlertMessage('Match forfeited. Returning to mode selection.');
+      setAlertMessage(getUIText(UITextId.UI_FORFEIT_SUCCESS));
       setShowAlert(true);
     }, 100);
   };
@@ -662,10 +667,10 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
                     >
                       <IonCardContent className="ion-text-center">
                         <IonIcon icon={trophy} size="large" />
-                        <h3>Campaign</h3>
-                        <p>Story mode with progressive challenges</p>
+                        <h3>{getUIText(UITextId.UI_CAMPAIGN)}</h3>
+                        <p>{getUIText(UITextId.UI_STORY_MODE_DESCRIPTION)}</p>
                         <IonChip color="success">
-                          <IonLabel>Single Player</IonLabel>
+                          <IonLabel>{getUIText(UITextId.UI_SINGLE_PLAYER)}</IonLabel>
                         </IonChip>
                       </IonCardContent>
                     </IonCard>
@@ -719,10 +724,10 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
                     >
                       <IonCardContent className="ion-text-center">
                         <IonIcon icon={school} size="large" />
-                        <h3>Tutorial</h3>
-                        <p>Learn the basics of Phylo</p>
+                        <h3>{getUIText(UITextId.UI_TUTORIAL)}</h3>
+                        <p>{getUIText(UITextId.UI_LEARN_PHYLO_BASICS)}</p>
                         <IonChip color="primary">
-                          <IonLabel>Interactive</IonLabel>
+                          <IonLabel>{getUIText(UITextId.UI_INTERACTIVE)}</IonLabel>
                         </IonChip>
                       </IonCardContent>
                     </IonCard>
@@ -745,24 +750,24 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
             <IonButton fill="clear" onClick={returnToModeSelection}>
               <IonIcon icon={arrowBack} />
             </IonButton>
-            <IonTitle>Campaign Levels</IonTitle>
+            <IonTitle>{getUIText(UITextId.UI_CAMPAIGN_LEVELS)}</IonTitle>
           </IonToolbar>
         </IonHeader>
 
         <IonContent className="ion-padding">
           <IonCard>
             <IonCardHeader>
-              <IonCardTitle>Ecosystem Mastery Campaign</IonCardTitle>
+              <IonCardTitle>{getUIText(UITextId.UI_ECOSYSTEM_MASTERY_CAMPAIGN)}</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <p>Progress through increasingly challenging ecosystems to become a master ecologist!</p>
+              <p>{getUIText(UITextId.UI_PROGRESS_DESCRIPTION)}</p>
 
               {offlineCollection && getCollectionStats(offlineCollection.cards_owned).ownedSpecies < 5 ? (
                 <IonCard color="warning">
                   <IonCardContent>
-                    <p>⚠️ You need at least 5 species to play campaign mode.</p>
+                    <p>{getUIText(UITextId.UI_NEED_SPECIES_WARNING)}</p>
                     <IonButton expand="block" routerLink="/collection" fill="outline">
-                      View Collection
+                      {getUIText(UITextId.UI_VIEW_COLLECTION)}
                     </IonButton>
                   </IonCardContent>
                 </IonCard>
@@ -952,7 +957,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
                 setShowForfeitAlert(true);
               }}
             >
-              Forfeit
+              {getUIText(UITextId.UI_FORFEIT)}
             </IonButton>
           </IonToolbar>
         </IonHeader>
@@ -1176,11 +1181,11 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
               console.log('🏳️ Forfeit alert dismissed');
               setShowForfeitAlert(false);
             }}
-            header="Forfeit Match"
-            message="Are you sure you want to forfeit this match? Your progress will be lost."
+            header={getUIText(UITextId.UI_FORFEIT_MATCH)}
+            message={getUIText(UITextId.UI_FORFEIT_CONFIRMATION)}
             buttons={[
               {
-                text: 'Cancel',
+                text: getUIText(UITextId.UI_CANCEL),
                 role: 'cancel',
                 handler: () => {
                   console.log('🏳️ Forfeit cancelled');
@@ -1188,7 +1193,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
                 }
               },
               {
-                text: 'Forfeit',
+                text: getUIText(UITextId.UI_FORFEIT),
                 role: 'destructive',
                 handler: () => {
                   console.log('🏳️ Forfeit confirmed - calling handleForfeit');

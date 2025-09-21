@@ -53,18 +53,51 @@ export interface AbilityLocalizationData {
  * Interface for UI localization data
  */
 export interface UILocalizationData {
+  // Core UI categories
+  general: Record<string, string>;
+  tabs: Record<string, string>;
+  home: Record<string, string>;
+  menus: Record<string, string>;
+  settings: Record<string, string>;
+  deckBuilder: Record<string, string>;
+
+  // Game-specific categories
   gameActions: Record<string, string>;
   gamePhases: Record<string, string>;
   gameStates: Record<string, string>;
+  playerActions: Record<string, string>;
+
+  // Error and messaging categories
   errorMessages: Record<string, string>;
+  errors: Record<string, string>;
+  notifications: Record<string, string>;
+
+  // Game terms and states
   gameTerms: Record<string, string>;
+  cardStates: Record<string, string>;
+  cardZones: Record<string, string>;
+  resources: Record<string, string>;
+
+  // Content categories
   keywords: Record<KeywordNameId, string>;
   trophicCategories: Record<string, string>;
+
+  // Authentication and user management
   authentication: Record<string, string>;
   authMessages: Record<string, string>;
   guestRegistration: Record<string, string>;
+
+  // Game modes and features
   battle: Record<string, string>;
+  endGame: Record<string, string>;
   collection: Record<string, string>;
+  connectivity: Record<string, string>;
+
+  // New page-specific categories
+  packOpening: Record<string, string>;
+  settingsPage: Record<string, string>;
+  collectionPage: Record<string, string>;
+  commonMessages: Record<string, string>;
 }
 
 /**
@@ -360,17 +393,35 @@ export class LocalizationManager implements ILocalizationManager {
     const ui = this._languageData?.ui;
     if (!ui) return `[${textId}]`;
 
-    return ui.gameActions[textId] ??
+    return ui.general[textId] ??
+           ui.tabs[textId] ??
+           ui.home[textId] ??
+           ui.menus[textId] ??
+           ui.settings[textId] ??
+           ui.deckBuilder[textId] ??
+           ui.gameActions[textId] ??
            ui.gamePhases[textId] ??
            ui.gameStates[textId] ??
+           ui.playerActions[textId] ??
            ui.errorMessages[textId] ??
+           ui.errors[textId] ??
            ui.gameTerms[textId] ??
+           ui.cardStates[textId] ??
+           ui.cardZones[textId] ??
+           ui.resources[textId] ??
            ui.trophicCategories[textId] ??
            ui.authentication[textId] ??
            ui.authMessages[textId] ??
            ui.guestRegistration[textId] ??
            ui.battle[textId] ??
+           ui.endGame[textId] ??
            ui.collection[textId] ??
+           ui.connectivity[textId] ??
+           ui.notifications[textId] ??
+           ui.packOpening[textId] ??
+           ui.settingsPage[textId] ??
+           ui.collectionPage[textId] ??
+           ui.commonMessages[textId] ??
            `[${textId}]`;
   }
 

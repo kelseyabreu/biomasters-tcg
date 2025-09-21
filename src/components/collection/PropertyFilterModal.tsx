@@ -20,6 +20,8 @@ import {
 } from '@ionic/react';
 import { close } from 'ionicons/icons';
 import { CardPropertyFilter } from './CollectionCard';
+import { useUILocalization } from '../../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 
 interface PropertyFilterModalProps {
   isOpen: boolean;
@@ -34,6 +36,8 @@ export const PropertyFilterModal: React.FC<PropertyFilterModalProps> = ({
   propertyFilter,
   onPropertyFilterChange
 }) => {
+  const { getUIText } = useUILocalization();
+
   const handlePropertyChange = (property: keyof CardPropertyFilter, checked: boolean) => {
     onPropertyFilterChange({
       ...propertyFilter,
@@ -45,7 +49,7 @@ export const PropertyFilterModal: React.FC<PropertyFilterModalProps> = ({
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Card Properties</IonTitle>
+          <IonTitle>{getUIText(UITextId.UI_CARD_PROPERTIES)}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={onClose}>
               <IonIcon icon={close} />
@@ -60,28 +64,28 @@ export const PropertyFilterModal: React.FC<PropertyFilterModalProps> = ({
               checked={propertyFilter.habitat}
               onIonChange={(e) => handlePropertyChange('habitat', e.detail.checked)}
             />
-            <IonLabel className="ion-margin-start">Habitat</IonLabel>
+            <IonLabel className="ion-margin-start">{getUIText(UITextId.UI_HABITAT)}</IonLabel>
           </IonItem>
           <IonItem>
             <IonCheckbox
               checked={propertyFilter.role}
               onIonChange={(e) => handlePropertyChange('role', e.detail.checked)}
             />
-            <IonLabel className="ion-margin-start">Trophic Role</IonLabel>
+            <IonLabel className="ion-margin-start">{getUIText(UITextId.UI_TROPHIC_ROLE)}</IonLabel>
           </IonItem>
           <IonItem>
             <IonCheckbox
               checked={propertyFilter.conservationStatus}
               onIonChange={(e) => handlePropertyChange('conservationStatus', e.detail.checked)}
             />
-            <IonLabel className="ion-margin-start">Conservation Status</IonLabel>
+            <IonLabel className="ion-margin-start">{getUIText(UITextId.UI_CONSERVATION_STATUS)}</IonLabel>
           </IonItem>
           <IonItem>
             <IonCheckbox
               checked={propertyFilter.acquisitionType}
               onIonChange={(e) => handlePropertyChange('acquisitionType', e.detail.checked)}
             />
-            <IonLabel className="ion-margin-start">Acquisition Type</IonLabel>
+            <IonLabel className="ion-margin-start">{getUIText(UITextId.UI_ACQUISITION_TYPE)}</IonLabel>
           </IonItem>
         </IonList>
       </IonContent>

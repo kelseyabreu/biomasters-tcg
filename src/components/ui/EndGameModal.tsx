@@ -34,6 +34,8 @@ import {
   albums
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import { useUILocalization } from '../../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 
 interface PlayerFinalStats {
   playerId: string;
@@ -76,6 +78,9 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
   // Get quest tracking function from store
   const { trackGameCompletion, userId } = useHybridGameStore();
 
+  // Get localization
+  const { getUIText } = useUILocalization();
+
   // Track quest progress when game ends
   useEffect(() => {
     if (isOpen && winner && userId) {
@@ -95,7 +100,7 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
           <IonTitle>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <IonIcon icon={trophy} />
-              Game Complete
+              {getUIText(UITextId.UI_GAME_COMPLETE)}
             </div>
           </IonTitle>
           <IonButtons slot="end">
@@ -119,24 +124,24 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
             </div>
             
             <h1 className="winner-title">
-              {isPlayerWinner ? '🎉 Victory!' : '💪 Good Game!'}
+              {isPlayerWinner ? `🎉 ${getUIText(UITextId.UI_VICTORY)}` : `💪 ${getUIText(UITextId.UI_EXCELLENT_GAME)}`}
             </h1>
-            
+
             <h2 className="winner-name">
-              {winner || 'Unknown'} Wins!
+              {winner || 'Unknown'} {isPlayerWinner ? getUIText(UITextId.UI_VICTORY) : getUIText(UITextId.UI_DEFEAT)}!
             </h2>
-            
+
             {winnerStats && (
               <IonChip color={isPlayerWinner ? 'success' : 'primary'} className="winner-score">
                 <IonIcon icon={star} />
-                <IonLabel>{winnerStats.victoryPoints} Victory Points</IonLabel>
+                <IonLabel>{winnerStats.victoryPoints} {getUIText(UITextId.UI_VICTORY_POINTS)}</IonLabel>
               </IonChip>
             )}
 
             <p className="winner-message">
-              {isPlayerWinner 
-                ? 'Congratulations! You built a superior ecosystem!' 
-                : 'Well played! Study the winning strategy and try again.'}
+              {isPlayerWinner
+                ? `${getUIText(UITextId.UI_CONGRATULATIONS)} ${getUIText(UITextId.UI_WELL_PLAYED)}`
+                : `${getUIText(UITextId.UI_WELL_PLAYED)} ${getUIText(UITextId.UI_BETTER_LUCK_NEXT_TIME)}`}
             </p>
           </IonCardContent>
         </IonCard>
@@ -144,7 +149,7 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
         {/* Final Scores */}
         <IonCard className="scores-card">
           <IonCardContent>
-            <h3>Final Scores</h3>
+            <h3>{getUIText(UITextId.UI_FINAL_SCORE)}</h3>
             <div className="scores-list">
               {sortedScores.map((player, index) => (
                 <div 
@@ -164,26 +169,26 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
                     <div className="player-stats-summary">
                       <IonBadge color="success">
                         <IonIcon icon={star} />
-                        {player.victoryPoints} VP
+                        {player.victoryPoints} {getUIText(UITextId.UI_VICTORY_POINTS).substring(0, 2)}
                       </IonBadge>
                       <IonBadge color="primary">
                         <IonIcon icon={library} />
-                        {player.deckCount} Deck
+                        {player.deckCount} {getUIText(UITextId.UI_DECK_COUNT).split(' ')[0]}
                       </IonBadge>
                       <IonBadge color="secondary">
                         <IonIcon icon={albums} />
-                        {player.handCount} Hand
+                        {player.handCount} {getUIText(UITextId.UI_HAND_COUNT).split(' ')[0]}
                       </IonBadge>
                       <IonBadge color="warning">
                         <IonIcon icon={flash} />
-                        {player.energy} Energy
+                        {player.energy} {getUIText(UITextId.UI_ENERGY)}
                       </IonBadge>
                     </div>
                   </div>
                   
                   <div className="score-points">
                     <span className="points-value">{player.victoryPoints}</span>
-                    <span className="points-label">points</span>
+                    <span className="points-label">{getUIText(UITextId.UI_VICTORY_POINTS).toLowerCase()}</span>
                   </div>
                 </div>
               ))}
@@ -195,12 +200,12 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
         {gameStats && (
           <IonCard className="stats-card">
             <IonCardContent>
-              <h3>Game Statistics</h3>
+              <h3>{getUIText(UITextId.UI_GAME_STATS)}</h3>
               <IonGrid>
                 <IonRow>
                   <IonCol size="6">
                     <div className="stat-item">
-                      <span className="stat-label">Total Turns:</span>
+                      <span className="stat-label">{getUIText(UITextId.UI_TOTAL_TURNS)}:</span>
                       <span className="stat-value">{gameStats.totalTurns}</span>
                     </div>
                   </IonCol>
@@ -215,7 +220,7 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
                   <IonRow>
                     <IonCol size="12">
                       <div className="stat-item">
-                        <span className="stat-label">Game Duration:</span>
+                        <span className="stat-label">{getUIText(UITextId.UI_GAME_DURATION)}:</span>
                         <span className="stat-value">{gameStats.gameDuration}</span>
                       </div>
                     </IonCol>
@@ -236,20 +241,20 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
               className="action-button"
             >
               <IonIcon icon={refresh} slot="start" />
-              Play Again
+              {getUIText(UITextId.UI_PLAY_AGAIN)}
             </IonButton>
           )}
-          
+
           {onReturnHome && (
-            <IonButton 
-              expand="block" 
-              fill="outline" 
-              color="medium" 
+            <IonButton
+              expand="block"
+              fill="outline"
+              color="medium"
               onClick={onReturnHome}
               className="action-button"
             >
               <IonIcon icon={home} slot="start" />
-              Return to Menu
+              {getUIText(UITextId.UI_RETURN_HOME)}
             </IonButton>
           )}
         </div>

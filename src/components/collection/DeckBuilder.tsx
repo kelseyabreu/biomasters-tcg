@@ -39,6 +39,8 @@ import { useHybridGameStore } from '../../state/hybridGameStore';
 import CollectionCard, { CardPropertyFilter } from './CollectionCard';
 import PropertyFilterModal from './PropertyFilterModal';
 import { nameIdToCardId, cardIdToNameId } from '@kelseyabreu/shared';
+import { useLocalization } from '../../contexts/LocalizationContext';
+import { UITextId } from '../../../packages/shared/src/text-ids';
 import './DeckBuilder.css';
 
 interface DeckCard {
@@ -54,6 +56,7 @@ interface Deck {
 }
 
 const DeckBuilder: React.FC = () => {
+  const { getUIText } = useLocalization();
   const {
     offlineCollection,
     allSpeciesCards,
@@ -405,14 +408,14 @@ const DeckBuilder: React.FC = () => {
 
   const handleSaveDeck = async () => {
     if (!currentDeck.name.trim()) {
-      setToastMessage('Please enter a deck name');
+      setToastMessage(getUIText(UITextId.UI_DECK_NAME_REQUIRED));
       setShowToast(true);
       return;
     }
 
     const totalCards = currentDeck.cards.reduce((sum, card) => sum + card.quantity, 0);
     if (totalCards < 20) {
-      setToastMessage(`Deck must have at least 20 cards (currently ${totalCards})`);
+      setToastMessage(getUIText(UITextId.UI_DECK_MIN_CARDS).replace('{count}', totalCards.toString()));
       setShowToast(true);
       return;
     }
@@ -420,15 +423,15 @@ const DeckBuilder: React.FC = () => {
     try {
       if (isEditing && editingDeckId) {
         await updateDeck(editingDeckId, currentDeck.name, currentDeck.cards);
-        setToastMessage('Deck updated successfully!');
+        setToastMessage(getUIText(UITextId.UI_DECK_UPDATED));
       } else {
         await createDeck(currentDeck.name, currentDeck.cards);
-        setToastMessage('Deck saved successfully!');
+        setToastMessage(getUIText(UITextId.UI_DECK_SAVED));
       }
       setShowToast(true);
       setCurrentView('list');
     } catch (error) {
-      setToastMessage('Failed to save deck');
+      setToastMessage(getUIText(UITextId.UI_DECK_SAVE_FAILED));
       setShowToast(true);
     }
   };
@@ -439,10 +442,10 @@ const DeckBuilder: React.FC = () => {
       <IonCard>
         <IonCardHeader>
           <IonCardTitle>
-            Saved Decks ({savedDecks.length}/5)
+            {getUIText(UITextId.UI_SAVED_DECKS)} ({savedDecks.length}/5)
             {activeDeck && (
               <IonBadge color="success" style={{ marginLeft: '8px', fontSize: '0.7rem' }}>
-                Active: {activeDeck.name}
+                {getUIText(UITextId.UI_ACTIVE_DECK)}: {activeDeck.name}
               </IonBadge>
             )}
           </IonCardTitle>
@@ -450,7 +453,7 @@ const DeckBuilder: React.FC = () => {
         <IonCardContent>
           {savedDecks.length === 0 ? (
             <p style={{ textAlign: 'center', color: 'var(--ion-color-medium)', fontStyle: 'italic' }}>
-              No saved decks yet. Create your first deck!
+              {getUIText(UITextId.UI_NO_SAVED_DECKS)}
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -480,7 +483,7 @@ const DeckBuilder: React.FC = () => {
                           {deck.name}
                           {deck.id === activeDeck?.id && (
                             <IonBadge color="medium" style={{ marginLeft: '8px', fontSize: '0.7rem' }}>
-                              ACTIVE
+                              {getUIText(UITextId.UI_ACTIVE_DECK)}
                             </IonBadge>
                           )}
                         </div>
@@ -492,9 +495,9 @@ const DeckBuilder: React.FC = () => {
                           gap: '8px'
                         }}>
                           <IonBadge color="primary">
-                            {deck.cards.reduce((sum, card) => sum + card.quantity, 0)} cards
+                            {getUIText(UITextId.UI_CARDS_COUNT).replace('{count}', deck.cards.reduce((sum, card) => sum + card.quantity, 0).toString())}
                           </IonBadge>
-                          <span>Created {new Date(deck.created).toLocaleDateString()}</span>
+                          <span>{getUIText(UITextId.UI_CREATED_DATE).replace('{date}', new Date(deck.created).toLocaleDateString())}</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -505,7 +508,7 @@ const DeckBuilder: React.FC = () => {
                           onClick={() => handleEditDeck(deck.id)}
                           style={{ minWidth: '80px', width: '80px' }}
                         >
-                          Edit
+                          {getUIText(UITextId.UI_EDIT)}
                         </IonButton>
                         {deck.id !== activeDeck?.id && (
                           <IonButton
@@ -515,7 +518,7 @@ const DeckBuilder: React.FC = () => {
                             onClick={() => handleSetActiveDeck(deck.id, deck.name)}
                             style={{ minWidth: '80px', width: '80px' }}
                           >
-                            Set Active
+                            {getUIText(UITextId.UI_SET_ACTIVE)}
                           </IonButton>
                         )}
                         <IonButton
@@ -525,7 +528,7 @@ const DeckBuilder: React.FC = () => {
                           onClick={() => handleDeleteDeck(deck.id, deck.name)}
                           style={{ minWidth: '80px', width: '80px' }}
                         >
-                          Delete
+                          {getUIText(UITextId.UI_DELETE)}
                         </IonButton>
                       </div>
                     </div>
@@ -545,7 +548,7 @@ const DeckBuilder: React.FC = () => {
             disabled={savedDecks.length >= 5}
           >
             <IonIcon icon={add} slot="start" />
-            Create New Deck {savedDecks.length >= 5 && '(Maximum Reached)'}
+            {getUIText(UITextId.UI_CREATE_NEW_DECK)} {savedDecks.length >= 5 && getUIText(UITextId.UI_MAXIMUM_REACHED)}
           </IonButton>
         </IonCardContent>
       </IonCard>
@@ -556,7 +559,7 @@ const DeckBuilder: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{currentView === 'list' ? 'Deck Builder' : currentDeck.name || 'New Deck'}</IonTitle>
+          <IonTitle>{currentView === 'list' ? getUIText(UITextId.UI_DECK_BUILDER) : currentDeck.name || getUIText(UITextId.UI_NEW_DECK)}</IonTitle>
           {currentView === 'editor' && (
             <IonButton
               slot="start"
@@ -578,7 +581,7 @@ const DeckBuilder: React.FC = () => {
               <IonInput
                 value={currentDeck.name}
                 onIonInput={(e) => setCurrentDeck(prev => ({ ...prev, name: e.detail.value! }))}
-                placeholder="Enter deck name"
+                placeholder={getUIText(UITextId.UI_ENTER_DECK_NAME)}
                 className="deck-name-input"
                 style={{
                   fontSize: '1.2rem',
@@ -604,16 +607,16 @@ const DeckBuilder: React.FC = () => {
                   <IonList>
                     <IonItem button onClick={handleSaveDeck}>
                       <IonIcon icon={save} slot="start" />
-                      <IonLabel>Save</IonLabel>
+                      <IonLabel>{getUIText(UITextId.UI_SAVE)}</IonLabel>
                     </IonItem>
                     <IonItem button onClick={handleDuplicateDeck}>
                       <IonIcon icon={duplicate} slot="start" />
-                      <IonLabel>Duplicate</IonLabel>
+                      <IonLabel>{getUIText(UITextId.UI_DUPLICATE)}</IonLabel>
                     </IonItem>
                     {isEditing && (
                       <IonItem button onClick={() => handleDeleteDeck(editingDeckId!, currentDeck.name)}>
                         <IonIcon icon={trash} slot="start" color="danger" />
-                        <IonLabel color="danger">Delete</IonLabel>
+                        <IonLabel color="danger">{getUIText(UITextId.UI_DELETE)}</IonLabel>
                       </IonItem>
                     )}
                   </IonList>
@@ -630,7 +633,7 @@ const DeckBuilder: React.FC = () => {
                 onClick={handleRemoveAllCards}
                 disabled={currentDeck.cards.length === 0}
               >
-                Remove All
+                {getUIText(UITextId.UI_REMOVE_ALL)}
               </IonButton>
 
               <div className="zoom-controls">
@@ -660,7 +663,7 @@ const DeckBuilder: React.FC = () => {
             <IonCardHeader>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <IonCardTitle>
-                  Deck Cards ({currentDeck.cards.reduce((sum, card) => sum + card.quantity, 0)})
+                  {getUIText(UITextId.UI_DECK_CARDS)} ({currentDeck.cards.reduce((sum, card) => sum + card.quantity, 0)})
                 </IonCardTitle>
                 <IonButton fill="clear" size="small">
                   <IonIcon icon={search} />

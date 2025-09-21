@@ -33,9 +33,12 @@ import { getCollectionStats } from '@kelseyabreu/shared';
 import { UserProfile } from '../components/UserProfile';
 import { GuestRegistrationCTA } from '../components/GuestRegistrationCTA';
 import { CollectionDebugPanel } from '../components/debug/CollectionDebugPanel';
+import { useUILocalization } from '../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 
 const MainMenu: React.FC = () => {
   const history = useHistory();
+  const { getUIText } = useUILocalization();
   const {
     offlineCollection,
     isAuthenticated,
@@ -129,10 +132,10 @@ const MainMenu: React.FC = () => {
         {isAuthenticated && (!offlineCollection || (offlineCollection && getCollectionStats(offlineCollection.cards_owned).ownedSpecies === 0)) && (
           <IonCard>
             <IonCardHeader>
-              <IonCardTitle>Initialize Your Collection</IonCardTitle>
+              <IonCardTitle>{getUIText(UITextId.UI_INITIALIZE_COLLECTION)}</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <p>You're signed in! Now initialize your collection to start playing.</p>
+              <p>{getUIText(UITextId.UI_INITIALIZE_DESCRIPTION)}</p>
               <IonButton
                 expand="block"
                 onClick={handleInitializeCollection}
@@ -140,7 +143,7 @@ const MainMenu: React.FC = () => {
                 size="large"
               >
                 <IonIcon icon={gift} slot="start" />
-                Initialize Collection & Get Starter Pack
+                {getUIText(UITextId.UI_INITIALIZE_BUTTON)}
               </IonButton>
             </IonCardContent>
           </IonCard>
@@ -152,7 +155,7 @@ const MainMenu: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={statsChart} style={{ marginRight: '8px' }} />
-                Your Collection
+                {getUIText(UITextId.UI_YOUR_COLLECTION)}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -161,13 +164,13 @@ const MainMenu: React.FC = () => {
                   <IonCol size="6">
                     <div style={{ textAlign: 'center' }}>
                       <h2>{ownedSpecies}</h2>
-                      <p>Species Owned</p>
+                      <p>{getUIText(UITextId.UI_SPECIES_OWNED)}</p>
                     </div>
                   </IonCol>
                   <IonCol size="6">
                     <div style={{ textAlign: 'center' }}>
                       <h2>{totalCards}</h2>
-                      <p>Total Cards</p>
+                      <p>{getUIText(UITextId.UI_TOTAL_CARDS)}</p>
                     </div>
                   </IonCol>
                 </IonRow>
@@ -175,13 +178,13 @@ const MainMenu: React.FC = () => {
                   <IonCol size="6">
                     <div style={{ textAlign: 'center' }}>
                       <h2>{credits}</h2>
-                      <p>Eco Credits</p>
+                      <p>{getUIText(UITextId.UI_ECO_CREDITS)}</p>
                     </div>
                   </IonCol>
                   <IonCol size="6">
                     <div style={{ textAlign: 'center' }}>
                       <h2>{pendingActions}</h2>
-                      <p>Pending Sync</p>
+                      <p>{getUIText(UITextId.UI_PENDING_SYNC)}</p>
                     </div>
                   </IonCol>
                 </IonRow>
@@ -193,35 +196,35 @@ const MainMenu: React.FC = () => {
         {/* Main Actions */}
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Game Actions</IonCardTitle>
+            <IonCardTitle>{getUIText(UITextId.UI_GAME_ACTIONS)}</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
             <IonGrid>
               <IonRow>
                 <IonCol size="12" sizeMd="6">
-                  <IonButton 
-                    expand="block" 
-                    routerLink="/collection" 
+                  <IonButton
+                    expand="block"
+                    routerLink="/collection"
                     fill="outline"
                     size="large"
                   >
                     <IonIcon icon={library} slot="start" />
-                    View Collection
+                    {getUIText(UITextId.UI_VIEW_COLLECTION)}
                   </IonButton>
                 </IonCol>
                 <IonCol size="12" sizeMd="6">
-                  <IonButton 
-                    expand="block" 
-                    routerLink="/deck-builder" 
+                  <IonButton
+                    expand="block"
+                    routerLink="/deck-builder"
                     fill="outline"
                     size="large"
                   >
                     <IonIcon icon={construct} slot="start" />
-                    Build Deck
+                    {getUIText(UITextId.UI_BUILD_DECK)}
                   </IonButton>
                 </IonCol>
               </IonRow>
-              
+
               <IonRow>
                 <IonCol size="12" sizeMd="6">
                   <IonButton
@@ -232,7 +235,7 @@ const MainMenu: React.FC = () => {
                     disabled={ownedSpecies < 8}
                   >
                     <IonIcon icon={flash} slot="start" />
-                    {ownedSpecies >= 8 ? 'Start Battle' : 'Need 8+ Species'}
+                    {ownedSpecies >= 8 ? getUIText(UITextId.UI_START_BATTLE) : getUIText(UITextId.UI_NEED_SPECIES_BATTLE)}
                   </IonButton>
                 </IonCol>
                 <IonCol size="12" sizeMd="6">
@@ -243,7 +246,7 @@ const MainMenu: React.FC = () => {
                     size="large"
                   >
                     <IonIcon icon={gift} slot="start" />
-                    Open Packs
+                    {getUIText(UITextId.UI_OPEN_PACKS)}
                   </IonButton>
                 </IonCol>
               </IonRow>
@@ -256,7 +259,7 @@ const MainMenu: React.FC = () => {
                     fill="clear"
                   >
                     <IonIcon icon={settings} slot="start" />
-                    Settings & Sync
+                    {getUIText(UITextId.UI_SETTINGS_SYNC)}
                   </IonButton>
                 </IonCol>
                 {isAuthenticated && !isGuestMode && (
@@ -268,7 +271,7 @@ const MainMenu: React.FC = () => {
                       color="primary"
                     >
                       <IonIcon icon={person} slot="start" />
-                      My Profile
+                      {getUIText(UITextId.UI_MY_PROFILE)}
                     </IonButton>
                   </IonCol>
                 )}
@@ -281,10 +284,10 @@ const MainMenu: React.FC = () => {
         {ownedSpecies === 0 && (
           <IonCard>
             <IonCardHeader>
-              <IonCardTitle>Getting Started</IonCardTitle>
+              <IonCardTitle>{getUIText(UITextId.UI_GETTING_STARTED)}</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
-              <p>Welcome! To start playing:</p>
+              <p>{getUIText(UITextId.UI_WELCOME_INSTRUCTIONS)}</p>
               <ol>
                 <li>Go to <strong>Settings</strong> and sign in as guest</li>
                 <li>Initialize your collection and open starter pack</li>

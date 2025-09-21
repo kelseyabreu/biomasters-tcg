@@ -55,7 +55,7 @@ import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
 import { SyncStatus } from '../components/collection/SyncStatus';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { useHistory } from 'react-router-dom';
-import { UserType } from '@kelseyabreu/shared';
+import { UserType, UITextId } from '@kelseyabreu/shared';
 import { auth } from '../config/firebase';
 import './Settings.css';
 import '../components/auth/AccountDeletionModal.css';
@@ -338,7 +338,7 @@ const Settings: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={colorPalette} />
-                Theme & Appearance
+                {getUIText(UITextId.UI_THEME_SETTINGS)}
               </IonCardTitle>
             </IonCardHeader>
             
@@ -399,7 +399,7 @@ const Settings: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={colorPalette} style={{ marginRight: '8px' }} />
-                Language Settings
+                {getUIText(UITextId.UI_LANGUAGE_SETTINGS)}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -827,7 +827,7 @@ const Settings: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={settings} />
-                Game Settings
+                {getUIText(UITextId.UI_GAME_SETTINGS)}
               </IonCardTitle>
             </IonCardHeader>
 
@@ -864,7 +864,7 @@ const Settings: React.FC = () => {
               <IonCardHeader>
                 <IonCardTitle>
                   <IonIcon icon={person} />
-                  Profile Management
+                  {getUIText(UITextId.UI_PROFILE_MANAGEMENT)}
                 </IonCardTitle>
               </IonCardHeader>
 

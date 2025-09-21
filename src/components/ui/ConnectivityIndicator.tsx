@@ -14,6 +14,8 @@ import {
   checkmarkCircleOutline
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../../state/hybridGameStore';
+import { useUILocalization } from '../../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 import './ConnectivityIndicator.css';
 
 export interface ConnectivityIndicatorProps {
@@ -40,6 +42,8 @@ export const ConnectivityIndicator: React.FC<ConnectivityIndicatorProps> = ({
     isGuestMode
   } = useHybridGameStore();
 
+  const { getUIText } = useUILocalization();
+
   // Format time ago helper
   const formatTimeAgo = (ms: number): string => {
     const seconds = Math.floor(ms / 1000);
@@ -60,7 +64,7 @@ export const ConnectivityIndicator: React.FC<ConnectivityIndicatorProps> = ({
         status: 'offline',
         icon: cloudOfflineOutline,
         color: 'medium',
-        text: 'Offline',
+        text: getUIText(UITextId.UI_OFFLINE),
         description: 'Working offline. Changes will sync when online.'
       };
     }
@@ -81,20 +85,20 @@ export const ConnectivityIndicator: React.FC<ConnectivityIndicatorProps> = ({
           status: 'syncing',
           icon: syncOutline,
           color: 'primary',
-          text: 'Syncing...',
+          text: getUIText(UITextId.UI_SYNCING),
           description: 'Synchronizing your data with the server.'
         };
 
       case 'success':
         const timeSinceSync = Date.now() - lastSyncTime;
         const isRecent = timeSinceSync < 60000; // Less than 1 minute
-        
+
         return {
           status: 'synced',
           icon: cloudDoneOutline,
           color: 'success',
-          text: isRecent ? 'Synced' : 'Online',
-          description: isRecent 
+          text: isRecent ? getUIText(UITextId.UI_SYNC_COMPLETE) : getUIText(UITextId.UI_ONLINE),
+          description: isRecent
             ? 'All changes synced successfully.'
             : `Last synced ${formatTimeAgo(timeSinceSync)} ago.`
         };
@@ -104,8 +108,8 @@ export const ConnectivityIndicator: React.FC<ConnectivityIndicatorProps> = ({
           status: 'error',
           icon: warningOutline,
           color: 'danger',
-          text: 'Sync failed',
-          description: syncError || 'Failed to sync. Tap to retry.'
+          text: getUIText(UITextId.UI_SYNC_FAILED),
+          description: syncError || getUIText(UITextId.UI_CLICK_TO_RETRY)
         };
 
       default:
@@ -113,7 +117,7 @@ export const ConnectivityIndicator: React.FC<ConnectivityIndicatorProps> = ({
           status: 'online',
           icon: wifiOutline,
           color: 'success',
-          text: 'Online',
+          text: getUIText(UITextId.UI_ONLINE),
           description: 'Connected and ready to sync.'
         };
     }
@@ -169,7 +173,7 @@ export const ConnectivityIndicator: React.FC<ConnectivityIndicatorProps> = ({
           </span>
           {isGuestMode && (
             <span className="connectivity-indicator__guest">
-              Guest Mode
+              {getUIText(UITextId.UI_GUEST_MODE)}
             </span>
           )}
         </div>

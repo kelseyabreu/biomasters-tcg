@@ -74,6 +74,7 @@ afterAll(async () => {
       });
     }
   } catch (error) {
+    console.error((error as Error).message);
     // Ignore cache cleanup errors
   }
 

@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   IonButton,
   IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
   IonItem,
   IonLabel,
   IonRadio,

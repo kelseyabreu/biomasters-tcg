@@ -130,7 +130,9 @@ export class FirebaseEmulatorManager {
         return;
       }
     } catch (error) {
-      // Emulators not running, need to start them
+        if (this.options.enableLogging) {
+            console.log(error.message);
+        }
     }
 
     // Start emulators (this would typically be done via npm script or external process)

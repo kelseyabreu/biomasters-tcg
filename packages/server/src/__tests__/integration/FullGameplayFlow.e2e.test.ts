@@ -15,7 +15,6 @@ import {
   GameAction
 } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
-import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 describe('🎮 Full Gameplay Flow - Producer, 2 Rabbits, Wolf', () => {
   let gameData: any;
   let engine: BioMastersEngine;

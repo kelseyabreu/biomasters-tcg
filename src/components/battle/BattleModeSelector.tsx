@@ -24,8 +24,6 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonSegment,
-  IonSegmentButton
 } from '@ionic/react';
 import {
   arrowBack,

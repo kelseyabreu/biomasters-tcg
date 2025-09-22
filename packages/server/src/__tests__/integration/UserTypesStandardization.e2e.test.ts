@@ -14,7 +14,7 @@
 import request from 'supertest';
 import app from '../../index';
 import { db, databaseAvailable } from '../setup';
-import { DatabaseUser, AuthenticatedUser, PublicUser, UserType, SyncStatus } from '@kelseyabreu/shared';
+import { AuthenticatedUser, UserType, SyncStatus } from '@kelseyabreu/shared';
 import { adaptDatabaseUserToUnified } from '../../database/types';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
@@ -81,7 +81,7 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
   describe('🗄️ Database Schema Validation', () => {
     test('should have all unified user fields in database', async () => {
       // Test that the migration added all required fields
-      const result = await db
+      await db
         .selectFrom('users')
         .select([
           'id', 'username', 'display_name', 'account_type', 'is_guest',
@@ -310,9 +310,7 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
         throw new Error(`Registration failed with status ${regResponse.status}: ${JSON.stringify(regResponse.body)}`);
       }
 
-      const freshUserId = regResponse.body.data.user.id;
       const freshUsername = regResponse.body.data.user.username;
-
       const profileUpdate = {
         displayName: 'Updated Display Name',
         bio: 'Updated bio text',
@@ -430,14 +428,11 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
         username: 'validation_test_user_' + Date.now()
       };
 
-      const regResponse = await request(app)
+      await request(app)
         .post('/api/auth/register')
         .set('Authorization', `Bearer ${uniqueFirebaseToken}`)
         .send(registrationData)
         .expect(201);
-
-      const freshUserId = regResponse.body.data.user.id;
-      const freshUsername = regResponse.body.data.user.username;
 
       const invalidUpdate = {
         displayName: 'A'.repeat(100) // Too long
@@ -489,7 +484,7 @@ describe('🔄 User Types Standardization - End-to-End Integration', () => {
 
   describe('🎯 Performance & Load Testing', () => {
     test('should handle concurrent user operations', async () => {
-      const concurrentRequests = Array.from({ length: 10 }, (_, i) => 
+      const concurrentRequests = Array.from({ length: 10 }, () =>
         request(app)
           .get('/api/auth/profile')
           .set('Authorization', `Bearer ${testFirebaseToken}`)

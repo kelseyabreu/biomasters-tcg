@@ -33,6 +33,7 @@ import {
   TaxoGenus,
   TaxoSpecies
 } from './enums';
+import { CardNameId, ScientificNameId } from './text-ids';
 
 // ============================================================================
 // SERIALIZATION UTILITIES
@@ -124,8 +125,8 @@ export interface Position {
 export interface CardData {
   id: string;                        // UUID database primary key
   cardId: number;                    // Integer game logic identifier (enum-based)
-  nameId: string;                    // Enum-based card name ID for localization
-  scientificNameId: string;          // Enum-based scientific name ID for localization
+  nameId: CardNameId;                    // Enum-based card name ID for localization
+  scientificNameId: ScientificNameId;          // Enum-based scientific name ID for localization
   descriptionId: string;             // Enum-based description ID for localization
   taxonomyId: string;                // Enum-based taxonomy ID for localization
 

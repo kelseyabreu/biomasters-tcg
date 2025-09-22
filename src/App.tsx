@@ -1,5 +1,5 @@
 import React from 'react';
-import { Redirect, Route, useHistory } from 'react-router-dom';
+import { Redirect, Route } from 'react-router-dom';
 import {
   IonApp,
   IonIcon,
@@ -147,17 +147,12 @@ const setupMobileLifecycle = () => {
 const AppContent: React.FC = () => {
   const { getUIText } = useUILocalization();
   const {
-    isAuthenticated,
-    firebaseUser,
     initializeAuth,
     loadSpeciesData,
     speciesLoaded,
-    battle,
     recoverActiveGame,
     hasPausedGame,
-    pausedGameMetadata,
-    showSyncConflicts,
-    resumePausedGame
+    showSyncConflicts
   } = useHybridGameStore();
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [showResumePrompt, setShowResumePrompt] = React.useState(false);

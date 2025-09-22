@@ -9,8 +9,7 @@ import {
   fillIonInput,
   clickIonButton,
   waitForModal,
-  switchAuthMode,
-  waitForAuthState
+  switchAuthMode
 } from './utils/test-helpers';
 
 test.describe('Infrastructure Fixes Verification', () => {

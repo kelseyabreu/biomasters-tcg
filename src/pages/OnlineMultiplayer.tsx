@@ -11,9 +11,6 @@ import {
   IonCardContent,
   IonButton,
   IonIcon,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonBadge,
   IonSegment,
   IonSegmentButton,
@@ -25,7 +22,6 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonModal,
-  IonAlert
 } from '@ionic/react';
 import {
   trophy,
@@ -34,7 +30,6 @@ import {
   statsChart,
   search,
   close,
-  time,
   star,
   medal,
   checkmark,
@@ -64,13 +59,10 @@ const OnlineMultiplayer: React.FC = () => {
     isOnline,
     findMatch,
     cancelMatchmaking,
-    refreshRating,
     refreshDailyQuests,
     refreshLeaderboard,
-    updateQuestProgress,
     claimQuestReward,
     acceptMatch,
-    activeBattle,
     userId,
     firebaseUser,
     isGuestMode,
@@ -103,7 +95,7 @@ const OnlineMultiplayer: React.FC = () => {
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [queueTimerInterval, setQueueTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [matchAccepted, setMatchAccepted] = useState(false);
-  const [playersReady, setPlayersReady] = useState<string[]>([]);
+  const [, setPlayersReady] = useState<string[]>([]);
 
   // Debug authentication state changes
   useEffect(() => {
@@ -364,6 +356,7 @@ const OnlineMultiplayer: React.FC = () => {
         color: 'primary'
       });
     } catch (error) {
+      console.log(error);
       notificationService.matchmaking.searchFailed('Failed to start matchmaking');
       setShowToast({
         show: true,
@@ -408,6 +401,7 @@ const OnlineMultiplayer: React.FC = () => {
         color: 'medium'
       });
     } catch (error) {
+      console.log(error);
       setShowToast({
         show: true,
         message: getUIText(UITextId.UI_FAILED_TO_CANCEL_MATCHMAKING),

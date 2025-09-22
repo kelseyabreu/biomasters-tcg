@@ -7,6 +7,7 @@
  */
 
 import { CardId } from '../enums';
+import { CardNameId } from '../text-ids';
 
 /**
  * Dynamic mapping cache for cardId to nameId
@@ -76,12 +77,13 @@ function getNameIdToCardIdMap(): Record<string, number> {
 }
 
 /**
- * Convert CardId (number) to nameId (string)
+ * Convert CardId (number) to nameId (CardNameId enum)
  * Used when game logic needs to interface with data files
  */
-export function cardIdToNameId(cardId: number): string | null {
+export function cardIdToNameId(cardId: number): CardNameId | null {
   const mapping = getCardMapping();
-  return mapping[cardId] || null;
+  const nameId = mapping[cardId];
+  return nameId ? (nameId as CardNameId) : null;
 }
 
 /**
@@ -122,16 +124,16 @@ export function getAllCardIds(): number[] {
 /**
  * Get all valid nameIds in the system
  */
-export function getAllNameIds(): string[] {
+export function getAllNameIds(): CardNameId[] {
   const mapping = getCardMapping();
-  return Object.values(mapping);
+  return Object.values(mapping) as CardNameId[];
 }
 
 /**
  * Batch convert array of CardIds to nameIds
  */
-export function cardIdsToNameIds(cardIds: number[]): string[] {
-  return cardIds.map(cardIdToNameId).filter((nameId): nameId is string => nameId !== null);
+export function cardIdsToNameIds(cardIds: number[]): CardNameId[] {
+  return cardIds.map(cardIdToNameId).filter((nameId): nameId is CardNameId => nameId !== null);
 }
 
 /**

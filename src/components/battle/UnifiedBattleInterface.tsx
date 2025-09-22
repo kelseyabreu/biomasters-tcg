@@ -3,7 +3,7 @@
  * Reusable battle component that works for both online and offline games
  */
 
-import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -32,7 +32,6 @@ import {
 
 import { GamePhase } from '@kelseyabreu/shared';
 import { useLocalization } from '../../contexts/LocalizationContext';
-import { useTheme } from '../../theme/ThemeProvider';
 import EcosystemGrid from '../game/EcosystemGrid';
 import PlayerCard from './PlayerCard';
 import DeckSelectionComponent from './DeckSelectionComponent';

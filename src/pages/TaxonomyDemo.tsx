@@ -25,9 +25,6 @@ import {
   IonSpinner,
   IonToast
 } from '@ionic/react';
-import { TaxonomyBrowser } from '../components/taxonomy/TaxonomyBrowser';
-import { sharedDataLoader } from '@kelseyabreu/shared';
-import { CardData } from '@kelseyabreu/shared';
 
 // For now, let's use a simpler approach and load JSON directly
 interface SimpleCardData {
@@ -52,7 +49,7 @@ export const TaxonomyDemo: React.FC = () => {
   const [diversityStats, setDiversityStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCard, setSelectedCard] = useState<SimpleCardData | null>(null);
+  const [selectedCard] = useState<SimpleCardData | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -123,11 +120,6 @@ export const TaxonomyDemo: React.FC = () => {
     };
   };
 
-  const handleCardSelect = (card: SimpleCardData) => {
-    setSelectedCard(card);
-    setToastMessage(`Selected: ${card.nameId}`);
-    setShowToast(true);
-  };
 
   const testQuickFilters = async () => {
     try {

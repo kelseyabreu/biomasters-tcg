@@ -304,7 +304,7 @@ describe('BioMasters Gameplay Mechanics - Modern', () => {
       // Add required cards to Alice's hand
       addCardsToHand('alice', [CardId.OAK_TREE]); // Oak Tree
 
-      let gameState = engine.getGameState();
+      const gameState = engine.getGameState();
       expect(gameState.actionsRemaining).toBe(3);
 
       // Play a card (consumes 1 action)

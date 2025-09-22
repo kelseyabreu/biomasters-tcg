@@ -8,7 +8,7 @@
  */
 
 import { StateStorage } from 'zustand/middleware';
-import { createStorageAdapter, StorageAdapter } from '../services/storageAdapter';
+import { createStorageAdapter } from '../services/storageAdapter';
 
 export interface UserScopedStorageOptions {
   getUserId: () => string | null;

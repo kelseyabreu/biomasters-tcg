@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
 import {
   IonPage,
   IonHeader,
@@ -15,9 +14,7 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonBadge,
   IonToast,
-  IonText
 } from '@ionic/react';
 import { 
   library, 
@@ -37,7 +34,6 @@ import { useUILocalization } from '../hooks/useCardLocalization';
 import { UITextId } from '@kelseyabreu/shared';
 
 const MainMenu: React.FC = () => {
-  const history = useHistory();
   const { getUIText } = useUILocalization();
 
   // Component cleanup tracking
@@ -48,9 +44,6 @@ const MainMenu: React.FC = () => {
     isAuthenticated,
     firebaseUser,
     isGuestMode,
-    allSpeciesCards,
-    speciesLoaded,
-    signOutUser,
     initializeOfflineCollection,
     refreshCollectionState
   } = useHybridGameStore();
@@ -110,20 +103,6 @@ const MainMenu: React.FC = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      setToastMessage('Signing out...');
-      setShowToast(true);
-      await signOutUser();
-      // Navigation is handled in the store, no need for success toast
-    } catch (error) {
-      console.error('Sign-out failed:', error);
-      setToastMessage('❌ Failed to sign out. Please try again.');
-      setShowToast(true);
-    }
-  };
-
-  // Removed pack opening functionality - moved to dedicated PackOpening page
 
   return (
     <IonPage data-testid="main-menu">

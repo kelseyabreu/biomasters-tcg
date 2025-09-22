@@ -3,7 +3,6 @@ import {
   fillIonInput,
   clickIonButton,
   waitForModal,
-  waitForFirebaseAuth,
   waitForAuthState,
   switchAuthMode
 } from './utils/test-helpers';

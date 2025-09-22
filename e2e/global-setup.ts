@@ -8,7 +8,7 @@ import { firebaseEmulatorManager, validateTestEnvironment } from './config/fireb
 import { logTestConfig } from './config/test-config';
 
 async function globalSetup(config: FullConfig) {
-  console.log('🚀 Setting up Playwright E2E test environment...');
+  console.log('🚀 Setting up Playwright E2E test environment...', config);
 
   // Log test configuration for debugging
   logTestConfig();

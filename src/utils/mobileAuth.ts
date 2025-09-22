@@ -140,35 +140,6 @@ export const configureMobileAuth = () => {
   }
 };
 
-/**
- * Mobile-optimized email verification
- */
-export const sendMobileEmailVerification = async (user: any) => {
-  try {
-    // Configure action code settings for mobile
-    const actionCodeSettings = {
-      url: `${window.location.origin}/auth?mode=verify`,
-      handleCodeInApp: true,
-      iOS: {
-        bundleId: 'com.biomasters.tcg'
-      },
-      android: {
-        packageName: 'com.biomasters.tcg',
-        installApp: true,
-        minimumVersion: '12'
-      }
-    };
-
-    // Send verification email with mobile-friendly settings
-    // This would use Firebase's sendEmailVerification with actionCodeSettings
-    console.log('📧 Sending mobile-optimized verification email...');
-    
-    return true;
-  } catch (error) {
-    console.error('❌ Error sending mobile email verification:', error);
-    throw error;
-  }
-};
 
 /**
  * Check if the current platform supports native authentication

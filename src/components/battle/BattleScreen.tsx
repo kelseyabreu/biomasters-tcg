@@ -16,8 +16,6 @@ import {
   IonCol,
   IonBadge,
   IonAlert,
-  IonSegment,
-  IonSegmentButton,
   IonLabel,
   IonList,
   IonItem,
@@ -25,23 +23,18 @@ import {
   IonChip
 } from '@ionic/react';
 import {
-  flash,
   shield,
-  heart,
   arrowBack,
   trophy,
   globe,
   school,
   star,
   play,
-  people,
-  book,
   rocket
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../../state/hybridGameStore';
 import { getCollectionStats, cardIdToNameId } from '@kelseyabreu/shared';
 import { EcosystemBoard } from '../game/EcosystemBoard';
-import { EventEffects } from '../game/EventEffects';
 import { TutorialSystem } from '../tutorial/TutorialSystem';
 import EnhancedHandCard from '../cards/EnhancedHandCard';
 import { calculatePlacementHighlights, calculateMovementHighlights, convertHighlightsToPositions } from '../../game-logic/positionHighlighting';
@@ -94,8 +87,6 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
     offlineCollection,
     setActiveBattle,
     clearActiveBattle,
-    createDeck,
-    setActiveDeck
   } = useHybridGameStore();
 
   // Get localization
@@ -325,7 +316,6 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
           cardId: cardId,
           nameId: nameId,
           id: nameId,
-          scientificNameId: `SCIENTIFIC_${nameId.replace('CARD_', '')}`,
           descriptionId: `DESC_${nameId.replace('CARD_', '')}`,
           taxonomyId: `TAXONOMY_${nameId.replace('CARD_', '')}`,
           trophicRole: Math.random() > 0.5 ? TrophicRole.HERBIVORE : TrophicRole.CARNIVORE,
@@ -773,7 +763,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
                 </IonCard>
               ) : (
                 <IonList>
-                  {campaignLevels.map((level, index) => (
+                  {campaignLevels.map((level, _index) => (
                     <IonItem
                       key={level.id}
                       button={level.unlocked}

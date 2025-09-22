@@ -5,7 +5,6 @@
 
 import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
-import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import {
   GameActionType,
   CardId
@@ -30,136 +29,8 @@ describe('Cost Payment System - Modern', () => {
     gameData = await loadTestGameData();
   });
   let gameSettings: GameSettings;
-  // let mockCardDatabase: Map<number, any>; // Unused - using real data now
-  // let mockAbilityDatabase: Map<number, any>; // Unused - using real data now
 
   beforeEach(() => {
-    // Create comprehensive mock card database for cost testing (unused - using real data now)
-    /* mockCardDatabase = new Map([
-      // Free producer
-      [1, {
-        cardId: 1,
-        commonName: 'Green Algae',
-        scientificName: 'Chlorella vulgaris',
-        trophicLevel: TrophicLevel.PRODUCER,
-        trophicCategory: TrophicCategoryId.PHOTOAUTOTROPH,
-        cost: null, // Free producer
-        victoryPoints: 1,
-        keywords: [KeywordId.AQUATIC],
-        abilities: [],
-        massKg: 0.001,
-        lifespanMaxDays: 30,
-        visionRangeM: 0,
-        smellRangeM: 0,
-        hearingRangeM: 0,
-        walkSpeedMPerHr: 0,
-        runSpeedMPerHr: 0,
-        swimSpeedMPerHr: 100,
-        flySpeedMPerHr: 0,
-        offspringCount: 1000,
-        gestationDays: 1,
-        taxonomy: { Kingdom: 'Plantae', Phylum: 'Chlorophyta' }
-      }],
-      // Primary consumer (herbivore)
-      [2, {
-        cardId: 2,
-        commonName: 'Small Fish',
-        scientificName: 'Piscis minimus',
-        trophicLevel: TrophicLevel.PRIMARY_CONSUMER,
-        trophicCategory: TrophicCategoryId.HERBIVORE,
-        cost: { Requires: [{ Category: TrophicCategoryId.PHOTOAUTOTROPH, Count: 1 }] },
-        victoryPoints: 2,
-        keywords: [KeywordId.AQUATIC],
-        abilities: [],
-        massKg: 0.1,
-        lifespanMaxDays: 365,
-        visionRangeM: 10,
-        smellRangeM: 5,
-        hearingRangeM: 20,
-        walkSpeedMPerHr: 0,
-        runSpeedMPerHr: 0,
-        swimSpeedMPerHr: 5000,
-        flySpeedMPerHr: 0,
-        offspringCount: 100,
-        gestationDays: 30,
-        taxonomy: { Kingdom: 'Animalia', Phylum: 'Chordata' }
-      }],
-      // Secondary consumer (carnivore)
-      [3, {
-        cardId: 3,
-        commonName: 'Medium Fish',
-        scientificName: 'Piscis medius',
-        trophicLevel: TrophicLevel.SECONDARY_CONSUMER,
-        trophicCategory: TrophicCategoryId.CARNIVORE,
-        cost: { Requires: [{ Category: TrophicCategoryId.HERBIVORE, Count: 1 }] },
-        victoryPoints: 3,
-        keywords: [KeywordId.AQUATIC],
-        abilities: [],
-        massKg: 2000,
-        lifespanMaxDays: 25550,
-        visionRangeM: 100,
-        smellRangeM: 1000,
-        hearingRangeM: 500,
-        walkSpeedMPerHr: 0,
-        runSpeedMPerHr: 0,
-        swimSpeedMPerHr: 60000,
-        flySpeedMPerHr: 0,
-        offspringCount: 10,
-        gestationDays: 365,
-        taxonomy: { Kingdom: 'Animalia', Phylum: 'Chordata' }
-      }],
-      // Apex predator
-      [4, {
-        cardId: 4,
-        commonName: 'Great White Shark',
-        scientificName: 'Carcharodon carcharias',
-        trophicLevel: TrophicLevel.APEX_PREDATOR,
-        trophicCategory: TrophicCategoryId.CARNIVORE,
-        cost: { Requires: [{ Category: TrophicCategoryId.CARNIVORE, Count: 1 }] },
-        victoryPoints: 4,
-        keywords: [KeywordId.AQUATIC],
-        abilities: [],
-        massKg: 2000,
-        lifespanMaxDays: 25550,
-        visionRangeM: 100,
-        smellRangeM: 1000,
-        hearingRangeM: 500,
-        walkSpeedMPerHr: 0,
-        runSpeedMPerHr: 0,
-        swimSpeedMPerHr: 60000,
-        flySpeedMPerHr: 0,
-        offspringCount: 10,
-        gestationDays: 365,
-        taxonomy: { Kingdom: 'Animalia', Phylum: 'Chordata' }
-      }],
-      // Terrestrial producer for variety
-      [5, {
-        cardId: 5,
-        commonName: 'Oak Tree',
-        scientificName: 'Quercus alba',
-        trophicLevel: TrophicLevel.PRODUCER,
-        trophicCategory: TrophicCategoryId.PHOTOAUTOTROPH,
-        cost: null, // Free producer
-        victoryPoints: 1,
-        keywords: [KeywordId.TERRESTRIAL],
-        abilities: [],
-        massKg: 1000,
-        lifespanMaxDays: 36500,
-        visionRangeM: 0,
-        smellRangeM: 0,
-        hearingRangeM: 0,
-        walkSpeedMPerHr: 0,
-        runSpeedMPerHr: 0,
-        swimSpeedMPerHr: 0,
-        flySpeedMPerHr: 0,
-        offspringCount: 0,
-        gestationDays: 0,
-        taxonomy: { Kingdom: 'Plantae', Phylum: 'Magnoliophyta' }
-      }]
-    ]); */
-
-    // mockAbilityDatabase = new Map();
-
     // Use proper grid size for 1v1 mode (2 players)
     const playerCount = 2;
     const gridSize = BioMastersEngine.getGridSize(playerCount);

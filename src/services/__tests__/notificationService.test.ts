@@ -81,7 +81,7 @@ describe('NotificationService', () => {
   });
 
   test('should handle matchmaking notifications', () => {
-    const id = notificationService.matchmaking.searchStarted('ranked_1v1');
+    notificationService.matchmaking.searchStarted('ranked_1v1');
     
     const active = notificationService.getActive();
     expect(active).toHaveLength(1);
@@ -179,7 +179,7 @@ describe('NotificationService', () => {
   });
 
   test('should auto-dismiss non-persistent notifications', async () => {
-    const id = notificationService.show({
+    notificationService.show({
       type: 'system',
       title: 'Auto Dismiss Test',
       message: 'This should auto-dismiss',

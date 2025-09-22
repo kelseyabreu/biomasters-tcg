@@ -1,4 +1,5 @@
 import { Card, CombatResult, CombatModifier, TrophicRole, Habitat } from '../types';
+import { CardNameId } from '@kelseyabreu/shared';
 
 /**
  * Generates a 2d10 roll (1-100)
@@ -97,7 +98,7 @@ export function calculateCombatModifiers(
   }
   
   // Pack hunting for wolves
-  if (attacker.nameId === 'wolf') {
+  if (attacker.nameId === CardNameId.CARD_GRAY_WOLF) {
     const otherCarnivores = friendlyCards.filter(card => 
       card.trophicRole === TrophicRole.CARNIVORE && card.cardId !== attacker.cardId
     );
@@ -135,7 +136,7 @@ export function resolveCombat(
   friendlyCards: Card[] = []
 ): CombatResult {
   // Calculate base success rate
-  let baseSuccessRate = hasTrophicAdvantage(attacker, defender) ? 60 : 50;
+  const baseSuccessRate = hasTrophicAdvantage(attacker, defender) ? 60 : 50;
   
   // Calculate modifiers
   const modifiers = calculateCombatModifiers(attacker, defender, environment, friendlyCards);

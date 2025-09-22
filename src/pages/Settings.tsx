@@ -39,16 +39,13 @@ import {
   eyedrop,
   contrast,
   accessibility,
-  leaf,
-  water,
-  snow,
+
   trash,
   person,
   sync
 } from 'ionicons/icons';
 import { useTheme, GridCellStyle, CardVisualStyle } from '../theme/ThemeProvider';
 import { ThemeConfig, PREDEFINED_THEMES } from '../theme/themeSystem';
-import EnhancedEcosystemCard from '../components/battle/EnhancedEcosystemCard';
 import { useUILocalization } from '../hooks/useCardLocalization';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { LanguageSelector } from '../components/localization/LanguageSelector';
@@ -56,7 +53,7 @@ import { AccountDeletionModal } from '../components/auth/AccountDeletionModal';
 import { SyncStatus } from '../components/collection/SyncStatus';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { useHistory } from 'react-router-dom';
-import { UserType, UITextId } from '@kelseyabreu/shared';
+import { UITextId } from '@kelseyabreu/shared';
 import { auth } from '../config/firebase';
 import './Settings.css';
 import '../components/auth/AccountDeletionModal.css';
@@ -82,28 +79,6 @@ const Settings: React.FC = () => {
 
   const { getUIText } = useUILocalization();
   const { currentLanguage, changeLanguage } = useLocalization();
-
-  // Sample card data for preview
-  const sampleGridCard = {
-    instanceId: 'preview-card',
-    cardId: 1,
-    ownerId: 'human',
-    position: { x: 0, y: 0 }
-  };
-
-  const sampleCardData = {
-    cardId: 1,
-    nameId: 'grass' as any,
-    scientificNameId: 'poaceae' as any,
-    trophicRole: 'producer' as any,
-    trophicLevel: 1,
-    victoryPoints: 2,
-    energyCost: 1,
-    domains: [0],
-    conservationStatus: 'least_concern' as any,
-    abilities: [],
-    attachments: []
-  };
 
   // Language functionality will be handled by the LanguageSelector component
 

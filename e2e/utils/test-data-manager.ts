@@ -3,9 +3,8 @@
  * Handles creation, verification, and cleanup of test data
  */
 
-import { Page, APIRequestContext } from '@playwright/test';
+import { APIRequestContext } from '@playwright/test';
 import { FirebaseTestManager, TestUser, createTestUserData } from './firebase-test-utils';
-import { TEST_CONSTANTS } from '../config/firebase-test-config';
 
 export interface TestDataManager {
   createTestUser(userData?: Partial<TestUser>): Promise<TestUser>;
@@ -65,8 +64,7 @@ export class PlaywrightTestDataManager implements TestDataManager {
 
       const dbUser = await response.json();
       const completeUser: TestUser = {
-        ...firebaseUser,
-        databaseId: dbUser.data.user.id
+        ...firebaseUser
       };
 
       this.createdUsers.push(completeUser);
@@ -293,7 +291,7 @@ export class DatabaseVerificationUtils {
       result.transactionsDeleted = transactionsResponse.status() === 404;
 
     } catch (error) {
-      result.errors.push(`Deletion verification failed: ${error}`);
+      result.errors.push(`Deletion verification failed: ${error} for ${email}`);
     }
 
     return result;

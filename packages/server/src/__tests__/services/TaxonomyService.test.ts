@@ -5,9 +5,8 @@
  */
 
 import { TaxonomyService } from '../../services/TaxonomyService';
-import { 
-  TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass,
-  TaxoOrder, TaxoFamily, TaxoGenus, TaxoSpecies 
+import {
+  TaxoDomain, TaxoKingdom, TaxoPhylum, TaxoClass
 } from '@kelseyabreu/shared';
 
 // Mock the database queries
@@ -19,16 +18,14 @@ jest.mock('../../database/queries/cardQueries', () => ({
 }));
 
 import {
-  getCardsByTaxonomyLevel,
+  getCardsByTaxonomyLevel
   getTaxonomicDiversityStats,
   getRelatedCards,
-  getAllCardsWithRelations
 } from '../../database/queries/cardQueries';
 
 const mockGetCardsByTaxonomyLevel = getCardsByTaxonomyLevel as jest.MockedFunction<typeof getCardsByTaxonomyLevel>;
 const mockGetTaxonomicDiversityStats = getTaxonomicDiversityStats as jest.MockedFunction<typeof getTaxonomicDiversityStats>;
 const mockGetRelatedCards = getRelatedCards as jest.MockedFunction<typeof getRelatedCards>;
-const mockGetAllCardsWithRelations = getAllCardsWithRelations as jest.MockedFunction<typeof getAllCardsWithRelations>;
 
 describe('TaxonomyService', () => {
   beforeEach(() => {

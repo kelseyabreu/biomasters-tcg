@@ -3,10 +3,8 @@
  * Tests basic Pub/Sub functionality and message flow
  */
 
-import { PubSub, Message } from '@google-cloud/pubsub';
+import { Message } from '@google-cloud/pubsub';
 import { MatchmakingService } from '../../services/MatchmakingService';
-import { MatchmakingWorker } from '../../workers/MatchmakingWorker';
-import { MatchNotificationService } from '../../services/MatchNotificationService';
 import { pubsub, PUBSUB_TOPICS, PUBSUB_SUBSCRIPTIONS } from '../../config/pubsub';
 
 describe('Pub/Sub Connectivity Tests', () => {

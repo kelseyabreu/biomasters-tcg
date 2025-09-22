@@ -12,9 +12,6 @@ import {
   IonButton,
   IonIcon,
   IonBadge,
-  IonToggle,
-  IonItem,
-  IonLabel,
   IonGrid,
   IonRow,
   IonCol
@@ -25,11 +22,9 @@ import {
   chevronUpOutline,
   chevronDownOutline,
   closeOutline,
-  cardOutline,
-  swapHorizontalOutline
+  cardOutline
 } from 'ionicons/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BasePlayer } from '@kelseyabreu/shared';
 import OrganismRenderer from '../OrganismRenderer';
 import './PlayerHandDisplay.css';
 

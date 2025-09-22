@@ -3,20 +3,16 @@
  * Updated to use proper enums and interfaces from shared module
  */
 
-import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
+import { BioMastersEngine, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
   GamePhase,
-  TurnPhase,
-  TrophicLevel,
-  TrophicCategoryId,
-  KeywordId
+  TurnPhase
 } from '@kelseyabreu/shared';
 
 describe('BioMasters Engine Modern Tests', () => {
   let engine: BioMastersEngine;
-  let gameSettings: GameSettings;
   let gameData: any;
 
   beforeAll(async () => {

@@ -4,13 +4,10 @@
  * Updated to use proper enums, data-driven approach, and modern interfaces
  */
 
-import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
+import { BioMastersEngine, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
-  GameActionType,
-  TrophicLevel,
-  TrophicCategoryId,
-  KeywordId
+  GameActionType
 } from '@kelseyabreu/shared';
 
 describe('Ability Effects and Triggers - Modern', () => {

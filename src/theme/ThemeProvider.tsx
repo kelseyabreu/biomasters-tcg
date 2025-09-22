@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { ThemeConfig, ThemeManager, themeManager, PREDEFINED_THEMES } from './themeSystem';
+import { ThemeConfig, themeManager, PREDEFINED_THEMES } from './themeSystem';
 
 export type GridCellStyle = 'classic' | 'hexagon' | 'rounded' | 'minimal' | 'neon' | 'organic';
 export type CardVisualStyle = 'style1' | 'style2' | 'style3' | 'style4';

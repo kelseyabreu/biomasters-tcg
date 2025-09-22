@@ -398,7 +398,7 @@ router.post('/',
 
       console.log('🔍 Initializing server state...');
       let serverCredits = currentCredits;
-      let serverXP = currentXP;
+      const serverXP = currentXP;
       const serverCollection = new Map(
         currentCollection.map(card => [card.card_id.toString(), card])
       );

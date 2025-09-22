@@ -107,7 +107,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
           organismContent.appendChild(img);
           return; // Exit early if image loads successfully
         }
-      } catch (error) {
+      } catch {
         // Silently fall back to DOM rendering
       }
 
@@ -150,7 +150,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
           } else {
             createFallback(organismContent);
           }
-        } catch (error) {
+        } catch {
           // Fallback to simple representation
           createFallback(organismContent);
         }

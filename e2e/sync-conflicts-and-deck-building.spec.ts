@@ -12,24 +12,13 @@ import {
   clickIonButton,
   waitForAuthState,
   waitForModal,
-  waitForToast,
   switchAuthMode,
-  clearBrowserData,
   performRefresh
 } from './utils/test-helpers';
 import { FirebaseTestManager } from './utils/firebase-test-utils';
 import {
-  createIsolatedTestEnvironment,
-  EnhancedTestIsolation,
-  IsolatedTestContext
+  EnhancedTestIsolation
 } from './utils/enhanced-test-isolation';
-
-// Test configuration
-const TEST_CONFIG = {
-  baseURL: process.env.PLAYWRIGHT_TEST_BASEURL || 'http://localhost:5173',
-  apiURL: process.env.PLAYWRIGHT_API_BASEURL || 'http://localhost:3001',
-  timeout: 30000
-};
 
 // Helper function to create unique test users
 function createUniqueTestUser(prefix: string) {
@@ -686,6 +675,7 @@ async function waitForAppLoad(page: Page) {
         // App is ready if it's not initializing AND has some content
         return !hasInitializing && (hasReactRoot || hasIonContent || hasTabBar);
       } catch (error) {
+        console.error('Error in waitForAppLoad:', error);
         return false;
       }
     }, { timeout: 45000 });
@@ -726,6 +716,7 @@ async function waitForCollectionLoad(page: Page) {
 
         return hasStore && isHydrated && hasBasicCollection;
       } catch (error) {
+        console.error('Error in waitForCollectionLoad:', error);
         return false;
       }
     }, { timeout: 45000 });
@@ -931,7 +922,7 @@ async function safeNavigateToTab(page: Page, tabName: string) {
           await tabButton.click({ timeout: 5000 });
           tabClicked = true;
           break;
-        } catch (error) {
+        } catch {
           continue; // Try next selector
         }
       }
@@ -1419,7 +1410,7 @@ async function openMultiplePremiumPacks(page: Page, packCount: number): Promise<
   return allCards;
 }
 
-async function buildDeckWith3x8Cards(page: Page, availableCards: any[]): Promise<any> {
+async function buildDeckWith3x8Cards(page: Page): Promise<any> {
   console.log('🏗️ Building deck with 3 quantity of 8 unique cards...');
 
   // Navigate to deck builder
@@ -1627,7 +1618,7 @@ async function verifySyncButtonOnCollections(page: Page) {
   console.log('✅ Sync button verification completed successfully');
 }
 
-async function verifyCollectionData(page: Page, expectedCards: any[]) {
+async function verifyCollectionData(page: Page) {
   console.log('🔍 Verifying collection data...');
 
   try {
@@ -1844,96 +1835,6 @@ async function triggerSyncAndResolveConflicts(page: Page, resolution: 'server' |
   console.log('✅ Sync and conflict resolution completed');
 }
 
-/**
- * Verify sync completed successfully
- */
-async function verifySyncSuccess(page: Page) {
-  console.log('🔍 Verifying sync completed successfully...');
-
-  const syncState = await page.evaluate(() => {
-    const store = (window as any).useHybridGameStore?.getState?.();
-    return {
-      syncStatus: store?.syncStatus,
-      lastSyncTime: store?.lastSyncTime,
-      pendingActions: store?.pendingActions?.length || 0,
-      hasConflicts: store?.showSyncConflicts || false,
-      syncError: store?.syncError || null
-    };
-  });
-
-  console.log('📊 Final sync state:', syncState);
-
-  // If sync is in error state, log the error for debugging
-  if (syncState.syncStatus === 'error') {
-    console.log('❌ Sync error detected:', syncState.syncError);
-
-    // For now, we'll accept that sync might be in error state due to collection integrity issues
-    // but we still want to verify that conflicts were handled properly
-    console.log('⚠️ Sync completed with error, but checking if conflicts were resolved...');
-  }
-
-  // Verify no conflicts remain (this is the main goal)
-  expect(syncState.hasConflicts).toBe(false);
-
-  // Verify pending actions were processed
-  expect(syncState.pendingActions).toBe(0);
-
-  console.log('✅ Sync verification completed - conflicts resolved and pending actions processed');
-}
-
-/**
- * Create local changes that will conflict with server state
- */
-async function createLocalChanges(page: Page) {
-  console.log('📝 Creating local changes that will conflict...');
-
-  // Add some credits locally that will conflict with server state
-  const localChanges = await page.evaluate(() => {
-    const store = (window as any).useHybridGameStore?.getState?.();
-    if (store && store.addCredits) {
-      // Add credits locally (this will create a pending action)
-      store.addCredits(100);
-
-      // Also manually add a pending action to ensure conflicts
-      const action = {
-        id: `test-action-${Date.now()}`,
-        type: 'ADD_CREDITS',
-        payload: { amount: 100 },
-        timestamp: Date.now(),
-        userId: store.user?.uid || 'test-user'
-      };
-
-      // Force add to pending actions if the method exists
-      if (store.addPendingAction) {
-        store.addPendingAction(action);
-      }
-
-      return {
-        actionAdded: true,
-        actionId: action.id,
-        pendingActions: store.pendingActions?.length || 0,
-        credits: store.credits || 0,
-        storeState: {
-          hasAddCredits: !!store.addCredits,
-          hasAddPendingAction: !!store.addPendingAction,
-          hasUser: !!store.user
-        }
-      };
-    }
-    return {
-      actionAdded: false,
-      error: 'Store or addCredits method not found',
-      storeExists: !!store
-    };
-  });
-
-  console.log('📝 Local changes created:', localChanges);
-
-  // Wait a moment for the changes to be processed
-  await page.waitForTimeout(1000);
-
-  return localChanges;
-}
 
 /**
  * Capture current game state for comparison
@@ -1964,7 +1865,7 @@ async function captureGameState(page: Page) {
 /**
  * Validate that server version was applied after conflict resolution
  */
-async function validateServerVersionApplied(page: Page, stateBefore: any, stateAfter: any) {
+async function validateServerVersionApplied(_page: Page, stateBefore: any, stateAfter: any) {
   console.log('🔍 Validating that server version was applied...');
 
   // Check that conflicts were resolved
@@ -1997,7 +1898,7 @@ async function validateServerVersionApplied(page: Page, stateBefore: any, stateA
 /**
  * Validate that user version was applied after conflict resolution
  */
-async function validateUserVersionApplied(page: Page, stateBefore: any, stateAfter: any) {
+async function validateUserVersionApplied(_page: Page, stateBefore: any, stateAfter: any) {
   console.log('🔍 Validating that user version was applied...');
 
   // Check that conflicts were resolved

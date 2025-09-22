@@ -1611,7 +1611,7 @@ export class BioMastersEngine {
       for (const requirement of cost.Requires) {
         let requiredCount = requirement.Count;
 
-        let availableCards = playerCards.filter(card => {
+        const availableCards = playerCards.filter(card => {
           const cardData = this.cardDatabase.get(card.cardId);
           if (!cardData) return false;
 

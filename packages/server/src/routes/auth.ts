@@ -627,7 +627,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
   });
 
   // If device sync state exists but no active key, check if the expected key exists but is inactive
-  let expectedKeyVersion = deviceSyncState?.current_key_version;
+  const expectedKeyVersion = deviceSyncState?.current_key_version;
   if (deviceSyncState && !currentActiveKey && expectedKeyVersion) {
     console.log('🔍 [OFFLINE-KEY] Device sync state exists but no active key, checking expected version:', expectedKeyVersion);
 

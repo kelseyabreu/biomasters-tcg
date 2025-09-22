@@ -9,13 +9,12 @@ import { db } from '../../database/kysely';
 import { MatchmakingService } from '../../services/MatchmakingService';
 import { MatchmakingWorker } from '../../workers/MatchmakingWorker';
 import { MatchNotificationService } from '../../services/MatchNotificationService';
-import { pubsub, initializePubSub } from '../../config/pubsub';
+import { initializePubSub } from '../../config/pubsub';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import jwt from 'jsonwebtoken';
 // Removed @upstash/redis - using ioredis with Google Cloud Memorystore instead
 import { randomUUID } from 'crypto';
-import { io as Client } from 'socket.io-client';
 import { setupGameSocket } from '../../websocket/gameSocket';
 import { createTestEnvironment, setupTestNamespaceCleanup, TestNamespaceManager } from '../helpers/testNamespace';
 import { setMatchmakingService } from '../../routes/matchmaking';

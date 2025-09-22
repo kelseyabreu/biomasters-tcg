@@ -489,7 +489,7 @@ router.post('/grant-currency', requireAdmin, strictRateLimiter, asyncHandler(asy
   };
 
   // Find user by identifier (username, email, or ID)
-  let user = await db
+  const user = await db
     .selectFrom('users')
     .select(['id', 'username', 'email', 'gems', 'coins', 'dust', 'eco_credits'])
     .where((eb) => {
@@ -592,7 +592,7 @@ router.post('/grant-card', requireAdmin, strictRateLimiter, asyncHandler(async (
   };
 
   // Find user by identifier (username, email, or ID)
-  let user = await db
+  const user = await db
     .selectFrom('users')
     .select(['id', 'username', 'email'])
     .where((eb) => {

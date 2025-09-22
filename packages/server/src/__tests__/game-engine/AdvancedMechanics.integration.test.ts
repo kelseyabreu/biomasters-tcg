@@ -6,7 +6,6 @@
 
 import { BioMastersEngine, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
-import { createMockLocalizationManager } from '../../utils/mockLocalizationManager';
 import { GameActionType } from '@kelseyabreu/shared';
 
 describe('🧬 Advanced Mechanics Integration Tests', () => {

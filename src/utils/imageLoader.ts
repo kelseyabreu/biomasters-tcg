@@ -81,8 +81,6 @@ export function getImagePath(card: CardType, options: ImageLoadOptions = {}): st
 export function checkImageExists(imagePath: string, timeout: number = 5000): Promise<boolean> {
   return new Promise((resolve) => {
     const img = new Image();
-    let timeoutId: NodeJS.Timeout;
-
     const cleanup = () => {
       if (timeoutId) clearTimeout(timeoutId);
       img.onload = null;
@@ -100,7 +98,7 @@ export function checkImageExists(imagePath: string, timeout: number = 5000): Pro
     };
 
     // Set timeout
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       cleanup();
       resolve(false);
     }, timeout);
@@ -118,37 +116,37 @@ export function checkImageExists(imagePath: string, timeout: number = 5000): Pro
  * @returns Promise with load result
  */
 export async function loadCardImage(
-  card: CardType,
-  options: ImageLoadOptions = {}
+    card: CardType,
+    options: ImageLoadOptions = {}
 ): Promise<ImageLoadResult> {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+    const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  // Try each supported format
-  for (const format of opts.supportedFormats) {
-    // Try multiple naming conventions
-    const possibleFileNames = getImageFileNames(card.nameId, format);
+    // Try each supported format
+    for (const format of opts.supportedFormats) {
+        // Try multiple naming conventions
+        const possibleFileNames = getImageFileNames(card.nameId, format);
 
-    for (const fileName of possibleFileNames) {
-      const imagePath = `${opts.baseImagePath}/${fileName}`;
+        for (const fileName of possibleFileNames) {
+            const imagePath = `${opts.baseImagePath}/${fileName}`;
 
-      try {
-        const exists = await checkImageExists(imagePath, opts.timeout);
-        if (exists) {
-          return {
-            success: true,
-            imagePath
-          };
+            try {
+                const exists = await checkImageExists(imagePath, opts.timeout);
+                if (exists) {
+                    return {
+                        success: true,
+                        imagePath
+                    };
+                }
+            } catch (error : any) {
+                console.log(error.message);
+            }
         }
-      } catch (error) {
-        // Silently continue to next naming convention
-      }
     }
-  }
 
-  return {
-    success: false,
-    error: `No image found for card ${card.nameId} in any naming convention with formats: ${opts.supportedFormats.join(', ')}`
-  };
+    return {
+        success: false,
+        error: `No image found for card ${card.nameId} in any naming convention with formats: ${opts.supportedFormats.join(', ')}`
+    };
 }
 
 /**

@@ -32,7 +32,7 @@ router.get('/:gameMode', async (req: Request, res: Response) => {
     }
 
     // Use the leaderboard view created in migration
-    let query = db
+    const query = db
       .selectFrom('leaderboard_view')
       .selectAll()
       .where('games_played', '>=', 5) // Minimum games for ranking

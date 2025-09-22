@@ -5,6 +5,8 @@
 
 import { initializePubSub, healthCheck } from '../config/pubsub';
 import { MatchmakingService } from '../services/MatchmakingService';
+import { GameActionType } from '@kelseyabreu/shared';
+import * as shared from '@kelseyabreu/shared';
 
 describe('Build and Connectivity Tests', () => {
   test('should build and initialize Pub/Sub configuration', async () => {
@@ -28,12 +30,10 @@ describe('Build and Connectivity Tests', () => {
 
   test('should export all required types', () => {
     // Test that shared enums are available (these are runtime values)
-    const { GameActionType } = require('@kelseyabreu/shared');
     expect(GameActionType).toBeDefined();
     expect(GameActionType.PLAY_CARD).toBe('PLAY_CARD');
 
     // Test that we can import the shared package successfully
-    const shared = require('@kelseyabreu/shared');
     expect(shared).toBeDefined();
   });
 });

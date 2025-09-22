@@ -50,7 +50,7 @@ export class D100ProbabilitySystem {
    * Calculate predation success probability based on real biological traits
    */
   static calculatePredationProbability(scenario: CombatScenario): ProbabilityBreakdown {
-    const { attacker, defender, environment } = scenario;
+    const { attacker, defender } = scenario;
     
     // Base predation rates from real biology
     const baseChance = this.getBasePredationRate(attacker, defender);

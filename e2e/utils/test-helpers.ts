@@ -3,7 +3,7 @@
  * Provides robust helpers for web, iOS, and Android compatibility
  */
 
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 /**
  * Firefox-specific error detection and handling
@@ -81,7 +81,7 @@ export async function fillIonInput(page: Page, testId: string, value: string, op
             filled = true;
             break;
           }
-        } catch (error) {
+        } catch {
           // Continue to next selector
           continue;
         }
@@ -264,7 +264,7 @@ export async function ensureModalsAreClosed(page: Page, timeout = 5000) {
     // Verify DOM is stable by checking no modals are visible
     const visibleModals = page.locator('ion-modal:visible');
     await expect(visibleModals).toHaveCount(0);
-  } catch (error) {
+  } catch {
     console.log('Warning: Could not verify all modals are closed, continuing...');
   }
 }
@@ -408,7 +408,7 @@ export async function waitForAppInitialization(page: Page, options?: {
   timeout?: number;
   skipCDPCheck?: boolean;
 }) {
-  const { timeout = 60000, skipCDPCheck = false } = options || {}; // Increased timeout
+  const { timeout = 60000 } = options || {}; // Increased timeout
 
   try {
     // Wait for basic app structure
@@ -417,7 +417,7 @@ export async function waitForAppInitialization(page: Page, options?: {
     // Wait for network idle state first to ensure resources are loaded
     try {
       await page.waitForLoadState('networkidle', { timeout: 20000 });
-    } catch (error) {
+    } catch {
       console.log('Network idle timeout, continuing...');
     }
 
@@ -446,7 +446,7 @@ export async function waitForAppInitialization(page: Page, options?: {
 
           // App is ready if we have auth elements OR we're on a main page OR we have content AND React is ready AND no errors
           return (authElements.length > 0 || mainMenu !== null || authPage !== null || hasContent) && reactReady && !hasError;
-        } catch (error) {
+        } catch {
           return false;
         }
       },
@@ -460,7 +460,7 @@ export async function waitForAppInitialization(page: Page, options?: {
           const loadingElements = document.querySelectorAll('ion-loading, .loading, [data-testid*="loading"]');
           const initializingText = document.body.textContent?.includes('Initializing...') || false;
           return loadingElements.length === 0 && !initializingText;
-        } catch (error) {
+        } catch {
           return true; // If we can't check, assume loading is done
         }
       },

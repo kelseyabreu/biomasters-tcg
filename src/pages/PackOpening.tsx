@@ -29,7 +29,6 @@ import {
   gift,
   star,
   diamond,
-  flash,
   sparkles,
   trophy
 } from 'ionicons/icons';
@@ -44,8 +43,6 @@ const PackOpening: React.FC = () => {
     offlineCollection,
     isAuthenticated,
     isGuestMode,
-    openPack,
-    openStarterPack,
     hasStarterPack
   } = useHybridGameStore();
 
@@ -53,7 +50,7 @@ const PackOpening: React.FC = () => {
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [isOpening, setIsOpening] = useState<string | null>(null);
+  const [isOpening] = useState<string | null>(null);
   const [showPackOpener, setShowPackOpener] = useState(false);
   const [selectedPackType, setSelectedPackType] = useState<string | null>(null);
 

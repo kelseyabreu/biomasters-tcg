@@ -1,5 +1,19 @@
-# Simple Redis SSH tunnel script for BioMasters TCG
-Write-Host "Starting Redis SSH tunnel..." -ForegroundColor Green
+# ============================================================================
+# Redis SSH Tunnel Script - CI/CD & BUILD PIPELINE
+# ============================================================================
+# Purpose: Redis tunnel setup for automated environments (CI/CD, build pipeline)
+# Authentication: Uses service account key (gcp-keys/gcp-dev-key.json)
+# Usage: powershell -ExecutionPolicy Bypass -File "connect-redis-tunnel.ps1"
+#
+# For Local Development: Use start-redis-tunnel.bat instead (npm run redis:tunnel)
+#
+# Requirements:
+# - Service account: biomasters-server-dev@biomasters-tcg.iam.gserviceaccount.com
+# - Permissions: roles/compute.instanceAdmin.v1
+# - Fresh service account key in gcp-keys/gcp-dev-key.json
+# ============================================================================
+
+Write-Host "Starting Redis SSH tunnel for CI/CD..." -ForegroundColor Green
 
 # Check if gcloud is available
 try {

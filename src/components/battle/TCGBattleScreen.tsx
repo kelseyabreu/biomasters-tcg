@@ -22,7 +22,6 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonBadge,
   IonAlert,
   IonProgressBar
 } from '@ionic/react';
@@ -39,16 +38,13 @@ import {
 import useHybridGameStore from '../../state/hybridGameStore';
 import { useLocalization } from '../../contexts/LocalizationContext';
 import { useTheme } from '../../theme/ThemeProvider';
-import OrganismRenderer from '../OrganismRenderer';
 
 import { unifiedGameService } from '../../services/UnifiedGameService';
 import { getGameSocket } from '../../services/gameSocket';
 import { AIDifficulty, GamePhase } from '@kelseyabreu/shared';
 import { AIStrategyFactory } from '@kelseyabreu/shared';
-import PlayerStatsDisplay from '../ui/PlayerStatsDisplay';
 import EndGameModal from '../ui/EndGameModal';
 import EcosystemGrid from '../game/EcosystemGrid';
-import PlayerHandDisplay from './PlayerHandDisplay';
 import PlayerCard from './PlayerCard';
 import TurnTimer from './TurnTimer';
 import GameLog, { GameLogEntry } from './GameLog';
@@ -1246,33 +1242,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
               return (
                 <div>
-                  {/* OLD: Commented out for reference - Player Stats Cards */}
-                  {/* <div className="enhanced-game-status">
-                    <IonGrid className="player-stats-grid">
-                      <IonRow>
-                        {gameProgress.allPlayerStats.map((playerStats: any) => (
-                          <IonCol
-                            key={playerStats.playerId}
-                            size="6"
-                          >
-                            <PlayerStatsDisplay
-                              stats={playerStats}
-                              compact={false}
-                              showActions={true}
-                              className={playerStats.isCurrentPlayer ? 'current-player-stats' : 'opponent-stats clickable'}
-                              onClick={!playerStats.isCurrentPlayer ? () => {
-                                // Show opposition hand when clicking on opponent stats
-                                selectOpponent(playerStats.playerId);
-                                if (!oppositionHandState.isVisible) {
-                                  toggleOppositionHandVisibility();
-                                }
-                              } : undefined}
-                            />
-                          </IonCol>
-                        ))}
-                      </IonRow>
-                    </IonGrid>
-                  </div> */}
 
                 </div>
               );
@@ -1506,48 +1475,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           );
         })()}
 
-        {/* OLD: Commented out for reference - Player Hand */}
-        {/* {gameState.gamePhase === GamePhase.PLAYING && currentPlayer && (
-          <PlayerHandDisplay
-            player={currentPlayer}
-            title={`Your Hand (${currentPlayer.hand.length})`}
-            visibilityMode="full"
-            isInteractive={true}
-            selectedCardId={selectedHandCardId}
-            onCardSelect={handleCardSelect}
-            getCardData={getCardData}
-            getLocalizedCardName={getLocalizedCardName}
-            getLocalizedScientificName={getLocalizedScientificName}
-          />
-        )} */}
-
-        {/* OLD: Commented out for reference - Opposition Hand */}
-        {/* {gameState.gamePhase === GamePhase.PLAYING && oppositionHandState.isVisible && (() => {
-          const opponents = gameState.players.filter((player: any) => player.id !== 'human');
-          const selectedOpponent = opponents.find((player: any) =>
-            player.id === oppositionHandState.selectedOpponentId
-          ) || opponents[0];
-
-          if (!selectedOpponent) return null;
-
-          return (
-            <PlayerHandDisplay
-              player={selectedOpponent}
-              title={`${selectedOpponent.name} Hand (${selectedOpponent.hand.length})`}
-              visibilityMode={oppositionHandState.showCardDetails ? 'full' : 'hidden'}
-              isCollapsible={true}
-              isExpanded={oppositionHandState.isExpanded}
-              onToggleExpansion={toggleOppositionHandExpansion}
-              onClose={toggleOppositionHandVisibility}
-              onToggleVisibility={toggleOppositionCardDetails}
-              isInteractive={false}
-              getCardData={getCardData}
-              getLocalizedCardName={getLocalizedCardName}
-              getLocalizedScientificName={getLocalizedScientificName}
-              className="opposition-hand"
-            />
-          );
-        })()*/} 
 
         {/* Card Drawing Animation - Full Screen Overlay */}
         {isDrawingCards && (

@@ -202,7 +202,7 @@ describe('Final Turn System Integration Tests', () => {
       payload: {}
     });
 
-    let updatedState = engine.getGameState();
+    const updatedState = engine.getGameState();
     expect(updatedState.gamePhase).toBe('final_turn');
     expect(updatedState.finalTurnTriggeredBy).toBe('player2');
 

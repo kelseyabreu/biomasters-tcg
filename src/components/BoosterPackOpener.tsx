@@ -60,8 +60,8 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
     console.log('Cards received:', result.pack.cards.map(c => {
       // Get localized card data using enum-based localization system
       const localizedCard = {
-        displayName: localization.getCardName(c.nameId as any),
-        displayScientificName: localization.getScientificName(c.scientificNameId as any),
+        displayName: localization.getCardName(c.nameId),
+        displayScientificName: localization.getScientificName(c.scientificNameId),
         nameId: c.nameId,
         scientificNameId: c.scientificNameId,
         descriptionId: c.descriptionId

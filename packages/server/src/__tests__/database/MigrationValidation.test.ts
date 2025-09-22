@@ -6,8 +6,6 @@
 
 import { db, databaseAvailable } from '../setup';
 import { adaptDatabaseUserToUnified } from '../../database/types';
-import { UserType } from '@kelseyabreu/shared';
-import type { DatabaseUser } from '@kelseyabreu/shared';
 import { randomUUID } from 'crypto';
 
 describe('🗄️ Database Migration Validation - User Types Standardization', () => {

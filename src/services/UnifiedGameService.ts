@@ -9,12 +9,11 @@ import {
   GameMode,
   UnifiedGameSettings,
   UnifiedGameAction,
-  UnifiedActionResult,
   GameEngineData
 } from '@kelseyabreu/shared';
 import { gameEngineFactory } from '@kelseyabreu/shared';
 import { GameState } from '@kelseyabreu/shared';
-import { LoadResult } from '@kelseyabreu/shared';
+
 import { gameApi } from './apiClient';
 import { sharedDataLoader } from '@kelseyabreu/shared';
 
@@ -229,7 +228,7 @@ export class UnifiedGameService {
         await this.initializeGameData();
       }
 
-      const { gameId, players, mode, settings = {}, isOnline = false } = payload;
+      const { isOnline = false } = payload;
 
       if (isOnline) {
         // Online mode - delegate to server API
@@ -255,7 +254,7 @@ export class UnifiedGameService {
     console.log(`🎯 UnifiedGameService: Executing action:`, payload.action.type);
 
     try {
-      const { action, currentState, isOnline = false } = payload;
+      const { isOnline = false } = payload;
 
       if (isOnline) {
         // Online mode - delegate to server API

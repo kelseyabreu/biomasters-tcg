@@ -18,13 +18,11 @@ import {
   IonItem,
   IonLabel,
   IonInput,
-  IonCheckbox,
   IonAlert,
   IonProgressBar,
   IonToast,
   IonButtons,
   IonList,
-  IonNote
 } from '@ionic/react';
 import {
   close,

@@ -1,9 +1,8 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import {
   fillIonInput,
   clickIonButton,
   waitForModal,
-  waitForFirebaseAuth,
   waitForAuthState,
   switchAuthMode
 } from './utils/test-helpers';

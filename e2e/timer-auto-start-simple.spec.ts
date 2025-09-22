@@ -1,4 +1,4 @@
-import { test, expect, Page, Browser } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test.describe('Timer and Auto-Start Simple Tests', () => {
   test('should test timer and auto-start functionality manually', async ({ browser }) => {

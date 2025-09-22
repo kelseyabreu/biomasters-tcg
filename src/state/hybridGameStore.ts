@@ -13,7 +13,7 @@ import { getGameSocket } from '../services/gameSocket';
 import { initializeCardMapping } from '@kelseyabreu/shared';
 
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
-import { MatchResult, RatingUpdate, OnlineGameSettings } from '../services/UnifiedGameService';
+import { RatingUpdate } from '../services/UnifiedGameService';
 import { Card, transformCardDataToCard } from '../types';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
@@ -832,7 +832,7 @@ export const useHybridGameStore = create<HybridGameState>()(
               }
             },
 
-            handleAITurn: async (payload: { currentState: any }) => {
+            handleAITurn: async () => {
               set((state) => ({
                 battle: {
                   ...state.battle,
@@ -3442,7 +3442,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             console.log('✅ Match accepted via WebSocket:', data);
 
             // Update active battle state
-            set((state) => ({
+            set(() => ({
               activeBattle: {
                 sessionId: data.sessionId,
                 gameMode: 'online',

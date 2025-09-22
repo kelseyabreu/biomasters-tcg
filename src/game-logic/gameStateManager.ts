@@ -9,6 +9,7 @@ import {
   TurnResult,
   mapActionType
 } from '../types';
+import { CardNameId, ScientificNameId } from '@kelseyabreu/shared';
 import {
   ConservationStatus,
   PhyloGameState,
@@ -31,30 +32,6 @@ interface FrontendGameAction extends GameAction {
   error?: string;
 }
 
-/**
- * Game State Management for Phylo domino-style gameplay
- *
- * Note: Now uses shared types from @kelseyabreu/shared'place_card' | 'move_card' | 'challenge' | 'pass_turn' | 'drop_and_draw';
-  cardId?: string;
-  position?: { x: number; y: number };
-  targetPosition?: { x: number; y: number };
-  challengeData?: {
-    targetCardId: string;
-    targetPlayerId: string;
-    claimType: ScientificChallenge['claimType'];
-    evidence: string;
-  };
-}
-
-export interface TurnResult {
-  success: boolean;
-  newGameState: PhyloGameState;
-  action: FrontendGameAction;
-  nextPlayer?: string;
-  gameEnded?: boolean;
-  winCondition?: any;
-  errorMessage?: string;
-}
 
 /**
  * Creates HOME cards for each player
@@ -62,9 +39,9 @@ export interface TurnResult {
 function createHomeCard(playerId: string, playerIndex: number): Card {
   return createCardWithDefaults({
     cardId: 0, // HOME cards have special cardId 0
-    nameId: 'HOME',
+    nameId: CardNameId.CARD_HOME,
     id: `home_${playerId}`,
-    scientificNameId: 'BASE_CAMP',
+    scientificNameId: ScientificNameId.SCIENTIFIC_HOME,
     descriptionId: 'DESC_HOME',
     taxonomyId: 'TAXONOMY_HOME',
     description: 'Starting position for each player',

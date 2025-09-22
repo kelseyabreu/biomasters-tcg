@@ -19,7 +19,6 @@ const CARD_SIZE_CONFIG = {
 } as const;
 
 const SPEED_CONVERSION_FACTOR = 1000; // Convert m/hr to km/h
-const LIFESPAN_CONVERSION_FACTOR = 365; // Convert days to years
 
 interface CardProps {
   card: CardType;

@@ -13,7 +13,6 @@ import {
   IonIcon,
   IonBadge,
   IonText,
-  IonAvatar,
   IonGrid,
   IonRow,
   IonCol
@@ -54,23 +53,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     firebaseUser,
     userProfile,
     offlineCollection,
-    signOutUser,
-    guestId
+    signOutUser
   } = useHybridGameStore();
 
   // Calculate collection stats
-  const { ownedSpecies, totalCards } = offlineCollection ?
-    getCollectionStats(offlineCollection.cards_owned) :
-    { ownedSpecies: 0, totalCards: 0 };
+  const { ownedSpecies } = offlineCollection ? getCollectionStats(offlineCollection.cards_owned) : { ownedSpecies: 0 };
   const credits = offlineCollection?.eco_credits || 0;
   const xpPoints = offlineCollection?.xp_points || 0;
-
-  // Generate guest username from guestId
-  const getGuestUsername = () => {
-    if (!guestId) return 'Guest User';
-    const shortId = guestId.slice(-6).toUpperCase();
-    return `Guest-${shortId}`;
-  };
 
   // Get user display information
   const getUserInfo = () => {

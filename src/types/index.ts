@@ -8,31 +8,15 @@
 // Import shared types and enums that are used across frontend, server, and workers
 import {
   CardData,
-  Player,
-  GameState,
   Position,
-  CardInstance,
   GameAction,
-  ActionResult,
-  CardModifier,
-  GameSettings,
-  GameMetadata,
-  AbilityData,
-  CardId,
-  AbilityId,
   TrophicLevel,
-  TurnPhase,
-  GamePhase,
-  KeywordId,
-  TriggerId,
-  EffectId,
-  SelectorId,
-  ActionId,
-  TrophicCategoryId,
   PhyloGameState,
   ConservationStatus,
   GameActionType,
-  Domain
+  Domain,
+  CardNameId,
+  ScientificNameId
 } from '@kelseyabreu/shared';
 
 
@@ -526,15 +510,37 @@ function calculateHealthFromBiologicalData(cardData: CardData): number {
 }
 
 /**
+ * Map CardNameId to corresponding ScientificNameId
+ */
+function getScientificNameId(nameId: CardNameId): ScientificNameId {
+  // For system cards
+  if (nameId === CardNameId.CARD_HOME) {
+    return ScientificNameId.SCIENTIFIC_HOME;
+  }
+
+  // For regular cards, try to construct the scientific name ID
+  // This is a fallback - ideally we'd have a complete mapping
+  const scientificId = nameId.replace('CARD_', 'SCIENTIFIC_');
+
+  // Check if it's a valid ScientificNameId enum value
+  if (Object.values(ScientificNameId).includes(scientificId as ScientificNameId)) {
+    return scientificId as ScientificNameId;
+  }
+
+  // Fallback for unknown cards
+  return ScientificNameId.SCIENTIFIC_UNKNOWN;
+}
+
+/**
  * Create a Card with default values for missing properties
  * Useful for frontend code that needs to create cards quickly
  */
-export function createCardWithDefaults(partial: Partial<Card> & { cardId: number; nameId: string }): Card {
+export function createCardWithDefaults(partial: Partial<Card> & { cardId: number; nameId: CardNameId }): Card {
   return {
     // Required CardData properties with defaults
     cardId: partial.cardId,
     nameId: partial.nameId,
-    scientificNameId: partial.scientificNameId || `SCIENTIFIC_${partial.nameId}`,
+    scientificNameId: partial.scientificNameId || getScientificNameId(partial.nameId),
     descriptionId: partial.descriptionId || `DESC_${partial.nameId}`,
     taxonomyId: partial.taxonomyId || `TAXONOMY_${partial.nameId}`,
     taxoDomain: partial.taxoDomain || 1,

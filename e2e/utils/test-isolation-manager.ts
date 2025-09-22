@@ -3,7 +3,7 @@
  * Ensures proper isolation between parallel test runs with worker-specific resources
  */
 
-import { Page, APIRequestContext } from '@playwright/test';
+import { APIRequestContext } from '@playwright/test';
 import { randomBytes } from 'crypto';
 
 export interface TestSession {

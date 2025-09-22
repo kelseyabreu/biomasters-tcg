@@ -47,7 +47,7 @@ test.describe('🔄 User Types Standardization - Frontend E2E', () => {
         // Clear any existing browser data after page is loaded
         await clearBrowserData(page);
       } catch (error) {
-        console.error('❌ Firefox setup failed:', error.message);
+        console.error('❌ Firefox setup failed:', (error as Error).message);
         throw error;
       }
     } else {
@@ -70,7 +70,7 @@ test.describe('🔄 User Types Standardization - Frontend E2E', () => {
           break; // Success, exit retry loop
         } catch (error) {
           retries--;
-          console.log(`⚠️ Browser setup failed, retries left: ${retries}`, error.message);
+          console.log(`⚠️ Browser setup failed, retries left: ${retries}`, (error as Error).message);
 
           if (context) {
             await context.close().catch(() => {});
@@ -497,7 +497,7 @@ test.describe('🔄 User Types Standardization - Frontend E2E', () => {
           await expect(page.locator('ion-tab-bar')).toBeVisible();
           await clickIonButton(page, 'home-tab');
           await expect(page.locator('[data-testid="user-profile"]')).toBeVisible(); // Ensure home tab stabilizes
-        } catch (error) {
+        } catch {
           console.log(`Navigation attempt ${i + 1} had timing issues, continuing...`);
           // Continue with test even if one navigation fails
         }

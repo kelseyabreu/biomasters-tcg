@@ -251,11 +251,13 @@ export class FirefoxBrowserManager {
    */
   async closePage(): Promise<void> {
     if (this.page) {
-      try {
-        await this.page.close();
-      } catch (error) {
-        // Ignore close errors
-      }
+        try {
+            await this.page.close();
+        } catch (error) {
+            if (this.options.enableLogging) {
+                console.log(error.message);
+            }
+        }
       this.page = null;
     }
   }
@@ -270,7 +272,9 @@ export class FirefoxBrowserManager {
       try {
         await this.context.close();
       } catch (error) {
-        // Ignore close errors
+          if (this.options.enableLogging) {
+              console.log(error.message);
+          }
       }
       this.context = null;
     }

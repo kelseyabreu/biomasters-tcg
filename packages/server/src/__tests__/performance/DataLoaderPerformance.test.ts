@@ -4,7 +4,7 @@
  */
 
 import { createUnifiedDataLoader, LoadResult } from '@kelseyabreu/shared';
-import { promises as fs } from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 
 
@@ -229,8 +229,6 @@ describe('UnifiedDataLoader Performance & Reliability', () => {
 
     test('should handle corrupted JSON files gracefully', async () => {
       // Create a temporary corrupted JSON file for testing
-      const fs = require('fs').promises;
-      const path = require('path');
       const testDir = path.join(process.cwd(), '../public/data/test-corrupted');
       const gameConfigDir = path.join(testDir, 'game-config');
       const testFile = path.join(gameConfigDir, 'cards.json');
@@ -265,8 +263,9 @@ describe('UnifiedDataLoader Performance & Reliability', () => {
           await fs.unlink(testFile);
           await fs.rmdir(gameConfigDir);
           await fs.rmdir(testDir);
-        } catch (e) {
+        } catch (error) {
           // Ignore cleanup errors
+          console.error(error);
         }
       }
     });

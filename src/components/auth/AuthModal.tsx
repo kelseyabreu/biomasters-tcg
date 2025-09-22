@@ -18,7 +18,7 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonBadge
+  IonBadge,
 } from '@ionic/react';
 import { close, shield, trophy, leaf, star } from 'ionicons/icons';
 import { AuthForm } from './AuthForm';

@@ -307,6 +307,7 @@ export const gameApi = {
       const response = await gameApi.getUserCollection(1, 1000);
       return response.data.data?.collection?.some((card: any) => card.card_id === cardId) || false;
     } catch (error) {
+        console.error((error as Error).message)
       return false;
     }
   },
@@ -317,6 +318,7 @@ export const gameApi = {
       const response = await gameApi.getUserCollection(1, 1000);
       return response.data.data?.collection?.some((card: any) => card.species_name === speciesName) || false;
     } catch (error) {
+        console.error((error as Error).message)
       return false;
     }
   },
@@ -328,6 +330,7 @@ export const gameApi = {
       const card = response.data.data?.collection?.find((card: any) => card.card_id === cardId);
       return card?.quantity || 0;
     } catch (error) {
+        console.error((error as Error).message)
       return 0;
     }
   },
@@ -339,6 +342,7 @@ export const gameApi = {
       const card = response.data.data?.collection?.find((card: any) => card.species_name === speciesName);
       return card?.quantity || 0;
     } catch (error) {
+        console.error((error as Error).message)
       return 0;
     }
   },

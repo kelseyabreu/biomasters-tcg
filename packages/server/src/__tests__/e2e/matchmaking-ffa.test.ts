@@ -9,14 +9,13 @@ import { db } from '../../database/kysely';
 import { MatchmakingService } from '../../services/MatchmakingService';
 import { MatchmakingWorker } from '../../workers/MatchmakingWorker';
 import { MatchNotificationService } from '../../services/MatchNotificationService';
-import { pubsub, initializePubSub } from '../../config/pubsub';
+import { initializePubSub } from '../../config/pubsub';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { setupGameSocket } from '../../websocket/gameSocket';
 import jwt from 'jsonwebtoken';
 // Removed @upstash/redis - using ioredis with Google Cloud Memorystore instead
 import { randomUUID } from 'crypto';
-import { io as Client } from 'socket.io-client';
 import { createTestEnvironment, setupTestNamespaceCleanup, TestNamespaceManager } from '../helpers/testNamespace';
 import { setMatchmakingService } from '../../routes/matchmaking';
 
@@ -296,68 +295,6 @@ describe('E2E: FFA 4-Player Free-for-All Matchmaking with Pub/Sub', () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       console.log('✅ Test isolation delay completed');
     
-    // Helper function to create WebSocket connections reliably
-    const createSocketConnections = async (tokens: string[], port: number): Promise<any[]> => {
-      const socketPromises = tokens.map((token, index) => {
-        return new Promise((resolve, reject) => {
-          console.log(`🔍 Creating socket ${index + 1} with URL: http://localhost:${port}`);
-
-          const socket = Client(`http://localhost:${port}`, {
-            auth: { token },
-            transports: ['websocket'],
-            timeout: 15000,
-            forceNew: true,
-            autoConnect: false  // Don't auto-connect, we'll connect manually
-          });
-
-          const timeout = setTimeout(() => {
-            console.error(`❌ Player ${index + 1} connection timeout after 15 seconds`);
-            console.error(`❌ Player ${index + 1} socket state:`, {
-              connected: socket.connected,
-              disconnected: socket.disconnected,
-              id: socket.id
-            });
-            socket.disconnect();
-            reject(new Error(`Player ${index + 1} connection timeout`));
-          }, 15000);
-
-          // Set up listeners BEFORE connecting
-          socket.on('connect', () => {
-            console.log(`✅ Player ${index + 1} 'connect' event fired!`);
-            console.log(`✅ Player ${index + 1} socket state:`, {
-              connected: socket.connected,
-              id: socket.id
-            });
-            clearTimeout(timeout);
-            resolve(socket);
-          });
-
-          socket.on('connect_error', (error) => {
-            console.error(`❌ Player ${index + 1} connect_error:`, error);
-            clearTimeout(timeout);
-            socket.disconnect();
-            reject(error);
-          });
-
-          socket.on('disconnect', (reason) => {
-            console.log(`🔌 Player ${index + 1} disconnected:`, reason);
-          });
-
-          // Log initial socket state
-          console.log(`🔍 Player ${index + 1} initial socket state:`, {
-            connected: socket.connected,
-            disconnected: socket.disconnected,
-            id: socket.id
-          });
-
-          // Manually connect after setting up listeners
-          console.log(`🔌 Player ${index + 1} manually connecting...`);
-          socket.connect();
-        });
-      });
-
-      return Promise.all(socketPromises);
-    };
 
     // Skip WebSocket connections due to Socket.IO client compatibility issues
     console.log('🔌 Skipping WebSocket connections due to Socket.IO client compatibility issues...');

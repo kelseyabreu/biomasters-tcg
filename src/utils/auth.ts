@@ -14,7 +14,6 @@ import {
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 import { signInWithGoogleMobile } from './mobileAuth';
 
 // Google Auth Provider

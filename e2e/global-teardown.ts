@@ -7,7 +7,7 @@ import { chromium, FullConfig } from '@playwright/test';
 import { firebaseEmulatorManager } from './config/firebase-test-config';
 
 async function globalTeardown(config: FullConfig) {
-  console.log('🧹 Cleaning up Playwright E2E test environment...');
+  console.log('🧹 Cleaning up Playwright E2E test environment...', config);
   
   // Launch browser for cleanup
   const browser = await chromium.launch();

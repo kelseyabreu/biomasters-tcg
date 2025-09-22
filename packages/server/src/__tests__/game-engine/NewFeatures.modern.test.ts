@@ -3,13 +3,10 @@
  * Updated to use proper enums, data-driven approach, and new features
  */
 
-import { BioMastersEngine, GameSettings, CardInstance } from '@kelseyabreu/shared';
+import { BioMastersEngine, CardInstance } from '@kelseyabreu/shared';
 import { loadTestGameData } from '../utils/testDataLoader';
 import {
   GameActionType,
-  TrophicLevel,
-  TrophicCategoryId,
-  KeywordId,
   CardId
 } from '@kelseyabreu/shared';
 

@@ -25,8 +25,8 @@ async function testMemorystoreConnection() {
   const redis = new Redis({
     host: process.env['REDIS_HOST'] || '10.36.239.107',
     port: parseInt(process.env['REDIS_PORT'] || '6378'),
-    // Skip password for localhost tunnel to avoid protocol issues
-    ...(isLocalhost ? {} : { password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5' }),
+    // Memorystore requires password even through tunnel
+    password: process.env['REDIS_PASSWORD'] || '657fc2af-f410-4b45-9b8a-2a54fe7e60d5',
 
     // Tunnel-optimized settings for localhost
     connectTimeout: isLocalhost ? 15000 : 10000,
@@ -37,8 +37,8 @@ async function testMemorystoreConnection() {
     enableReadyCheck: isLocalhost ? false : true,
     enableOfflineQueue: true, // Keep enabled to queue commands until connected
 
-    // Enable TLS if needed (but not for localhost tunnel)
-    ...(process.env['REDIS_TLS'] === 'true' && !isLocalhost ? { tls: { rejectUnauthorized: false } } : {}),
+    // Enable TLS if needed (Memorystore requires TLS even through tunnel)
+    ...(process.env['REDIS_TLS'] === 'true' ? { tls: { rejectUnauthorized: false } } : {}),
 
     family: 4, // Force IPv4
     db: 0,
@@ -47,21 +47,8 @@ async function testMemorystoreConnection() {
   try {
     console.log('🔄 Connecting to Redis...');
 
-    // For localhost tunnel, wait for connection to be ready
-    if (isLocalhost) {
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 20000);
-        redis.on('ready', () => {
-          clearTimeout(timeout);
-          resolve(void 0);
-        });
-        redis.on('error', (err) => {
-          clearTimeout(timeout);
-          reject(err);
-        });
-      });
-      console.log('✅ Redis connection ready');
-    }
+    // For localhost tunnel, test connection directly
+    console.log('✅ Redis connection ready');
 
     // Test basic connection
     const pong = await redis.ping();

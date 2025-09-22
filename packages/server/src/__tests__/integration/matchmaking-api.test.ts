@@ -6,7 +6,7 @@
 import request from 'supertest';
 import app from '../../index';
 import { db } from '../../database/kysely';
-import { Redis } from 'ioredis';
+import jwt from 'jsonwebtoken';
 import { createTestEnvironment, setupTestNamespaceCleanup } from '../helpers/testNamespace';
 import { setMatchmakingService } from '../../routes/matchmaking';
 
@@ -67,7 +67,6 @@ describe('Matchmaking API Integration Tests', () => {
       .executeTakeFirst();
 
     // Generate proper test JWT token
-    const jwt = require('jsonwebtoken');
     authToken = jwt.sign(
       {
         uid: testUser.id,

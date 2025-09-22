@@ -56,6 +56,10 @@ export const LANGUAGE_CONFIG: Record<SupportedLanguage, LanguageInfo> = {
  * Card Name IDs - Used for card display names
  */
 export enum CardNameId {
+  // System/Special Cards
+  CARD_HOME = 'CARD_HOME',
+  CARD_UNKNOWN = 'CARD_UNKNOWN',
+
   // Producers (Trophic Level 1)
   CARD_OAK_TREE = 'CARD_OAK_TREE',
   CARD_GIANT_KELP = 'CARD_GIANT_KELP',
@@ -184,6 +188,11 @@ export enum CardNameId {
  * Scientific Name IDs - Used for scientific names (universal but may need alphabet conversion)
  */
 export enum ScientificNameId {
+  // System/Special Cards
+  SCIENTIFIC_HOME = 'SCIENTIFIC_HOME',
+  SCIENTIFIC_UNKNOWN = 'SCIENTIFIC_UNKNOWN',
+  SCIENTIFIC_BASE_CAMP = 'SCIENTIFIC_BASE_CAMP',
+
   // Producers
   SCIENTIFIC_QUERCUS_ROBUR = 'SCIENTIFIC_QUERCUS_ROBUR',
   SCIENTIFIC_MACROCYSTIS_PYRIFERA = 'SCIENTIFIC_MACROCYSTIS_PYRIFERA',

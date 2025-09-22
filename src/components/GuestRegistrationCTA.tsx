@@ -9,8 +9,6 @@ import {
   IonCardContent,
   IonButton,
   IonIcon,
-  IonText,
-  IonBadge,
   IonGrid,
   IonRow,
   IonCol
@@ -50,8 +48,7 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
   const {
     isGuestMode,
     isAuthenticated,
-    offlineCollection,
-    guestId
+    offlineCollection
   } = useHybridGameStore();
 
   // Don't show if not a guest user

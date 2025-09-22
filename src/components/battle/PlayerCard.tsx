@@ -13,13 +13,6 @@ import {
   IonButton,
   IonIcon,
   IonBadge,
-  IonToggle,
-  IonItem,
-  IonLabel,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonChip,
   IonProgressBar
 } from '@ionic/react';
 import {

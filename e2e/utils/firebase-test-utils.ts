@@ -3,7 +3,7 @@
  * Provides utilities for testing with real Firebase Auth
  */
 
-import { initializeApp, getApps, deleteApp } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import {
   getAuth,
   createUserWithEmailAndPassword,

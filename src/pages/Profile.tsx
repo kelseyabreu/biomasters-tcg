@@ -20,8 +20,7 @@ import {
   IonLabel,
   IonTextarea,
   IonToggle,
-  IonSelect,
-  IonSelectOption,
+
   IonIcon,
   IonText,
   IonToast,
@@ -36,7 +35,6 @@ import {
 import {
   person,
   save,
-  camera,
   logOut,
   shield,
   notifications,
@@ -47,8 +45,7 @@ import {
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { getCollectionStats } from '@kelseyabreu/shared';
 import { Avatar } from '../components/Avatar';
-import { updateProfile, updatePassword } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { updateProfile } from 'firebase/auth';
 import { authApi } from '../services/apiClient';
 import './Profile.css';
 
@@ -121,7 +118,7 @@ const Profile: React.FC = () => {
       });
 
       // Get Firebase token for API call
-      const token = await firebaseUser.getIdToken();
+      await firebaseUser.getIdToken();
 
       // Update server profile
       await authApi.updateProfile({

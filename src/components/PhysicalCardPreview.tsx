@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   IonCard,
-  IonCardContent,
   IonButton,
   IonIcon,
   IonBadge,
@@ -18,9 +17,7 @@ import {
   leaf,
   paw,
   skull,
-  refresh,
-  thermometer,
-  water
+  refresh
 } from 'ionicons/icons';
 import { motion } from 'framer-motion';
 import { Card as CardType, ConservationStatus } from '../types';

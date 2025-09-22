@@ -64,8 +64,6 @@ class SyncService {
       console.log('🧪 [SYNC] Test environment detected, bypassing sync cooldown');
     }
 
-    const newSyncState = { isSyncing: true, lastSyncAttempt: now };
-
     // Prepare sync payload outside try block so it's available in catch
     const syncPayload: SyncPayload = {
       device_id: collection.device_id,
@@ -327,10 +325,11 @@ class SyncService {
         // Server wins for validation errors
         return 'server_wins';
 
-      case 'timestamp_too_old':
+      case 'timestamp_too_old': {
         // If action is more than 24 hours old, server wins
         const actionAge = Date.now() - userAction.timestamp;
         return actionAge > 24 * 60 * 60 * 1000 ? 'server_wins' : 'manual';
+      }
 
       case 'duplicate_action':
         // Server wins for duplicates

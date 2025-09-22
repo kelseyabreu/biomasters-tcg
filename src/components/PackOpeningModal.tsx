@@ -41,7 +41,6 @@ import { Card as CardType, CONSERVATION_RARITY_DATA } from '../types';
 import { ConservationStatus } from '@kelseyabreu/shared';
 import { useLocalization } from '../contexts/LocalizationContext';
 
-import Card from './Card';
 import OrganismRenderer from './OrganismRenderer';
 import './PackOpeningModal.css';
 

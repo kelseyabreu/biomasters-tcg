@@ -9,7 +9,7 @@ import { db } from '../../database/kysely';
 import { MatchmakingService } from '../../services/MatchmakingService';
 import { MatchmakingWorker } from '../../workers/MatchmakingWorker';
 import { MatchNotificationService } from '../../services/MatchNotificationService';
-import { pubsub, initializePubSub } from '../../config/pubsub';
+import { initializePubSub } from '../../config/pubsub';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import jwt from 'jsonwebtoken';

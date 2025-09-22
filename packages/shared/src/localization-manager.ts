@@ -53,11 +53,10 @@ export interface AbilityLocalizationData {
  * Interface for UI localization data
  */
 export interface UILocalizationData {
-  // Core UI categories
+  // Core UI categories (match actual localization file structure)
   general: Record<string, string>;
   tabs: Record<string, string>;
   home: Record<string, string>;
-  menus: Record<string, string>;
   settings: Record<string, string>;
   deckBuilder: Record<string, string>;
 
@@ -65,18 +64,12 @@ export interface UILocalizationData {
   gameActions: Record<string, string>;
   gamePhases: Record<string, string>;
   gameStates: Record<string, string>;
-  playerActions: Record<string, string>;
 
   // Error and messaging categories
   errorMessages: Record<string, string>;
-  errors: Record<string, string>;
-  notifications: Record<string, string>;
 
   // Game terms and states
   gameTerms: Record<string, string>;
-  cardStates: Record<string, string>;
-  cardZones: Record<string, string>;
-  resources: Record<string, string>;
 
   // Content categories
   keywords: Record<KeywordNameId, string>;
@@ -93,7 +86,7 @@ export interface UILocalizationData {
   collection: Record<string, string>;
   connectivity: Record<string, string>;
 
-  // New page-specific categories
+  // Page-specific categories
   packOpening: Record<string, string>;
   settingsPage: Record<string, string>;
   collectionPage: Record<string, string>;
@@ -390,26 +383,20 @@ export class LocalizationManager implements ILocalizationManager {
   }
 
   getUIText(textId: UITextId): string {
-    // Search through all UI text categories
+    // Search through all UI text categories that actually exist in localization files
     const ui = this._languageData?.ui;
     if (!ui) return `[${textId}]`;
 
     return ui.general[textId] ??
            ui.tabs[textId] ??
            ui.home[textId] ??
-           ui.menus[textId] ??
            ui.settings[textId] ??
            ui.deckBuilder[textId] ??
            ui.gameActions[textId] ??
            ui.gamePhases[textId] ??
            ui.gameStates[textId] ??
-           ui.playerActions[textId] ??
            ui.errorMessages[textId] ??
-           ui.errors[textId] ??
            ui.gameTerms[textId] ??
-           ui.cardStates[textId] ??
-           ui.cardZones[textId] ??
-           ui.resources[textId] ??
            ui.trophicCategories[textId] ??
            ui.authentication[textId] ??
            ui.authMessages[textId] ??
@@ -418,7 +405,6 @@ export class LocalizationManager implements ILocalizationManager {
            ui.endGame[textId] ??
            ui.collection[textId] ??
            ui.connectivity[textId] ??
-           ui.notifications[textId] ??
            ui.packOpening[textId] ??
            ui.settingsPage[textId] ??
            ui.collectionPage[textId] ??

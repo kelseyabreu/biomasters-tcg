@@ -24,7 +24,11 @@
     "db:import-biomasters": "tsx src/scripts/import-biomasters-data.ts",
     "test:pubsub": "tsx src/scripts/check-pubsub.ts",
     "setup:pubsub": "tsx src/scripts/setup-pubsub-resources.ts",
-    "redis:tunnel": "start-redis-tunnel.bat"
+    "redis:tunnel": "start-redis-tunnel.bat",
+    "deploy:dev": "node scripts/deploy-to-cloud-run.js .env.development --docker",
+    "deploy:devNoDocker": "node scripts/deploy-to-cloud-run.js .env.development --cloud-build",
+    "deploy:prod": "node scripts/deploy-to-cloud-run.js .env.production --docker",
+    "deploy:prodNoDocker": "node scripts/deploy-to-cloud-run.js .env.production --cloud-build"
   },
   "keywords": [
     "tcg",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { IonProgressBar, IonText } from '@ionic/react';
 import './TurnTimer.css';
 
@@ -29,27 +29,42 @@ const TurnTimer: React.FC<TurnTimerProps> = ({
     }
   }, [isActive, duration, playerName]);
 
+  // Component cleanup tracking
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Timer countdown logic
   useEffect(() => {
-    if (!isActive || timeRemaining <= 0) return;
+    if (!isActive || timeRemaining <= 0 || !mountedRef.current) return;
 
     const timer = setInterval(() => {
+      if (!mountedRef.current) {
+        clearInterval(timer);
+        return;
+      }
+
       setTimeRemaining(prev => {
         const newTime = prev - 1;
-        
+
         // Warning when 15 seconds or less
-        if (newTime <= 15 && !isWarning) {
+        if (newTime <= 15 && !isWarning && mountedRef.current) {
           setIsWarning(true);
           console.log(`⚠️ [TURN TIMER] Warning: ${newTime} seconds remaining for ${playerName}`);
         }
-        
+
         // Time's up
-        if (newTime <= 0) {
+        if (newTime <= 0 && mountedRef.current) {
           console.log(`⏰ [TURN TIMER] Time's up for ${playerName}!`);
           onTimeUp();
           return 0;
         }
-        
+
         return newTime;
       });
     }, 1000);

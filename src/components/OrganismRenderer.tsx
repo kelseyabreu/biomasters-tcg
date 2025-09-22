@@ -40,6 +40,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
   const localization = useLocalization();
   const containerRef = useRef<HTMLDivElement>(null);
   const organismRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
 
   // State for zoom and pan
   const [zoom, setZoom] = useState(1);
@@ -174,12 +175,33 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
     };
 
     // Call renderOrganism with a small delay to ensure DOM is ready
-    setTimeout(() => {
-      renderOrganism().catch(() => {
-        // Silently handle errors - fallback rendering will be used
-      });
+    const timeoutId = setTimeout(() => {
+      if (mountedRef.current) {
+        renderOrganism().catch(() => {
+          // Silently handle errors - fallback rendering will be used
+        });
+      }
     }, 10);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [card, size, memoizedOrganismData, localization]);
+
+  // Component lifecycle tracking
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // Cancel any pending image loads
+      if (containerRef.current) {
+        const images = containerRef.current.querySelectorAll('img');
+        images.forEach(img => {
+          img.src = ''; // Cancel loading
+        });
+      }
+    };
+  }, []);
 
   // Zoom functions
   const handleZoomIn = () => {

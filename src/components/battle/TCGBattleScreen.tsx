@@ -3,7 +3,7 @@
  * BioMasters Trading Card Game battle interface using ClientGameEngine
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import './TCGBattleScreen.css';
 import '../game/EcosystemBoard.css';
 import {
@@ -75,6 +75,17 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   isOnlineMode = false,
   sessionId
 }) => {
+
+  // Component cleanup tracking
+  const mountedRef = useRef(true);
+
+  // Component lifecycle tracking
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Localization
   const localization = useLocalization();
@@ -331,7 +342,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           try {
             // Check if AI should pass turn
             if (aiStrategy.shouldPassTurn(currentPlayer.hand, (gameState as any).actionsRemaining, gameState as any, currentPlayer.id)) {
-
               // AI needs to pass turn with its own player ID
               const currentBattleState = useHybridGameStore.getState().battle;
               const result = await unifiedGameService.executeAction({
@@ -502,7 +512,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   // Auto-pass turn when player has no actions remaining
   useEffect(() => {
     if (gameState &&
-        gameState.gamePhase === GamePhase.PLAYING &&
+        (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) &&
         gameState.currentPlayerIndex !== undefined) {
 
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -565,6 +575,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
         // Also check engine's game state directly
         if (typeof engine.getGameState === 'function') {
           const engineState = engine.getGameState();
+
           if (engineState?.gamePhase === GamePhase.ENDED) {
             engineGameEnded = true;
           }
@@ -933,6 +944,9 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
     setShowEndGameModal(false);
     setEndGameData(null);
 
+    // Clear all state before exiting
+    clearUIState();
+
     // Call the onExit prop to return to main menu
     if (onExit) {
       onExit();
@@ -1076,6 +1090,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
     // Clear UI state
     clearUIState();
+
+    // Clear game state to prevent further processing
+    useHybridGameStore.setState((state) => ({
+      battle: {
+        ...state.battle,
+        tcgGameState: null
+      }
+    }));
 
     // Call onExit to return to mode selector
     if (onExit) {
@@ -1353,7 +1375,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           </IonCard>
         )}
         {/* Game Grid - NEW COMPONENT VERSION */}
-        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING) && gameState.gameSettings && (
+        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && gameState.gameSettings && (
           <EcosystemGrid
             gameSettings={gameState.gameSettings}
             grid={gameState.grid}
@@ -1373,7 +1395,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
 
         {/* NEW: Responsive Player Cards with Navigation */}
-        {gameState.gamePhase === GamePhase.PLAYING && (() => {
+        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && (() => {
           const allPlayers = gameState.players;
 
           const scrollToCard = (index: number) => {
@@ -1624,7 +1646,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
         )}
 
         {/* Action Buttons */}
-        {gameState.gamePhase === GamePhase.PLAYING && isPlayerTurn && (
+        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && isPlayerTurn && (
           <IonCard className="action-buttons-card">
             <IonCardContent>
               <IonGrid>
@@ -1711,7 +1733,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
         />
 
         {/* Turn Timer */}
-        {gameState && gameState.gamePhase === GamePhase.PLAYING && (
+        {gameState && (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && (
           <TurnTimer
             isActive={true}
             duration={60} // 1 minute

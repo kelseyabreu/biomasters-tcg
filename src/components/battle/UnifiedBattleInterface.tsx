@@ -107,10 +107,25 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
   // Timer state for deck selection countdown
   const [deckSelectionTimeRemaining, setDeckSelectionTimeRemaining] = useState<number>(60);
 
+  // Component cleanup tracking
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Countdown timer effect for deck selection
   useEffect(() => {
-    if (gameState.gamePhase === GamePhase.SETUP && isOnlineMode) {
+    if (gameState.gamePhase === GamePhase.SETUP && isOnlineMode && mountedRef.current) {
       const timer = setInterval(() => {
+        if (!mountedRef.current) {
+          clearInterval(timer);
+          return;
+        }
+
         setDeckSelectionTimeRemaining(prev => {
           if (prev <= 1) {
             clearInterval(timer);
@@ -597,7 +612,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
         )}
 
         {/* Game Grid */}
-        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.ENDED) &&
+        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN || gameState.gamePhase === GamePhase.ENDED) &&
          gameState.gameSettings && (gameState.grid || gameState.engineState?.grid) && (
           <EcosystemGrid
             gameSettings={gameState.gameSettings}
@@ -637,7 +652,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
         )}
 
         {/* Player Cards */}
-        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.ENDED) && (gameState.players || gameState.engineState?.players) && (() => {
+        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN || gameState.gamePhase === GamePhase.ENDED) && (gameState.players || gameState.engineState?.players) && (() => {
           const allPlayers = gameState.engineState?.players || gameState.players;
 
           return (
@@ -739,7 +754,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                       isCurrentPlayer={isCurrentPlayerCard}
                       isPlayerTurn={isPlayerTurnCard}
                       actionsRemaining={playerActionsRemaining}
-                      showTimer={isPlayerTurnCard && (gameState.gamePhase === GamePhase.PLAYING || gameState.engineState?.gamePhase === GamePhase.PLAYING)}
+                      showTimer={isPlayerTurnCard && (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN || gameState.engineState?.gamePhase === GamePhase.PLAYING || gameState.engineState?.gamePhase === GamePhase.FINAL_TURN)}
                       timerDuration={60}
                       timeRemaining={timeRemaining}
                       isTimerWarning={isTimerWarning}
@@ -758,7 +773,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
         })()}
 
         {/* Action Buttons */}
-        {gameState.gamePhase === GamePhase.PLAYING && isPlayerTurn && (
+        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && isPlayerTurn && (
           <IonCard className="action-buttons-card">
             <IonCardContent>
               <IonGrid>

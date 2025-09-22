@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -54,6 +54,10 @@ import './OnlineMultiplayer.css';
 const OnlineMultiplayer: React.FC = () => {
   const history = useHistory();
   const { getUIText } = useUILocalization();
+
+  // Component cleanup tracking
+  const mountedRef = useRef(true);
+
   const {
     online,
     isAuthenticated,
@@ -235,7 +239,23 @@ const OnlineMultiplayer: React.FC = () => {
 
   // Cleanup on component unmount
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+
+      // Clear all timers
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+      if (queueTimerInterval) {
+        clearInterval(queueTimerInterval);
+      }
+
+      // Cancel any active matchmaking
+      if (online.matchmaking.isSearching) {
+        cancelMatchmaking().catch(console.error);
+      }
+
       if (isAuthenticated && isOnline) {
         // Disconnect WebSocket when leaving the page
         useHybridGameStore.getState().disconnectWebSocket();

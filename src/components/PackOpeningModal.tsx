@@ -210,13 +210,25 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     }
   }, [isOpen]);
 
+  // Component cleanup tracking
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Separate effect for auto-opening pack to prevent multiple calls
   useEffect(() => {
-    if (isOpen && !isOpening && !packResult && !isOpeningRef.current && !hasOpenedRef.current) {
+    if (isOpen && !isOpening && !packResult && !isOpeningRef.current && !hasOpenedRef.current && mountedRef.current) {
       console.log('🎯 Triggering pack opening...');
       // Add a small delay to ensure state is properly reset
       const timer = setTimeout(() => {
-        handleOpenPack();
+        if (mountedRef.current) {
+          handleOpenPack();
+        }
       }, 200);
 
       return () => clearTimeout(timer);

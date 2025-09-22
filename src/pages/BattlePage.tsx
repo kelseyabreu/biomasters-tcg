@@ -51,7 +51,7 @@ interface GameSessionData {
 export const BattlePage: React.FC = () => {
   const { sessionId } = useParams<BattlePageParams>();
   const history = useHistory();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<GameSessionData | null>(null);
@@ -423,6 +423,11 @@ export const BattlePage: React.FC = () => {
         isActive: false
       }
     }));
+
+    // Clear session data to stop rendering
+    setSessionData(null);
+    setIsLoading(false);
+    setError(null);
 
     // Navigate back to online multiplayer
     history.push('/online');
@@ -826,6 +831,11 @@ export const BattlePage: React.FC = () => {
     return () => clearInterval(timer);
   }, [sessionData?.gameState?.gamePhase, timeRemaining, isTimerWarning, handleTurnTimeout]);
 
+  // Early return if component should be unmounted (no sessionData and not loading)
+  if (!sessionData && !isLoading && !error) {
+    return null;
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -919,7 +929,7 @@ export const BattlePage: React.FC = () => {
       />
 
       {/* Turn Timer */}
-      {sessionData.gameState && sessionData.gameState.gamePhase === GamePhase.PLAYING && (
+      {sessionData.gameState && (sessionData.gameState.gamePhase === GamePhase.PLAYING || sessionData.gameState.gamePhase === GamePhase.FINAL_TURN) && (
         <TurnTimer
           isActive={true}
           duration={60} // 1 minute

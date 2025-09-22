@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import {
   IonPage,
@@ -39,6 +39,10 @@ import { UITextId } from '@kelseyabreu/shared';
 const MainMenu: React.FC = () => {
   const history = useHistory();
   const { getUIText } = useUILocalization();
+
+  // Component cleanup tracking
+  const mountedRef = useRef(true);
+
   const {
     offlineCollection,
     isAuthenticated,
@@ -59,9 +63,17 @@ const MainMenu: React.FC = () => {
     hasOfflineCollection: !!offlineCollection
   });
 
+  // Component lifecycle and cleanup
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Refresh collection state on mount to ensure UI is up to date
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && mountedRef.current) {
       refreshCollectionState();
     }
   }, [isAuthenticated, refreshCollectionState]);

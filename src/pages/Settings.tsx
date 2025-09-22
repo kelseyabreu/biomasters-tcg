@@ -403,8 +403,8 @@ const Settings: React.FC = () => {
               <IonList>
                 <IonItem>
                   <IonLabel>
-                    <h3>Game Language</h3>
-                    <p>Choose your preferred language for the game interface</p>
+                    <h3>{getUIText(UITextId.UI_GAME_LANGUAGE)}</h3>
+                    <p>{getUIText(UITextId.UI_CHOOSE_LANGUAGE_DESCRIPTION)}</p>
                   </IonLabel>
                 </IonItem>
                 <LanguageSelector
@@ -422,7 +422,7 @@ const Settings: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={eyedrop} style={{ marginRight: '8px' }} />
-                Organism Rendering
+                {getUIText(UITextId.UI_ORGANISM_RENDERING)}
               </IonCardTitle>
             </IonCardHeader>
 
@@ -430,8 +430,8 @@ const Settings: React.FC = () => {
               <IonList>
                 <IonItem>
                   <IonLabel>
-                    <h3>Rendering Mode</h3>
-                    <p>Choose how organisms are displayed in cards</p>
+                    <h3>{getUIText(UITextId.UI_RENDERING_MODE)}</h3>
+                    <p>{getUIText(UITextId.UI_CHOOSE_ORGANISM_DISPLAY)}</p>
                   </IonLabel>
                   <IonSelect
                     value={organismRenderMode}
@@ -471,7 +471,7 @@ const Settings: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={settings} style={{ marginRight: '8px' }} />
-                Grid Cell & Card Visual Styles
+                {getUIText(UITextId.UI_GRID_CELL_CARD_STYLES)}
               </IonCardTitle>
             </IonCardHeader>
 
@@ -479,8 +479,8 @@ const Settings: React.FC = () => {
               <IonList>
                 <IonItem>
                   <IonLabel>
-                    <h3>Cell Style</h3>
-                    <p>Choose how grid cells appear in the game</p>
+                    <h3>{getUIText(UITextId.UI_CELL_STYLE)}</h3>
+                    <p>{getUIText(UITextId.UI_CHOOSE_GRID_CELLS)}</p>
                   </IonLabel>
                   <IonSelect
                     value={gridCellStyle}
@@ -571,24 +571,24 @@ const Settings: React.FC = () => {
               <IonList>
                 <IonItem>
                   <IonLabel>
-                    <h3>Card Appearance</h3>
-                    <p>Choose how cards look in the ecosystem grid</p>
+                    <h3>{getUIText(UITextId.UI_CARD_APPEARANCE)}</h3>
+                    <p>{getUIText(UITextId.UI_CHOOSE_CARD_APPEARANCE)}</p>
                   </IonLabel>
                   <IonSelect
                     value={cardVisualStyle}
                     onIonChange={(e: any) => setCardVisualStyle(e.detail.value)}
                     interface="popover"
                   >
-                    <IonSelectOption value="style1">Compact Info Card</IonSelectOption>
-                    <IonSelectOption value="style2">Minimalist View</IonSelectOption>
-                    <IonSelectOption value="style3">Data-Focused Grid</IonSelectOption>
-                    <IonSelectOption value="style4">Circular Design</IonSelectOption>
+                    <IonSelectOption value="style1">{getUIText(UITextId.UI_COMPACT_INFO_CARD)}</IonSelectOption>
+                    <IonSelectOption value="style2">{getUIText(UITextId.UI_MINIMALIST_VIEW)}</IonSelectOption>
+                    <IonSelectOption value="style3">{getUIText(UITextId.UI_DATA_FOCUSED_GRID)}</IonSelectOption>
+                    <IonSelectOption value="style4">{getUIText(UITextId.UI_CIRCULAR_DESIGN)}</IonSelectOption>
                   </IonSelect>
                 </IonItem>
               </IonList>
 
               <div className="card-style-preview-section">
-                <h4>Preview</h4>
+                <h4>{getUIText(UITextId.UI_PREVIEW)}</h4>
                 <div className="card-style-preview-container">
                   <IonGrid>
                     <IonRow>
@@ -702,7 +702,7 @@ const Settings: React.FC = () => {
           {/* Theme Gallery */}
           <IonCard>
             <IonCardHeader>
-              <IonCardTitle>Theme Gallery</IonCardTitle>
+              <IonCardTitle>{getUIText(UITextId.UI_THEME_GALLERY)}</IonCardTitle>
             </IonCardHeader>
             
             <IonCardContent>
@@ -738,24 +738,24 @@ const Settings: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={accessibility} />
-                Accessibility
+                {getUIText(UITextId.UI_ACCESSIBILITY)}
               </IonCardTitle>
             </IonCardHeader>
-            
+
             <IonCardContent>
               <IonItem>
                 <IonIcon icon={contrast} slot="start" />
                 <IonLabel>
-                  <h3>High Contrast</h3>
-                  <p>Increase contrast for better visibility</p>
+                  <h3>{getUIText(UITextId.UI_HIGH_CONTRAST)}</h3>
+                  <p>{getUIText(UITextId.UI_INCREASE_CONTRAST)}</p>
                 </IonLabel>
                 <IonToggle />
               </IonItem>
 
               <IonItem>
                 <IonLabel>
-                  <h3>Font Size</h3>
-                  <p>Adjust text size for better readability</p>
+                  <h3>{getUIText(UITextId.UI_FONT_SIZE)}</h3>
+                  <p>{getUIText(UITextId.UI_ADJUST_TEXT_SIZE)}</p>
                 </IonLabel>
                 <IonRange 
                   min={0.8} 
@@ -768,8 +768,8 @@ const Settings: React.FC = () => {
 
               <IonItem>
                 <IonLabel>
-                  <h3>Animation Speed</h3>
-                  <p>Control animation and transition speed</p>
+                  <h3>{getUIText(UITextId.UI_ANIMATION_SPEED)}</h3>
+                  <p>{getUIText(UITextId.UI_CONTROL_ANIMATION_SPEED)}</p>
                 </IonLabel>
                 <IonRange 
                   min={0.5} 
@@ -1132,16 +1132,16 @@ const Settings: React.FC = () => {
           <IonContent>
             <div className="custom-theme-creator">
               <IonItem>
-                <IonLabel position="stacked">Theme Name</IonLabel>
-                <IonInput 
+                <IonLabel position="stacked">{getUIText(UITextId.UI_THEME_NAME)}</IonLabel>
+                <IonInput
                   value={customThemeName}
                   onIonInput={(e) => setCustomThemeName(e.detail.value!)}
-                  placeholder="Enter theme name"
+                  placeholder={getUIText(UITextId.UI_ENTER_THEME_NAME)}
                 />
               </IonItem>
 
               <IonItem>
-                <IonLabel>Base Theme</IonLabel>
+                <IonLabel>{getUIText(UITextId.UI_BASE_THEME)}</IonLabel>
                 <IonSelect 
                   value={baseThemeId}
                   onIonChange={(e: any) => setBaseThemeId(e.detail.value)}
@@ -1155,7 +1155,7 @@ const Settings: React.FC = () => {
               </IonItem>
 
               <div className="color-customization">
-                <h4>Customize Colors</h4>
+                <h4>{getUIText(UITextId.UI_CUSTOMIZE_COLORS)}</h4>
                 
                 {Object.entries(customColors).map(([colorKey, colorValue]) => (
                   <IonItem key={colorKey}>
@@ -1174,7 +1174,7 @@ const Settings: React.FC = () => {
               </div>
 
               <div className="theme-preview-section">
-                <h4>Preview</h4>
+                <h4>{getUIText(UITextId.UI_PREVIEW)}</h4>
                 <div className="custom-theme-preview">
                   {Object.entries(customColors).map(([key, color]) => (
                     <div 

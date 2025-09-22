@@ -21,6 +21,7 @@ import { arrowBack } from 'ionicons/icons';
 import UnifiedBattleInterface from '../components/battle/UnifiedBattleInterface';
 import TurnTimer from '../components/battle/TurnTimer';
 import GameLog, { GameLogEntry } from '../components/battle/GameLog';
+import EndGameModal from '../components/ui/EndGameModal';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { gameApi } from '../services/apiClient';
 import { TCGGameState, TCGGameSettings } from '@kelseyabreu/shared';
@@ -67,6 +68,10 @@ export const BattlePage: React.FC = () => {
   const [turnStartTime, setTurnStartTime] = useState<number>(Date.now());
   const [timeRemaining, setTimeRemaining] = useState<number>(60);
   const [isTimerWarning, setIsTimerWarning] = useState<boolean>(false);
+
+  // End game modal state
+  const [showEndGameModal, setShowEndGameModal] = useState(false);
+  const [endGameData, setEndGameData] = useState<any>(null);
 
   // Get species cards from store
   const allSpeciesCards = useHybridGameStore(state => state.allSpeciesCards);
@@ -172,8 +177,8 @@ export const BattlePage: React.FC = () => {
         (window as any).sessionData = sessionData;
 
         // 🔧 Check for game phase mismatch
-        if (sessionData.gameState?.gamePhase === 'playing' &&
-            sessionData.gameState?.engineState?.gamePhase === 'setup') {
+        if (sessionData.gameState?.gamePhase === GamePhase.PLAYING &&
+            sessionData.gameState?.engineState?.gamePhase === GamePhase.SETUP) {
           console.log('🚨 [GAME PHASE MISMATCH] Detected phase mismatch!');
           console.log('🔧 [GAME PHASE MISMATCH] Game is in playing phase but engine is in setup phase');
           console.log('🔧 [GAME PHASE MISMATCH] This explains why the grid is empty and HOME cards are missing');
@@ -363,6 +368,51 @@ export const BattlePage: React.FC = () => {
     loadGameSession();
   }, [sessionId, isAuthenticated, userId]);
 
+  // End game detection
+  useEffect(() => {
+    if (!sessionData?.gameState) return;
+
+    const gameState = sessionData.gameState;
+    const isGameEnded = gameState.gamePhase === GamePhase.ENDED;
+
+    // Show end game modal if game has ended and modal isn't already shown
+    if (isGameEnded && !showEndGameModal) {
+      console.log('🏁 [BattlePage] Game ended, showing end game modal');
+
+      // Create end game data from current game state
+      const players = gameState.players || [];
+      const humanPlayer = players.find(p => p.id === userId);
+      const otherPlayers = players.filter(p => p.id !== userId);
+
+      // Simple victory point calculation (using score pile length as fallback)
+      const humanVP = humanPlayer?.scorePile?.length || 0;
+      const otherVP = otherPlayers.reduce((max, p) => Math.max(max, p.scorePile?.length || 0), 0);
+      const winnerPlayer = humanVP > otherVP ? humanPlayer : otherPlayers.find(p => (p.scorePile?.length || 0) === otherVP);
+
+      const finalEndData = {
+        isGameEnded: true,
+        winner: winnerPlayer?.name || 'Unknown',
+        finalScores: players.map(player => ({
+          playerId: player.id,
+          playerName: player.name || 'Unknown Player',
+          victoryPoints: player.scorePile?.length || 0,
+          deckCount: player.deck?.length || 0,
+          handCount: player.hand?.length || 0,
+          energy: player.energy || 0,
+          cardsPlayed: 0,
+          isWinner: player.id === winnerPlayer?.id
+        })),
+        gameStats: {
+          totalTurns: gameState.turnNumber || 1,
+          endReason: 'Game Complete'
+        }
+      };
+
+      setEndGameData(finalEndData);
+      setShowEndGameModal(true);
+    }
+  }, [sessionData?.gameState?.gamePhase, sessionData?.gameState?.players, sessionData?.gameState?.turnNumber, userId, showEndGameModal]);
+
   const handleBackToLobby = () => {
     // Clear active battle state
     useHybridGameStore.setState(() => ({
@@ -382,6 +432,24 @@ export const BattlePage: React.FC = () => {
     setShowErrorAlert(false);
     handleBackToLobby();
   };
+
+  // End game modal handlers
+  const handleCloseEndGameModal = useCallback(() => {
+    setShowEndGameModal(false);
+  }, []);
+
+  const handlePlayAgain = useCallback(() => {
+    setShowEndGameModal(false);
+    setEndGameData(null);
+    // For online games, return to lobby to find a new match
+    history.push('/online');
+  }, [history]);
+
+  const handleReturnHome = useCallback(() => {
+    setShowEndGameModal(false);
+    setEndGameData(null);
+    history.push('/');
+  }, [history]);
 
   // Callback functions for unified battle interface
   const handlePlayerReady = async () => {
@@ -866,6 +934,17 @@ export const BattlePage: React.FC = () => {
         entries={gameLogEntries}
         isVisible={showGameLog}
         onToggleVisibility={() => setShowGameLog(!showGameLog)}
+      />
+
+      {/* End Game Modal */}
+      <EndGameModal
+        isOpen={showEndGameModal}
+        winner={endGameData?.winner}
+        finalScores={endGameData?.finalScores}
+        gameStats={endGameData?.gameStats}
+        onClose={handleCloseEndGameModal}
+        onPlayAgain={handlePlayAgain}
+        onReturnHome={handleReturnHome}
       />
     </>
   );

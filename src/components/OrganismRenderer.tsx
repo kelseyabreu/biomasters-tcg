@@ -3,21 +3,14 @@ import { IonButton, IonIcon } from '@ionic/react';
 import { add, remove, refresh } from 'ionicons/icons';
 import { Card as CardType } from '../types';
 import { useLocalization } from '../contexts/LocalizationContext';
-import { getCardDisplayName } from '@kelseyabreu/shared';
 
 // Import the organism models
 import { organismModels } from '../ecosystem-organisms';
 
-// Debug: Check if organism models are loaded (only log once)
-if (!(window as any).organismModelsLogged) {
-  console.log('🔧 [OrganismRenderer] Organism models import:', {
-    organismModelsExists: !!organismModels,
-    isObject: typeof organismModels === 'object',
-    hasKeys: organismModels ? Object.keys(organismModels).length > 0 : false,
-    sampleKeys: organismModels ? Object.keys(organismModels).slice(0, 5) : []
-  });
-  (window as any).organismModelsLogged = true;
-}
+// Import image loading utilities
+import { loadCardImage, createImageElement } from '../utils/imageLoader';
+
+
 
 
 
@@ -74,70 +67,90 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
 
     // Add a small delay to ensure DOM is fully rendered
     const renderOrganism = async () => {
+      // Get the organism content container
+      let organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
 
-      // Create organism data structure expected by the renderer
-      const organism = memoizedOrganismData;
-
-      // Find the appropriate organism renderer
-      let renderer = null;
-      const speciesKey = getSpeciesKey(card);
-
-      // 1. Try exact species name match using nameId
-      if (organismModels[speciesKey]) {
-        renderer = organismModels[speciesKey];
+      if (!organismContent && organismRef.current) {
+        organismContent = organismRef.current;
       }
 
-      // 2. Fall back to trophic role if no specific model exists
-      if (!renderer && card.trophicRole) {
-        // Convert TrophicRole enum to lowercase string for organism model lookup
-        const trophicKey = card.trophicRole.toLowerCase();
-        if (organismModels[trophicKey]) {
-          renderer = organismModels[trophicKey];
-          console.log('✅ [OrganismRenderer] Found trophic role renderer:', trophicKey);
-        }
+      if (!organismContent) {
+        // Create the organism-content div if it doesn't exist
+        organismContent = document.createElement('div');
+        organismContent.className = 'organism-content';
+        organismContent.style.width = '100%';
+        organismContent.style.height = '100%';
+        organismContent.style.position = 'relative';
+        containerRef.current?.appendChild(organismContent);
       }
 
-      // 3. Final fallback
-      if (!renderer) {
-        renderer = organismModels.herbivore || organismModels.unknown; // Default fallback
-        console.log('⚠️ [OrganismRenderer] Using fallback renderer');
-      }
+      // Clear previous content
+      organismContent.innerHTML = '';
 
+      // 1. First, try to load PNG image
       try {
-        // Get the organism content container
-        let organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
+        const imageResult = await loadCardImage(card);
+        if (imageResult.success && imageResult.imagePath) {
+          const localizedName = localization.getCardName(card.nameId as any);
+          const img = createImageElement(
+            imageResult.imagePath,
+            localizedName,
+            'organism-image',
+            undefined, // onLoad callback
+            () => {
+              // If PNG fails to load, fall back to DOM rendering
+              renderDOMFallback();
+            }
+          );
 
-        if (!organismContent && organismRef.current) {
-          organismContent = organismRef.current;
-        }
-
-        if (!organismContent) {
-          // Create the organism-content div if it doesn't exist
-          organismContent = document.createElement('div');
-          organismContent.className = 'organism-content';
-          organismContent.style.width = '100%';
-          organismContent.style.height = '100%';
-          organismContent.style.position = 'relative';
-          containerRef.current?.appendChild(organismContent);
-        }
-
-        // Clear previous content
-        organismContent.innerHTML = '';
-
-        // Render the organism
-        const renderedElement = renderer.render(organism, organismContent);
-
-        if (renderedElement) {
-          organismContent.appendChild(renderedElement);
-        } else {
-          console.log('⚠️ [OrganismRenderer] No element returned, using fallback');
-          createFallback(organismContent);
+          organismContent.appendChild(img);
+          return; // Exit early if image loads successfully
         }
       } catch (error) {
-        // Fallback to simple representation
-        console.warn('❌ [OrganismRenderer] Error rendering organism:', error);
-        const organismContent = containerRef.current?.querySelector('.organism-content') as HTMLElement;
-        if (organismContent) {
+        // Silently fall back to DOM rendering
+      }
+
+      // 2. Fall back to DOM rendering if no PNG image is available
+      renderDOMFallback();
+
+      function renderDOMFallback() {
+        // Create organism data structure expected by the renderer
+        const organism = memoizedOrganismData;
+
+        // Find the appropriate organism renderer
+        let renderer = null;
+        const speciesKey = getSpeciesKey(card);
+
+        // 2a. Try exact species name match using nameId
+        if (organismModels[speciesKey]) {
+          renderer = organismModels[speciesKey];
+        }
+
+        // 2b. Fall back to trophic role if no specific model exists
+        if (!renderer && card.trophicRole) {
+          // Convert TrophicRole enum to lowercase string for organism model lookup
+          const trophicKey = card.trophicRole.toLowerCase();
+          if (organismModels[trophicKey]) {
+            renderer = organismModels[trophicKey];
+          }
+        }
+
+        // 2c. Final fallback
+        if (!renderer) {
+          renderer = organismModels.herbivore || organismModels.unknown; // Default fallback
+        }
+
+        try {
+          // Render the organism using DOM rendering
+          const renderedElement = renderer.render(organism, organismContent);
+
+          if (renderedElement) {
+            organismContent.appendChild(renderedElement);
+          } else {
+            createFallback(organismContent);
+          }
+        } catch (error) {
+          // Fallback to simple representation
           createFallback(organismContent);
         }
       }
@@ -162,11 +175,11 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
 
     // Call renderOrganism with a small delay to ensure DOM is ready
     setTimeout(() => {
-      renderOrganism().catch(error => {
-        console.warn('Error in renderOrganism:', error);
+      renderOrganism().catch(() => {
+        // Silently handle errors - fallback rendering will be used
       });
     }, 10);
-  }, [card, size]);
+  }, [card, size, memoizedOrganismData, localization]);
 
   // Zoom functions
   const handleZoomIn = () => {

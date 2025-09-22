@@ -232,7 +232,7 @@ export enum ActionId {
 export enum GamePhase {
   SETUP = 'setup',    // Online: Deck selection (60s) + player ready. Offline: Player ready only
   PLAYING = 'playing',
-  FINAL_TURN = 'final_turn',  // Final turn phase when a player can't draw
+  FINAL_TURN = 'final_turn',  // Final turn phase when a player draws his last card
   ENDED = 'ended'
 }
 

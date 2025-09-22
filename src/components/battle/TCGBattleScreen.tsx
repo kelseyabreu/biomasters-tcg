@@ -37,14 +37,13 @@ import {
 
 // Import the battle store instead of game engine
 import useHybridGameStore from '../../state/hybridGameStore';
-import { GamePhase } from '@kelseyabreu/shared';
 import { useLocalization } from '../../contexts/LocalizationContext';
 import { useTheme } from '../../theme/ThemeProvider';
 import OrganismRenderer from '../OrganismRenderer';
 
 import { unifiedGameService } from '../../services/UnifiedGameService';
 import { getGameSocket } from '../../services/gameSocket';
-import { AIDifficulty } from '@kelseyabreu/shared';
+import { AIDifficulty, GamePhase } from '@kelseyabreu/shared';
 import { AIStrategyFactory } from '@kelseyabreu/shared';
 import PlayerStatsDisplay from '../ui/PlayerStatsDisplay';
 import EndGameModal from '../ui/EndGameModal';
@@ -318,7 +317,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   // Auto-play AI moves when it's AI's turn using AI Strategy
   useEffect(() => {
     if (gameState &&
-        gameState.gamePhase === GamePhase.PLAYING &&
+        (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) &&
         gameState.currentPlayerIndex !== undefined) {
 
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -545,83 +544,98 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
   // End game detection
   useEffect(() => {
-    if (gameState && gameState.gamePhase === 'ended') {
-      console.log('🏁 [TCG] Game ended, checking for end game data');
+    if (!gameState) return;
 
-      try {
-        const engine = unifiedGameService.getEngine(gameState.gameId);
-        if (engine && typeof engine.getEndGameData === 'function') {
-          const endData = engine.getEndGameData();
-          console.log('🏁 [TCG] End game data:', endData);
+    // Check if game has ended
+    const isGameEnded = gameState.gamePhase === GamePhase.ENDED;
 
-          if (endData.isGameEnded) {
-            setEndGameData(endData);
-            setShowEndGameModal(true);
-          }
-        } else {
-          // Fallback: show modal with basic data
-          console.log('🏁 [TCG] Using fallback end game data');
-          setEndGameData({
-            isGameEnded: true,
-            winner: 'Unknown',
-            gameStats: {
-              totalTurns: gameState.turnNumber || 1,
-              endReason: 'Game Complete'
-            }
-          });
-          setShowEndGameModal(true);
+    // Also check engine state directly for more reliable detection
+    let engineGameEnded = false;
+    let engineEndData = null;
+
+    try {
+      const engine = unifiedGameService.getEngine(gameState.gameId);
+      if (engine) {
+        // Check if engine has getEndGameData method
+        if (typeof engine.getEndGameData === 'function') {
+          engineEndData = engine.getEndGameData();
+          engineGameEnded = engineEndData.isGameEnded;
         }
-      } catch (error) {
-        console.error('❌ [TCG] Error getting end game data:', error);
-        // Still show modal with minimal data
-        setEndGameData({
+
+        // Also check engine's game state directly
+        if (typeof engine.getGameState === 'function') {
+          const engineState = engine.getGameState();
+          if (engineState?.gamePhase === GamePhase.ENDED) {
+            engineGameEnded = true;
+          }
+
+          // Check if final turn is complete (all players finished)
+          if (engineState?.gamePhase === GamePhase.FINAL_TURN &&
+              engineState?.finalTurnPlayersRemaining &&
+              engineState.finalTurnPlayersRemaining.length === 0) {
+            engineGameEnded = true;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ [TCG] Error checking engine state:', error);
+    }
+
+    // Show end game modal if game has ended and modal isn't already shown
+    if ((isGameEnded || engineGameEnded) && !showEndGameModal) {
+      console.log('🏁 [TCG] Game ended, showing end game modal');
+
+      // Use engine data if available, otherwise create fallback data
+      let finalEndData = engineEndData;
+
+      if (!finalEndData || !finalEndData.isGameEnded) {
+        // Create fallback end game data
+        const players = gameState.players || [];
+        const humanPlayer = players.find(p => p.id === 'human' || p.name === 'Player');
+        const aiPlayer = players.find(p => p.id === 'ai' || p.name.includes('AI'));
+
+        // Simple victory point calculation fallback
+        const humanVP = humanPlayer?.scorePile?.length || 0;
+        const aiVP = aiPlayer?.scorePile?.length || 0;
+
+        const winner = humanVP > aiVP ? humanPlayer?.name : aiPlayer?.name;
+
+        finalEndData = {
           isGameEnded: true,
-          winner: 'Unknown',
+          winner: winner || 'Unknown',
+          finalScores: [
+            {
+              playerId: humanPlayer?.id || 'human',
+              playerName: humanPlayer?.name || 'Player',
+              victoryPoints: humanVP,
+              deckCount: humanPlayer?.deck?.length || 0,
+              handCount: humanPlayer?.hand?.length || 0,
+              energy: humanPlayer?.energy || 0,
+              cardsPlayed: 0,
+              isWinner: humanVP > aiVP
+            },
+            {
+              playerId: aiPlayer?.id || 'ai',
+              playerName: aiPlayer?.name || 'AI Opponent',
+              victoryPoints: aiVP,
+              deckCount: aiPlayer?.deck?.length || 0,
+              handCount: aiPlayer?.hand?.length || 0,
+              energy: aiPlayer?.energy || 0,
+              cardsPlayed: 0,
+              isWinner: aiVP > humanVP
+            }
+          ].filter(p => p.playerId), // Remove any undefined players
           gameStats: {
             totalTurns: gameState.turnNumber || 1,
             endReason: 'Game Complete'
           }
-        });
-        setShowEndGameModal(true);
+        };
       }
+
+      setEndGameData(finalEndData);
+      setShowEndGameModal(true);
     }
-
-    // Additional check for final turn completion - check engine state directly
-    if (gameState && gameState.gamePhase === 'final_turn') {
-      console.log('🏁 [TCG] Game is in final turn phase, checking engine state');
-
-      try {
-        const engine = unifiedGameService.getEngine(gameState.gameId);
-        if (engine && typeof engine.getGameState === 'function') {
-          const engineState = engine.getGameState();
-          if (engineState) {
-            console.log('🏁 [TCG] Engine state check:', {
-              gamePhase: engineState.gamePhase,
-              finalTurnPlayersRemaining: engineState.finalTurnPlayersRemaining
-            });
-
-            // Check if final turn is complete in the engine
-            if (engineState.gamePhase === 'ended' ||
-                (engineState.finalTurnPlayersRemaining && engineState.finalTurnPlayersRemaining.length === 0)) {
-            console.log('🏁 [TCG] Final turn complete or game ended, checking end game data');
-
-            if (typeof engine.getEndGameData === 'function') {
-              const endData = engine.getEndGameData();
-              console.log('🏁 [TCG] End game data from engine:', endData);
-
-              if (endData.isGameEnded) {
-                setEndGameData(endData);
-                setShowEndGameModal(true);
-              }
-            }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('❌ [TCG] Error in final turn check:', error);
-      }
-    }
-  }, [gameState?.gamePhase, gameState?.gameId, gameState?.turnNumber]);
+  }, [gameState?.gamePhase, gameState?.gameId, gameState?.turnNumber, gameState?.players, showEndGameModal]);
 
   // Handle card selection from hand
   const handleCardSelect = useCallback(async (cardInstanceId: string) => {

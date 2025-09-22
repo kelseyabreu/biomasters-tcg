@@ -283,7 +283,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
 
   // Memoized game state mismatch check - only log when phases actually change
   const phaseMismatch = useMemo(() => {
-    const mismatch = gameState.engineState?.gamePhase === 'setup' && gameState.gamePhase === 'playing';
+    const mismatch = gameState.engineState?.gamePhase === GamePhase.SETUP && gameState.gamePhase === GamePhase.PLAYING;
     if (mismatch) {
       console.log('🚨 [GAME STATE MISMATCH] Engine is in setup but game is playing - this might be why grid is empty');
       console.log('🔧 [GAME STATE MISMATCH] Possible solutions: 1) Start the engine game, 2) Wait for engine to catch up');
@@ -295,7 +295,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
   const grid = gridAnalysis;
 
   // Only log grid errors when they actually occur (not on every render)
-  if (!grid && gameState.gamePhase === 'playing') {
+  if (!grid && gameState.gamePhase === GamePhase.PLAYING) {
     console.error('🚨 [HOME CARDS ERROR] No grid found in game state!');
   }
 
@@ -331,7 +331,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
   }
 
   // If in playing phase but no engine state, show detailed debug
-  if (gameState.gamePhase === 'playing' && !gameState.engineState && isOnlineMode) {
+  if (gameState.gamePhase === GamePhase.PLAYING && !gameState.engineState && isOnlineMode) {
     console.log('🚨 [UnifiedBattleInterface] PLAYING phase but no engine state!');
     console.log('🔍 [UnifiedBattleInterface] Full game state:', JSON.stringify(gameState, null, 2));
   }
@@ -597,7 +597,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
         )}
 
         {/* Game Grid */}
-        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING) &&
+        {(gameState.gamePhase === GamePhase.SETUP || gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.ENDED) &&
          gameState.gameSettings && (gameState.grid || gameState.engineState?.grid) && (
           <EcosystemGrid
             gameSettings={gameState.gameSettings}
@@ -637,7 +637,7 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
         )}
 
         {/* Player Cards */}
-        {gameState.gamePhase === GamePhase.PLAYING && (gameState.players || gameState.engineState?.players) && (() => {
+        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.ENDED) && (gameState.players || gameState.engineState?.players) && (() => {
           const allPlayers = gameState.engineState?.players || gameState.players;
 
           return (

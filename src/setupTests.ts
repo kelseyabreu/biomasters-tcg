@@ -124,3 +124,44 @@ Object.defineProperty(global, 'localStorage', {
 process.env.VITE_FIREBASE_API_KEY = 'test-api-key';
 process.env.VITE_FIREBASE_AUTH_DOMAIN = 'test-auth-domain';
 process.env.VITE_FIREBASE_PROJECT_ID = 'test-project-id';
+
+// Mock the localization hooks to avoid LocalizationProvider context issues
+vi.mock('./hooks/useCardLocalization', () => ({
+  useUILocalization: () => ({
+    getUIText: vi.fn((id: string) => `[${id}]`),
+    currentLanguage: 'en',
+    isLoading: false,
+    getButtonText: vi.fn((id: string) => `[${id}]`),
+    getMenuText: vi.fn((id: string) => `[${id}]`),
+    getErrorText: vi.fn((id: string) => `[${id}]`)
+  }),
+  useCardLocalization: () => ({
+    getCardName: vi.fn((id: string) => `[${id}]`),
+    getScientificName: vi.fn((id: string) => `[${id}]`),
+    getCardDescription: vi.fn((id: string) => `[${id}]`),
+    getAbilityName: vi.fn((id: string) => `[${id}]`),
+    getUIText: vi.fn((id: string) => `[${id}]`),
+    currentLanguage: 'en',
+    isLoading: false,
+    getBatchCardNames: vi.fn(() => ({})),
+    getBatchScientificNames: vi.fn(() => ({})),
+    getBatchCardDescriptions: vi.fn(() => ({})),
+    getCardLocalization: vi.fn(() => ({
+      name: 'Test Card',
+      scientificName: 'Test Scientific',
+      description: 'Test Description'
+    })),
+    preloadLocalizations: vi.fn(),
+    getCacheStats: vi.fn(() => ({ hits: 0, misses: 0, size: 0, hitRate: 0 }))
+  }),
+  useSimpleCardLocalization: () => ({
+    getCardName: vi.fn((id: string) => `[${id}]`),
+    currentLanguage: 'en',
+    isLoading: false,
+    getCardDisplayInfo: vi.fn(() => ({
+      name: 'Test Card',
+      language: 'en',
+      isLoading: false
+    }))
+  })
+}));

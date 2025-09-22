@@ -116,47 +116,47 @@ describe('OnlineMultiplayer Component', () => {
   test('renders online multiplayer page when authenticated', () => {
     renderComponent();
 
-    // Check for main title
-    expect(screen.getByText('Online Multiplayer')).toBeInTheDocument();
+    // Check for main title (mocked localization returns "[{id}]")
+    expect(screen.getByText('[UI_ONLINE_MULTIPLAYER]')).toBeInTheDocument();
 
-    // Check for tab segments (there are multiple "Find Match" texts, so use getAllByText)
-    expect(screen.getAllByText('Find Match')).toHaveLength(2); // Tab label and card title
-    expect(screen.getByText('Rating')).toBeInTheDocument();
-    expect(screen.getByText('Quests')).toBeInTheDocument();
-    expect(screen.getByText('Leaderboard')).toBeInTheDocument();
+    // Check for tab segments (mocked localization returns "[{id}]")
+    expect(screen.getAllByText('[UI_FIND_MATCH]')).toHaveLength(2); // Tab label and card title
+    expect(screen.getByText('[UI_RATING]')).toBeInTheDocument();
+    expect(screen.getByText('[UI_QUESTS]')).toBeInTheDocument();
+    expect(screen.getByText('[UI_LEADERBOARD]')).toBeInTheDocument();
   });
 
   test('displays matchmaking interface by default', () => {
     renderComponent();
-    
-    // Check for game mode selection
-    expect(screen.getByText('Ranked 1v1')).toBeInTheDocument();
-    expect(screen.getByText('Casual 1v1')).toBeInTheDocument();
-    expect(screen.getByText('Team 2v2')).toBeInTheDocument();
-    
+
+    // Check for game mode selection (mocked localization returns "[{id}]")
+    expect(screen.getByText('[UI_RANKED_1V1]')).toBeInTheDocument();
+    expect(screen.getByText('[UI_CASUAL_1V1]')).toBeInTheDocument();
+    expect(screen.getByText('[UI_TEAM_2V2]')).toBeInTheDocument();
+
     // Check for find match button
-    expect(screen.getByText('Find ranked_1v1 Match')).toBeInTheDocument();
+    expect(screen.getByTestId('find-match-button')).toBeInTheDocument();
   });
 
   test('displays rating information', () => {
     renderComponent();
-    
+
     // Switch to rating tab (this would require user interaction in a real test)
     // For now, we just verify the component renders without errors
-    expect(screen.getByText('Online Multiplayer')).toBeInTheDocument();
+    expect(screen.getByText('[UI_ONLINE_MULTIPLAYER]')).toBeInTheDocument();
   });
 
   test('handles empty quest state', () => {
     renderComponent();
-    
+
     // Component should render without errors even with empty quest data
-    expect(screen.getByText('Online Multiplayer')).toBeInTheDocument();
+    expect(screen.getByText('[UI_ONLINE_MULTIPLAYER]')).toBeInTheDocument();
   });
 
   test('handles empty leaderboard state', () => {
     renderComponent();
-    
+
     // Component should render without errors even with empty leaderboard data
-    expect(screen.getByText('Online Multiplayer')).toBeInTheDocument();
+    expect(screen.getByText('[UI_ONLINE_MULTIPLAYER]')).toBeInTheDocument();
   });
 });

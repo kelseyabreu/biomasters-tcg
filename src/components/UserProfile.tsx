@@ -31,6 +31,8 @@ import { useHybridGameStore } from '../state/hybridGameStore';
 import { getCollectionStats } from '@kelseyabreu/shared';
 import { AuthModal } from './auth/AuthModal';
 import { Avatar } from './Avatar';
+import { useUILocalization } from '../hooks/useCardLocalization';
+import { UITextId } from '@kelseyabreu/shared';
 import './UserProfile.css';
 
 interface UserProfileProps {
@@ -44,7 +46,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  
+  const { getUIText } = useUILocalization();
+
   const {
     isAuthenticated,
     isGuestMode,
@@ -156,8 +159,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                      userInfo.accountType === 'guest' ? 'warning' : 'medium'}
 
             >
-              {userInfo.accountType === 'registered' ? 'Registered' :
-               userInfo.accountType === 'guest' ? 'Guest' : 'Not Signed In'}
+              {userInfo.accountType === 'registered' ? getUIText(UITextId.UI_REGISTERED) :
+               userInfo.accountType === 'guest' ? getUIText(UITextId.UI_GUEST) : getUIText(UITextId.UI_NOT_SIGNED_IN)}
             </IonBadge>
           </div>
         </div>
@@ -170,7 +173,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             onClick={handleCTAClick}
           >
             <IonIcon icon={shield} slot="start" />
-            {userInfo.accountType === 'guest' ? 'Secure Account' : 'Sign In'}
+            {userInfo.accountType === 'guest' ? getUIText(UITextId.UI_SECURE_ACCOUNT) : getUIText(UITextId.UI_SIGN_IN)}
           </IonButton>
         )}
 

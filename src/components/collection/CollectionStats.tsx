@@ -23,7 +23,7 @@ export const CollectionStats: React.FC<CollectionStatsProps> = ({ stats }) => {
   return (
     <IonCard className="collection-stats-card">
       <IonCardHeader>
-        <IonCardTitle>Collection Progress</IonCardTitle>
+        <IonCardTitle>{getUIText(UITextId.UI_COLLECTION_PROGRESS)}</IonCardTitle>
       </IonCardHeader>
       
       <IonCardContent>

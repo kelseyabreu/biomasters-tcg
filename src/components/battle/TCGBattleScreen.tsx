@@ -3,7 +3,7 @@
  * BioMasters Trading Card Game battle interface using ClientGameEngine
  */
 
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo } from 'react';
 import './TCGBattleScreen.css';
 import '../game/EcosystemBoard.css';
 import {
@@ -552,6 +552,9 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   useEffect(() => {
     if (!gameState) return;
 
+    // Skip if modal is already shown to prevent repeated execution
+    if (showEndGameModal) return;
+
     // Check if game has ended
     const isGameEnded = gameState.gamePhase === GamePhase.ENDED;
 
@@ -589,7 +592,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
     }
 
     // Show end game modal if game has ended and modal isn't already shown
-    if ((isGameEnded || engineGameEnded) && !showEndGameModal) {
+    if (isGameEnded || engineGameEnded) {
       console.log('🏁 [TCG] Game ended, showing end game modal');
 
       // Use engine data if available, otherwise create fallback data
@@ -642,7 +645,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       setEndGameData(finalEndData);
       setShowEndGameModal(true);
     }
-  }, [gameState?.gamePhase, gameState?.gameId, gameState?.turnNumber, gameState?.players, showEndGameModal]);
+  }, [gameState?.gamePhase, gameState?.gameId, showEndGameModal]);
 
   // Handle card selection from hand
   const handleCardSelect = useCallback(async (cardInstanceId: string) => {
@@ -964,6 +967,22 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
     }
   }, [speciesLoaded, loadSpeciesData]);
 
+  // Memoize game progress to prevent infinite loops
+  const gameProgress = useMemo(() => {
+    if (!gameState?.gameId) return null;
+
+    try {
+      const engine = unifiedGameService.getEngine(gameState.gameId);
+      if (engine && typeof engine.getGameProgress === 'function') {
+        return engine.getGameProgress();
+      }
+    } catch (error) {
+      console.warn('🔍 [TCG] Could not get enhanced stats:', error);
+    }
+
+    return null;
+  }, [gameState?.gameId, gameState?.currentPlayerIndex, gameState?.gamePhase, gameState?.turnNumber]);
+
 
 
   // Helper function to get card data from the store (no hooks inside)
@@ -1234,22 +1253,13 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       <IonContent>
         {/* Enhanced Player Stats Display */}
         {(() => {
-          try {
-            // Get engine instance to access new methods
-            const engine = unifiedGameService.getEngine(gameState.gameId);
-            if (engine && typeof engine.getGameProgress === 'function') {
-              const gameProgress = engine.getGameProgress();
+          // Use memoized game progress to prevent infinite loops
+          if (gameProgress) {
+            return (
+              <div>
 
-              return (
-                <div>
-
-                </div>
-              );
-            } else {
-              console.warn('🔍 [TCG] Engine or getGameProgress not available, using fallback');
-            }
-          } catch (error) {
-            console.warn('🔍 [TCG] Could not get enhanced stats, using fallback:', error);
+              </div>
+            );
           }
 
           // Fallback to simple message if enhanced stats not available

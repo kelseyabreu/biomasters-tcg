@@ -3,7 +3,7 @@
  * Shows winner, final scores, and game statistics
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   IonModal,
   IonHeader,
@@ -81,15 +81,25 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
   // Get localization
   const { getUIText } = useUILocalization();
 
-  // Track quest progress when game ends
+  // Track if we've already tracked this game completion to prevent duplicates
+  const hasTrackedCompletion = useRef(false);
+
+  // Track quest progress when game ends (only once per modal opening)
   useEffect(() => {
-    if (isOpen && winner && userId) {
+    if (isOpen && winner && userId && !hasTrackedCompletion.current) {
+      hasTrackedCompletion.current = true;
+
       // Track game completion for quest progress
       trackGameCompletion({
         winner: isPlayerWinner ? userId : null,
         gameMode: 'practice', // This could be passed as a prop in the future
         playerId: userId
       });
+    }
+
+    // Reset tracking flag when modal closes
+    if (!isOpen) {
+      hasTrackedCompletion.current = false;
     }
   }, [isOpen, winner, isPlayerWinner, userId, trackGameCompletion]);
 

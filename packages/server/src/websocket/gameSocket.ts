@@ -2077,7 +2077,7 @@ async function calculateRatingChanges(players: any[], winnerId: string | null, g
  */
 async function cleanupMatchmakingState(playerIds: string[]) {
   try {
-    const { getRedisClient } = await import('../config/redis');
+    const { getRedisClient } = await import('../config/ioredis');
     const redis = getRedisClient();
 
     if (redis) {

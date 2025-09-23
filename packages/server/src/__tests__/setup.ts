@@ -16,7 +16,7 @@ process.env['JWT_SECRET'] = process.env['JWT_SECRET'] || 'test-secret';
 // Import real database connection for integration testing
 import { db, closeSingletonPool } from '../database/kysely';
 import { initializeDatabase, closeDatabase, checkDatabaseHealth } from '../config/database';
-import { initializeRedis } from '../config/redis';
+import { initializeRedis } from '../config/ioredis';
 
 // Global database setup for real integration testing
 let databaseAvailable = false;

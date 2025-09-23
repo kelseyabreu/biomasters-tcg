@@ -7,9 +7,8 @@ import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { scalableFirebaseAuth } from '../utils/firebase-scaling';
 import { db } from '../database/kysely';
-import { isRedisAvailable, CacheManager } from '../config/redis';
+import { isRedisAvailable, CacheManager, checkRedisHealth } from '../config/ioredis';
 import { getGameWorkerManager } from '../services/GameWorkerManager';
-import { checkIORedisHealth } from '../config/ioredis';
 
 const router = Router();
 
@@ -332,7 +331,7 @@ router.get('/worker/metrics', asyncHandler(async (_req: Request, res: Response) 
  */
 router.get('/ioredis', asyncHandler(async (_req: Request, res: Response) => {
   try {
-    const isHealthy = await checkIORedisHealth();
+    const isHealthy = await checkRedisHealth();
 
     if (isHealthy) {
       res.json({
@@ -366,7 +365,7 @@ router.get('/redis-debug', asyncHandler(async (_req: Request, res: Response) => 
   try {
     console.log('🔴 [DEBUG] Redis debug endpoint called');
 
-    const redisClient = require('../config/redis').redisClient;
+    const redisClient = require('../config/ioredis').ioredisClient;
     const isAvailable = isRedisAvailable();
 
     console.log('🔴 [DEBUG] Redis client exists:', !!redisClient);

@@ -5,7 +5,7 @@
 
 import { Message } from '@google-cloud/pubsub';
 import { MatchmakingService } from '../../services/MatchmakingService';
-import { pubsub, PUBSUB_TOPICS, PUBSUB_SUBSCRIPTIONS } from '../../config/pubsub';
+import { getPubSubClient, PUBSUB_TOPICS, PUBSUB_SUBSCRIPTIONS } from '../../config/pubsub';
 
 describe('Pub/Sub Connectivity Tests', () => {
   let matchmakingService: MatchmakingService;
@@ -25,8 +25,8 @@ describe('Pub/Sub Connectivity Tests', () => {
   afterAll(async () => {
     // Cleanup test resources with proper error handling
     try {
-      const topic = pubsub.topic(testTopicName);
-      const subscription = pubsub.subscription(testSubscriptionName);
+      const topic = getPubSubClient().topic(testTopicName);
+      const subscription = getPubSubClient().subscription(testSubscriptionName);
 
       // Check if resources exist before trying to delete
       const [topicExists] = await topic.exists();
@@ -43,7 +43,7 @@ describe('Pub/Sub Connectivity Tests', () => {
       }
 
       // Force close Pub/Sub client connections
-      await pubsub.close();
+      await getPubSubClient().close();
 
       // Give time for connections to close
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -59,7 +59,7 @@ describe('Pub/Sub Connectivity Tests', () => {
     }, 10000);
 
     test('should list existing topics', async () => {
-      const [topics] = await pubsub.getTopics();
+      const [topics] = await getPubSubClient().getTopics();
       expect(topics.length).toBeGreaterThan(0);
       
       // Check for our expected topics
@@ -70,7 +70,7 @@ describe('Pub/Sub Connectivity Tests', () => {
     }, 10000);
 
     test('should list existing subscriptions', async () => {
-      const [subscriptions] = await pubsub.getSubscriptions();
+      const [subscriptions] = await getPubSubClient().getSubscriptions();
       expect(subscriptions.length).toBeGreaterThan(0);
       
       // Check for our expected subscriptions
@@ -80,7 +80,7 @@ describe('Pub/Sub Connectivity Tests', () => {
     }, 10000);
 
     test('should create and delete test topic', async () => {
-      const topic = pubsub.topic(testTopicName);
+      const topic = getPubSubClient().topic(testTopicName);
       
       // Create topic
       await topic.create();
@@ -108,7 +108,7 @@ describe('Pub/Sub Connectivity Tests', () => {
       const uniqueSubName = `${testSubscriptionName}-msg-${Date.now()}`;
 
       // Create test topic and subscription
-      const topic = pubsub.topic(uniqueTopicName);
+      const topic = getPubSubClient().topic(uniqueTopicName);
 
       try {
         await topic.create();
@@ -193,7 +193,7 @@ describe('Pub/Sub Connectivity Tests', () => {
       const uniqueTopicName = `${testTopicName}-ack-${Date.now()}`;
       const uniqueSubName = `${testSubscriptionName}-ack-${Date.now()}`;
 
-      const topic = pubsub.topic(uniqueTopicName);
+      const topic = getPubSubClient().topic(uniqueTopicName);
 
       try {
         await topic.create();
@@ -258,7 +258,7 @@ describe('Pub/Sub Connectivity Tests', () => {
 
   describe('Matchmaking Topic Integration', () => {
     test('should publish to matchmaking-requests topic', async () => {
-      const topic = pubsub.topic(PUBSUB_TOPICS.MATCHMAKING_REQUESTS);
+      const topic = getPubSubClient().topic(PUBSUB_TOPICS.MATCHMAKING_REQUESTS);
       const [exists] = await topic.exists();
       expect(exists).toBe(true);
       
@@ -283,7 +283,7 @@ describe('Pub/Sub Connectivity Tests', () => {
     }, 10000);
 
     test('should verify subscription configurations', async () => {
-      const subscription = pubsub.subscription(PUBSUB_SUBSCRIPTIONS.MATCHMAKING_WORKER);
+      const subscription = getPubSubClient().subscription(PUBSUB_SUBSCRIPTIONS.MATCHMAKING_WORKER);
       const [exists] = await subscription.exists();
       expect(exists).toBe(true);
       
@@ -295,13 +295,13 @@ describe('Pub/Sub Connectivity Tests', () => {
 
   describe('Error Handling', () => {
     test('should handle non-existent topic gracefully', async () => {
-      const nonExistentTopic = pubsub.topic('non-existent-topic-12345');
+      const nonExistentTopic = getPubSubClient().topic('non-existent-topic-12345');
       const [exists] = await nonExistentTopic.exists();
       expect(exists).toBe(false);
     });
 
     test('should handle publishing to non-existent topic', async () => {
-      const nonExistentTopic = pubsub.topic('non-existent-topic-12345');
+      const nonExistentTopic = getPubSubClient().topic('non-existent-topic-12345');
       
       await expect(nonExistentTopic.publishMessage({
         data: Buffer.from('test')
@@ -309,7 +309,7 @@ describe('Pub/Sub Connectivity Tests', () => {
     });
 
     test('should handle subscription errors gracefully', async () => {
-      const nonExistentSub = pubsub.subscription('non-existent-subscription-12345');
+      const nonExistentSub = getPubSubClient().subscription('non-existent-subscription-12345');
       const [exists] = await nonExistentSub.exists();
       expect(exists).toBe(false);
     });
@@ -319,7 +319,7 @@ describe('Pub/Sub Connectivity Tests', () => {
     test('should handle multiple rapid messages', async () => {
       // Create unique topic name for this test
       const uniqueTopicName = `${testTopicName}-perf-${Date.now()}`;
-      const topic = pubsub.topic(uniqueTopicName);
+      const topic = getPubSubClient().topic(uniqueTopicName);
 
       try {
         await topic.create();
@@ -354,7 +354,7 @@ describe('Pub/Sub Connectivity Tests', () => {
       const uniqueTopicName = `${testTopicName}-latency-${Date.now()}`;
       const uniqueSubName = `${testSubscriptionName}-latency-${Date.now()}`;
 
-      const topic = pubsub.topic(uniqueTopicName);
+      const topic = getPubSubClient().topic(uniqueTopicName);
 
       try {
         await topic.create();

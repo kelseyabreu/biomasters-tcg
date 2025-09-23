@@ -5,13 +5,13 @@ let ioredisAvailable = false;
 let ioredisInitialized = false;
 
 /**
- * IORedis configuration for game worker system
- * This provides the advanced Redis operations needed for distributed locking
+ * Unified Redis configuration using IORedis
+ * This provides all Redis operations: caching, rate limiting, distributed locking, matchmaking, etc.
  */
-function getIORedisConfig() {
-  console.log('🔴 [IORedis] getIORedisConfig called');
-  console.log('🔴 [IORedis] NODE_ENV:', process.env['NODE_ENV']);
-  console.log('🔴 [IORedis] REDIS_URL:', process.env['REDIS_URL'] ? 'SET' : 'NOT SET');
+function getRedisConfig() {
+  console.log('🔴 [Redis] getRedisConfig called');
+  console.log('🔴 [Redis] NODE_ENV:', process.env['NODE_ENV']);
+  console.log('🔴 [Redis] REDIS_URL:', process.env['REDIS_URL'] ? 'SET' : 'NOT SET');
 
   // Use the exact same configuration as our working test script
   const config: any = {
@@ -85,7 +85,7 @@ export async function initializeIORedis(): Promise<void> {
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const redisConfig = getIORedisConfig();
+      const redisConfig = getRedisConfig();
       console.log(`🔴 [IORedis] Attempt ${attempt}/${maxRetries} - Connecting to Redis...`);
       console.log('🔴 [IORedis] Environment variables:', {
         REDIS_HOST: process.env['REDIS_HOST'],
@@ -273,5 +273,248 @@ export async function closeIORedis(): Promise<void> {
   }
 }
 
+/**
+ * In-memory cache fallback for when Redis is unavailable
+ */
+class MemoryCache {
+  private static cache = new Map<string, { value: any; expires?: number }>();
+
+  static set(key: string, value: any, expirationSeconds?: number): void {
+    const expires = expirationSeconds ? Date.now() + (expirationSeconds * 1000) : undefined;
+    if (expires) {
+      this.cache.set(key, { value, expires });
+    } else {
+      this.cache.set(key, { value });
+    }
+  }
+
+  static get<T = any>(key: string): T | null {
+    const item = this.cache.get(key);
+    if (!item) return null;
+
+    if (item.expires && Date.now() > item.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return item.value as T;
+  }
+
+  static delete(key: string): boolean {
+    return this.cache.delete(key);
+  }
+
+  static clear(): void {
+    this.cache.clear();
+  }
+
+  static size(): number {
+    return this.cache.size;
+  }
+}
+
+/**
+ * Cache utilities with Redis and memory fallback
+ */
+export class CacheManager {
+  private static getClient() {
+    return getIORedisClient();
+  }
+
+  /**
+   * Set a value in cache with optional expiration
+   */
+  static async set(key: string, value: any, expirationSeconds?: number): Promise<void> {
+    const client = this.getClient();
+
+    if (!client || !isIORedisAvailable()) {
+      // Use memory cache fallback
+      MemoryCache.set(key, value, expirationSeconds);
+      return;
+    }
+
+    try {
+      if (expirationSeconds) {
+        await client.setex(key, expirationSeconds, value);
+      } else {
+        await client.set(key, value);
+      }
+    } catch (error) {
+      console.warn('Redis cache set failed, using memory fallback:', error);
+      MemoryCache.set(key, value, expirationSeconds);
+    }
+  }
+
+  /**
+   * Get a value from cache
+   */
+  static async get<T = any>(key: string): Promise<T | null> {
+    const client = this.getClient();
+
+    if (!client || !isIORedisAvailable()) {
+      // Use memory cache fallback
+      return MemoryCache.get<T>(key);
+    }
+
+    try {
+      const value = await client.get(key);
+      return value as T;
+    } catch (error) {
+      console.warn('Redis cache get failed, using memory fallback:', error);
+      return MemoryCache.get<T>(key);
+    }
+  }
+
+  /**
+   * Delete a key from cache
+   */
+  static async delete(key: string): Promise<boolean> {
+    const client = this.getClient();
+
+    if (!client || !isIORedisAvailable()) {
+      // Use memory cache fallback
+      return MemoryCache.delete(key);
+    }
+
+    try {
+      const result = await client.del(key);
+      return result > 0;
+    } catch (error) {
+      console.warn('Redis cache delete failed, using memory fallback:', error);
+      return MemoryCache.delete(key);
+    }
+  }
+
+  /**
+   * Check if a key exists in cache
+   */
+  static async exists(key: string): Promise<boolean> {
+    try {
+      const client = this.getClient();
+      if (!client || !isIORedisAvailable()) {
+        return false;
+      }
+      const result = await client.exists(key);
+      return result > 0;
+    } catch (error) {
+      if (process.env['NODE_ENV'] === 'test') {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Set multiple key-value pairs
+   */
+  static async mset(keyValuePairs: Record<string, any>): Promise<void> {
+    const client = this.getClient();
+
+    if (!client || !isIORedisAvailable()) {
+      // Use memory cache fallback
+      Object.entries(keyValuePairs).forEach(([key, value]) => {
+        MemoryCache.set(key, value);
+      });
+      return;
+    }
+
+    try {
+      const pairs: string[] = [];
+      Object.entries(keyValuePairs).forEach(([key, value]) => {
+        pairs.push(key, value);
+      });
+      await client.mset(...pairs);
+    } catch (error) {
+      console.warn('Redis mset failed, using memory fallback:', error);
+      Object.entries(keyValuePairs).forEach(([key, value]) => {
+        MemoryCache.set(key, value);
+      });
+    }
+  }
+
+  /**
+   * Get multiple values by keys
+   */
+  static async mget<T = any>(keys: string[]): Promise<(T | null)[]> {
+    const client = this.getClient();
+
+    if (!client || !isIORedisAvailable()) {
+      // Use memory cache fallback
+      return keys.map(key => MemoryCache.get<T>(key));
+    }
+
+    try {
+      const values = await client.mget(...keys);
+      return values as (T | null)[];
+    } catch (error) {
+      console.warn('Redis mget failed, using memory fallback:', error);
+      return keys.map(key => MemoryCache.get<T>(key));
+    }
+  }
+}
+
+/**
+ * Session management utilities
+ */
+export class SessionManager {
+  private static SESSION_PREFIX = 'session:';
+  private static DEFAULT_EXPIRATION = 7 * 24 * 60 * 60; // 7 days
+
+  /**
+   * Create a new session
+   */
+  static async createSession(sessionId: string, data: any, expirationSeconds?: number): Promise<void> {
+    const key = this.SESSION_PREFIX + sessionId;
+    const expiration = expirationSeconds || this.DEFAULT_EXPIRATION;
+    await CacheManager.set(key, JSON.stringify(data), expiration);
+  }
+
+  /**
+   * Get session data
+   */
+  static async getSession<T = any>(sessionId: string): Promise<T | null> {
+    const key = this.SESSION_PREFIX + sessionId;
+    const data = await CacheManager.get<string>(key);
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as T;
+    } catch (error) {
+      console.error('Failed to parse session data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update session data
+   */
+  static async updateSession(sessionId: string, data: any, expirationSeconds?: number): Promise<void> {
+    await this.createSession(sessionId, data, expirationSeconds);
+  }
+
+  /**
+   * Delete a session
+   */
+  static async deleteSession(sessionId: string): Promise<boolean> {
+    const key = this.SESSION_PREFIX + sessionId;
+    return await CacheManager.delete(key);
+  }
+
+  /**
+   * Check if session exists
+   */
+  static async sessionExists(sessionId: string): Promise<boolean> {
+    const key = this.SESSION_PREFIX + sessionId;
+    return await CacheManager.exists(key);
+  }
+}
+
 // Export the client for direct access
 export { ioredisClient };
+
+// Export aliases for backward compatibility
+export const getRedisClient = getIORedisClient;
+export const isRedisAvailable = isIORedisAvailable;
+export const checkRedisHealth = checkIORedisHealth;
+export const closeRedis = closeIORedis;
+export const initializeRedis = initializeIORedis;

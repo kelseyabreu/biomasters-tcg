@@ -4,7 +4,7 @@
  */
 
 import { Message, Subscription } from '@google-cloud/pubsub';
-import { getRedisClient, isRedisAvailable } from '../config/redis';
+import { getIORedisClient, isIORedisAvailable } from '../config/ioredis';
 import crypto from 'crypto';
 import { db } from '../database/kysely';
 import { getSubscription, publishMessage, PUBSUB_TOPICS, PUBSUB_SUBSCRIPTIONS } from '../config/pubsub';
@@ -22,8 +22,8 @@ export class MatchmakingWorker {
     }
 
     private getRedis() {
-        const client = getRedisClient();
-        if (!client || !isRedisAvailable()) {
+        const client = getIORedisClient();
+        if (!client || !isIORedisAvailable()) {
             throw new Error('Redis not available for matchmaking worker');
         }
         return client;

@@ -3,9 +3,9 @@
  * Handles distributed matchmaking with Redis queues and Pub/Sub messaging
  */
 
-import { getRedisClient, isRedisAvailable } from '../config/redis';
+import { getIORedisClient, isIORedisAvailable } from '../config/ioredis';
 import { db } from '../database/kysely';
-import { pubsub, PUBSUB_TOPICS, publishMessage } from '../config/pubsub';
+import { getPubSubClient, PUBSUB_TOPICS, publishMessage } from '../config/pubsub';
 import { MatchmakingRequest, MatchmakingQueueEntry } from '@kelseyabreu/shared';
 
 export class MatchmakingService {
@@ -17,13 +17,13 @@ export class MatchmakingService {
     }
 
     private getRedis() {
-        const client = getRedisClient();
-        if (!client || !isRedisAvailable()) {
+        const client = getIORedisClient();
+        if (!client || !isIORedisAvailable()) {
             // In test environment, provide more detailed error information
             if (process.env['NODE_ENV'] === 'test') {
                 console.error('🔴 [MatchmakingService] Redis not available in test environment');
                 console.error('🔴 [MatchmakingService] Client exists:', !!client);
-                console.error('🔴 [MatchmakingService] Redis available:', isRedisAvailable());
+                console.error('🔴 [MatchmakingService] Redis available:', isIORedisAvailable());
                 throw new Error('Redis not available for matchmaking - check tunnel connection');
             }
             throw new Error('Redis not available for matchmaking');
@@ -469,7 +469,7 @@ export class MatchmakingService {
 
         try {
             // Test Pub/Sub
-            const topic = pubsub.topic('matchmaking-requests');
+            const topic = getPubSubClient().topic('matchmaking-requests');
             const [exists] = await topic.exists();
             health.pubsub = exists;
         } catch (error) {

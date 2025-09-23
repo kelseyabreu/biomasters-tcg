@@ -4,7 +4,7 @@ import { strictRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
 import { setCustomUserClaims } from '../config/firebase';
-import { CacheManager } from '../config/redis';
+import { CacheManager } from '../config/ioredis';
 import { sql } from 'kysely';
 import admin from 'firebase-admin';
 

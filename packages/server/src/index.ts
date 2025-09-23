@@ -18,31 +18,10 @@ console.log('  Working directory:', process.cwd());
 // Import configurations and middleware
 import { initializeFirebase } from './config/firebase';
 import { initializeKysely } from './database/kysely';
-import { initializeRedis } from './config/redis';
-import { initializeIORedis, getIORedisClient, isIORedisAvailable } from './config/ioredis';
+import { initializeRedis, getIORedisClient, isIORedisAvailable } from './config/ioredis';
 import { errorHandler } from './middleware/errorHandler';
-import { rateLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/logger';
 
-// Import routes
-import authRoutes from './routes/auth';
-import guestAuthRoutes from './routes/guestAuth';
-import userRoutes from './routes/users';
-import cardRoutes from './routes/cards';
-import deckRoutes from './routes/decks';
-import syncRoutes from './routes/sync';
-import gameRoutes from './routes/game';
-import adminRoutes from './routes/admin';
-import localizationRoutes from './routes/localization';
-import staticDataRoutes from './routes/staticData';
-import testRoutes from './routes/test';
-import matchmakingRoutes from './routes/matchmaking';
-import ratingsRoutes from './routes/ratings';
-import questsRoutes from './routes/quests';
-import matchesRoutes from './routes/matches';
-import leaderboardRoutes from './routes/leaderboard';
-import healthRoutes from './routes/health';
-import productsRoutes from './routes/products';
 
 // Import unified data loader factory
 import { createProductionDataLoader, createDevelopmentDataLoader } from '@kelseyabreu/shared';
@@ -63,6 +42,86 @@ import { initializeGameWorkerManager } from './services/GameWorkerManager';
 
 const app = express();
 const PORT = process.env['PORT'] || 3001;
+
+// Function to register routes after Redis initialization
+async function registerRoutes() {
+  console.log('🔧 DEBUG: Dynamically importing and registering routes...');
+
+  // Import routes dynamically to ensure Redis is initialized first
+  const { default: authRoutes } = await import('./routes/auth');
+  const { default: guestAuthRoutes } = await import('./routes/guestAuth');
+  const { default: userRoutes } = await import('./routes/users');
+  const { default: cardRoutes } = await import('./routes/cards');
+  const { default: deckRoutes } = await import('./routes/decks');
+  const { default: syncRoutes } = await import('./routes/sync');
+  const { default: gameRoutes } = await import('./routes/game');
+  const { default: adminRoutes } = await import('./routes/admin');
+  const { default: localizationRoutes } = await import('./routes/localization');
+  const { default: staticDataRoutes } = await import('./routes/staticData');
+  const { default: testRoutes } = await import('./routes/test');
+  const { default: matchmakingRoutes } = await import('./routes/matchmaking');
+  const { default: ratingsRoutes } = await import('./routes/ratings');
+  const { default: questsRoutes } = await import('./routes/quests');
+  const { default: matchesRoutes } = await import('./routes/matches');
+  const { default: leaderboardRoutes } = await import('./routes/leaderboard');
+  const { default: healthRoutes } = await import('./routes/health');
+  const { default: productsRoutes } = await import('./routes/products');
+
+  // Health check routes (before authentication)
+  console.log('🔧 DEBUG: Registering health routes...');
+  app.use('/health', healthRoutes);
+
+  // API routes
+  console.log('🔧 DEBUG: Registering API routes...');
+  console.log('🔧 DEBUG: cardRoutes type:', typeof cardRoutes);
+  console.log('🔧 DEBUG: cardRoutes stack length:', cardRoutes?.stack?.length || 'undefined');
+  app.use('/api/auth', authRoutes);
+  app.use('/api/guest', guestAuthRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/cards', cardRoutes);
+  app.use('/api/decks', deckRoutes);
+  app.use('/api/sync', syncRoutes);
+  app.use('/api/game', gameRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/localization', localizationRoutes);
+  app.use('/api/static-data', staticDataRoutes);
+  app.use('/api/matchmaking', matchmakingRoutes);
+  app.use('/api/ratings', ratingsRoutes);
+  app.use('/api/quests', questsRoutes);
+  app.use('/api/matches', matchesRoutes);
+  app.use('/api/leaderboard', leaderboardRoutes);
+  app.use('/api/products', productsRoutes);
+  console.log('🔧 DEBUG: All API routes registered successfully');
+
+  // DEBUG: Add a direct test route
+  app.get('/api/test-direct', (_req, res) => {
+    res.json({ message: 'Direct route works!', timestamp: new Date().toISOString() });
+  });
+  console.log('🔧 DEBUG: Direct test route added');
+
+  // Test routes (only available in non-production environments)
+  if (process.env['NODE_ENV'] !== 'production') {
+    app.use('/api/test', testRoutes);
+  }
+
+  // List all registered routes for debugging
+  listRegisteredRoutes();
+
+  // 404 handler (must be after all routes)
+  app.use('*', (req, res) => {
+    console.log('🚨🚨🚨 404 HANDLER HIT:', req.method, req.originalUrl);
+    console.log('🔧 DEBUG: Request headers:', JSON.stringify(req.headers, null, 2));
+    console.log('🔧 DEBUG: Available routes should include /health and /api/*');
+    res.status(404).json({
+      error: 'Not Found',
+      message: `Route ${req.originalUrl} not found`,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Error handling middleware (must be last)
+  app.use(errorHandler);
+}
 
 // Basic health check endpoint (defined first to avoid middleware conflicts)
 app.get('/health', async (_req, res) => {
@@ -103,10 +162,9 @@ app.get('/health', async (_req, res) => {
       // Redis health check (using regular Redis client) - simplified to avoid timing issues
       (async () => {
         try {
-          const { isRedisAvailable } = await import('./config/redis');
           // Return true if Redis is available, false otherwise
           // Detailed health check is available at /health/redis endpoint
-          return isRedisAvailable();
+          return isIORedisAvailable();
         } catch (error) {
           console.error('Redis health check error:', error);
           return false;
@@ -160,7 +218,7 @@ async function initializeServices() {
 
     console.log('🔴 Initializing IORedis connection...');
     try {
-      await initializeIORedis();
+      await initializeRedis();
       console.log('✅ IORedis initialization completed');
     } catch (error) {
       console.error('❌ [STARTUP] IORedis initialization failed:', error);
@@ -577,70 +635,22 @@ app.post('/api/health/migrations/run', async (_req, res) => {
   }
 });
 
-// Health check routes (before authentication)
-console.log('🔧 DEBUG: Registering health routes...');
-app.use('/health', healthRoutes);
-
-// API routes
-console.log('🔧 DEBUG: Registering API routes...');
-console.log('🔧 DEBUG: cardRoutes type:', typeof cardRoutes);
-console.log('🔧 DEBUG: cardRoutes stack length:', cardRoutes?.stack?.length || 'undefined');
-app.use('/api/auth', authRoutes);
-app.use('/api/guest', guestAuthRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/cards', cardRoutes);
-app.use('/api/decks', deckRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/game', gameRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/localization', localizationRoutes);
-app.use('/api/static-data', staticDataRoutes);
-app.use('/api/matchmaking', matchmakingRoutes);
-app.use('/api/ratings', ratingsRoutes);
-app.use('/api/quests', questsRoutes);
-app.use('/api/matches', matchesRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/products', productsRoutes);
-console.log('🔧 DEBUG: All API routes registered successfully');
-
-// DEBUG: Add a direct test route
-app.get('/api/test-direct', (req, res) => {
-  res.json({ message: 'Direct route works!', timestamp: new Date().toISOString() });
-});
-console.log('🔧 DEBUG: Direct test route added');
-
 // Debug: List all registered routes
-console.log('🔧 DEBUG: Listing all registered routes...');
-app._router.stack.forEach((middleware: any, index: number) => {
-  if (middleware.route) {
-    console.log(`🔧 Route ${index}: ${middleware.route.path} [${Object.keys(middleware.route.methods).join(', ')}]`);
-  } else if (middleware.name === 'router') {
-    console.log(`🔧 Router ${index}: ${middleware.regexp} (${middleware.handle?.stack?.length || 0} routes)`);
-  } else {
-    console.log(`🔧 Middleware ${index}: ${middleware.name || 'anonymous'}`);
-  }
-});
-console.log('🔧 DEBUG: Route listing complete');
-
-// Test routes (only available in non-production environments)
-if (process.env['NODE_ENV'] !== 'production') {
-  app.use('/api/test', testRoutes);
+function listRegisteredRoutes() {
+  console.log('🔧 DEBUG: Listing all registered routes...');
+  app._router.stack.forEach((middleware: any, index: number) => {
+    if (middleware.route) {
+      console.log(`🔧 Route ${index}: ${middleware.route.path} [${Object.keys(middleware.route.methods).join(', ')}]`);
+    } else if (middleware.name === 'router') {
+      console.log(`🔧 Router ${index}: ${middleware.regexp} (${middleware.handle?.stack?.length || 0} routes)`);
+    } else {
+      console.log(`🔧 Middleware ${index}: ${middleware.name || 'anonymous'}`);
+    }
+  });
+  console.log('🔧 DEBUG: Route listing complete');
 }
 
-// 404 handler
-app.use('*', (req, res) => {
-  console.log('🚨🚨🚨 404 HANDLER HIT:', req.method, req.originalUrl);
-  console.log('🔧 DEBUG: Request headers:', JSON.stringify(req.headers, null, 2));
-  console.log('🔧 DEBUG: Available routes should include /health and /api/*');
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.originalUrl} not found`,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Error handling middleware (must be last)
-app.use(errorHandler);
+// 404 handler and error handling middleware will be registered after routes
 
 // Create HTTP server
 const server = createServer(app);
@@ -787,7 +797,10 @@ async function startServer() {
   try {
     console.log('🔧 DEBUG: Starting server initialization...');
     await initializeServices();
-    console.log('🔧 DEBUG: Services initialized, starting HTTP server...');
+    console.log('🔧 DEBUG: Services initialized, registering routes...');
+
+    await registerRoutes();
+    console.log('🔧 DEBUG: Routes registered, starting HTTP server...');
 
     server.listen(PORT, async () => {
       console.log(`🚀 Biomasters TCG API Server running on port ${PORT}`);

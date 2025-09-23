@@ -20,16 +20,23 @@ export const PUBSUB_SUBSCRIPTIONS = {
   MATCH_TIMEOUTS: 'match-timeouts'
 } as const;
 
-// Initialize Pub/Sub client with proper configuration
-export const pubsub = new PubSub({
-  projectId: process.env['GOOGLE_CLOUD_PROJECT_ID']!,
-  // Use the same Firebase service account credentials
-  credentials: {
-    client_email: process.env['FIREBASE_CLIENT_EMAIL']!,
-    private_key: process.env['FIREBASE_PRIVATE_KEY']!.replace(/\\n/g, '\n'),
-    project_id: process.env['FIREBASE_PROJECT_ID']!,
-  },
-});
+// Lazy-loaded Pub/Sub client to prevent premature environment variable access
+let _pubsub: PubSub | null = null;
+
+export function getPubSubClient(): PubSub {
+  if (!_pubsub) {
+    _pubsub = new PubSub({
+      projectId: process.env['GOOGLE_CLOUD_PROJECT_ID']!,
+      // Use the same Firebase service account credentials
+      credentials: {
+        client_email: process.env['FIREBASE_CLIENT_EMAIL']!,
+        private_key: process.env['FIREBASE_PRIVATE_KEY']!.replace(/\\n/g, '\n'),
+        project_id: process.env['FIREBASE_PROJECT_ID']!,
+      },
+    });
+  }
+  return _pubsub;
+}
 
 /**
  * Initialize all required Pub/Sub topics and subscriptions
@@ -59,11 +66,11 @@ async function createTopics(): Promise<void> {
 
   for (const topicName of topicNames) {
     try {
-      const topic = pubsub.topic(topicName);
+      const topic = getPubSubClient().topic(topicName);
       const [exists] = await topic.exists();
 
       if (!exists) {
-        await pubsub.createTopic(topicName);
+        await getPubSubClient().createTopic(topicName);
         console.log(`📢 Created topic: ${topicName}`);
       } else {
         console.log(`📢 Topic already exists: ${topicName}`);
@@ -120,11 +127,11 @@ async function createSubscriptions(): Promise<void> {
 
   for (const config of subscriptionConfigs) {
     try {
-      const subscription = pubsub.subscription(config.name);
+      const subscription = getPubSubClient().subscription(config.name);
       const [exists] = await subscription.exists();
 
       if (!exists) {
-        await pubsub.topic(config.topic).createSubscription(config.name, config.options);
+        await getPubSubClient().topic(config.topic).createSubscription(config.name, config.options);
         console.log(`📬 Created subscription: ${config.name} -> ${config.topic}`);
       } else {
         console.log(`📬 Subscription already exists: ${config.name}`);
@@ -140,14 +147,14 @@ async function createSubscriptions(): Promise<void> {
  * Get a topic instance
  */
 export function getTopic(topicName: string): Topic {
-  return pubsub.topic(topicName);
+  return getPubSubClient().topic(topicName);
 }
 
 /**
  * Get a subscription instance
  */
 export function getSubscription(subscriptionName: string): Subscription {
-  return pubsub.subscription(subscriptionName);
+  return getPubSubClient().subscription(subscriptionName);
 }
 
 /**
@@ -167,7 +174,7 @@ export async function publishMessage(
     const topic = getTopic(topicName);
     console.log(`🔴 [PUBSUB] Topic object:`, {
       name: topic.name,
-      projectId: topic.pubsub.projectId
+      projectId: getPubSubClient().projectId
     });
 
     const messageBuffer = Buffer.from(JSON.stringify(data));
@@ -199,7 +206,7 @@ export async function publishMessage(
 export async function healthCheck(): Promise<boolean> {
   try {
     // Try to list topics to verify connection
-    const [topics] = await pubsub.getTopics();
+    const [topics] = await getPubSubClient().getTopics();
     console.log(`🔍 Pub/Sub health check: Found ${topics.length} topics`);
     return true;
   } catch (error) {

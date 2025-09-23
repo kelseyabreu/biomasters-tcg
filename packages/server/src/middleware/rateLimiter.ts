@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { RateLimiterRedis, RateLimiterMemory } from 'rate-limiter-flexible';
-import { getRedisClient } from '../config/redis';
+import { getIORedisClient } from '../config/ioredis';
 import dotenv from 'dotenv';
 
 // Ensure environment variables are loaded
@@ -58,10 +58,10 @@ function initializeRateLimiters() {
     Strict: ${config.strict.points} requests per ${config.strict.duration}s`);
 
   try {
-    const { isRedisAvailable, getRedisClient } = require('../config/redis');
-    const redisClient = getRedisClient();
+    const { isIORedisAvailable, getIORedisClient } = require('../config/ioredis');
+    const redisClient = getIORedisClient();
 
-    if (redisClient && isRedisAvailable()) {
+    if (redisClient && isIORedisAvailable()) {
       console.log('✅ Using Redis-based rate limiting');
 
       // General API rate limiter
@@ -240,7 +240,7 @@ function createStrictLimiter() {
   const config = getRateLimitConfig();
 
   try {
-    const redisClient = getRedisClient();
+    const redisClient = getIORedisClient();
     return new RateLimiterRedis({
       storeClient: redisClient,
       keyPrefix: 'rl_strict',
@@ -272,7 +272,7 @@ export function createCustomRateLimiter(options: {
 }) {
   const generalLim = getGeneralLimiter();
   const limiter = new (generalLim.constructor as any)({
-    storeClient: generalLim instanceof RateLimiterRedis ? getRedisClient() : undefined,
+    storeClient: generalLim instanceof RateLimiterRedis ? getIORedisClient() : undefined,
     keyPrefix: options.keyPrefix,
     points: options.points,
     duration: options.duration,

@@ -3,7 +3,7 @@ import { getFirebaseUser } from '../config/firebase';
 import { scalableFirebaseAuth } from '../utils/firebase-scaling';
 import { verifyGuestJWT, isGuestToken } from '../utils/guestAuth';
 import { db } from '../database/kysely';
-import { CacheManager } from '../config/redis';
+import { CacheManager } from '../config/ioredis';
 import { adaptDatabaseUserToUnified } from '../database/types';
 import type {
   DatabaseUser

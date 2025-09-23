@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
-import { CacheManager } from '../config/redis';
+import { CacheManager } from '../config/ioredis';
 
 const router = Router();
 

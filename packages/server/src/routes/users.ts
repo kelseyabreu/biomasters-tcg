@@ -4,7 +4,7 @@ import { requireAuth, requireRegisteredUser } from '../middleware/auth';
 import { apiRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
-import { CacheManager } from '../config/redis';
+import { CacheManager } from '../config/ioredis';
 
 import type {
   PublicUser

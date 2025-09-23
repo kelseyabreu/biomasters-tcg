@@ -5,7 +5,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { db } from '../database/kysely';
 import { NewTransaction } from '../database/types';
 // import { getFirebaseUser } from '../config/firebase'; // Unused for now
-import { CacheManager } from '../config/redis';
+import { CacheManager } from '../config/ioredis';
 import { encrypt, decrypt, generateSigningKey } from '../utils/encryption';
 import { starterDeckService } from '../services/starterDeckService';
 import { UserType } from '@kelseyabreu/shared';

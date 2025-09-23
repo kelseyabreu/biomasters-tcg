@@ -262,14 +262,8 @@ class NotificationService {
     },
 
     syncComplete: () => {
-      return this.show({
-        type: 'system',
-        title: 'Sync Complete',
-        message: 'Data synchronized successfully',
-        icon: 'sync',
-        color: 'success',
-        duration: 2000
-      });
+      // Toast notification removed per user request
+      return null;
     }
   };
 

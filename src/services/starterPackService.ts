@@ -3,7 +3,7 @@
  * Manages the fixed starter collection that all users receive
  */
 
-import { dataLoader } from '@kelseyabreu/shared';
+import { sharedDataLoader } from '@kelseyabreu/shared';
 import { Card, TrophicRole } from '../types';
 import { CardId } from '@kelseyabreu/shared';
 import { CardData } from '@kelseyabreu/shared';
@@ -79,7 +79,7 @@ class StarterPackService {
   async loadStarterPackData(): Promise<Card[]> {
     try {
       // Load all cards using shared DataLoader
-      const result = await dataLoader.loadAllCards();
+      const result = await sharedDataLoader.loadCards();
       if (!result.success || !result.data) {
         console.error('Failed to load cards:', result.error);
         return [];

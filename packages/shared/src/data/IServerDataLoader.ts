@@ -5,7 +5,8 @@
  * with environment-specific implementations through adapters
  */
 
-import { CardData, AbilityData } from '../types';
+import { CardData, AbilityData, LoadResult } from '../types';
+import { CardId, AbilityId } from '../enums';
 import { SupportedLanguage } from '../text-ids';
 import { ILocalizationManager } from '../localization-manager';
 
@@ -20,7 +21,7 @@ export type DataEnvironment = 'client' | 'server' | 'mobile' | 'test';
 export type DataSource = 'filesystem' | 'database' | 'cdn' | 'redis' | 'fetch' | 'memory';
 
 /**
- * Unified data loader configuration
+ * Unified data loader configuration with advanced features
  */
 export interface UnifiedDataConfig {
   // Environment detection (auto-detected if not specified)
@@ -31,12 +32,16 @@ export interface UnifiedDataConfig {
   baseUrl?: string; // For fetch-based loading (client)
   dataPath?: string; // For filesystem-based loading (server)
 
-  // Caching configuration
+  // Advanced caching configuration
   enableCaching: boolean;
   cacheConfig: {
     ttl: number; // Time to live in milliseconds
     maxSize: number; // Maximum number of cached items
+    maxMemorySize?: number; // Maximum memory usage in bytes
     refreshInterval?: number; // Auto-refresh interval in milliseconds
+    enablePersistence?: boolean; // Enable storage persistence
+    enableMetrics?: boolean; // Enable cache hit/miss metrics
+    cleanupInterval?: number; // Cleanup interval in milliseconds
   };
 
   // Retry configuration
@@ -45,6 +50,16 @@ export interface UnifiedDataConfig {
     retryDelay: number; // Base delay in milliseconds
     backoffMultiplier: number;
   };
+
+  // Background update configuration
+  backgroundUpdates?: {
+    enabled: boolean;
+    checkInterval?: number; // Check interval in milliseconds
+    cacheExpiry?: number; // Cache expiry time in milliseconds
+  };
+
+  // Storage adapter for persistence (will be injected)
+  storageAdapter?: any;
 }
 
 /**
@@ -53,13 +68,7 @@ export interface UnifiedDataConfig {
  */
 export interface ServerDataConfig extends UnifiedDataConfig {}
 
-export interface LoadResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  fromCache?: boolean;
-  timestamp?: number;
-}
+// LoadResult is imported from types.ts and used directly
 
 export interface CacheEntry<T> {
   data: T;
@@ -114,7 +123,7 @@ export interface IUnifiedDataLoader {
   /**
    * Clear all cached data
    */
-  clearCache(): void;
+  clearCache(): Promise<void>;
 
   /**
    * Get cache statistics
@@ -126,6 +135,8 @@ export interface IUnifiedDataLoader {
     hitRate: number;
     missRate: number;
     totalRequests: number;
+    memoryUsage?: number;
+    evictions?: number;
   };
 
   /**
@@ -137,6 +148,46 @@ export interface IUnifiedDataLoader {
    * Health check for the data source
    */
   healthCheck(): Promise<boolean>;
+
+  /**
+   * Get a specific card from cache
+   */
+  getCard?(cardId: CardId): CardData | null;
+
+  /**
+   * Set a specific card in cache
+   */
+  setCard?(cardId: CardId, card: CardData): void;
+
+  /**
+   * Get multiple cards from cache
+   */
+  getCards?(cardIds: CardId[]): (CardData | null)[];
+
+  /**
+   * Set multiple cards in cache
+   */
+  setCards?(cards: CardData[]): void;
+
+  /**
+   * Get a specific ability from cache
+   */
+  getAbility?(abilityId: AbilityId): AbilityData | null;
+
+  /**
+   * Set a specific ability in cache
+   */
+  setAbility?(abilityId: AbilityId, ability: AbilityData): void;
+
+  /**
+   * Check for background updates
+   */
+  checkForUpdates?(): Promise<any>;
+
+  /**
+   * Cleanup resources
+   */
+  destroy?(): void;
 }
 
 /**

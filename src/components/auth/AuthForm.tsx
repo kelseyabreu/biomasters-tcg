@@ -15,8 +15,7 @@ import {
   IonButton,
   IonIcon,
   IonText,
-  IonCheckbox,
-  IonToast
+  IonCheckbox
 } from '@ionic/react';
 import {
   mail,
@@ -33,6 +32,7 @@ import { handleGuestConversion, canConvertGuest } from '../../utils/guestConvers
 import { useUILocalization } from '../../hooks/useCardLocalization';
 import { UITextId } from '@kelseyabreu/shared';
 import { authApi } from '../../services/apiClient';
+import { useAuthRequest } from '../../hooks/useApiRequest';
 import './AuthForm.css';
 
 interface AuthFormProps {
@@ -45,10 +45,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastColor, setToastColor] = useState<'success' | 'danger'>('success');
 
   // Form data
   const [email, setEmail] = useState('');
@@ -58,32 +54,24 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
   const { signInAsGuest, guestToken, isGuestMode } = useHybridGameStore();
   const { getUIText } = useUILocalization();
 
-  const showError = (message: string) => {
-    setToastMessage(message);
-    setToastColor('danger');
-    setShowToast(true);
-  };
-
-  const showSuccess = (message: string) => {
-    setToastMessage(message);
-    setToastColor('success');
-    setShowToast(true);
-  };
+  // Use the new API request hook for consistent error/success handling
+  const authRequest = useAuthRequest({
+    showSuccessToast: true,
+    showErrorToast: true
+  });
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      showError(getUIText(UITextId.UI_FILL_REQUIRED_FIELDS));
+      authRequest.setError(getUIText(UITextId.UI_FILL_REQUIRED_FIELDS));
       return;
     }
 
     if (isSignUp && !displayName) {
-      showError(getUIText(UITextId.UI_ENTER_DISPLAY_NAME_MSG));
+      authRequest.setError(getUIText(UITextId.UI_ENTER_DISPLAY_NAME_MSG));
       return;
     }
-
-    setLoading(true);
 
     try {
       let firebaseCredential;
@@ -115,13 +103,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
 
         try {
           console.log('🔄 [AuthForm] Calling authApi.register...');
-          const registerResponse = await authApi.register({ username: displayName });
-          console.log('✅ [AuthForm] Backend registration successful:', {
-            response: registerResponse,
-            data: registerResponse?.data,
-            timestamp: new Date().toISOString()
-          });
-          showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED));
+          await authRequest.execute(() => authApi.register({ username: displayName }));
+          console.log('✅ [AuthForm] Backend registration successful');
+          authRequest.setSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED));
         } catch (backendError: any) {
           console.error('❌ [AuthForm] Backend registration failed:', {
             error: backendError,
@@ -141,40 +125,40 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
           // Check if it's a validation error that we should show to the user
           if (backendError?.response?.status === 400) {
             const errorMessage = backendError?.response?.data?.message || 'Registration validation failed';
-            showError(errorMessage);
+            authRequest.setError(errorMessage);
             return;
           }
 
           // For other backend errors, show success since Firebase user was created
           // The user can still use the app, but some features might not work until backend sync
-          showSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED) + ' (Syncing with server...)');
+          authRequest.setSuccess(getUIText(UITextId.UI_ACCOUNT_CREATED) + ' (Syncing with server...)');
         }
       } else {
         firebaseCredential = await signInWithEmail({ email, password });
-        showSuccess(getUIText(UITextId.UI_SIGNED_IN_SUCCESS));
+        authRequest.setSuccess(getUIText(UITextId.UI_SIGNED_IN_SUCCESS));
       }
 
       // Handle guest conversion if this is a guest user
       if (isGuestConversion && canConvertGuest(isGuestMode, guestToken)) {
-        showSuccess(getUIText(UITextId.UI_CONVERTING_GUEST));
+        authRequest.setSuccess(getUIText(UITextId.UI_CONVERTING_GUEST));
 
         const conversionResult = await handleGuestConversion(
           guestToken!,
           firebaseCredential,
           (result) => {
             const message = getUIText(UITextId.UI_CONVERSION_SUCCESS).replace('{username}', result.user?.username || 'User');
-            showSuccess(message);
+            authRequest.setSuccess(message);
           },
           (error) => {
             const message = getUIText(UITextId.UI_CONVERSION_FAILED).replace('{error}', error);
-            showError(message);
+            authRequest.setError(message);
           }
         );
 
         if (!conversionResult.success) {
           // If conversion fails, we should still allow the user to continue
           // but inform them about the issue
-          showError(getUIText(UITextId.UI_ACCOUNT_CREATED_MERGE_FAILED));
+          authRequest.setError(getUIText(UITextId.UI_ACCOUNT_CREATED_MERGE_FAILED));
         }
       }
 
@@ -183,37 +167,34 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       }
     } catch (error: any) {
       const authError = error as AuthError;
-      showError(authError.message || getUIText(UITextId.UI_AUTH_FAILED));
-    } finally {
-      setLoading(false);
+      authRequest.setError(authError.message || getUIText(UITextId.UI_AUTH_FAILED));
     }
   };
 
   const handleGoogleAuth = async () => {
-    setLoading(true);
     try {
       const firebaseCredential = await signInWithGoogle();
-      showSuccess(getUIText(UITextId.UI_GOOGLE_SIGNIN_SUCCESS));
+      authRequest.setSuccess(getUIText(UITextId.UI_GOOGLE_SIGNIN_SUCCESS));
 
       // Handle guest conversion if this is a guest user
       if (isGuestConversion && canConvertGuest(isGuestMode, guestToken)) {
-        showSuccess(getUIText(UITextId.UI_CONVERTING_GUEST));
+        authRequest.setSuccess(getUIText(UITextId.UI_CONVERTING_GUEST));
 
         const conversionResult = await handleGuestConversion(
           guestToken!,
           firebaseCredential,
           (result) => {
             const message = getUIText(UITextId.UI_CONVERSION_SUCCESS).replace('{username}', result.user?.username || 'User');
-            showSuccess(message);
+            authRequest.setSuccess(message);
           },
           (error) => {
             const message = getUIText(UITextId.UI_CONVERSION_FAILED).replace('{error}', error);
-            showError(message);
+            authRequest.setError(message);
           }
         );
 
         if (!conversionResult.success) {
-          showError(getUIText(UITextId.UI_ACCOUNT_CREATED_MERGE_FAILED));
+          authRequest.setError(getUIText(UITextId.UI_ACCOUNT_CREATED_MERGE_FAILED));
         }
       }
 
@@ -222,24 +203,19 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       }
     } catch (error: any) {
       const authError = error as AuthError;
-      showError(authError.message || getUIText(UITextId.UI_GOOGLE_SIGNIN_FAILED));
-    } finally {
-      setLoading(false);
+      authRequest.setError(authError.message || getUIText(UITextId.UI_GOOGLE_SIGNIN_FAILED));
     }
   };
 
   const handleGuestAuth = async () => {
-    setLoading(true);
     try {
       await signInAsGuest();
-      showSuccess(getUIText(UITextId.UI_GUEST_SIGNIN_SUCCESS));
+      authRequest.setSuccess(getUIText(UITextId.UI_GUEST_SIGNIN_SUCCESS));
       if (onSuccess) {
         setTimeout(onSuccess, 1500);
       }
     } catch (error: any) {
-      showError(getUIText(UITextId.UI_GUEST_SIGNIN_FAILED));
-    } finally {
-      setLoading(false);
+      authRequest.setError(getUIText(UITextId.UI_GUEST_SIGNIN_FAILED));
     }
   };
 
@@ -336,11 +312,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
               type="submit"
               color="primary"
               className="auth-primary-btn"
-              disabled={loading}
+              disabled={authRequest.loading}
               data-testid={isSignUp ? "register-button" : "signin-button"}
             >
               <IonIcon slot="start" icon={isSignUp ? personAdd : logIn} />
-              {loading ? getUIText(UITextId.UI_PLEASE_WAIT) : (isSignUp ? getUIText(UITextId.UI_SIGN_UP) : getUIText(UITextId.UI_SIGN_IN))}
+              {authRequest.loading ? getUIText(UITextId.UI_PLEASE_WAIT) : (isSignUp ? getUIText(UITextId.UI_SIGN_UP) : getUIText(UITextId.UI_SIGN_IN))}
             </IonButton>
 
             {/* Hidden submit button for form submission */}
@@ -358,7 +334,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             fill="outline"
             color="medium"
             onClick={handleGoogleAuth}
-            disabled={loading}
+            disabled={authRequest.loading}
             className="google-signin-btn"
           >
             <IonIcon slot="start" icon={logoGoogle} />
@@ -371,7 +347,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
             fill="clear"
             color="medium"
             onClick={handleGuestAuth}
-            disabled={loading}
+            disabled={authRequest.loading}
             className="guest-continue-btn"
             data-testid="guest-login-button"
           >
@@ -409,15 +385,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
           )}
         </IonCardContent>
       </IonCard>
-
-      <IonToast
-        isOpen={showToast}
-        onDidDismiss={() => setShowToast(false)}
-        message={toastMessage}
-        duration={3000}
-        position="bottom"
-        color={toastColor}
-      />
     </>
   );
 };

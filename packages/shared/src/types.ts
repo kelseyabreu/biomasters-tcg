@@ -535,15 +535,6 @@ export interface PlayerReadyAction extends BaseGameAction {
   payload: {};
 }
 
-/**
- * Game action result
- */
-export interface ActionResult {
-  isValid: boolean;
-  errorMessage?: string;
-  newState?: GameState;
-  effects?: GameEffect[];
-}
 
 /**
  * Game effect (visual/audio feedback)
@@ -1057,6 +1048,166 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     total: number;
     totalPages: number;
   };
+}
+
+/**
+ * Profile update data interface
+ * Used for updating user profile information
+ */
+export interface ProfileUpdateData {
+  displayName?: string;
+  bio?: string;
+  location?: string;
+  favoriteSpecies?: string;
+  isPublicProfile?: boolean;
+  emailNotifications?: boolean;
+  pushNotifications?: boolean;
+}
+
+/**
+ * User registration data
+ */
+export interface UserRegistrationData {
+  username: string;
+  email?: string;
+  displayName?: string;
+}
+
+/**
+ * Guest authentication data
+ */
+export interface GuestAuthData {
+  guestId: string;
+  guestSecret: string;
+}
+
+/**
+ * Guest registration and sync data
+ */
+export interface GuestRegistrationData {
+  guestId: string;
+  actionQueue: any[];
+  deviceId?: string;
+}
+
+// ============================================================================
+// STANDARDIZED RESPONSE INTERFACES
+// ============================================================================
+
+/**
+ * Base result interface for all operations
+ * Consolidates LoadResult, ServiceResult, ActionResult patterns
+ */
+export interface BaseResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+/**
+ * Extended result interface with metadata
+ * Used for complex operations that need additional context
+ */
+export interface ExtendedResult<T = any> extends BaseResult<T> {
+  metadata?: {
+    // Common metadata fields
+    timestamp?: number;
+    fromCache?: boolean;
+
+    // Game-specific metadata
+    gameEnded?: boolean;
+    nextPlayer?: string;
+    winCondition?: any;
+    triggeredEffects?: any[];
+
+    // Sync-specific metadata
+    conflicts?: any[];
+    discardedActions?: string[];
+
+    // Performance metadata
+    executionTime?: number;
+    cacheHit?: boolean;
+  };
+}
+
+/**
+ * Validation result interface
+ * Used for operations that need detailed validation feedback
+ */
+export interface ValidationResult extends BaseResult {
+  isValid: boolean; // Alias for success for backward compatibility
+  errors?: ValidationError[];
+  warnings?: string[];
+}
+
+/**
+ * Sync result interface
+ * Standardizes sync operations across the application
+ */
+export interface SyncResult<T = any> extends ExtendedResult<T> {
+  conflicts: any[];
+  discardedActions: string[];
+  updatedCollection?: T;
+}
+
+/**
+ * Update result interface
+ * Used for background updates and file operations
+ */
+export interface UpdateResult extends BaseResult {
+  updatedFiles: string[];
+  errors: string[];
+  totalSize: number;
+}
+
+/**
+ * Load result interface (replaces various LoadResult definitions)
+ * Standardizes data loading operations
+ */
+export interface LoadResult<T = any> extends BaseResult<T> {
+  fromCache?: boolean;
+  timestamp?: number;
+}
+
+/**
+ * Service result interface (replaces ServiceResult in UnifiedGameService)
+ * Standardizes service operation responses
+ */
+export interface ServiceResult<T = any> extends ExtendedResult<T> {
+  isValid: boolean; // Alias for success for backward compatibility
+  newState?: T; // Alias for data for backward compatibility
+  errorMessage?: string; // Alias for error for backward compatibility
+}
+
+/**
+ * Action result interface (replaces ActionResult in types.ts)
+ * Standardizes game action responses
+ */
+export interface ActionResult<T = any> extends ExtendedResult<T> {
+  isValid: boolean; // Alias for success for backward compatibility
+  newState?: T; // Alias for data for backward compatibility
+  errorMessage?: string; // Alias for error for backward compatibility
+  effects?: GameEffect[];
+}
+
+/**
+ * Image load result interface
+ * Standardizes image loading operations
+ */
+export interface ImageLoadResult extends BaseResult {
+  imagePath?: string;
+}
+
+/**
+ * Pack opening result interface
+ * Standardizes booster pack operations
+ */
+export interface PackOpeningResult<T = any> extends BaseResult<T> {
+  pack?: T;
+  totalValue?: number;
+  rareCards?: any[];
+  newSpecies?: any[];
 }
 
 /**

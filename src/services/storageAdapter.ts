@@ -18,11 +18,18 @@ export interface StorageAdapter extends StateStorage {
   clear(): Promise<void>;
   keys(): Promise<string[]>;
   size(): Promise<number>;
-  
+
   // Batch operations for efficiency
   getMultiple(keys: string[]): Promise<Record<string, string | null>>;
   setMultiple(items: Record<string, string>): Promise<void>;
   removeMultiple(keys: string[]): Promise<void>;
+
+  // User-scoped storage helpers for easier migration
+  getUserScopedKey(userId: string | null, key: string): string;
+  getUserScopedItem(userId: string | null, key: string): Promise<string | null>;
+  setUserScopedItem(userId: string | null, key: string, value: string): Promise<void>;
+  removeUserScopedItem(userId: string | null, key: string): Promise<void>;
+  clearUserData(userId: string): Promise<void>;
 }
 
 export interface StorageAdapterOptions {
@@ -211,6 +218,43 @@ function createCapacitorStorageAdapter(
         log(`Removed multiple items`, { count: keys.length });
       } catch (error) {
         console.error('❌ [CapacitorStorage] Error removing multiple items:', error);
+        throw error;
+      }
+    },
+
+    // User-scoped storage helpers
+    getUserScopedKey: (userId: string | null, key: string): string => {
+      const userPrefix = userId ? `user_${userId}_` : 'global_';
+      return `${userPrefix}${key}`;
+    },
+
+    getUserScopedItem: async (userId: string | null, key: string): Promise<string | null> => {
+      const scopedKey = adapter.getUserScopedKey(userId, key);
+      return adapter.getItem(scopedKey);
+    },
+
+    setUserScopedItem: async (userId: string | null, key: string, value: string): Promise<void> => {
+      const scopedKey = adapter.getUserScopedKey(userId, key);
+      await adapter.setItem(scopedKey, value);
+    },
+
+    removeUserScopedItem: async (userId: string | null, key: string): Promise<void> => {
+      const scopedKey = adapter.getUserScopedKey(userId, key);
+      await adapter.removeItem(scopedKey);
+    },
+
+    clearUserData: async (userId: string): Promise<void> => {
+      try {
+        const allKeys = await adapter.keys();
+        const userPrefix = `user_${userId}_`;
+        const userKeys = allKeys.filter(key => unprefixKey(key).startsWith(userPrefix));
+
+        if (userKeys.length > 0) {
+          await adapter.removeMultiple(userKeys.map(unprefixKey));
+          log(`Cleared user data for ${userId}`, { keysRemoved: userKeys.length });
+        }
+      } catch (error) {
+        console.error(`❌ [CapacitorStorage] Error clearing user data for ${userId}:`, error);
         throw error;
       }
     }
@@ -433,6 +477,43 @@ function createWebStorageAdapter(
         log(`Removed multiple items`, { count: keys.length });
       } catch (error) {
         console.error('❌ [WebStorage] Error removing multiple items:', error);
+        throw error;
+      }
+    },
+
+    // User-scoped storage helpers
+    getUserScopedKey: (userId: string | null, key: string): string => {
+      const userPrefix = userId ? `user_${userId}_` : 'global_';
+      return `${userPrefix}${key}`;
+    },
+
+    getUserScopedItem: async (userId: string | null, key: string): Promise<string | null> => {
+      const scopedKey = adapter.getUserScopedKey(userId, key);
+      return adapter.getItem(scopedKey);
+    },
+
+    setUserScopedItem: async (userId: string | null, key: string, value: string): Promise<void> => {
+      const scopedKey = adapter.getUserScopedKey(userId, key);
+      await adapter.setItem(scopedKey, value);
+    },
+
+    removeUserScopedItem: async (userId: string | null, key: string): Promise<void> => {
+      const scopedKey = adapter.getUserScopedKey(userId, key);
+      await adapter.removeItem(scopedKey);
+    },
+
+    clearUserData: async (userId: string): Promise<void> => {
+      try {
+        const allKeys = await adapter.keys();
+        const userPrefix = `user_${userId}_`;
+        const userKeys = allKeys.filter(key => unprefixKey(key).startsWith(userPrefix));
+
+        if (userKeys.length > 0) {
+          await adapter.removeMultiple(userKeys.map(unprefixKey));
+          log(`Cleared user data for ${userId}`, { keysRemoved: userKeys.length });
+        }
+      } catch (error) {
+        console.error(`❌ [WebStorage] Error clearing user data for ${userId}:`, error);
         throw error;
       }
     }

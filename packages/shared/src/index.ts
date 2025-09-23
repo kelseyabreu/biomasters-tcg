@@ -17,8 +17,6 @@ export * from './types';
 // Export shared utilities
 export * from './utils/cardIdHelpers';
 
-export * from './data/DataLoader';
-export * from './data/DataCache';
 export * from './data/IServerDataLoader';
 export {
   createUnifiedDataLoader,
@@ -111,7 +109,11 @@ export type {
   UserDeck,
   ApiResponse,
   ApiError,
-  PaginatedResponse
+  PaginatedResponse,
+  ProfileUpdateData,
+  UserRegistrationData,
+  GuestAuthData,
+  GuestRegistrationData
 } from './types';
 
 export {

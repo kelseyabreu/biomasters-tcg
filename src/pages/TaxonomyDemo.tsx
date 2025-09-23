@@ -25,6 +25,7 @@ import {
   IonSpinner,
   IonToast
 } from '@ionic/react';
+import { sharedDataLoader } from '@kelseyabreu/shared';
 
 // For now, let's use a simpler approach and load JSON directly
 interface SimpleCardData {
@@ -63,13 +64,15 @@ export const TaxonomyDemo: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Load cards directly from JSON
-      const response = await fetch('/data/game-config/cards.json');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch cards: ${response.statusText}`);
+      // Load cards using sharedDataLoader with advanced caching and background updates
+      console.log('📚 Loading cards using sharedDataLoader...');
+      const result = await sharedDataLoader.loadCards();
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Failed to load cards');
       }
 
-      const cardsArray: SimpleCardData[] = await response.json();
+      const cardsArray: SimpleCardData[] = result.data;
       console.log(`📚 Loaded ${cardsArray.length} cards for taxonomy demo`);
 
       setCards(cardsArray);

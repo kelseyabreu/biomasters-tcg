@@ -1266,7 +1266,7 @@ export const useHybridGameStore = create<HybridGameState>()(
               offlineCollection: newCollection,
               isFirstLaunch: false
             });
-            offlineSecurityService.saveOfflineCollection(newCollection, userId);
+            offlineSecurityService.saveOfflineCollection(newCollection, userId).catch(console.error);
             console.log('✅ New collection initialized and saved');
           }
 
@@ -1306,11 +1306,11 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           if (userId) {
             // Load for specific user
-            stored = offlineSecurityService.loadOfflineCollection(userId);
+            stored = await offlineSecurityService.loadOfflineCollection(userId);
           } else {
             // Fallback: try to load from default storage (for page refresh scenarios)
             console.log('📦 No userId available, trying default storage...');
-            stored = offlineSecurityService.loadOfflineCollection(null);
+            stored = await offlineSecurityService.loadOfflineCollection(null);
 
             // Also check for any stored collections in localStorage
             if (!stored) {
@@ -1388,7 +1388,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         saveOfflineCollection: (collection: OfflineCollection) => {
           const state = get();
           const userId = state.userId || state.guestId;
-          offlineSecurityService.saveOfflineCollection(collection, userId);
+          offlineSecurityService.saveOfflineCollection(collection, userId).catch(console.error);
           set({
             offlineCollection: collection,
             pendingActions: collection.action_queue.length
@@ -2388,7 +2388,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
 
             // Create starter pack action
-            const action = offlineSecurityService.createAction('starter_pack_opened', {
+            const action = await offlineSecurityService.createAction('starter_pack_opened', {
               pack_type: 'starter'
             });
 
@@ -2434,7 +2434,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
 
             // Create card acquisition action
-            const action = offlineSecurityService.createAction('card_acquired', {
+            const action = await offlineSecurityService.createAction('card_acquired', {
               cardId,
               quantity
             });
@@ -2530,7 +2530,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
 
             // Create pack opening action
-            const action = offlineSecurityService.createAction('pack_opened', {
+            const action = await offlineSecurityService.createAction('pack_opened', {
               pack_type: packType
             });
 
@@ -2617,7 +2617,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           const deckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-          const action = offlineSecurityService.createAction('deck_created', {
+          const action = await offlineSecurityService.createAction('deck_created', {
             deck_id: deckId,
             deck_data: { name, cards }
           });
@@ -2646,7 +2646,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
         // Update deck
         updateDeck: async (deckId: string, name: string, cards: { cardId: number; quantity: number }[]): Promise<void> => {
-          const action = offlineSecurityService.createAction('deck_updated', {
+          const action = await offlineSecurityService.createAction('deck_updated', {
             deck_id: deckId,
             deck_data: { name, cards }
           });
@@ -2683,7 +2683,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             throw new Error('No collection available');
           }
 
-          const action = offlineSecurityService.createAction('deck_deleted', {
+          const action = await offlineSecurityService.createAction('deck_deleted', {
             deck_id: deckId,
             deck_data: null
           });
@@ -3180,12 +3180,12 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Force refresh collection state from storage
-        refreshCollectionState: () => {
+        refreshCollectionState: async () => {
           const state = get();
           const userId = state.userId || state.guestId;
           console.log('🔄 Refreshing collection state for user:', userId);
 
-          const stored = offlineSecurityService.loadOfflineCollection(userId);
+          const stored = await offlineSecurityService.loadOfflineCollection(userId);
           if (stored) {
             const hasCards = Object.keys(stored.cards_owned).length > 0;
             set({

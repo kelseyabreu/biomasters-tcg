@@ -248,7 +248,7 @@ class SyncService {
 
     // Update signing key if provided
     if (response.new_signing_key) {
-      offlineSecurityService.updateSigningKey(
+      await offlineSecurityService.updateSigningKey(
         response.new_signing_key.key,
         response.new_signing_key.version,
         response.new_signing_key.expires_at

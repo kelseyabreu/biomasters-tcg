@@ -32,6 +32,7 @@ import { ActiveBattleIndicator } from './components/navigation/ActiveBattleIndic
 import { LocalizationProvider } from './contexts/LocalizationContext';
 import { useUILocalization } from './hooks/useCardLocalization';
 import { UITextId } from '@kelseyabreu/shared';
+import { ApiToastProvider } from './components/ui/ApiToastProvider';
 import { gameStateManager } from './services/GameStateManager';
 
 import { ConnectivityIndicator, OfflineBanner } from './components/ui/ConnectivityIndicator';
@@ -326,7 +327,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <LocalizationProvider basePath="/data/localization">
-        <AppContent />
+        <ApiToastProvider>
+          <AppContent />
+        </ApiToastProvider>
       </LocalizationProvider>
     </ThemeProvider>
   );

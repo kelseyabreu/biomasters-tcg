@@ -1,8 +1,15 @@
 /**
  * Unified Data Loader Factory
- * 
+ *
  * Creates environment-appropriate data loaders with automatic environment detection
- * Consolidates DataLoader.ts and ServerDataLoader.ts into a single unified system
+ * Consolidates DataLoader.ts, DataCache.ts, and StaticDataManager.ts into a single unified system
+ *
+ * Features:
+ * - Advanced caching with LRU eviction and TTL management
+ * - Background updates with version checking
+ * - Offline-first data loading with automatic refresh
+ * - Cross-platform storage integration
+ * - Specialized caches for cards and abilities
  */
 
 import {
@@ -12,6 +19,619 @@ import {
 } from './IServerDataLoader';
 import { SupportedLanguage } from '../text-ids';
 import { ILocalizationManager } from '../localization-manager';
+import { CardData, AbilityData } from '../types';
+import { CardId, AbilityId } from '../enums';
+
+// ============================================================================
+// ADVANCED CACHING SYSTEM (from DataCache.ts)
+// ============================================================================
+
+/**
+ * Cache entry with metadata for advanced cache management
+ */
+interface AdvancedCacheEntry<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+  accessCount: number;
+  lastAccessed: number;
+  size: number; // Estimated size in bytes
+}
+
+/**
+ * Cache configuration for advanced features
+ */
+interface AdvancedCacheConfig {
+  maxSize: number; // Maximum number of entries
+  maxMemorySize?: number; // Maximum memory usage in bytes
+  ttl: number; // Time to live in milliseconds
+  enablePersistence?: boolean; // Enable storage persistence
+  enableMetrics?: boolean; // Enable cache hit/miss metrics
+  cleanupInterval?: number; // Cleanup interval in milliseconds
+}
+
+/**
+ * Cache metrics for monitoring performance
+ */
+interface CacheMetrics {
+  totalRequests: number;
+  cacheHits: number;
+  cacheMisses: number;
+  hitRate: number;
+  missRate: number;
+  evictions: number;
+  memoryUsage: number;
+  entryCount: number;
+}
+
+/**
+ * Advanced cache implementation with LRU eviction, TTL, and persistence
+ */
+class AdvancedCache<T = any> {
+  private cache = new Map<string, AdvancedCacheEntry<T>>();
+  private config: Required<AdvancedCacheConfig>;
+  private metrics: CacheMetrics = {
+    totalRequests: 0,
+    cacheHits: 0,
+    cacheMisses: 0,
+    hitRate: 0,
+    missRate: 0,
+    evictions: 0,
+    memoryUsage: 0,
+    entryCount: 0
+  };
+  private cleanupInterval?: NodeJS.Timeout;
+  private storageAdapter?: any; // Will be injected for persistence
+
+  constructor(config: AdvancedCacheConfig, storageAdapter?: any) {
+    this.config = {
+      maxSize: config.maxSize,
+      maxMemorySize: config.maxMemorySize ?? 50 * 1024 * 1024, // 50MB default
+      ttl: config.ttl,
+      enablePersistence: config.enablePersistence ?? false,
+      enableMetrics: config.enableMetrics ?? true,
+      cleanupInterval: config.cleanupInterval ?? 5 * 60 * 1000 // 5 minutes
+    };
+    this.storageAdapter = storageAdapter;
+
+    // Set up periodic cleanup
+    if (this.config.cleanupInterval > 0) {
+      this.cleanupInterval = setInterval(() => this.cleanup(), this.config.cleanupInterval);
+    }
+
+    // Load from persistence if enabled
+    if (this.config.enablePersistence && this.storageAdapter) {
+      this.loadFromPersistence().catch(error => {
+        console.warn('Failed to load cache from persistence:', error);
+      });
+    }
+  }
+
+  /**
+   * Get data from cache with automatic TTL checking
+   */
+  get(key: string): T | null {
+    this.metrics.totalRequests++;
+
+    const entry = this.cache.get(key);
+    if (!entry) {
+      this.metrics.cacheMisses++;
+      this.updateMetrics();
+      return null;
+    }
+
+    // Check if expired
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      this.metrics.cacheMisses++;
+      this.updateMetrics();
+      return null;
+    }
+
+    // Update access metadata
+    entry.accessCount++;
+    entry.lastAccessed = Date.now();
+    this.metrics.cacheHits++;
+    this.updateMetrics();
+
+    return entry.data;
+  }
+
+  /**
+   * Set data in cache with automatic eviction if needed
+   */
+  set(key: string, data: T, customTtl?: number): void {
+    const now = Date.now();
+    const ttl = customTtl ?? this.config.ttl;
+    const size = this.estimateSize(data);
+
+    // Check if we need to evict entries
+    while (this.shouldEvict(size)) {
+      this.evictLRU();
+    }
+
+    const entry: AdvancedCacheEntry<T> = {
+      data,
+      timestamp: now,
+      expiresAt: now + ttl,
+      accessCount: 1,
+      lastAccessed: now,
+      size
+    };
+
+    this.cache.set(key, entry);
+    this.updateMetrics();
+
+    // Persist if enabled
+    if (this.config.enablePersistence && this.storageAdapter) {
+      this.saveToPersistence().catch(error => {
+        console.warn('Failed to persist cache:', error);
+      });
+    }
+  }
+
+  /**
+   * Check if key exists without updating access metadata
+   */
+  has(key: string): boolean {
+    const entry = this.cache.get(key);
+    if (!entry) return false;
+
+    // Check if expired
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Delete entry from cache
+   */
+  delete(key: string): boolean {
+    const result = this.cache.delete(key);
+    this.updateMetrics();
+    return result;
+  }
+
+  /**
+   * Clear all entries from cache
+   */
+  clear(): void {
+    this.cache.clear();
+    this.updateMetrics();
+  }
+
+  /**
+   * Get cache metrics
+   */
+  getMetrics(): CacheMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Cleanup expired entries
+   */
+  private cleanup(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expiresAt) {
+        this.cache.delete(key);
+        cleanedCount++;
+      }
+    }
+
+    if (cleanedCount > 0) {
+      console.log(`🧹 [AdvancedCache] Cleaned up ${cleanedCount} expired entries`);
+      this.updateMetrics();
+    }
+  }
+
+  /**
+   * Evict least recently used entry
+   */
+  private evictLRU(): void {
+    let oldestKey: string | null = null;
+    let oldestTime = Date.now();
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.lastAccessed < oldestTime) {
+        oldestTime = entry.lastAccessed;
+        oldestKey = key;
+      }
+    }
+
+    if (oldestKey) {
+      this.cache.delete(oldestKey);
+      this.metrics.evictions++;
+    }
+  }
+
+  /**
+   * Check if we should evict entries before adding new one
+   */
+  private shouldEvict(newEntrySize: number): boolean {
+    // Check entry count limit
+    if (this.cache.size >= this.config.maxSize) {
+      return true;
+    }
+
+    // Check memory limit
+    if (this.metrics.memoryUsage + newEntrySize > this.config.maxMemorySize) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Estimate size of data in bytes
+   */
+  private estimateSize(data: any): number {
+    try {
+      return JSON.stringify(data).length * 2; // Rough estimate (UTF-16)
+    } catch {
+      return 1024; // Default 1KB if can't serialize
+    }
+  }
+
+  /**
+   * Update cache metrics
+   */
+  private updateMetrics(): void {
+    this.metrics.entryCount = this.cache.size;
+    this.metrics.memoryUsage = Array.from(this.cache.values())
+      .reduce((total, entry) => total + entry.size, 0);
+
+    if (this.metrics.totalRequests > 0) {
+      this.metrics.hitRate = this.metrics.cacheHits / this.metrics.totalRequests;
+      this.metrics.missRate = this.metrics.cacheMisses / this.metrics.totalRequests;
+    }
+  }
+
+  /**
+   * Load cache from persistence
+   */
+  private async loadFromPersistence(): Promise<void> {
+    if (!this.storageAdapter) return;
+
+    try {
+      const persistedData = await this.storageAdapter.getItem('unified-cache');
+      if (persistedData) {
+        const parsed = JSON.parse(persistedData);
+        const now = Date.now();
+
+        // Restore non-expired entries
+        for (const [key, entry] of Object.entries(parsed)) {
+          const cacheEntry = entry as AdvancedCacheEntry<T>;
+          if (now <= cacheEntry.expiresAt) {
+            this.cache.set(key, cacheEntry);
+          }
+        }
+
+        this.updateMetrics();
+        console.log(`📦 [AdvancedCache] Loaded ${this.cache.size} entries from persistence`);
+      }
+    } catch (error) {
+      console.warn('Failed to load cache from persistence:', error);
+    }
+  }
+
+  /**
+   * Save cache to persistence
+   */
+  private async saveToPersistence(): Promise<void> {
+    if (!this.storageAdapter) return;
+
+    try {
+      const cacheData = Object.fromEntries(this.cache.entries());
+      await this.storageAdapter.setItem('unified-cache', JSON.stringify(cacheData));
+    } catch (error) {
+      console.warn('Failed to save cache to persistence:', error);
+    }
+  }
+
+  /**
+   * Destroy cache and cleanup resources
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    this.clear();
+  }
+}
+
+// ============================================================================
+// BACKGROUND UPDATE SYSTEM (from StaticDataManager.ts)
+// ============================================================================
+
+/**
+ * Data version information for background updates
+ */
+interface DataVersion {
+  version: string;
+  lastUpdated: number;
+  checksum?: string;
+}
+
+/**
+ * Static data file metadata
+ */
+interface StaticDataFile {
+  path: string;
+  version: DataVersion;
+  data: any;
+  size: number;
+}
+
+/**
+ * Background update result
+ */
+interface UpdateResult {
+  success: boolean;
+  updatedFiles: string[];
+  errors: string[];
+  totalSize: number;
+}
+
+/**
+ * Background update manager for automatic data refresh
+ */
+class BackgroundUpdateManager {
+  private updateInterval?: NodeJS.Timeout;
+  private storageAdapter?: any;
+  private readonly UPDATE_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+  private readonly CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+  constructor(storageAdapter?: any) {
+    this.storageAdapter = storageAdapter;
+  }
+
+  /**
+   * Initialize background updates
+   */
+  initialize(): void {
+    // Start background update check if online
+    if (typeof globalThis !== 'undefined' && 'navigator' in globalThis && (globalThis as any).navigator?.onLine) {
+      this.scheduleBackgroundUpdate();
+    }
+
+    // Listen for online events to trigger updates (browser only)
+    if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
+      (globalThis as any).window?.addEventListener('online', () => {
+        console.log('🌐 [BackgroundUpdate] Device came online, checking for updates');
+        this.checkForUpdates().catch(error => {
+          console.error('Failed to check for updates:', error);
+        });
+      });
+    }
+  }
+
+  /**
+   * Check for updates to data files
+   */
+  async checkForUpdates(): Promise<UpdateResult> {
+    if (typeof globalThis !== 'undefined' && 'navigator' in globalThis && !(globalThis as any).navigator?.onLine) {
+      return {
+        success: false,
+        updatedFiles: [],
+        errors: ['Device is offline'],
+        totalSize: 0
+      };
+    }
+
+    try {
+      console.log('🔄 [BackgroundUpdate] Checking for data updates...');
+
+      // Fetch version manifest from server
+      const manifest = await this.fetchVersionManifest();
+      const cache = await this.loadVersionCache();
+
+      const updatedFiles: string[] = [];
+      const errors: string[] = [];
+      let totalSize = 0;
+
+      // Check each file in manifest
+      for (const [filePath, serverVersion] of Object.entries(manifest)) {
+        try {
+          const cachedVersion = cache[filePath];
+          const needsUpdate = !cachedVersion ||
+            cachedVersion.version !== (serverVersion as any).version ||
+            this.isExpired(cachedVersion.lastUpdated);
+
+          if (needsUpdate) {
+            console.log(`📥 [BackgroundUpdate] File ${filePath} needs update`);
+            updatedFiles.push(filePath);
+            totalSize += (serverVersion as any).size || 0;
+          }
+        } catch (error) {
+          console.error(`❌ [BackgroundUpdate] Failed to check ${filePath}:`, error);
+          errors.push(`${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      // Save updated version cache
+      await this.saveVersionCache(manifest);
+
+      return {
+        success: errors.length === 0,
+        updatedFiles,
+        errors,
+        totalSize
+      };
+
+    } catch (error) {
+      console.error('❌ [BackgroundUpdate] Failed to check for updates:', error);
+      return {
+        success: false,
+        updatedFiles: [],
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        totalSize: 0
+      };
+    }
+  }
+
+  /**
+   * Get data file with offline-first approach
+   */
+  async getDataFile(filePath: string, fetchFn: (path: string) => Promise<any>): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      // First, try to get from cache
+      const cache = await this.loadDataCache();
+      const cachedFile = cache[filePath];
+
+      if (cachedFile && !this.isExpired(cachedFile.version.lastUpdated)) {
+        console.log(`📁 [BackgroundUpdate] Serving ${filePath} from cache`);
+        return { success: true, data: cachedFile.data };
+      }
+
+      // If not in cache or expired, try to fetch fresh data
+      if (typeof globalThis === 'undefined' || !('navigator' in globalThis) || (globalThis as any).navigator?.onLine) {
+        try {
+          const freshData = await fetchFn(filePath);
+          if (freshData) {
+            // Update cache with fresh data
+            await this.updateCacheFile(filePath, {
+              path: filePath,
+              version: {
+                version: '1.0.0', // Will be updated by version manifest
+                lastUpdated: Date.now()
+              },
+              data: freshData,
+              size: JSON.stringify(freshData).length
+            });
+            return { success: true, data: freshData };
+          }
+        } catch (fetchError) {
+          console.warn(`⚠️ [BackgroundUpdate] Failed to fetch fresh ${filePath}, using cache:`, fetchError);
+        }
+      }
+
+      // Fall back to cached data even if expired
+      if (cachedFile) {
+        console.log(`📁 [BackgroundUpdate] Serving expired ${filePath} from cache (offline fallback)`);
+        return { success: true, data: cachedFile.data };
+      }
+
+      // No cache and can't fetch - this is an error
+      const errorMessage = `Data file ${filePath} not available offline and cannot be fetched`;
+      return { success: false, error: errorMessage };
+
+    } catch (error) {
+      console.error(`❌ [BackgroundUpdate] Failed to get data file ${filePath}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Clear all caches
+   */
+  async clearCache(): Promise<void> {
+    if (!this.storageAdapter) return;
+
+    try {
+      await this.storageAdapter.removeItem('data-cache');
+      await this.storageAdapter.removeItem('version-cache');
+      console.log('🗑️ [BackgroundUpdate] Cache cleared');
+    } catch (error) {
+      console.error('❌ [BackgroundUpdate] Failed to clear cache:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Destroy and cleanup resources
+   */
+  destroy(): void {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
+  }
+
+  // Private helper methods
+
+  private async loadDataCache(): Promise<Record<string, StaticDataFile>> {
+    if (!this.storageAdapter) return {};
+
+    try {
+      const cacheData = await this.storageAdapter.getItem('data-cache');
+      return cacheData ? JSON.parse(cacheData) : {};
+    } catch (error) {
+      console.warn('⚠️ [BackgroundUpdate] Failed to load data cache, starting fresh:', error);
+      return {};
+    }
+  }
+
+  private async loadVersionCache(): Promise<Record<string, DataVersion>> {
+    if (!this.storageAdapter) return {};
+
+    try {
+      const cacheData = await this.storageAdapter.getItem('version-cache');
+      return cacheData ? JSON.parse(cacheData) : {};
+    } catch (error) {
+      console.warn('⚠️ [BackgroundUpdate] Failed to load version cache, starting fresh:', error);
+      return {};
+    }
+  }
+
+  private async saveVersionCache(cache: Record<string, any>): Promise<void> {
+    if (!this.storageAdapter) return;
+
+    try {
+      await this.storageAdapter.setItem('version-cache', JSON.stringify(cache));
+    } catch (error) {
+      console.error('❌ [BackgroundUpdate] Failed to save version cache:', error);
+      throw error;
+    }
+  }
+
+  private async updateCacheFile(filePath: string, fileData: StaticDataFile): Promise<void> {
+    if (!this.storageAdapter) return;
+
+    const cache = await this.loadDataCache();
+    cache[filePath] = fileData;
+
+    try {
+      await this.storageAdapter.setItem('data-cache', JSON.stringify(cache));
+    } catch (error) {
+      console.error('❌ [BackgroundUpdate] Failed to update cache file:', error);
+      throw error;
+    }
+  }
+
+  private async fetchVersionManifest(): Promise<Record<string, DataVersion>> {
+    try {
+      const response = await fetch('/api/static-data/manifest');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return await response.json() as Record<string, DataVersion>;
+    } catch (error) {
+      console.error('❌ [BackgroundUpdate] Failed to fetch version manifest:', error);
+      throw error;
+    }
+  }
+
+  private isExpired(lastUpdated: number): boolean {
+    return Date.now() - lastUpdated > this.CACHE_EXPIRY_MS;
+  }
+
+  private scheduleBackgroundUpdate(): void {
+    // Check for updates periodically
+    this.updateInterval = setInterval(() => {
+      if (typeof globalThis === 'undefined' || !('navigator' in globalThis) || (globalThis as any).navigator?.onLine) {
+        this.checkForUpdates().catch(error => {
+          console.error('❌ [BackgroundUpdate] Background update failed:', error);
+        });
+      }
+    }, this.UPDATE_CHECK_INTERVAL);
+  }
+}
 
 /**
  * Environment detection utility
@@ -40,7 +660,7 @@ function detectEnvironment(): DataEnvironment {
 }
 
 /**
- * Get default configuration based on environment
+ * Get default configuration based on environment with advanced features
  */
 function getDefaultConfig(environment: DataEnvironment): UnifiedDataConfig {
   const baseConfig = {
@@ -49,12 +669,21 @@ function getDefaultConfig(environment: DataEnvironment): UnifiedDataConfig {
     cacheConfig: {
       ttl: 5 * 60 * 1000, // 5 minutes
       maxSize: 100,
-      refreshInterval: 30 * 60 * 1000 // 30 minutes
+      maxMemorySize: 50 * 1024 * 1024, // 50MB
+      refreshInterval: 30 * 60 * 1000, // 30 minutes
+      enablePersistence: true,
+      enableMetrics: true,
+      cleanupInterval: 5 * 60 * 1000 // 5 minutes
     },
     retryConfig: {
       maxRetries: 3,
       retryDelay: 1000, // 1 second
       backoffMultiplier: 2
+    },
+    backgroundUpdates: {
+      enabled: true,
+      checkInterval: 60 * 60 * 1000, // 1 hour
+      cacheExpiry: 24 * 60 * 60 * 1000 // 24 hours
     }
   };
 
@@ -128,37 +757,43 @@ export function createUnifiedDataLoader(config?: Partial<UnifiedDataConfig>): IU
 }
 
 /**
- * Create client-side data loader (fetch-based) with sophisticated caching and retry logic
+ * Create client-side data loader (fetch-based) with advanced caching and background updates
  */
 function createClientDataLoader(config: UnifiedDataConfig): IUnifiedDataLoader {
   const baseUrl = config.baseUrl || '/data';
 
-  // Client-side caching system
-  const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  // Advanced caching system
+  const advancedCache = new AdvancedCache(config.cacheConfig, config.storageAdapter);
+
+  // Background update manager
+  const backgroundUpdater = new BackgroundUpdateManager(config.storageAdapter);
+
+  // Initialize background updates if enabled
+  if (config.backgroundUpdates?.enabled) {
+    backgroundUpdater.initialize();
+  }
+
+  // Legacy stats for backward compatibility
   const stats = {
     totalRequests: 0,
     cacheHits: 0,
     cacheMisses: 0
   };
 
-  // Cache management with TTL
+  // Cache management with advanced features
   const getFromCache = (key: string): any | null => {
     stats.totalRequests++;
-    const cached = cache.get(key);
-    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    const cached = advancedCache.get(key);
+    if (cached) {
       stats.cacheHits++;
-      return cached.data;
+      return cached;
     }
     stats.cacheMisses++;
     return null;
   };
 
   const setCache = (key: string, data: any, ttlMs?: number): void => {
-    cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttlMs || config.cacheConfig.ttl
-    });
+    advancedCache.set(key, data, ttlMs);
   };
 
   // Fetch with retry logic and exponential backoff
@@ -193,9 +828,24 @@ function createClientDataLoader(config: UnifiedDataConfig): IUnifiedDataLoader {
     throw lastError!;
   };
 
-  // Load JSON with caching and retry
+  // Load JSON with advanced caching, background updates, and retry logic
   const loadJSON = async (relativePath: string, cacheKey: string): Promise<any> => {
-    // Check cache first (1-5ms response time)
+    // Try background update manager first if enabled
+    if (config.backgroundUpdates?.enabled) {
+      const result = await backgroundUpdater.getDataFile(relativePath, async (path) => {
+        const url = `${baseUrl}/${path}`;
+        const response = await fetchWithRetry(url);
+        return response;
+      });
+
+      if (result.success && result.data) {
+        // Cache the result from background updater
+        setCache(cacheKey, result.data);
+        return result.data;
+      }
+    }
+
+    // Check advanced cache (1-5ms response time)
     const cached = getFromCache(cacheKey);
     if (cached) {
       return cached;
@@ -324,25 +974,67 @@ function createClientDataLoader(config: UnifiedDataConfig): IUnifiedDataLoader {
       };
     },
 
-    clearCache() {
-      cache.clear();
+    async clearCache(): Promise<void> {
+      advancedCache.clear();
+      if (config.backgroundUpdates?.enabled) {
+        await backgroundUpdater.clearCache();
+      }
       stats.totalRequests = 0;
       stats.cacheHits = 0;
       stats.cacheMisses = 0;
     },
 
     getCacheStats() {
-      const hitRate = stats.totalRequests > 0 ? stats.cacheHits / stats.totalRequests : 0;
-      const missRate = stats.totalRequests > 0 ? stats.cacheMisses / stats.totalRequests : 0;
-
+      const advancedMetrics = advancedCache.getMetrics();
       return {
-        size: cache.size,
-        cacheHits: stats.cacheHits,
-        cacheMisses: stats.cacheMisses,
-        hitRate: Math.round(hitRate * 100) / 100,
-        missRate: Math.round(missRate * 100) / 100,
-        totalRequests: stats.totalRequests
+        size: advancedMetrics.entryCount,
+        cacheHits: advancedMetrics.cacheHits,
+        cacheMisses: advancedMetrics.cacheMisses,
+        hitRate: Math.round(advancedMetrics.hitRate * 100) / 100,
+        missRate: Math.round(advancedMetrics.missRate * 100) / 100,
+        totalRequests: advancedMetrics.totalRequests,
+        memoryUsage: advancedMetrics.memoryUsage,
+        evictions: advancedMetrics.evictions
       };
+    },
+
+    // Specialized cache methods for cards and abilities
+    getCard(cardId: CardId): CardData | null {
+      return advancedCache.get(`card-${cardId}`);
+    },
+
+    setCard(cardId: CardId, card: CardData): void {
+      advancedCache.set(`card-${cardId}`, card);
+    },
+
+    getCards(cardIds: CardId[]): (CardData | null)[] {
+      return cardIds.map(id => this.getCard!(id));
+    },
+
+    setCards(cards: CardData[]): void {
+      cards.forEach(card => this.setCard!(card.cardId, card));
+    },
+
+    getAbility(abilityId: AbilityId): AbilityData | null {
+      return advancedCache.get(`ability-${abilityId}`);
+    },
+
+    setAbility(abilityId: AbilityId, ability: AbilityData): void {
+      advancedCache.set(`ability-${abilityId}`, ability);
+    },
+
+    // Background update methods
+    async checkForUpdates(): Promise<any> {
+      if (config.backgroundUpdates?.enabled) {
+        return backgroundUpdater.checkForUpdates();
+      }
+      return { success: false, error: 'Background updates not enabled' };
+    },
+
+    // Cleanup method
+    destroy(): void {
+      advancedCache.destroy();
+      backgroundUpdater.destroy();
     },
 
     async preloadData() {
@@ -604,7 +1296,7 @@ function createServerDataLoader(config: UnifiedDataConfig): IUnifiedDataLoader {
       };
     },
 
-    clearCache() {
+    async clearCache(): Promise<void> {
       cache.clear();
       stats.totalRequests = 0;
       stats.cacheHits = 0;
@@ -704,8 +1396,14 @@ export function createClientDataLoader_Factory(baseUrl?: string): IUnifiedDataLo
 // ============================================================================
 
 /**
- * Shared unified data loader instance for client-side usage
+ * Shared unified data loader instance for client-side usage with advanced features
  * Relocated from src/services/ClientGameEngine.ts for better organization
+ *
+ * Features enabled:
+ * - Advanced caching with LRU eviction and persistence
+ * - Background updates with version checking
+ * - Memory management and metrics
+ * - Offline-first data loading
  */
 export const sharedDataLoader = createUnifiedDataLoader({
   environment: 'client',
@@ -714,12 +1412,21 @@ export const sharedDataLoader = createUnifiedDataLoader({
   enableCaching: true,
   cacheConfig: {
     ttl: 300000, // 5 minutes
-    maxSize: 100
+    maxSize: 100,
+    maxMemorySize: 50 * 1024 * 1024, // 50MB
+    enablePersistence: true,
+    enableMetrics: true,
+    cleanupInterval: 5 * 60 * 1000 // 5 minutes
   },
   retryConfig: {
     maxRetries: 3,
     retryDelay: 1000,
     backoffMultiplier: 2
+  },
+  backgroundUpdates: {
+    enabled: true,
+    checkInterval: 60 * 60 * 1000, // 1 hour
+    cacheExpiry: 24 * 60 * 60 * 1000 // 24 hours
   }
 });
 

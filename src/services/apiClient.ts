@@ -13,7 +13,11 @@ import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { auth } from '../config/firebase';
 import { tokenManager } from './tokenStorage';
-import { ApiResponse, ApiError } from '@kelseyabreu/shared';
+import {
+  ApiResponse,
+  ApiError,
+  ProfileUpdateData
+} from '@kelseyabreu/shared';
 
 // Use shared API types instead of local definitions
 
@@ -210,16 +214,6 @@ export const api = {
 /**
  * Specialized API methods for common app operations
  */
-// Profile update interface
-export interface ProfileUpdateData {
-  displayName?: string;
-  bio?: string;
-  location?: string;
-  favoriteSpecies?: string;
-  isPublicProfile?: boolean;
-  emailNotifications?: boolean;
-  pushNotifications?: boolean;
-}
 
 export const authApi = {
   // Check authentication status

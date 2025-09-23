@@ -4,6 +4,7 @@
  */
 
 import CryptoJS from 'crypto-js';
+import { createStorageAdapter } from './storageAdapter';
 
 export interface OfflineAction {
   id: string;
@@ -90,28 +91,40 @@ export interface SyncResponse {
 
 class OfflineSecurityService {
   private static readonly API_VERSION = '1.0.0';
-  private static readonly STORAGE_KEY_PREFIX = 'biomasters_offline_collection';
-  private static readonly SIGNING_KEY_PREFIX = 'biomasters_signing_key';
 
   private signingKey: string | null = null;
   private signingKeyVersion: number = 0;
   private deviceId: string;
   private currentUserId: string | null = null;
+
+  // Enhanced storage adapter for cross-platform support
+  private storageAdapter = createStorageAdapter({
+    keyPrefix: 'offline_security_',
+    debug: false
+  });
   private serverProcessedActionsCount: number = 0;
 
   constructor() {
-    this.deviceId = this.getOrCreateDeviceId();
-    this.loadSigningKey();
+    this.deviceId = ''; // Will be initialized in init()
+    this.init();
+  }
+
+  /**
+   * Initialize the service asynchronously
+   */
+  private async init(): Promise<void> {
+    this.deviceId = await this.getOrCreateDeviceId();
+    await this.loadSigningKey();
   }
 
   /**
    * Generate or retrieve device ID
    */
-  private getOrCreateDeviceId(): string {
-    let deviceId = localStorage.getItem('biomasters_device_id');
+  private async getOrCreateDeviceId(): Promise<string> {
+    let deviceId = await this.storageAdapter.getItem('device_id');
     if (!deviceId) {
       deviceId = this.generateSecureId();
-      localStorage.setItem('biomasters_device_id', deviceId);
+      await this.storageAdapter.setItem('device_id', deviceId);
     }
     return deviceId;
   }
@@ -125,27 +138,7 @@ class OfflineSecurityService {
     return `${timestamp}-${random}`;
   }
 
-  /**
-   * Get user-scoped storage key for collections
-   */
-  private getUserScopedCollectionKey(userId: string | null): string {
-    if (!userId) {
-      console.warn('⚠️ No userId provided for storage key, using global key');
-      return OfflineSecurityService.STORAGE_KEY_PREFIX;
-    }
-    return `user_${userId}_${OfflineSecurityService.STORAGE_KEY_PREFIX}`;
-  }
 
-  /**
-   * Get user-scoped storage key for signing keys
-   */
-  private getUserScopedSigningKey(userId: string | null): string {
-    if (!userId) {
-      console.warn('⚠️ No userId provided for signing key, using global key');
-      return OfflineSecurityService.SIGNING_KEY_PREFIX;
-    }
-    return `user_${userId}_${OfflineSecurityService.SIGNING_KEY_PREFIX}`;
-  }
 
   /**
    * Set current user ID for scoped storage operations
@@ -161,9 +154,8 @@ class OfflineSecurityService {
   /**
    * Load signing key from storage (user-scoped)
    */
-  private loadSigningKey(): void {
-    const keyStorageKey = this.getUserScopedSigningKey(this.currentUserId);
-    const stored = localStorage.getItem(keyStorageKey);
+  private async loadSigningKey(): Promise<void> {
+    const stored = await this.storageAdapter.getUserScopedItem(this.currentUserId, 'signing_key');
     if (stored) {
       try {
         const keyData = JSON.parse(stored);
@@ -172,7 +164,7 @@ class OfflineSecurityService {
           this.signingKeyVersion = keyData.version;
         } else {
           // Key expired, remove it
-          localStorage.removeItem(keyStorageKey);
+          await this.storageAdapter.removeUserScopedItem(this.currentUserId, 'signing_key');
         }
       } catch (error) {
         console.warn('Failed to load signing key:', error);
@@ -204,7 +196,7 @@ class OfflineSecurityService {
   /**
    * Update signing key from server
    */
-  updateSigningKey(key: string, version: number, expiresAt: number): void {
+  async updateSigningKey(key: string, version: number, expiresAt: number): Promise<void> {
     this.signingKey = key;
     this.signingKeyVersion = version;
 
@@ -215,11 +207,11 @@ class OfflineSecurityService {
     };
 
     // Use current user ID for scoped storage
-    localStorage.setItem(this.getUserScopedSigningKey(this.currentUserId), JSON.stringify(keyData));
+    await this.storageAdapter.setUserScopedItem(this.currentUserId, 'signing_key', JSON.stringify(keyData));
     console.log(`🔑 Updated signing key for user ${this.currentUserId}: version ${version}, expires ${new Date(expiresAt).toISOString()}`);
 
     // Update existing collection's signing key version if it exists
-    this.updateCollectionSigningKeyVersion(version);
+    await this.updateCollectionSigningKeyVersion(version);
   }
 
   /**
@@ -234,8 +226,8 @@ class OfflineSecurityService {
   /**
    * Update collection's signing key version and recalculate hash
    */
-  private updateCollectionSigningKeyVersion(newVersion: number): void {
-    const existingCollection = this.loadOfflineCollection();
+  private async updateCollectionSigningKeyVersion(newVersion: number): Promise<void> {
+    const existingCollection = await this.loadOfflineCollection();
     if (existingCollection && existingCollection.signing_key_version !== newVersion) {
       console.log(`🔑 Updating collection signing key version from ${existingCollection.signing_key_version} to ${newVersion}`);
 
@@ -261,7 +253,7 @@ class OfflineSecurityService {
       updatedCollection.collection_hash = this.calculateCollectionHash(collectionForHashing);
 
       // Save updated collection
-      this.saveOfflineCollection(updatedCollection);
+      await this.saveOfflineCollection(updatedCollection);
       console.log(`✅ Collection signing key version updated and hash recalculated`);
     }
   }
@@ -285,7 +277,7 @@ class OfflineSecurityService {
       console.log(`🔑 Session-based signing key initialized for user: ${userId} with version: ${this.signingKeyVersion}`);
 
       // Update existing collection's signing key version if it exists
-      this.updateCollectionSigningKeyVersion(this.signingKeyVersion);
+      await this.updateCollectionSigningKeyVersion(this.signingKeyVersion);
     } else {
       // Fallback to derived key (for offline-only mode)
       this.signingKey = await this.deriveKeyFromUserId(userId);
@@ -301,8 +293,8 @@ class OfflineSecurityService {
   /**
    * Get the hash of the last action in the chain for chain integrity
    */
-  private getLastActionHash(): string | null {
-    const collectionState = this.getCollectionState();
+  private async getLastActionHash(): Promise<string | null> {
+    const collectionState = await this.getCollectionState();
     const actionQueue = collectionState.action_queue;
 
     console.log('🔗 [HASH] getLastActionHash called:', {
@@ -357,7 +349,7 @@ class OfflineSecurityService {
   /**
    * Generate HMAC signature for action with chain integrity
    */
-  private signAction(action: Omit<OfflineAction, 'signature' | 'previous_hash' | 'nonce' | 'key_version'>): { signature: string; previous_hash: string | null; nonce: number; key_version: number } {
+  private async signAction(action: Omit<OfflineAction, 'signature' | 'previous_hash' | 'nonce' | 'key_version'>): Promise<{ signature: string; previous_hash: string | null; nonce: number; key_version: number }> {
     console.log('✍️ [SIGN] signAction called:', {
       actionId: action.id,
       actionType: action.action,
@@ -374,11 +366,11 @@ class OfflineSecurityService {
     }
 
     // Get the hash of the previous action for chain integrity
-    const previousHash = this.getLastActionHash();
+    const previousHash = await this.getLastActionHash();
 
     // Generate a nonce (sequential number for this device/user combination)
     // Account for actions already processed by the server
-    const collectionState = this.getCollectionState();
+    const collectionState = await this.getCollectionState();
     const localQueueLength = collectionState.action_queue.length;
     const nonce = this.serverProcessedActionsCount + localQueueLength + 1;
 
@@ -435,8 +427,8 @@ class OfflineSecurityService {
   /**
    * Get current collection state (helper method)
    */
-  private getCollectionState(): OfflineCollection {
-    const existing = this.loadOfflineCollection();
+  private async getCollectionState(): Promise<OfflineCollection> {
+    const existing = await this.loadOfflineCollection();
     if (existing) {
       return existing;
     }
@@ -448,10 +440,10 @@ class OfflineSecurityService {
   /**
    * Create signed offline action with chain integrity
    */
-  createAction(
+  async createAction(
     action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened',
     data: Partial<OfflineAction>
-  ): OfflineAction {
+  ): Promise<OfflineAction> {
     console.log('🏭 [CREATE] createAction called:', {
       actionType: action,
       data: data,
@@ -478,7 +470,7 @@ class OfflineSecurityService {
       api_version: actionData.api_version
     });
 
-    const { signature, previous_hash, nonce, key_version } = this.signAction(actionData);
+    const { signature, previous_hash, nonce, key_version } = await this.signAction(actionData);
 
     const finalAction = {
       ...actionData,
@@ -519,11 +511,10 @@ class OfflineSecurityService {
   /**
    * Load offline collection from storage (user-scoped)
    */
-  loadOfflineCollection(userId?: string | null): OfflineCollection | null {
+  async loadOfflineCollection(userId?: string | null): Promise<OfflineCollection | null> {
     try {
       const userIdToUse = userId !== undefined ? userId : this.currentUserId;
-      const storageKey = this.getUserScopedCollectionKey(userIdToUse);
-      const stored = localStorage.getItem(storageKey);
+      const stored = await this.storageAdapter.getUserScopedItem(userIdToUse, 'collection');
 
       if (!stored) {
         console.log(`📦 No stored collection found for user: ${userIdToUse || 'global'}`);
@@ -573,22 +564,20 @@ class OfflineSecurityService {
   /**
    * Save offline collection to storage (user-scoped)
    */
-  saveOfflineCollection(collection: Omit<OfflineCollection, 'collection_hash'>, userId?: string | null): void {
+  async saveOfflineCollection(collection: Omit<OfflineCollection, 'collection_hash'>, userId?: string | null): Promise<void> {
     const userIdToUse = userId !== undefined ? userId : this.currentUserId;
-    const storageKey = this.getUserScopedCollectionKey(userIdToUse);
 
     const collectionWithHash: OfflineCollection = {
       ...collection,
       collection_hash: this.calculateCollectionHash(collection)
     };
 
-    localStorage.setItem(storageKey, JSON.stringify(collectionWithHash));
+    await this.storageAdapter.setUserScopedItem(userIdToUse, 'collection', JSON.stringify(collectionWithHash));
 
     console.log(`💾 Saved collection for user: ${userIdToUse}`, {
       cards_count: Object.keys(collection.cards_owned).length,
       credits: collection.eco_credits,
-      pending_actions: collection.action_queue.length,
-      storageKey
+      pending_actions: collection.action_queue.length
     });
   }
 
@@ -720,10 +709,10 @@ class OfflineSecurityService {
   /**
    * Clear all offline data (for testing or reset)
    */
-  clearOfflineData(): void {
-    localStorage.removeItem(this.getUserScopedCollectionKey(null));
-    localStorage.removeItem(this.getUserScopedSigningKey(null));
-    localStorage.removeItem('biomasters_device_id');
+  async clearOfflineData(): Promise<void> {
+    await this.storageAdapter.removeUserScopedItem(null, 'collection');
+    await this.storageAdapter.removeUserScopedItem(null, 'signing_key');
+    await this.storageAdapter.removeItem('device_id');
   }
 }
 

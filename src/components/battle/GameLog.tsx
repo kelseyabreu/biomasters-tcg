@@ -40,7 +40,7 @@ const GameLog: React.FC<GameLogProps> = ({
   isVisible = true,
   onToggleVisibility
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
   const logContentRef = useRef<HTMLDivElement>(null);
 

@@ -12,22 +12,23 @@ interface EcosystemGridProps {
   // Grid configuration
   gameSettings: ClientGameSettings;
   grid: Map<string, ClientGridCard> | null;
-  
+
   // Card data
   allSpeciesCards: Card[];
   getCardData: (instanceId: string) => Card | null;
-  
+
   // Interaction handlers
   onGridPositionClick: (x: number, y: number) => void;
-  
+
   // UI state
   highlightedPositions: Array<{ x: number; y: number; type?: string }>;
-  
+
   // Optional props
   title?: string;
   className?: string;
   cellSize?: number;
   showTitle?: boolean;
+  showHeader?: boolean;
   enablePanZoom?: boolean;
 }
 
@@ -42,6 +43,7 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
   className = "",
   cellSize = 60,
   showTitle = true,
+  showHeader = false,
   enablePanZoom = true
 }) => {
   const localization = useLocalization();
@@ -274,9 +276,11 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
   if (showTitle) {
     return (
       <IonCard className="game-grid-card">
-        <IonCardHeader>
-          <IonCardTitle>{title} ({gameSettings.gridWidth}x{gameSettings.gridHeight})</IonCardTitle>
-        </IonCardHeader>
+        {showHeader && (
+          <IonCardHeader>
+            <IonCardTitle>{title} ({gameSettings.gridWidth}x{gameSettings.gridHeight})</IonCardTitle>
+          </IonCardHeader>
+        )}
         <IonCardContent>
           {gridContent}
         </IonCardContent>

@@ -127,7 +127,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
   // Turn timer and game log state
   const [gameLogEntries, setGameLogEntries] = React.useState<GameLogEntry[]>([]);
-  const [showGameLog, setShowGameLog] = React.useState(true);
+  const [showGameLog, setShowGameLog] = React.useState(false);
   const [turnStartTime, setTurnStartTime] = React.useState<number>(Date.now());
 
   // Player cards navigation state (moved to top level to follow Rules of Hooks)
@@ -960,21 +960,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
     }
   }, [startTCGGame, gameSettings]);
 
-  const handleReturnHome = useCallback(() => {
-    setShowEndGameModal(false);
-    setEndGameData(null);
-
-    // Clear all state before exiting
-    clearUIState();
-
-    // Call the onExit prop to return to main menu
-    if (onExit) {
-      onExit();
-    }
-  }, [onExit]);
-
-
-
   // Get all species cards from store at component level (following Rules of Hooks)
   const allSpeciesCards = useHybridGameStore(state => state.allSpeciesCards);
   const speciesLoaded = useHybridGameStore(state => state.speciesLoaded);
@@ -1706,7 +1691,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           gameStats={endGameData?.gameStats}
           onClose={handleCloseEndGameModal}
           onPlayAgain={handlePlayAgain}
-          onReturnHome={handleReturnHome}
+          onReturnHome={handleCloseEndGameModal}
         />
 
         {/* Turn Timer */}

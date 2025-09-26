@@ -110,6 +110,68 @@ export const BattleModeSelector: React.FC<BattleModeSelectorProps> = ({ onExit }
             </IonCardContent>
           </IonCard>
 
+          {/* TCG Mode Card */}
+          <IonCard 
+            className="mode-card tcg-mode"
+            button
+            onClick={() => handleModeSelect(GameMode.TCG)}
+          >
+            <IonCardHeader>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <IonIcon 
+                  icon={trophy} 
+                  style={{ fontSize: '32px', color: 'var(--ion-color-primary)' }}
+                />
+                <div>
+                  <IonCardTitle>TCG Mode</IonCardTitle>
+                  <div style={{ fontSize: '14px', color: 'var(--ion-color-medium)' }}>
+                    Strategic Trading Card Game
+                  </div>
+                </div>
+                <IonBadge color="primary" style={{ marginLeft: 'auto' }}>
+                  Strategic
+                </IonBadge>
+              </div>
+            </IonCardHeader>
+            <IonCardContent>
+              <p>
+                <strong>Master the ecosystem!</strong> Build powerful food webs using strategic 
+                card placement, resource management, and biological synergies. Compete to create 
+                the most efficient ecosystem.
+              </p>
+              
+              <IonList lines="none" style={{ margin: '16px 0' }}>
+                <IonItem>
+                  <IonIcon icon={flash} slot="start" color="primary" />
+                  <IonLabel>
+                    <h3>Strategic gameplay</h3>
+                    <p>Manage resources and plan optimal card placement</p>
+                  </IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonIcon icon={paw} slot="start" color="primary" />
+                  <IonLabel>
+                    <h3>Biological mechanics</h3>
+                    <p>Trophic levels, domains, and real species abilities</p>
+                  </IonLabel>
+                </IonItem>
+                <IonItem>
+                  <IonIcon icon={rocket} slot="start" color="primary" />
+                  <IonLabel>
+                    <h3>Competitive battles</h3>
+                    <p>Outsmart opponents with tactical ecosystem building</p>
+                  </IonLabel>
+                </IonItem>
+              </IonList>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <IonBadge color="primary">Strategic</IonBadge>
+                <IonBadge color="warning">Advanced</IonBadge>
+                <IonBadge color="danger">Competitive</IonBadge>
+              </div>
+            </IonCardContent>
+          </IonCard>
+          
           {/* Phylo Mode Card */}
           <IonCard 
             className="mode-card phylo-mode"
@@ -172,67 +234,7 @@ export const BattleModeSelector: React.FC<BattleModeSelectorProps> = ({ onExit }
             </IonCardContent>
           </IonCard>
 
-          {/* TCG Mode Card */}
-          <IonCard 
-            className="mode-card tcg-mode"
-            button
-            onClick={() => handleModeSelect(GameMode.TCG)}
-          >
-            <IonCardHeader>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <IonIcon 
-                  icon={trophy} 
-                  style={{ fontSize: '32px', color: 'var(--ion-color-primary)' }}
-                />
-                <div>
-                  <IonCardTitle>TCG Mode</IonCardTitle>
-                  <div style={{ fontSize: '14px', color: 'var(--ion-color-medium)' }}>
-                    Strategic Trading Card Game
-                  </div>
-                </div>
-                <IonBadge color="primary" style={{ marginLeft: 'auto' }}>
-                  Strategic
-                </IonBadge>
-              </div>
-            </IonCardHeader>
-            <IonCardContent>
-              <p>
-                <strong>Master the ecosystem!</strong> Build powerful food webs using strategic 
-                card placement, resource management, and biological synergies. Compete to create 
-                the most efficient ecosystem.
-              </p>
-              
-              <IonList lines="none" style={{ margin: '16px 0' }}>
-                <IonItem>
-                  <IonIcon icon={flash} slot="start" color="primary" />
-                  <IonLabel>
-                    <h3>Strategic gameplay</h3>
-                    <p>Manage resources and plan optimal card placement</p>
-                  </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonIcon icon={paw} slot="start" color="primary" />
-                  <IonLabel>
-                    <h3>Biological mechanics</h3>
-                    <p>Trophic levels, domains, and real species abilities</p>
-                  </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonIcon icon={rocket} slot="start" color="primary" />
-                  <IonLabel>
-                    <h3>Competitive battles</h3>
-                    <p>Outsmart opponents with tactical ecosystem building</p>
-                  </IonLabel>
-                </IonItem>
-              </IonList>
 
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <IonBadge color="primary">Strategic</IonBadge>
-                <IonBadge color="warning">Advanced</IonBadge>
-                <IonBadge color="danger">Competitive</IonBadge>
-              </div>
-            </IonCardContent>
-          </IonCard>
 
           {/* Quick Start Options */}
           <IonCard>

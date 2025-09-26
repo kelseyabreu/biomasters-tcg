@@ -204,10 +204,6 @@
 }
 
 /* Organism Renderer in Pack Cards */
-.pack-card-organism {
-  width: 100% !important;
-  height: 100% !important;
-}
 
 .pack-card-organism .organism-content {
   display: flex !important;

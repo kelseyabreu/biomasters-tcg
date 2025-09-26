@@ -101,8 +101,8 @@ export const EcosystemChallenge: React.FC = () => {
 
     // Initialize default levels
     return [
-      { id: 1, name: 'Speed Demons', description: 'Compare animal speeds', icon: speedometer, challengeType: 'speed_comparison', completed: false, unlocked: true, reward: '10 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
-      { id: 2, name: 'Size Matters', description: 'Rank animals by mass', icon: scale, challengeType: 'mass_ranking', completed: false, unlocked: false, reward: '15 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
+      { id: 1, name: 'Speed Demons', description: 'Compare species speeds', icon: speedometer, challengeType: 'speed_comparison', completed: false, unlocked: true, reward: '10 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
+      { id: 2, name: 'Size Matters', description: 'Rank species by mass', icon: scale, challengeType: 'mass_ranking', completed: false, unlocked: false, reward: '15 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
       { id: 3, name: 'Food Web Builder', description: 'Build a trophic chain', icon: leaf, challengeType: 'trophic_chain', completed: false, unlocked: false, reward: '20 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
       { id: 4, name: 'Habitat Heroes', description: 'Match species to habitats', icon: water, challengeType: 'habitat_matching', completed: false, unlocked: false, reward: '25 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
       { id: 5, name: 'Conservation Crisis', description: 'Learn conservation status', icon: star, challengeType: 'conservation_quiz', completed: false, unlocked: false, reward: '30 Eco Credits', easyCompleted: false, mediumCompleted: false, hardCompleted: false },
@@ -333,7 +333,7 @@ export const EcosystemChallenge: React.FC = () => {
     const maxSpeed = Math.max(fastestCard.run_speed_m_per_hr || 0, fastestCard.swim_speed_m_per_hr || 0, fastestCard.fly_speed_m_per_hr || 0);
 
     return {
-      question: 'Which of these animals is the fastest?',
+      question: 'Which of these species is the fastest?',
       options,
       correctAnswer: correctIndex,
       explanation: `${fastestCard.nameId.replace('CARD_', '').replace(/_/g, ' ')} is the fastest with a maximum speed of ${maxSpeed} m/hr.`,
@@ -356,7 +356,7 @@ export const EcosystemChallenge: React.FC = () => {
     const correctIndex = selectedCards.findIndex(card => card.cardId === heaviestCard.cardId);
 
     return {
-      question: 'Which of these animals is the heaviest?',
+      question: 'Which of these species is the heaviest?',
       options,
       correctAnswer: correctIndex,
       explanation: `${heaviestCard.nameId.replace('CARD_', '').replace(/_/g, ' ')} is the heaviest at ${heaviestCard.mass_kg} kg.`,
@@ -532,34 +532,34 @@ export const EcosystemChallenge: React.FC = () => {
   };
 
   const generateLifecycleQuestion = (cards: CardType[], difficulty: 'Easy' | 'Medium' | 'Hard'): ChallengeQuestion => {
-    // Focus on animals with different life stages
-    const animalsWithStages = cards.filter(card =>
+    // Focus on species with different life stages
+    const speciesWithStages = cards.filter(card =>
       card.trophicRole === 'Herbivore' || card.trophicRole === 'Carnivore'
     );
 
-    if (animalsWithStages.length === 0) {
+    if (speciesWithStages.length === 0) {
       return generateSpeedQuestion(cards, difficulty);
     }
 
-    const targetAnimal = animalsWithStages[Math.floor(Math.random() * animalsWithStages.length)];
+    const targetSpecies = speciesWithStages[Math.floor(Math.random() * speciesWithStages.length)];
     const numWrongOptions = difficulty === 'Easy' ? 2 : difficulty === 'Medium' ? 3 : 4;
     const wrongOptions = cards.filter(card =>
-      card.cardId !== targetAnimal.cardId
+      card.cardId !== targetSpecies.cardId
     ).sort(() => Math.random() - 0.5).slice(0, numWrongOptions);
 
-    const allOptions = [targetAnimal, ...wrongOptions].sort(() => Math.random() - 0.5);
+    const allOptions = [targetSpecies, ...wrongOptions].sort(() => Math.random() - 0.5);
     const options: AnswerOption[] = allOptions.map(card => ({
       text: card.nameId.replace('CARD_', '').replace(/_/g, ' '),
       card: card
     }));
 
-    const correctIndex = allOptions.findIndex(card => card.cardId === targetAnimal.cardId);
+    const correctIndex = allOptions.findIndex(card => card.cardId === targetSpecies.cardId);
 
     return {
-      question: `Which animal typically has the most complex life cycle stages?`,
+      question: `Which species typically has the most complex life cycle stages?`,
       options,
       correctAnswer: correctIndex,
-      explanation: `${targetAnimal.nameId.replace('CARD_', '').replace(/_/g, ' ')} has distinct life cycle stages that are important for its development.`,
+      explanation: `${targetSpecies.nameId.replace('CARD_', '').replace(/_/g, ' ')} has distinct life cycle stages that are important for its development.`,
       cardIds: allOptions.map(card => card.cardId),
       difficulty
     };
@@ -592,7 +592,7 @@ export const EcosystemChallenge: React.FC = () => {
     const environment = useAquatic ? 'aquatic' : 'terrestrial';
 
     return {
-      question: `Which animal is best adapted for ${environment} environments?`,
+      question: `Which species is best adapted for ${environment} environments?`,
       options,
       correctAnswer: correctIndex,
       explanation: `${correctCard.nameId.replace('CARD_', '').replace(/_/g, ' ')} has specific adaptations that make it well-suited for ${environment} life.`,
@@ -626,7 +626,7 @@ export const EcosystemChallenge: React.FC = () => {
     const correctIndex = allOptions.findIndex(card => card.cardId === correctCard.cardId);
 
     return {
-      question: `FINAL CHALLENGE: Which animal combines speed, ecological importance, and unique adaptations most effectively?`,
+      question: `FINAL CHALLENGE: Which species combines speed, ecological importance, and unique adaptations most effectively?`,
       options,
       correctAnswer: correctIndex,
       explanation: `${correctCard.nameId.replace('CARD_', '').replace(/_/g, ' ')} represents an excellent example of evolutionary success with its combination of speed, ecological role, and specialized adaptations.`,

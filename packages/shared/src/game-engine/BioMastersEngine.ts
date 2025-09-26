@@ -330,14 +330,10 @@ export class BioMastersEngine {
     }
   }
 
-  // REMOVED: Old database-based loadGameData method
-  // Game data is now loaded from JSON files via GameDataManager
-
   /**
    * Validate if a card can be played at a specific position without actually playing it
    */
   public validateCardPlay(cardId: string, position: { x: number; y: number }, playerId: string): { isValid: boolean; errorMessage?: string } {
-    console.log(`🔍 BioMastersEngine: Validating card play - cardId: ${cardId}, position: (${position.x}, ${position.y}), playerId: ${playerId}`);
 
     try {
       const gameState = this.ensureGameInitialized();
@@ -410,7 +406,7 @@ export class BioMastersEngine {
       const gameState = this.ensureGameInitialized();
 
       // Check if it's the correct player's turn (except for setup actions)
-      if (action.type !== GameActionType.PLAYER_READY && gameState.gamePhase === 'playing') {
+      if (action.type !== GameActionType.PLAYER_READY && (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN)) {
         if (this.getCurrentPlayer().id !== action.playerId) {
           console.log(`🚨 Not player's turn: current=${this.getCurrentPlayer().id}, action=${action.playerId}`);
           return { isValid: false, errorMessage: 'Not your turn' };
@@ -502,8 +498,8 @@ export class BioMastersEngine {
     const homeCards = Array.from(gameState.grid.values()).filter(card => card.isHOME);
     console.log(`🏠 HOME cards on grid:`, homeCards.map(c => ({ ownerId: c.ownerId, position: c.position })));
 
-    // Validate game phase
-    if (gameState.gamePhase !== GamePhase.PLAYING) {
+    // Validate game phase - allow both PLAYING and FINAL_TURN phases
+    if (gameState.gamePhase !== GamePhase.PLAYING && gameState.gamePhase !== GamePhase.FINAL_TURN) {
       console.log(`🚨 Wrong game phase: ${gameState.gamePhase}`);
       return { isValid: false, errorMessage: 'Cannot play cards during setup phase' };
     }
@@ -996,14 +992,8 @@ export class BioMastersEngine {
    * Check if a card is a Saprotroph (-1S)
    */
   private isSaprotroph(cardData: CardData): boolean {
-    const result = cardData.trophicLevel === TrophicLevel.SAPROTROPH &&
+    return cardData.trophicLevel === TrophicLevel.SAPROTROPH &&
            cardData.trophicCategory === TrophicCategoryId.SAPROTROPH;
-    const cardName = this.getCardName(cardData);
-    console.log(`🍄 isSaprotroph check for ${cardName} (CardID: ${cardData.cardId}):`);
-    console.log(`🍄   TrophicLevel: ${cardData.trophicLevel} === ${TrophicLevel.SAPROTROPH} = ${cardData.trophicLevel === TrophicLevel.SAPROTROPH}`);
-    console.log(`🍄   TrophicCategory: ${cardData.trophicCategory} === ${TrophicCategoryId.SAPROTROPH} = ${cardData.trophicCategory === TrophicCategoryId.SAPROTROPH}`);
-    console.log(`🍄   Result: ${result}`);
-    return result;
   }
 
   /**
@@ -1239,11 +1229,8 @@ export class BioMastersEngine {
   private validateCardPlacement(cardData: CardData, position: { x: number; y: number }, _connectionTargetId?: string): { isValid: boolean; errorMessage?: string } {
     // Check if there are adjacent cards for connection validation
     const adjacentCards = this.getAdjacentCards(position);
-    console.log(`🔍 Adjacent cards at position (${position.x}, ${position.y}):`, adjacentCards.map(c => ({ isHOME: c.isHOME, cardId: c.cardId, position: c.position })));
-    console.log(`🏠 Is HOME position (${position.x}, ${position.y}):`, this.isHomePosition(position));
 
     if (adjacentCards.length === 0 && !this.isHomePosition(position)) {
-      console.log(`🚨 No adjacent cards and not HOME position - placement invalid`);
       return { isValid: false, errorMessage: 'Cards must be placed adjacent to existing cards or HOME' };
     }
 
@@ -1370,8 +1357,19 @@ export class BioMastersEngine {
       }
     }
 
-    // Decomposition Loop: Saprotrophs (-1S) placement is handled in position occupation logic
-    // No additional validation needed here since detritus placement is checked earlier
+    // Decomposition Loop: Saprotrophs (-1S) can ONLY be placed on detritus tiles
+    // They should NOT be allowed to connect to regular cards like other trophic levels
+    if (cardData.trophicLevel === TrophicLevel.SAPROTROPH && this.isSaprotroph(cardData)) {
+      // Check if this position has detritus using the existing method
+      const hasDetritus = this.hasDetritusAtPosition(position);
+
+      if (!hasDetritus) {
+        return { isValid: false, errorMessage: 'Saprotrophs can only be placed on detritus tiles' };
+      }
+
+      // Valid detritus placement for saprotroph
+      return { isValid: true };
+    }
 
     // Decomposition Loop: Detritivores (-2D) must connect to Saprotrophs (-1S)
     if (cardData.trophicLevel === TrophicLevel.DETRITIVORE && this.isDetritivore(cardData)) {
@@ -1597,11 +1595,7 @@ export class BioMastersEngine {
     // Special handling for Saprotrophs: they can use detritus as cost source
     const isSaprotroph = cardData.trophicLevel === TrophicLevel.SAPROTROPH && this.isSaprotroph(cardData);
 
-    const cardName = this.getCardName(cardData);
-    console.log(`🍄 Cost validation for ${cardName}:`);
-    console.log(`🍄 TrophicLevel: ${cardData.trophicLevel}, TrophicCategory: ${cardData.trophicCategory}`);
-    console.log(`🍄 Is Saprotroph: ${isSaprotroph}`);
-    console.log(`🍄 Position: ${position ? `${position.x},${position.y}` : 'none'}`);
+
 
     // Get player's cards on grid
     const playerCards = Array.from(gameState.grid.values()).filter(card => card.ownerId === playerId);
@@ -1633,27 +1627,17 @@ export class BioMastersEngine {
           const positionKey = `${position.x},${position.y}`;
           const detritusCard = gameState.grid.get(positionKey);
 
-          console.log(`🍄 Saprotroph cost validation: checking detritus at ${position.x},${position.y}`);
-          console.log(`🍄 Detritus found:`, detritusCard);
-
           if (detritusCard?.isDetritus) {
             const detritusCardData = this.cardDatabase.get(detritusCard.cardId);
-            console.log(`🍄 Detritus card data:`, detritusCardData);
-            console.log(`🍄 Requirement:`, requirement);
 
             if (detritusCardData) {
               // Check if detritus card matches the requirement
               const detritusMatches = (!requirement.Category || detritusCardData.trophicCategory === requirement.Category) &&
                                    (!requirement.Level || detritusCardData.trophicLevel === requirement.Level);
 
-              console.log(`🍄 Detritus matches requirement: ${detritusMatches}`);
-              console.log(`🍄 Category match: ${!requirement.Category || detritusCardData.trophicCategory === requirement.Category}`);
-              console.log(`🍄 Level match: ${!requirement.Level || detritusCardData.trophicLevel === requirement.Level}`);
-
               if (detritusMatches) {
                 // Detritus can satisfy one unit of the requirement
                 requiredCount = Math.max(0, requiredCount - 1);
-                console.log(`🍄 Detritus can satisfy cost, reduced required count to: ${requiredCount}`);
               }
             }
           }

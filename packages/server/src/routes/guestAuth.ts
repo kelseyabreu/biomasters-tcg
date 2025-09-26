@@ -135,7 +135,7 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
         .values({
           device_id: deviceId,
           user_id: user.id,
-          client_user_id: client_user_id || guestId, // Use provided client_user_id or fallback to guestId
+          client_user_id: guestCredentials.guestId, // Use guestId as client_user_id for new guest accounts
           current_key_version: BigInt(1),
           last_sync_timestamp: 0,
           last_used_at: new Date()
@@ -691,7 +691,7 @@ router.get('/client-user-info/:client_user_id', asyncHandler(async (req, res) =>
         'device_sync_states.last_used_at',
         'device_sync_states.created_at',
         'users.username',
-        'users.user_type',
+        'users.account_type',
         'users.is_guest'
       ])
       .where('device_sync_states.client_user_id', '=', client_user_id)
@@ -716,7 +716,7 @@ router.get('/client-user-info/:client_user_id', asyncHandler(async (req, res) =>
         current_user: {
           id: mostRecentState.user_id,
           username: mostRecentState.username,
-          user_type: mostRecentState.user_type,
+          user_type: mostRecentState.account_type,
           is_guest: mostRecentState.is_guest
         },
         devices: deviceStates.map(state => ({

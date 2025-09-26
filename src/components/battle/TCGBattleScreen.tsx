@@ -38,6 +38,7 @@ import {
 import useHybridGameStore from '../../state/hybridGameStore';
 import { useLocalization } from '../../contexts/LocalizationContext';
 import { useTheme } from '../../theme/ThemeProvider';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 import { unifiedGameService } from '../../services/UnifiedGameService';
 import { getGameSocket } from '../../services/gameSocket';
@@ -103,6 +104,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   const selectHandCard = useHybridGameStore(state => state.battle.actions.selectHandCard);
   const setHighlightedPositions = useHybridGameStore(state => state.battle.actions.setHighlightedPositions);
   const clearUIState = useHybridGameStore(state => state.battle.actions.clearUIState);
+  const clearError = useHybridGameStore(state => state.battle.actions.clearError);
 
   // Opposition hand state and actions
   const oppositionHandState = useHybridGameStore(state => state.battle.uiState.oppositionHand);
@@ -645,7 +647,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       setEndGameData(finalEndData);
       setShowEndGameModal(true);
     }
-  }, [gameState?.gamePhase, gameState?.gameId, showEndGameModal]);
+  }, [gameState?.gamePhase, gameState?.gameId]); // Removed showEndGameModal to prevent infinite loop when closing modal
 
   // Handle card selection from hand
   const handleCardSelect = useCallback(async (cardInstanceId: string) => {
@@ -919,7 +921,26 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   // End game modal handlers
   const handleCloseEndGameModal = useCallback(() => {
     setShowEndGameModal(false);
-  }, []);
+    setEndGameData(null);
+
+    // Clear all state before exiting
+    clearUIState();
+
+    // Call the onExit prop to return to main menu (same as Return Home button)
+    if (onExit) {
+      // TODO figure out why this is necessary to re-enable interaction with the main UI after closing the modal
+      setTimeout(() => {
+          const inertOutlets = document.querySelectorAll('ion-router-outlet[inert]');
+          debugger;
+          if (inertOutlets.length > 0) {
+              inertOutlets.forEach((outlet) => {
+                  outlet.removeAttribute('inert');
+              });
+          }
+      }, 200);
+      onExit();
+    }
+  }, [onExit]);
 
   const handlePlayAgain = useCallback(async () => {
     setShowEndGameModal(false);
@@ -1151,12 +1172,30 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
             </p>
             <IonButton
               onClick={() => {
-                // Force re-initialization by reloading the page
-                window.location.reload();
+                // Clear error and try to re-initialize
+                clearError();
+                // Trigger re-initialization by calling startTCGGame again
+                if (gameSettings) {
+                  startTCGGame('local-game', [
+                    { id: 'player1', name: 'Player 1', isHuman: true },
+                    { id: 'player2', name: 'Player 2', isHuman: false }
+                  ], gameSettings);
+                }
               }}
               color="primary"
             >
               Try Again
+            </IonButton>
+            <IonButton
+              onClick={() => {
+                // Clear error and exit to main menu
+                clearError();
+                onExit?.();
+              }}
+              color="medium"
+              fill="outline"
+            >
+              Exit to Menu
             </IonButton>
             <IonButton
               onClick={onExit}
@@ -1204,13 +1243,14 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-      style={{ height: '100%' }}
-    >
+    <ErrorBoundary>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+        style={{ height: '100%' }}
+      >
       <IonPage
         className="tcg-battle-screen"
         data-testid="tcg-battle-screen"
@@ -1689,6 +1729,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       </IonContent>
     </IonPage>
     </motion.div>
+    </ErrorBoundary>
   );
 };
 

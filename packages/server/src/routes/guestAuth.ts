@@ -135,6 +135,7 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
         .values({
           device_id: deviceId,
           user_id: user.id,
+          client_user_id: client_user_id || guestId, // Use provided client_user_id or fallback to guestId
           current_key_version: BigInt(1),
           last_sync_timestamp: 0,
           last_used_at: new Date()
@@ -199,7 +200,7 @@ router.post('/create', authRateLimiter, asyncHandler(async (req, res) => {
  * Lazy registration endpoint for first-time guest sync (offline→online flow)
  */
 router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res) => {
-  const { guestId, initialUsername, actionQueue, deviceId } = req.body;
+  const { guestId, initialUsername, actionQueue, deviceId, client_user_id } = req.body;
 
   // Validate input
   if (!guestId || !Array.isArray(actionQueue)) {
@@ -209,19 +210,72 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
     });
   }
 
-  // Check if guest already exists (prevent replay attacks)
+  // Check if guest already exists
   const existingGuest = await withRetry(async () => {
     return await db
       .selectFrom('users')
-      .select('id')
+      .select(['id', 'username', 'guest_id', 'coins', 'gems', 'dust'])
       .where('guest_id', '=', guestId)
       .executeTakeFirst();
   });
 
   if (existingGuest) {
-    return res.status(409).json({
-      error: 'GUEST_EXISTS',
-      message: 'Guest account already exists'
+    console.log('🔄 Guest already exists, processing sync for existing user:', {
+      guestId,
+      userId: existingGuest.id,
+      username: existingGuest.username
+    });
+
+    // Process action queue for existing guest
+    let processedActions = 0;
+    const errors: string[] = [];
+
+    if (actionQueue && actionQueue.length > 0) {
+      console.log(`📝 Processing ${actionQueue.length} actions for existing guest...`);
+
+      for (const action of actionQueue) {
+        try {
+          // Store action in queue for processing
+          const actionData: NewOfflineAction = {
+            user_id: existingGuest.id,
+            device_id: deviceId || 'unknown',
+            action_type: action.action || 'unknown',
+            action_payload: JSON.stringify(action.payload || {}),
+            action_signature: action.signature || null,
+            client_timestamp: action.timestamp || Date.now(),
+            is_processed: false,
+            processing_error: null
+          };
+
+          await db
+            .insertInto('offline_action_queue')
+            .values(actionData)
+            .execute();
+
+          processedActions++;
+        } catch (error) {
+          console.error('Error processing action for existing guest:', error);
+          errors.push(`Action ${action.action}: ${error}`);
+        }
+      }
+    }
+
+    // Generate new JWT for existing guest
+    const guestJWT = generateGuestJWT(existingGuest.id, guestId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Guest sync completed',
+      user: existingGuest,
+      auth: {
+        token: guestJWT,
+        type: 'guest'
+        // Note: guestSecret not included for existing guests (client should have it stored)
+      },
+      sync: {
+        processed_actions: processedActions,
+        errors: errors
+      }
     });
   }
 
@@ -355,6 +409,7 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
         .values({
           device_id: deviceId,
           user_id: user.id,
+          client_user_id: client_user_id || guestId, // Use provided client_user_id or fallback to guestId
           current_key_version: BigInt(1),
           last_sync_timestamp: 0,
           last_used_at: new Date()
@@ -362,6 +417,7 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
         .onConflict((oc) => oc
           .columns(['device_id', 'user_id'])
           .doUpdateSet({
+            client_user_id: client_user_id || guestId, // Update client ID on conflict
             current_key_version: BigInt(1),
             last_sync_timestamp: 0,
             last_used_at: new Date(),
@@ -392,8 +448,9 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
       dust: result.user.dust
     },
     auth: {
-      guestSecret,
       token: guestJWT,
+      type: 'guest',
+      guestSecret, // Provided for new guest registrations
       expiresIn: '7d'
     },
     sync: {
@@ -603,6 +660,81 @@ router.get('/status', requireAuth, asyncHandler(async (req, res) => {
     }
   });
   return;
+}));
+
+/**
+ * GET /api/guest/client-user-info/:client_user_id
+ * Get user information by client_user_id for cross-device linking
+ */
+router.get('/client-user-info/:client_user_id', asyncHandler(async (req, res) => {
+  const { client_user_id } = req.params;
+
+  console.log('🔍 [CLIENT-USER-INFO] Looking up user by client_user_id:', client_user_id);
+
+  if (!client_user_id) {
+    res.status(400).json({
+      success: false,
+      message: 'client_user_id is required'
+    });
+    return;
+  }
+
+  try {
+    // Find device sync states for this client user ID
+    const deviceStates = await db
+      .selectFrom('device_sync_states')
+      .innerJoin('users', 'users.id', 'device_sync_states.user_id')
+      .select([
+        'device_sync_states.device_id',
+        'device_sync_states.user_id',
+        'device_sync_states.client_user_id',
+        'device_sync_states.last_used_at',
+        'device_sync_states.created_at',
+        'users.username',
+        'users.user_type',
+        'users.is_guest'
+      ])
+      .where('device_sync_states.client_user_id', '=', client_user_id)
+      .orderBy('device_sync_states.last_used_at', 'desc')
+      .execute();
+
+    if (deviceStates.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: 'No user found for this client_user_id'
+      });
+      return;
+    }
+
+    // Return the most recent user info and all associated devices
+    const mostRecentState = deviceStates[0];
+
+    res.json({
+      success: true,
+      data: {
+        client_user_id,
+        current_user: {
+          id: mostRecentState.user_id,
+          username: mostRecentState.username,
+          user_type: mostRecentState.user_type,
+          is_guest: mostRecentState.is_guest
+        },
+        devices: deviceStates.map(state => ({
+          device_id: state.device_id,
+          last_used_at: state.last_used_at,
+          created_at: state.created_at
+        })),
+        total_devices: deviceStates.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [CLIENT-USER-INFO] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 }));
 
 export default router;

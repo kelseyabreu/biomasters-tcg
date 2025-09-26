@@ -66,6 +66,7 @@ async function registerRoutes() {
   const { default: leaderboardRoutes } = await import('./routes/leaderboard');
   const { default: healthRoutes } = await import('./routes/health');
   const { default: productsRoutes } = await import('./routes/products');
+  const { default: redemptionRoutes } = await import('./routes/redemptions');
 
   // Health check routes (before authentication)
   console.log('🔧 DEBUG: Registering health routes...');
@@ -91,6 +92,7 @@ async function registerRoutes() {
   app.use('/api/matches', matchesRoutes);
   app.use('/api/leaderboard', leaderboardRoutes);
   app.use('/api/products', productsRoutes);
+  app.use('/api/redemptions', redemptionRoutes);
   console.log('🔧 DEBUG: All API routes registered successfully');
 
   // DEBUG: Add a direct test route
@@ -320,7 +322,7 @@ app.use(cors({
   origin: process.env['CORS_ORIGIN']?.split(',') || ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Client-User-Id']
 }));
 
 // Compression and parsing middleware

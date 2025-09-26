@@ -54,16 +54,54 @@ apiClient.interceptors.request.use(
       } else {
         // Check for guest authentication
         const guestCredentials = await tokenManager.getGuestCredentials();
-        
+
+        console.log('🔍 [API] Guest credentials check:', {
+          hasCredentials: !!guestCredentials,
+          hasGuestId: !!guestCredentials?.guestId,
+          hasGuestSecret: !!guestCredentials?.guestSecret,
+          hasGuestToken: !!guestCredentials?.guestToken,
+          tokenLength: guestCredentials?.guestToken?.length || 0,
+          tokenPreview: guestCredentials?.guestToken ? `${guestCredentials.guestToken.substring(0, 20)}...` : null
+        });
+
         if (guestCredentials?.guestToken) {
           config.headers = config.headers || {};
           config.headers.Authorization = `Bearer ${guestCredentials.guestToken}`;
-          console.log('🔐 Attached guest token to request');
+          console.log('🔐 Attached guest token to request:', {
+            url: config.url,
+            method: config.method?.toUpperCase(),
+            tokenLength: guestCredentials.guestToken.length,
+            timestamp: new Date().toISOString()
+          });
         } else {
-          console.log('ℹ️ No authentication token available for request');
+          console.log('ℹ️ No authentication token available for request:', {
+            url: config.url,
+            method: config.method?.toUpperCase(),
+            timestamp: new Date().toISOString()
+          });
         }
       }
-      
+
+      // Add client_user_id to requests for 3-ID architecture
+      try {
+        const { getClientUserId } = await import('../state/hybridGameStore');
+        const clientUserId = getClientUserId();
+
+        if (clientUserId) {
+          config.headers = config.headers || {};
+          config.headers['X-Client-User-ID'] = clientUserId;
+
+          // For POST/PUT requests, also add to body if it's JSON
+          if (['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '') &&
+              config.data &&
+              typeof config.data === 'object') {
+            config.data.client_user_id = clientUserId;
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not add client_user_id to request:', error);
+      }
+
       return config;
     } catch (error) {
       console.error('❌ Failed to attach authentication token:', error);
@@ -264,7 +302,7 @@ export const authApi = {
 
 export const guestApi = {
   // Register guest and sync
-  registerAndSync: (data: { guestId: string; actionQueue: any[]; deviceId?: string }) =>
+  registerAndSync: (data: { guestId: string; actionQueue: any[]; deviceId?: string; client_user_id?: string }) =>
     api.post<ApiResponse>('/api/guest/register-and-sync', data),
   
   // Login existing guest

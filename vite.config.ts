@@ -1,16 +1,66 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 import path from 'path'
+import fs from 'fs'
+
+// Custom plugin to process Service Worker with build-time variables
+function serviceWorkerPlugin() {
+  return {
+    name: 'service-worker',
+    buildStart() {
+      // Add the service worker as a watched file
+      this.addWatchFile('public/sw.js');
+    },
+    generateBundle() {
+      // Read the service worker template
+      const swTemplate = fs.readFileSync('public/sw.js', 'utf-8');
+
+      // Get package.json version (force fresh read)
+      const packagePath = path.resolve(process.cwd(), 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+      const appVersion = packageJson.version || '0.0.1';
+      const buildTimestamp = Date.now();
+
+      console.log(`🔧 Processing Service Worker: v${appVersion} (${buildTimestamp})`);
+
+      // Replace build-time variables
+      let processedSW = swTemplate;
+
+      // Replace APP_VERSION
+      const appVersionPattern = "const APP_VERSION = '__APP_VERSION__';";
+      const appVersionReplacement = `const APP_VERSION = '${appVersion}';`;
+      processedSW = processedSW.replace(appVersionPattern, appVersionReplacement);
+
+      // Replace BUILD_TIMESTAMP
+      const buildTimestampPattern = "const BUILD_TIMESTAMP = '__BUILD_TIMESTAMP__';";
+      const buildTimestampReplacement = `const BUILD_TIMESTAMP = '${buildTimestamp}';`;
+      processedSW = processedSW.replace(buildTimestampPattern, buildTimestampReplacement);
+
+      // Emit the processed service worker
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sw.js',
+        source: processedSW
+      });
+
+      console.log('✅ Service Worker processed and emitted');
+    }
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    serviceWorkerPlugin(),
     // legacy() // Temporarily disabled due to core-js issue
   ],
   define: {
     // Provide browser-safe process global for shared package compatibility
-    'process.env': 'import.meta.env'
+    'process.env': 'import.meta.env',
+    // Build-time variables for Service Worker cache busting
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '0.0.1'),
+    __BUILD_TIMESTAMP__: JSON.stringify(Date.now())
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],

@@ -36,17 +36,28 @@ import { useHybridGameStore } from '../state/hybridGameStore';
 import PackOpeningModal from '../components/PackOpeningModal';
 import { useUILocalization } from '../hooks/useCardLocalization';
 import { UITextId } from '@kelseyabreu/shared';
+import { useRedemptionStatus } from '../hooks/useRedemptionStatus';
 import './PackOpening.css';
 
 const PackOpening: React.FC = () => {
   const {
     offlineCollection,
     isAuthenticated,
-    isGuestMode,
-    hasStarterPack
+    isGuestMode
   } = useHybridGameStore();
 
   const { getUIText } = useUILocalization();
+  const { canRedeemStarterPack, loading: redemptionLoading, status: redemptionStatus, error: redemptionError } = useRedemptionStatus();
+
+  // Debug logging for pack opening
+  console.log('📦 [PackOpening] Redemption status:', {
+    canRedeemStarterPack,
+    redemptionLoading,
+    redemptionStatus,
+    redemptionError,
+    isAuthenticated,
+    isGuestMode
+  });
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -56,8 +67,8 @@ const PackOpening: React.FC = () => {
 
   const credits = offlineCollection?.eco_credits || 0;
 
-  // Pack configurations
-  const packTypes = [
+  // Pack configurations - filter out starter pack if already claimed
+  const allPackTypes = [
     {
       id: 'starter',
       name: getUIText(UITextId.UI_STARTER_PACK),
@@ -67,7 +78,7 @@ const PackOpening: React.FC = () => {
       icon: star,
       color: 'success',
       special: true,
-      available: !hasStarterPack && isAuthenticated
+      available: canRedeemStarterPack && isAuthenticated && !redemptionLoading
     },
     {
       id: 'basic',
@@ -78,7 +89,7 @@ const PackOpening: React.FC = () => {
       icon: gift,
       color: 'primary',
       special: false,
-      available: true
+      available: isAuthenticated // ANONYMOUS users can't open packs
     },
     {
       id: 'premium',
@@ -89,7 +100,7 @@ const PackOpening: React.FC = () => {
       icon: diamond,
       color: 'secondary',
       special: false,
-      available: true
+      available: isAuthenticated // ANONYMOUS users can't open packs
     },
     {
       id: 'legendary',
@@ -112,8 +123,45 @@ const PackOpening: React.FC = () => {
       color: 'tertiary',
       special: true,
       available: true
+    },
+    {
+      id: 'stage10award',
+      name: 'Stage 10 Award Pack',
+      description: 'Exclusive reward for completing all Ecosystem Challenge levels',
+      cost: 0,
+      cards: 10,
+      icon: trophy,
+      color: 'warning',
+      special: true,
+      available: offlineCollection?.action_queue.some(action =>
+        action.action === 'pack_opened' &&
+        action.pack_type === 'stage10award'
+      ) || false // Available if there's an unopened stage10award pack in queue
     }
   ];
+
+  // Filter out starter pack if already claimed (don't show it at all)
+  const packTypes = allPackTypes.filter(pack => {
+    if (pack.id === 'starter') {
+      const shouldShow = canRedeemStarterPack && isAuthenticated;
+      console.log('📦 [PackOpening] Starter pack filter decision:', {
+        packId: pack.id,
+        canRedeemStarterPack,
+        isAuthenticated,
+        shouldShow,
+        redemptionLoading
+      });
+      return shouldShow;
+    }
+    return true;
+  });
+
+  console.log('📦 [PackOpening] Final pack types after filtering:', {
+    totalPacks: allPackTypes.length,
+    filteredPacks: packTypes.length,
+    packIds: packTypes.map(p => p.id),
+    hasStarterPack: packTypes.some(p => p.id === 'starter')
+  });
 
   const handleOpenPack = async (packType: string) => {
     console.log('🎁 [PackOpening] handleOpenPack called with packType:', packType);
@@ -185,6 +233,11 @@ const PackOpening: React.FC = () => {
               <IonText color="medium">
                 <p>{getUIText(UITextId.UI_EARN_CREDITS_DESCRIPTION)}</p>
               </IonText>
+              {redemptionLoading && isAuthenticated && (
+                <IonText color="medium">
+                  <p><em>Loading redemption status...</em></p>
+                </IonText>
+              )}
             </div>
           </IonCardContent>
         </IonCard>
@@ -250,8 +303,12 @@ const PackOpening: React.FC = () => {
                         {isOpening === pack.id
                           ? getUIText(UITextId.UI_OPENING)
                           : pack.available
-                            ? getUIText(UITextId.UI_OPEN_PACK).replace('{packName}', pack.name)
-                            : getUIText(UITextId.UI_NOT_AVAILABLE)
+                            ? pack.id === 'starter'
+                              ? 'Claim Starter Pack'
+                              : getUIText(UITextId.UI_OPEN_PACK).replace('{packName}', pack.name)
+                            : pack.id === 'starter'
+                              ? 'Already Claimed'
+                              : getUIText(UITextId.UI_NOT_AVAILABLE)
                         }
                       </IonButton>
                     </div>
@@ -281,29 +338,7 @@ const PackOpening: React.FC = () => {
           </IonCard>
         )}
 
-        {/* Collection Initialization Notice */}
-        {isAuthenticated && !offlineCollection && (
-          <IonCard>
-            <IonCardContent>
-              <IonText color="warning">
-                <h3>{getUIText(UITextId.UI_COLLECTION_NOT_INITIALIZED)}</h3>
-                <p>
-                  {isGuestMode
-                    ? getUIText(UITextId.UI_GUEST_COLLECTION_NEEDS_INIT)
-                    : getUIText(UITextId.UI_COLLECTION_NEEDS_INIT)
-                  }
-                </p>
-              </IonText>
-              <IonButton
-                expand="block"
-                routerLink="/home"
-                color="primary"
-              >
-                {getUIText(UITextId.UI_GO_TO_HOME_TO_INITIALIZE)}
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
-        )}
+
 
         <IonToast
           isOpen={showToast}

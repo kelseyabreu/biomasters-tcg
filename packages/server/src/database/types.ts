@@ -121,7 +121,7 @@ export interface UserCardsTable {
 
   // Card metadata fields (from schema.sql) - optional for inserts
   is_foil: Generated<boolean>;
-  variant: string | null;
+  variant: Generated<number>; // Changed from string to number after migration 037
   condition: Generated<string>;
   metadata: Generated<string>; // JSONB as string
 }
@@ -174,6 +174,7 @@ export interface MigrationsTable {
 export interface DeviceSyncStatesTable {
   device_id: string; // Part of composite primary key
   user_id: string; // Part of composite primary key
+  client_user_id: string; // Stable client-generated UUID (3-ID architecture)
   current_key_version: bigint; // Points to current active key version (timestamp)
   last_sync_timestamp: number;
   last_used_at: Generated<Date>;
@@ -534,6 +535,31 @@ export interface RedisQueueStateTable {
   last_processed_at: Date | null;
 }
 
+// Redemption system tables
+export interface UserRedemptionsTable {
+  id: Generated<string>;
+  user_id: string;
+  redemption_type: number; // RedemptionType enum
+  redemption_code: string | null; // For promo codes, NULL for automatic redemptions
+  redeemed_at: Generated<Date>;
+  expires_at: Date | null; // For time-limited redemptions
+  redemption_data: any; // JSONB data
+  status: number; // RedemptionStatus enum
+}
+
+export interface PromoCodesTable {
+  id: Generated<string>;
+  code: string;
+  redemption_type: number; // RedemptionType enum
+  rewards: any; // JSONB array of PromoCodeReward objects
+  max_redemptions: number | null; // Global limit (NULL = unlimited)
+  max_per_user: number; // Per-user limit
+  expires_at: Date | null;
+  active: boolean;
+  created_at: Generated<Date>;
+  description: string | null; // Description for admin panel
+}
+
 // Database interface
 export interface Database {
   users: UsersTable;
@@ -544,6 +570,10 @@ export interface Database {
   redemption_codes: RedemptionCodesTable;
   transactions: TransactionsTable;
   migrations: MigrationsTable;
+
+  // Redemption system tables
+  user_redemptions: UserRedemptionsTable;
+  promo_codes: PromoCodesTable;
   device_sync_states: DeviceSyncStatesTable;
   device_signing_keys: DeviceSigningKeysTable;
   sync_actions_log: SyncActionsLogTable;

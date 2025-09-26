@@ -321,25 +321,49 @@ class OfflineSecurityService {
       previous_hash: lastAction.previous_hash ? lastAction.previous_hash.substring(0, 16) + '...' : null
     });
 
-    const lastActionPayload = JSON.stringify({
+    // Build hash payload with only defined fields (matching server behavior)
+    const hashPayload: any = {
       id: lastAction.id,
       action: lastAction.action,
-      card_id: lastAction.cardId, // Use card_id to match server expectations
-      quantity: lastAction.quantity,
-      pack_type: lastAction.pack_type,
-      deck_id: lastAction.deck_id,
       timestamp: lastAction.timestamp,
-      api_version: lastAction.api_version,
-      device_id: this.deviceId,
-      key_version: lastAction.key_version, // Use the key version the action was signed with
-      previous_hash: lastAction.previous_hash,
-      nonce: lastAction.nonce
+      api_version: lastAction.api_version
+    };
+
+    // Only include optional fields if they exist (matching server behavior)
+    if (lastAction.cardId !== undefined) {
+      hashPayload.card_id = lastAction.cardId;
+    }
+    if (lastAction.quantity !== undefined) {
+      hashPayload.quantity = lastAction.quantity;
+    }
+    if (lastAction.pack_type !== undefined) {
+      hashPayload.pack_type = lastAction.pack_type;
+    }
+    if (lastAction.deck_id !== undefined) {
+      hashPayload.deck_id = lastAction.deck_id;
+    }
+
+    // Add remaining fields in consistent order
+    hashPayload.device_id = this.deviceId;
+    hashPayload.key_version = lastAction.key_version;
+    hashPayload.previous_hash = lastAction.previous_hash;
+    hashPayload.nonce = lastAction.nonce;
+
+    console.log('🔍 [HASH-DEBUG] Client hash calculation for action:', {
+      actionId: lastAction.id,
+      actionType: lastAction.action,
+      hashPayload: hashPayload,
+      payloadString: JSON.stringify(hashPayload),
+      payloadLength: JSON.stringify(hashPayload).length
     });
 
+    const lastActionPayload = JSON.stringify(hashPayload);
     const hash = CryptoJS.SHA256(lastActionPayload).toString();
-    console.log('🔗 [HASH] Calculated hash:', {
-      payloadLength: lastActionPayload.length,
-      hash: hash.substring(0, 16) + '...',
+
+    console.log('🔍 [HASH-DEBUG] Client calculated hash:', {
+      actionId: lastAction.id,
+      calculatedHash: hash,
+      hashLength: hash.length,
       fullHash: hash
     });
 
@@ -391,20 +415,35 @@ class OfflineSecurityService {
 
     // Create payload structure with chain integrity
     // This must match the EXACT order and structure in server/src/routes/sync.ts verifyActionSignature function
-    const payload = JSON.stringify({
+    // Only include defined fields (matching server behavior)
+    const payloadObj: any = {
       id: action.id,
       action: action.action,
-      card_id: action.cardId, // Use card_id to match server expectations
-      quantity: action.quantity,
-      pack_type: action.pack_type,
-      deck_id: action.deck_id,
       timestamp: action.timestamp,
-      api_version: action.api_version,
-      device_id: this.deviceId,
-      key_version: keyVersion,
-      previous_hash: previousHash,
-      nonce: nonce
-    });
+      api_version: action.api_version
+    };
+
+    // Only include optional fields if they exist (matching server behavior)
+    if (action.cardId !== undefined) {
+      payloadObj.card_id = action.cardId;
+    }
+    if (action.quantity !== undefined) {
+      payloadObj.quantity = action.quantity;
+    }
+    if (action.pack_type !== undefined) {
+      payloadObj.pack_type = action.pack_type;
+    }
+    if (action.deck_id !== undefined) {
+      payloadObj.deck_id = action.deck_id;
+    }
+
+    // Add remaining fields in consistent order
+    payloadObj.device_id = this.deviceId;
+    payloadObj.key_version = keyVersion;
+    payloadObj.previous_hash = previousHash;
+    payloadObj.nonce = nonce;
+
+    const payload = JSON.stringify(payloadObj);
 
     console.log('✍️ [SIGN] Payload details:', {
       payloadLength: payload.length,

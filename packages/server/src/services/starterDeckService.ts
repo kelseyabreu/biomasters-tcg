@@ -239,45 +239,46 @@ class StarterDeckService {
   }
 
   /**
+   * Add cards to user's collection (public method for redemption system)
+   * Sets the quantity to the specified amount (doesn't add to existing)
+   */
+  async addCardsToUser(userId: string, cardId: number, quantity: number, acquisitionMethod: string = 'redeem'): Promise<void> {
+    return this.ensureUserHasCard(userId, cardId, quantity);
+  }
+
+  /**
    * Ensure user has a specific card in their collection
+   * Sets the quantity to the specified amount (doesn't add to existing)
    */
   private async ensureUserHasCard(userId: string, cardId: number, quantity: number): Promise<void> {
     try {
-      console.log(`🔍 [StarterDeckService] Checking if user ${userId} has card ${cardId}`);
+      console.log(`🔍 [StarterDeckService] Setting user ${userId} to have exactly ${quantity} of card ${cardId}`);
 
-      // Check if user already has this card
-      const existingCard = await db
-        .selectFrom('user_cards')
-        .select(['quantity'])
-        .where('user_id', '=', userId)
-        .where('card_id', '=', cardId)
+      // Use UPSERT pattern to handle race conditions and respect unique constraint
+      const result = await db
+        .insertInto('user_cards')
+        .values({
+          user_id: userId,
+          card_id: cardId,
+          variant: 0 as any, // Default variant (normal card) - cast to satisfy Kysely types
+          quantity: quantity,
+          acquisition_method: AcquisitionMethod.STARTER
+        })
+        .onConflict((oc) => oc
+          .columns(['user_id', 'card_id', 'variant'])
+          .doUpdateSet({
+            quantity: quantity, // SET to exact quantity, don't add
+            last_acquired_at: new Date(),
+            acquisition_method: AcquisitionMethod.STARTER // Update acquisition method too
+          })
+        )
+        .returning(['quantity'])
         .executeTakeFirst();
 
-      if (existingCard) {
-        console.log(`📈 [StarterDeckService] User ${userId} already has card ${cardId} (quantity: ${existingCard.quantity}), adding ${quantity} more`);
-        // User already has the card, add to quantity
-        await db
-          .updateTable('user_cards')
-          .set({
-            quantity: existingCard.quantity + quantity
-          })
-          .where('user_id', '=', userId)
-          .where('card_id', '=', cardId)
-          .execute();
-        console.log(`✅ [StarterDeckService] Updated card ${cardId} quantity to ${existingCard.quantity + quantity} for user ${userId}`);
+      if (result) {
+        console.log(`✅ [StarterDeckService] User ${userId} now has exactly ${result.quantity} of card ${cardId}`);
       } else {
-        console.log(`➕ [StarterDeckService] User ${userId} doesn't have card ${cardId}, adding ${quantity} copies`);
-        // User doesn't have the card, add it
-        await db
-          .insertInto('user_cards')
-          .values({
-            user_id: userId,
-            card_id: cardId,
-            quantity: quantity,
-            acquisition_method: AcquisitionMethod.STARTER
-          })
-          .execute();
-        console.log(`✅ [StarterDeckService] Added card ${cardId} x${quantity} to user ${userId}'s collection`);
+        console.log(`⚠️ [StarterDeckService] UPSERT completed but no result returned for card ${cardId}`);
       }
     } catch (error) {
       console.error(`❌ [StarterDeckService] Error ensuring user has card ${cardId}:`, error);

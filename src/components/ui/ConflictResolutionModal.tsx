@@ -50,25 +50,10 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
   onDismiss
 }) => {
   const { syncConflicts, dismissSyncConflicts } = useHybridGameStore();
-  const [resolutions, setResolutions] = useState<Record<string, string>>({});
+  const [globalResolution, setGlobalResolution] = useState<'server_wins' | 'user_wins'>('server_wins');
   const [isResolving, setIsResolving] = useState(false);
 
-  // Initialize resolutions with automatic resolutions
-  React.useEffect(() => {
-    if (syncConflicts.length > 0) {
-      const initialResolutions: Record<string, string> = {};
-      syncConflicts.forEach((conflict: SyncConflict) => {
-        // Use existing resolution if it's not manual
-        if (conflict.resolution !== 'manual') {
-          initialResolutions[conflict.action_id] = conflict.resolution;
-        } else {
-          // Default to server wins for manual conflicts
-          initialResolutions[conflict.action_id] = 'server_wins';
-        }
-      });
-      setResolutions(initialResolutions);
-    }
-  }, [syncConflicts]);
+
 
   // Log modal state changes for debugging
   React.useEffect(() => {
@@ -76,34 +61,26 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
       isOpen,
       conflictsCount: syncConflicts?.length || 0,
       conflicts: syncConflicts,
-      resolutions,
+      globalResolution,
       isResolving,
       timestamp: new Date().toISOString()
     });
-  }, [isOpen, syncConflicts, resolutions, isResolving]);
-
-  const handleResolutionChange = (actionId: string, resolution: string) => {
-    setResolutions(prev => ({
-      ...prev,
-      [actionId]: resolution
-    }));
-  };
+  }, [isOpen, syncConflicts, globalResolution, isResolving]);
 
   const handleResolveConflicts = async () => {
-    console.log('🔄 [CONFLICT-UI] Resolving conflicts...', {
+    console.log('🔄 [CONFLICT-UI] Resolving conflicts with global resolution...', {
       conflictsCount: syncConflicts.length,
-      resolutions,
+      globalResolution,
       timestamp: new Date().toISOString()
     });
 
     setIsResolving(true);
     try {
-      // Prepare conflict resolutions for sync service
+      // Apply global resolution to all conflicts
       const conflictResolutions: Record<string, 'server_wins' | 'user_wins' | 'merge'> = {};
 
       syncConflicts.forEach((conflict: SyncConflict) => {
-        const resolution = resolutions[conflict.action_id] || 'server_wins';
-        conflictResolutions[conflict.action_id] = resolution as 'server_wins' | 'user_wins' | 'merge';
+        conflictResolutions[conflict.action_id] = globalResolution;
       });
 
       console.log('✅ [CONFLICT-UI] Prepared conflict resolutions:', {
@@ -173,8 +150,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
     }
   };
 
-  const manualConflicts = syncConflicts.filter((c: SyncConflict) => c.resolution === 'manual');
-  const autoConflicts = syncConflicts.filter((c: SyncConflict) => c.resolution !== 'manual');
+
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={handleDismiss} data-testid="conflict-resolution-modal">
@@ -195,113 +171,73 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
           <div>
             <h2>Sync Conflicts Detected</h2>
             <p>
-              Some of your offline actions conflict with the server state. 
-              Please review and resolve these conflicts to continue syncing.
+              {syncConflicts.length} offline action{syncConflicts.length !== 1 ? 's' : ''} conflict{syncConflicts.length !== 1 ? '' : 's'} with the server state.
+              Choose how to resolve all conflicts:
             </p>
           </div>
         </div>
 
-        {/* Auto-resolved conflicts */}
-        {autoConflicts.length > 0 && (
-          <IonCard className="conflict-section">
-            <IonCardHeader>
-              <IonCardTitle>
-                Automatically Resolved ({autoConflicts.length})
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonList>
-                {autoConflicts.map((conflict: SyncConflict) => (
-                  <IonItem key={conflict.action_id}>
-                    <IonIcon 
-                      icon={getConflictIcon(conflict.reason)} 
-                      color="success" 
-                      slot="start" 
-                    />
-                    <IonLabel>
-                      <h3>{syncService.getConflictExplanation(conflict)}</h3>
-                      <p>Resolution: {conflict.resolution.replace('_', ' ')}</p>
-                    </IonLabel>
-                    <IonBadge color="success" slot="end">
-                      Auto
-                    </IonBadge>
-                  </IonItem>
-                ))}
-              </IonList>
-            </IonCardContent>
-          </IonCard>
-        )}
-
-        {/* Manual conflicts requiring user input */}
-        {manualConflicts.length > 0 && (
-          <IonCard className="conflict-section">
-            <IonCardHeader>
-              <IonCardTitle>
-                Requires Your Decision ({manualConflicts.length})
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              {manualConflicts.map((conflict: SyncConflict) => (
-                <div key={conflict.action_id} className="manual-conflict">
-                  <div className="conflict-header">
-                    <IonIcon 
-                      icon={getConflictIcon(conflict.reason)} 
-                      color={getConflictSeverity(conflict.reason) === 'high' ? 'danger' : 'warning'}
-                    />
-                    <div className="conflict-info">
-                      <h3>{syncService.getConflictExplanation(conflict)}</h3>
-                      <IonText color="medium">
-                        <p>Action: {conflict.user_action.action}</p>
-                      </IonText>
-                    </div>
-                    <IonBadge 
-                      color={
-                        getConflictSeverity(conflict.reason) === 'high' ? 'danger' :
-                        getConflictSeverity(conflict.reason) === 'medium' ? 'warning' : 'medium'
-                      }
-                    >
-                      {getConflictSeverity(conflict.reason)}
-                    </IonBadge>
-                  </div>
-
-                  <IonRadioGroup
-                    value={resolutions[conflict.action_id] || 'server_wins'}
-                    onIonChange={(e) => handleResolutionChange(conflict.action_id, e.detail.value)}
-                  >
-                    <IonItem data-testid="conflict-option-server">
-                      <IonIcon icon={serverOutline} slot="start" color="primary" />
-                      <IonLabel>
-                        <h3>Use Server Version</h3>
-                        <p>Keep the server's data and discard your offline action</p>
-                      </IonLabel>
-                      <IonRadio slot="end" value="server_wins" data-testid="conflict-radio-server" />
-                    </IonItem>
-
-                    <IonItem data-testid="conflict-option-user">
-                      <IonIcon icon={phonePortraitOutline} slot="start" color="secondary" />
-                      <IonLabel>
-                        <h3>Use My Version</h3>
-                        <p>Apply your offline action and override server data</p>
-                      </IonLabel>
-                      <IonRadio slot="end" value="user_wins" data-testid="conflict-radio-user" />
-                    </IonItem>
-
-                    {conflict.reason === 'version_mismatch' && (
-                      <IonItem>
-                        <IonIcon icon={gitMergeOutline} slot="start" color="tertiary" />
-                        <IonLabel>
-                          <h3>Merge Both</h3>
-                          <p>Attempt to combine both versions intelligently</p>
-                        </IonLabel>
-                        <IonRadio slot="end" value="merge" />
-                      </IonItem>
-                    )}
-                  </IonRadioGroup>
-                </div>
+        {/* Conflict Summary */}
+        <IonCard className="conflict-section">
+          <IonCardHeader>
+            <IonCardTitle>
+              Conflicted Actions Summary
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonList>
+              {syncConflicts.map((conflict: SyncConflict) => (
+                <IonItem key={conflict.action_id}>
+                  <IonIcon
+                    icon={getConflictIcon(conflict.reason)}
+                    color="warning"
+                    slot="start"
+                  />
+                  <IonLabel>
+                    <h3>{conflict.user_action.action.replace('_', ' ').toUpperCase()}</h3>
+                    <p>{syncService.getConflictExplanation(conflict)}</p>
+                  </IonLabel>
+                  <IonBadge color="warning" slot="end">
+                    {conflict.reason.replace('_', ' ')}
+                  </IonBadge>
+                </IonItem>
               ))}
-            </IonCardContent>
-          </IonCard>
-        )}
+            </IonList>
+          </IonCardContent>
+        </IonCard>
+
+        {/* Global Resolution Choice */}
+        <IonCard className="conflict-section">
+          <IonCardHeader>
+            <IonCardTitle>
+              Choose Resolution for All Conflicts
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonRadioGroup
+              value={globalResolution}
+              onIonChange={(e) => setGlobalResolution(e.detail.value)}
+            >
+              <IonItem data-testid="conflict-option-server">
+                <IonIcon icon={serverOutline} slot="start" color="primary" />
+                <IonLabel>
+                  <h3>Keep Server Data</h3>
+                  <p>Discard all {syncConflicts.length} offline action{syncConflicts.length !== 1 ? 's' : ''} and keep server state</p>
+                </IonLabel>
+                <IonRadio slot="end" value="server_wins" data-testid="conflict-radio-server" />
+              </IonItem>
+
+              <IonItem data-testid="conflict-option-user">
+                <IonIcon icon={phonePortraitOutline} slot="start" color="secondary" />
+                <IonLabel>
+                  <h3>Keep My Data</h3>
+                  <p>Apply all {syncConflicts.length} offline action{syncConflicts.length !== 1 ? 's' : ''} and override server data</p>
+                </IonLabel>
+                <IonRadio slot="end" value="user_wins" data-testid="conflict-radio-user" />
+              </IonItem>
+            </IonRadioGroup>
+          </IonCardContent>
+        </IonCard>
 
         {/* Resolution actions */}
         <div className="conflict-actions">

@@ -11,7 +11,8 @@ import { requireAuth } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import CryptoJS from 'crypto-js';
 import crypto from 'crypto';
-import { decrypt } from '../utils/encryption';
+import { decrypt, encrypt } from '../utils/encryption';
+import { RedemptionType, RedemptionStatus } from '@kelseyabreu/shared';
 // import { speciesNameToCardId_old } from '@kelseyabreu/shared'; // Disabled - function removed
 
 const router = Router();
@@ -70,20 +71,50 @@ async function verifyActionChain(actions: OfflineAction[], deviceId: string, _ke
         return false;
       }
 
-      const expectedPreviousHash = crypto.createHash('sha256').update(JSON.stringify({
+      // Build hash payload with exact same field order as client
+      const hashPayload: any = {
         id: previousAction.id,
         action: previousAction.action,
-        card_id: previousAction.card_id,
-        quantity: previousAction.quantity,
-        pack_type: previousAction.pack_type,
-        deck_id: previousAction.deck_id,
         timestamp: previousAction.timestamp,
-        api_version: previousAction.api_version,
-        device_id: deviceId,
-        key_version: previousAction.key_version, // Use the action's original key version, not current device key version
-        previous_hash: previousAction.previous_hash,
-        nonce: previousAction.nonce
-      })).digest('hex');
+        api_version: previousAction.api_version
+      };
+
+      // Add optional fields in the same order as client (matching client behavior)
+      if (previousAction.card_id !== undefined) {
+        hashPayload.card_id = previousAction.card_id;
+      }
+      if (previousAction.quantity !== undefined) {
+        hashPayload.quantity = previousAction.quantity;
+      }
+      if (previousAction.pack_type !== undefined) {
+        hashPayload.pack_type = previousAction.pack_type;
+      }
+      if (previousAction.deck_id !== undefined) {
+        hashPayload.deck_id = previousAction.deck_id;
+      }
+
+      // Add remaining fields in client order
+      hashPayload.device_id = deviceId;
+      hashPayload.key_version = previousAction.key_version;
+      hashPayload.previous_hash = previousAction.previous_hash;
+      hashPayload.nonce = previousAction.nonce;
+
+      console.log('🔍 [HASH-DEBUG] Server hash calculation for previous action:', {
+        actionId: previousAction.id,
+        actionType: previousAction.action,
+        hashPayload: hashPayload,
+        payloadString: JSON.stringify(hashPayload),
+        payloadLength: JSON.stringify(hashPayload).length
+      });
+
+      // Use CryptoJS to match the client's hash algorithm exactly
+      const expectedPreviousHash = CryptoJS.SHA256(JSON.stringify(hashPayload)).toString();
+
+      console.log('🔍 [HASH-DEBUG] Server calculated hash:', {
+        actionId: previousAction.id,
+        calculatedHash: expectedPreviousHash,
+        hashLength: expectedPreviousHash.length
+      });
 
       if (action.previous_hash !== expectedPreviousHash) {
         console.log(`❌ [CHAIN-VERIFY] Invalid previous_hash for action ${i}:`, {
@@ -132,21 +163,36 @@ function verifyActionSignature(action: Omit<OfflineAction, 'signature'>, signatu
     // The frontend always includes ALL fields in this exact order, even if undefined
     // JSON.stringify will omit undefined values, so we need to match that behavior exactly
 
-    // Create payload with chain integrity fields
-    const frontendPayload = JSON.stringify({
+    // Create payload with chain integrity fields (matching client's new logic)
+    // Only include defined fields (matching client behavior)
+    const payloadObj: any = {
       id: action.id,
       action: action.action,
-      card_id: action.card_id,
-      quantity: action.quantity,
-      pack_type: action.pack_type,
-      deck_id: action.deck_id,
       timestamp: action.timestamp,
-      api_version: action.api_version,
-      device_id: deviceId,
-      key_version: action.key_version, // Use the action's original key version
-      previous_hash: action.previous_hash,
-      nonce: action.nonce
-    });
+      api_version: action.api_version
+    };
+
+    // Only include optional fields if they exist (matching client behavior)
+    if (action.card_id !== undefined) {
+      payloadObj.card_id = action.card_id;
+    }
+    if (action.quantity !== undefined) {
+      payloadObj.quantity = action.quantity;
+    }
+    if (action.pack_type !== undefined) {
+      payloadObj.pack_type = action.pack_type;
+    }
+    if (action.deck_id !== undefined) {
+      payloadObj.deck_id = action.deck_id;
+    }
+
+    // Add remaining fields in consistent order
+    payloadObj.device_id = deviceId;
+    payloadObj.key_version = action.key_version;
+    payloadObj.previous_hash = action.previous_hash;
+    payloadObj.nonce = action.nonce;
+
+    const frontendPayload = JSON.stringify(payloadObj);
 
     console.log('🔍 [SIGNATURE-VERIFY] Frontend payload test:', {
       actionId: action.id,
@@ -170,7 +216,8 @@ function verifyActionSignature(action: Omit<OfflineAction, 'signature'>, signatu
       payload: payload
     });
 
-    const expectedSignature = crypto.createHmac('sha256', signingKey).update(payload).digest('hex');
+    // Use CryptoJS to match the client's signature algorithm exactly
+    const expectedSignature = CryptoJS.HmacSHA256(payload, signingKey).toString();
 
     console.log('🔍 [SIGNATURE-VERIFY] Signature comparison:', {
       actionId: action.id,
@@ -410,9 +457,9 @@ router.post('/',
 
       // Get device sync state and current active signing key
       console.log('🔍 Fetching device state for:', { device_id, userId });
-      const deviceSyncState = await db
+      let deviceSyncState = await db
         .selectFrom('device_sync_states')
-        .select(['current_key_version'])
+        .selectAll()
         .where('device_id', '=', device_id)
         .where('user_id', '=', userId)
         .executeTakeFirst();
@@ -423,9 +470,9 @@ router.post('/',
       }
 
       // Get current active signing key
-      const currentSigningKey = deviceSyncState ? await db
+      let currentSigningKey = deviceSyncState ? await db
         .selectFrom('device_signing_keys')
-        .select(['signing_key', 'key_version', 'expires_at'])
+        .selectAll()
         .where('device_id', '=', device_id)
         .where('user_id', '=', userId)
         .where('key_version', '=', deviceSyncState.current_key_version)
@@ -440,7 +487,7 @@ router.post('/',
       });
 
       if (!deviceSyncState || !currentSigningKey) {
-        console.log('❌ Device state not found - device not registered for offline sync', {
+        console.log('⚠️ Device state not found - attempting auto-registration', {
           device_id,
           userId,
           userEmail: req.user.email,
@@ -467,20 +514,165 @@ router.post('/',
           }))
         });
 
-        res.status(400).json({
-          error: 'Device not registered for offline sync',
-          conflicts: [],
-          server_state: { credits: serverCredits },
-          debug: {
+        // Auto-register device for offline-first experience
+        try {
+          console.log('🔧 Auto-registering device during sync...');
+
+          // OPTION 3: Hybrid approach - check if client has a signing key to sync
+          let newSigningKey: string;
+          let keyVersion: bigint;
+
+          // Check if client sent a signing key in their collection state
+          const clientSigningKeyVersion = req.body.collection_state?.signing_key_version;
+          const hasClientKey = clientSigningKeyVersion && clientSigningKeyVersion > 0;
+
+          console.log('🔑 [AUTO-REG] Client key analysis:', {
+            hasClientKey,
+            clientKeyVersion: clientSigningKeyVersion,
+            collectionStateKeys: Object.keys(req.body.collection_state || {})
+          });
+
+          if (hasClientKey) {
+            // OPTION 3A: Client has a key - derive the same key server-side for consistency
+            console.log('🔑 [AUTO-REG] Client has signing key, deriving matching server key...');
+
+            // Use the same derivation method as the client (from userId)
+            // This ensures client and server have the same key for offline-first compatibility
+            const crypto = require('crypto');
+            const keyMaterial = crypto.createHash('sha256').update(`signing-key-${userId}`).digest('hex');
+            newSigningKey = keyMaterial;
+            keyVersion = BigInt(clientSigningKeyVersion);
+
+            console.log('🔑 [AUTO-REG] Using client-derived key for offline-first compatibility:', {
+              keyVersion: keyVersion.toString(),
+              derivedFromUserId: userId.substring(0, 8) + '...'
+            });
+          } else {
+            // OPTION 3B: Client has no key - generate server key (online-first scenario)
+            console.log('🔑 [AUTO-REG] Client has no key, generating server key...');
+
+            newSigningKey = CryptoJS.lib.WordArray.random(32).toString();
+
+            // Use sequential key versioning (industry standard)
+            // Get the highest existing key version for this device and increment
+            const existingKeys = await db
+              .selectFrom('device_signing_keys')
+              .select(['key_version'])
+              .where('device_id', '=', device_id)
+              .where('user_id', '=', userId)
+              .orderBy('key_version', 'desc')
+              .limit(1)
+              .execute();
+
+            keyVersion = existingKeys.length > 0
+              ? BigInt(Number(existingKeys[0].key_version) + 1)
+              : BigInt(1); // Start with version 1 for new devices
+
+            console.log('🔑 [AUTO-REG] Generated server key for online-first scenario:', {
+              keyVersion: keyVersion.toString(),
+              keyLength: newSigningKey.length
+            });
+          }
+
+          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+          // Insert device sync state
+          await db
+            .insertInto('device_sync_states')
+            .values({
+              device_id,
+              user_id: userId,
+              client_user_id: req.body.client_user_id || userId, // Use client_user_id if provided
+              current_key_version: keyVersion,
+              last_sync_timestamp: 0 // First sync
+            })
+            .onConflict((oc) => oc
+              .columns(['device_id', 'user_id'])
+              .doUpdateSet({
+                current_key_version: keyVersion,
+                last_sync_timestamp: 0
+              })
+            )
+            .execute();
+
+          // Encrypt and insert signing key
+          const encryptedSigningKey = encrypt(newSigningKey);
+          await db
+            .insertInto('device_signing_keys')
+            .values({
+              device_id,
+              user_id: userId,
+              key_version: keyVersion,
+              signing_key: encryptedSigningKey,
+              status: 'ACTIVE',
+              expires_at: expiresAt,
+              superseded_at: null
+            })
+            .execute();
+
+          console.log('✅ Device auto-registered successfully:', {
             device_id,
             userId,
-            registeredDevices: allUserDevices.length,
-            message: 'Device must be registered before sync operations'
-          }
+            keyVersion: keyVersion.toString(),
+            expiresAt
+          });
+
+          // Update device state for continued processing
+          deviceSyncState = {
+            device_id,
+            user_id: userId,
+            client_user_id: req.body.client_user_id || userId,
+            current_key_version: keyVersion,
+            last_sync_timestamp: 0,
+            last_used_at: new Date(),
+            created_at: new Date(),
+            updated_at: new Date()
+          };
+
+          currentSigningKey = {
+            id: 0, // Will be set by database
+            device_id,
+            user_id: userId,
+            key_version: keyVersion,
+            signing_key: newSigningKey,
+            status: 'ACTIVE' as const,
+            expires_at: expiresAt,
+            superseded_at: null,
+            created_at: new Date(),
+            updated_at: new Date()
+          };
+
+        } catch (autoRegError) {
+          console.error('❌ Auto-registration failed:', autoRegError);
+
+          res.status(400).json({
+            error: 'Device registration failed during sync',
+            conflicts: [],
+            server_state: { credits: serverCredits },
+            debug: {
+              device_id,
+              userId,
+              registeredDevices: allUserDevices.length,
+              message: 'Failed to auto-register device for sync operations',
+              autoRegError: autoRegError instanceof Error ? autoRegError.message : String(autoRegError)
+            }
+          });
+          return;
+        }
+      }
+
+      console.log('✅ Device state validation passed');
+
+      // Final check to ensure we have valid device state after auto-registration
+      if (!deviceSyncState || !currentSigningKey) {
+        console.error('❌ Device state still invalid after auto-registration attempt');
+        res.status(500).json({
+          error: 'Failed to initialize device state',
+          conflicts: [],
+          server_state: { credits: serverCredits }
         });
         return;
       }
-      console.log('✅ Device state validation passed');
 
       console.log('🔍 Checking signing key expiry...');
       if (new Date() > new Date(currentSigningKey.expires_at)) {
@@ -502,7 +694,8 @@ router.post('/',
       // Verify action chain integrity before processing individual actions
       if (sortedActions.length > 0) {
         const isValidChain = await verifyActionChain(sortedActions, device_id, Number(currentSigningKey.key_version) || 1, userId);
-        if (!isValidChain) {
+        // TODO ACTUALLY FIX THIS
+        if (true && !isValidChain) {
           console.log('❌ Action chain integrity verification failed');
           res.status(409).json({
             success: false,
@@ -658,14 +851,19 @@ router.post('/',
           // Process different action types
           switch (action.action) {
             case 'starter_pack_opened':
-              // Validate user doesn't already have starter pack
-              const hasStarterCards = Array.from(serverCollection.values())
-                .some(card => card.acquisition_method === 'starter');
-              
-              if (hasStarterCards) {
+              // Check if user already has a starter pack redemption record
+              const existingStarterRedemption = await db
+                .selectFrom('user_redemptions')
+                .selectAll()
+                .where('user_id', '=', req.user.id)
+                .where('redemption_type', '=', RedemptionType.STARTER_PACK)
+                .where('status', '=', RedemptionStatus.ACTIVE)
+                .executeTakeFirst();
+
+              if (existingStarterRedemption) {
                 conflicts.push({
                   action_id: action.id,
-                  reason: 'starter_pack_already_opened',
+                  reason: 'starter_pack_already_redeemed',
                   server_state: { credits: serverCredits }
                 });
                 discardedActions.push(action.id);
@@ -691,11 +889,30 @@ router.post('/',
                   first_acquired_at: new Date(action.timestamp),
                   last_acquired_at: new Date(action.timestamp),
                   is_foil: false,
-                  variant: null,
+                  variant: 0,
                   condition: 'mint',
                   metadata: '{}'
                 });
               }
+
+              // Create redemption record for starter pack
+              await db
+                .insertInto('user_redemptions')
+                .values({
+                  user_id: req.user.id,
+                  redemption_type: RedemptionType.STARTER_PACK,
+                  redemption_code: null,
+                  status: RedemptionStatus.ACTIVE,
+                  redemption_data: JSON.stringify({
+                    cards_received: starterSpecies.map(s => ({ cardId: s.cardId, quantity: 1 })),
+                    source: 'offline_action',
+                    action_id: action.id
+                  }),
+                  redeemed_at: new Date(action.timestamp)
+                })
+                .execute();
+
+              console.log('✅ Created starter pack redemption record for offline action');
               break;
 
             case 'pack_opened':
@@ -747,7 +964,7 @@ router.post('/',
                     first_acquired_at: new Date(action.timestamp),
                     last_acquired_at: new Date(action.timestamp),
                     is_foil: false,
-                    variant: null,
+                    variant: 0,
                     condition: 'mint',
                     metadata: '{}'
                   });
@@ -836,7 +1053,7 @@ router.post('/',
               quantity: card.quantity,
               acquisition_method: card.acquisition_method,
               first_acquired_at: card.first_acquired_at,
-              variant: null // Default variant for standard cards
+              variant: 0 // Default variant for standard cards (0 instead of null)
             })
             .onConflict((oc) => oc
               .columns(['user_id', 'card_id', 'variant'])
@@ -907,10 +1124,10 @@ router.post('/',
         }
       });
 
-      // Generate new signing key for security
+      // Return the current signing key (not a new one) so client can use it for future actions
       const newSigningKey = {
-        key: CryptoJS.lib.WordArray.random(32).toString(),
-        version: Date.now(),
+        key: currentSigningKey.signing_key, // Use the existing key that was used for verification
+        version: Number(currentSigningKey.key_version),  // Convert BigInt to Number for JSON serialization
         expires_at: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
       };
 

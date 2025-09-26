@@ -908,7 +908,7 @@ export interface UserCard {
   first_acquired_at: Date;
   last_acquired_at: Date;
   is_foil?: boolean;
-  variant?: string;
+  variant?: number;                  // Integer variant (see CardVariant enum)
   condition?: CardCondition;
 }
 
@@ -1016,7 +1016,8 @@ export interface ApiResponse<T = any> {
   user?: any; // For authentication responses
   auth?: {
     token: string;
-    guestSecret?: string;
+    type: 'guest' | 'firebase';
+    guestSecret?: string; // Only provided for new guest registrations
     expiresIn?: string;
   }; // For authentication responses
   sync?: any; // For sync-related responses
@@ -1088,6 +1089,7 @@ export interface GuestRegistrationData {
   guestId: string;
   actionQueue: any[];
   deviceId?: string;
+  client_user_id?: string; // For 3-ID architecture tracking
 }
 
 // ============================================================================
@@ -1208,6 +1210,75 @@ export interface PackOpeningResult<T = any> extends BaseResult<T> {
   totalValue?: number;
   rareCards?: any[];
   newSpecies?: any[];
+}
+
+// ============================================================================
+// REDEMPTION SYSTEM INTERFACES
+// ============================================================================
+
+/**
+ * User redemption record
+ * Tracks what users have redeemed (starter decks, promo codes, etc.)
+ */
+export interface UserRedemption {
+  id: string;                        // UUID primary key
+  user_id: string;                   // UUID reference to users
+  redemption_type: number;           // RedemptionType enum value
+  redemption_code?: string;          // For promo codes, NULL for automatic redemptions
+  redeemed_at: Date;                 // When the redemption occurred
+  expires_at?: Date;                 // For time-limited redemptions
+  redemption_data: Record<string, any>; // Flexible JSON data storage
+  status: number;                    // RedemptionStatus enum value
+}
+
+/**
+ * Redemption result interface
+ * Standardizes redemption operation responses
+ */
+export interface RedemptionResult<T = any> extends BaseResult<T> {
+  code?: string;                     // Error/success code for frontend handling
+  rewards?: T[];                     // Items/cards/currency given
+  redemption_id?: string;            // ID of the redemption record created
+}
+
+/**
+ * User redemption status summary
+ * Used by frontend to show what user can redeem
+ */
+export interface UserRedemptionStatus {
+  starter_deck_redeemed: boolean;
+  starter_pack_redeemed: boolean;
+  tutorial_rewards_redeemed: boolean;
+  total_redemptions: number;
+  recent_redemptions: UserRedemption[];
+  available_promo_codes: string[];   // Codes user hasn't redeemed yet
+}
+
+/**
+ * Promo code definition
+ * Defines available promotional codes and their rewards
+ */
+export interface PromoCode {
+  id: string;
+  code: string;                      // The actual code users enter
+  redemption_type: number;           // RedemptionType enum value
+  rewards: PromoCodeReward[];        // What the code gives
+  max_redemptions?: number;          // Global limit (null = unlimited)
+  max_per_user?: number;             // Per-user limit (default 1)
+  expires_at?: Date;                 // When code expires
+  active: boolean;                   // Whether code is currently active
+  created_at: Date;
+  description?: string;              // Description for admin panel
+}
+
+/**
+ * Promo code reward definition
+ */
+export interface PromoCodeReward {
+  type: 'cards' | 'currency' | 'packs' | 'items';
+  item_id?: number;                  // Card ID, item ID, etc.
+  quantity: number;                  // How many to give
+  metadata?: Record<string, any>;    // Additional reward data
 }
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -14,16 +14,17 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonToast,
 } from '@ionic/react';
-import { 
-  library, 
-  construct, 
-  settings, 
-  flash, 
+import {
+  library,
+  construct,
+  settings,
+  flash,
   gift,
   person,
-  statsChart
+  statsChart,
+  trophy,
+  school
 } from 'ionicons/icons';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { getCollectionStats } from '@kelseyabreu/shared';
@@ -44,7 +45,6 @@ const MainMenu: React.FC = () => {
     isAuthenticated,
     firebaseUser,
     isGuestMode,
-    initializeOfflineCollection,
     refreshCollectionState
   } = useHybridGameStore();
 
@@ -71,8 +71,7 @@ const MainMenu: React.FC = () => {
     }
   }, [isAuthenticated, refreshCollectionState]);
 
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+
 
   // Calculate collection stats
   const { ownedSpecies, totalCards } = offlineCollection ?
@@ -83,25 +82,7 @@ const MainMenu: React.FC = () => {
 
   // Authentication functions
 
-  const handleInitializeCollection = async () => {
-    try {
-      setToastMessage('Initializing collection...');
-      setShowToast(true);
-      await initializeOfflineCollection();
 
-      // Force refresh the collection state to ensure UI updates
-      setTimeout(() => {
-        refreshCollectionState();
-      }, 500);
-
-      setToastMessage('✅ Collection initialized! You received starter credits and cards!');
-      setShowToast(true);
-    } catch (error) {
-      console.error('Failed to initialize collection:', error);
-      setToastMessage('❌ Failed to initialize collection. Please try again.');
-      setShowToast(true);
-    }
-  };
 
 
   return (
@@ -119,26 +100,7 @@ const MainMenu: React.FC = () => {
         {/* Guest Registration CTA - only shows for guest users */}
         <GuestRegistrationCTA variant="card" dismissible={true} />
 
-        {/* Collection Initialization for authenticated users without collection */}
-        {isAuthenticated && (!offlineCollection || (offlineCollection && getCollectionStats(offlineCollection.cards_owned).ownedSpecies === 0)) && (
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle>{getUIText(UITextId.UI_INITIALIZE_COLLECTION)}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <p>{getUIText(UITextId.UI_INITIALIZE_DESCRIPTION)}</p>
-              <IonButton
-                expand="block"
-                onClick={handleInitializeCollection}
-                color="success"
-                size="large"
-              >
-                <IonIcon icon={gift} slot="start" />
-                {getUIText(UITextId.UI_INITIALIZE_BUTTON)}
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
-        )}
+
 
         {/* Collection Stats */}
         {offlineCollection && (
@@ -209,6 +171,7 @@ const MainMenu: React.FC = () => {
                     routerLink="/deck-builder"
                     fill="outline"
                     size="large"
+                    disabled={!isAuthenticated}
                   >
                     <IonIcon icon={construct} slot="start" />
                     {getUIText(UITextId.UI_BUILD_DECK)}
@@ -223,7 +186,7 @@ const MainMenu: React.FC = () => {
                     routerLink="/battle"
                     color="primary"
                     size="large"
-                    disabled={ownedSpecies < 8}
+                    disabled={!isAuthenticated || ownedSpecies < 8}
                   >
                     <IonIcon icon={flash} slot="start" />
                     {ownedSpecies >= 8 ? getUIText(UITextId.UI_START_BATTLE) : getUIText(UITextId.UI_NEED_SPECIES_BATTLE)}
@@ -235,9 +198,37 @@ const MainMenu: React.FC = () => {
                     routerLink="/packs"
                     color="secondary"
                     size="large"
+                    disabled={!isAuthenticated}
                   >
                     <IonIcon icon={gift} slot="start" />
                     {getUIText(UITextId.UI_OPEN_PACKS)}
+                  </IonButton>
+                </IonCol>
+              </IonRow>
+
+              <IonRow>
+                <IonCol size="12" sizeMd="6">
+                  <IonButton
+                    expand="block"
+                    routerLink="/challenge"
+                    color="tertiary"
+                    size="large"
+                    disabled={!isAuthenticated}
+                  >
+                    <IonIcon icon={school} slot="start" />
+                    Ecosystem Challenge
+                  </IonButton>
+                </IonCol>
+                <IonCol size="12" sizeMd="6">
+                  <IonButton
+                    expand="block"
+                    routerLink="/profile"
+                    fill="outline"
+                    size="large"
+                    disabled={!isAuthenticated}
+                  >
+                    <IonIcon icon={trophy} slot="start" />
+                    View Achievements
                   </IonButton>
                 </IonCol>
               </IonRow>
@@ -293,13 +284,7 @@ const MainMenu: React.FC = () => {
         {/* Debug Panel - Remove in production */}
         <CollectionDebugPanel />
 
-        <IonToast
-          isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
-          message={toastMessage}
-          duration={3000}
-          position="bottom"
-        />
+
 
 
       </IonContent>

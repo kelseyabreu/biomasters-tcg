@@ -27,12 +27,10 @@ export const CollectionDebugPanel: React.FC = () => {
     userId,
     guestId,
     isGuestMode,
-    hasStarterPack,
     pendingActions,
     syncStatus,
     loadOfflineCollection,
-    refreshCollectionState,
-    initializeOfflineCollection
+    refreshCollectionState
   } = useHybridGameStore();
 
   const handleRefreshCollection = () => {
@@ -45,10 +43,7 @@ export const CollectionDebugPanel: React.FC = () => {
     loadOfflineCollection();
   };
 
-  const handleInitializeCollection = () => {
-    console.log('🔄 [Debug] Manually initializing collection...');
-    initializeOfflineCollection();
-  };
+
 
   const handleCheckLocalStorage = () => {
     console.log('🔍 [Debug] Checking localStorage...');
@@ -146,15 +141,7 @@ export const CollectionDebugPanel: React.FC = () => {
               </IonLabel>
             </IonItem>
             
-            <IonItem>
-              <IonLabel>
-                <h3>Has Starter Pack</h3>
-                <p>{hasStarterPack ? 'Yes' : 'No'}</p>
-              </IonLabel>
-              <IonBadge color={hasStarterPack ? 'success' : 'warning'}>
-                {hasStarterPack ? 'Yes' : 'No'}
-              </IonBadge>
-            </IonItem>
+
             
             <IonItem>
               <IonLabel>
@@ -201,15 +188,7 @@ export const CollectionDebugPanel: React.FC = () => {
             Load Collection
           </IonButton>
           
-          <IonButton 
-            expand="block" 
-            fill="outline" 
-            onClick={handleInitializeCollection}
-            color="tertiary"
-          >
-            <IonIcon icon={warning} slot="start" />
-            Initialize Collection
-          </IonButton>
+
           
           <IonButton 
             expand="block" 

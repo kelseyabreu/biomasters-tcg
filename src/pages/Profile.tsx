@@ -57,7 +57,8 @@ const Profile: React.FC = () => {
     userProfile,
     offlineCollection,
     signOutUser,
-    updateUserProfile
+    updateUserProfile,
+    isSigningOut // Use global signing out state from store
   } = useHybridGameStore();
 
   // Form state
@@ -82,7 +83,6 @@ const Profile: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showSignOutAlert, setShowSignOutAlert] = useState(false);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Initialize form with current user data
   useEffect(() => {
@@ -174,13 +174,12 @@ const Profile: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      setIsSigningOut(true);
       await signOutUser();
       // Navigation is handled in the store, no need for toast here
     } catch (error: any) {
       console.error('Sign out failed:', error);
       showToastMessage(`❌ Sign out failed: ${error.message}`);
-      setIsSigningOut(false); // Reset loading state on error
+      // Error handling is done in the store, no need to reset local state
     }
   };
 

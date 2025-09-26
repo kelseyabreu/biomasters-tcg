@@ -63,8 +63,20 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
     };
   }, [card.trophicRole, card.nameId, card.health, card.power, card.speed, localization, size]);
 
+  // Memoized render key to prevent unnecessary re-renders
+  const renderKey = useMemo(() => {
+    return `${card.cardId}_${card.nameId}_${size}_${card.trophicRole}`;
+  }, [card.cardId, card.nameId, size, card.trophicRole]);
+
+  // Track if we've already rendered this specific combination
+  const lastRenderKey = useRef<string>('');
+  const isRenderNeeded = lastRenderKey.current !== renderKey;
+
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isRenderNeeded) return;
+
+    // Update the last render key to prevent duplicate renders
+    lastRenderKey.current = renderKey;
 
     // Add a small delay to ensure DOM is fully rendered
     const renderOrganism = async () => {
@@ -186,7 +198,7 @@ const OrganismRenderer: React.FC<OrganismRendererProps> = ({
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [card, size, memoizedOrganismData, localization]);
+  }, [renderKey, isRenderNeeded]); // Optimized dependencies using renderKey
 
   // Component lifecycle tracking
   useEffect(() => {

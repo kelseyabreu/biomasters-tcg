@@ -915,6 +915,58 @@ export enum AcquisitionMethod {
 }
 
 /**
+ * Redemption Types - Numbered enums for database storage
+ * Used to track what users have redeemed (starter decks, promo codes, etc.)
+ */
+export enum RedemptionType {
+  // Starter content (one-time only)
+  STARTER_DECK = 1,
+  STARTER_PACK = 2,
+  TUTORIAL_REWARDS = 3,
+
+  // Daily/recurring
+  DAILY_LOGIN = 10,
+  WEEKLY_BONUS = 11,
+  MONTHLY_BONUS = 12,
+
+  // Promotional
+  PROMO_CODE = 20,
+  EVENT_REWARD = 21,
+  SOCIAL_MEDIA_CODE = 22,
+  INFLUENCER_CODE = 23,
+
+  // Purchases
+  FIRST_PURCHASE_BONUS = 30,
+  BATTLE_PASS_REWARD = 31,
+  SUBSCRIPTION_BONUS = 32,
+
+  // Compensation
+  MAINTENANCE_COMPENSATION = 40,
+  BUG_COMPENSATION = 41,
+  SERVER_DOWNTIME_COMPENSATION = 42,
+
+  // Achievements & Milestones
+  LEVEL_MILESTONE = 50,
+  COLLECTION_MILESTONE = 51,
+  BATTLE_MILESTONE = 52,
+
+  // Special Events
+  HOLIDAY_EVENT = 60,
+  ANNIVERSARY_EVENT = 61,
+  COMMUNITY_EVENT = 62
+}
+
+/**
+ * Redemption Status - Numbered enums for database storage
+ */
+export enum RedemptionStatus {
+  ACTIVE = 1,      // Successfully redeemed and active
+  EXPIRED = 2,     // Time-limited redemption that expired
+  REVOKED = 3,     // Manually revoked (e.g., for abuse)
+  PENDING = 4      // Redemption initiated but not completed
+}
+
+/**
  * Card Conditions (for physical cards)
  */
 export enum CardCondition {
@@ -925,6 +977,77 @@ export enum CardCondition {
   PLAYED = 'played',
   POOR = 'poor'
 }
+
+/**
+ * Card Variants (for special card types)
+ * Integer values for database storage and unique constraint compatibility
+ */
+export enum CardVariant {
+  NORMAL = 0,           // Default/normal card
+  FOIL = 1,             // Foil/shiny variant
+  HOLOGRAPHIC = 2,      // Holographic variant
+  ALTERNATE_ART = 3,    // Alternate artwork
+  SPECIAL_EDITION = 4,  // Special edition
+  PROMO = 5,            // Promotional card
+  FIRST_EDITION = 6,    // First edition
+  LIMITED = 7,          // Limited edition
+  SHINY = 8,            // Shiny variant
+  RARE = 9              // Rare variant
+  // Values 100+ reserved for custom variants
+}
+
+/**
+ * Card variant utility functions
+ */
+export const CardVariantUtils = {
+  /**
+   * Get display name for a card variant
+   */
+  getDisplayName(variant: CardVariant | number): string {
+    const variantNames: Record<number, string> = {
+      [CardVariant.NORMAL]: 'Normal',
+      [CardVariant.FOIL]: 'Foil',
+      [CardVariant.HOLOGRAPHIC]: 'Holographic',
+      [CardVariant.ALTERNATE_ART]: 'Alternate Art',
+      [CardVariant.SPECIAL_EDITION]: 'Special Edition',
+      [CardVariant.PROMO]: 'Promo',
+      [CardVariant.FIRST_EDITION]: 'First Edition',
+      [CardVariant.LIMITED]: 'Limited Edition',
+      [CardVariant.SHINY]: 'Shiny',
+      [CardVariant.RARE]: 'Rare'
+    };
+
+    return variantNames[variant] || `Custom (${variant})`;
+  },
+
+  /**
+   * Convert legacy string variant to integer
+   */
+  fromString(variant: string | null | undefined): CardVariant {
+    if (!variant || variant === '') return CardVariant.NORMAL;
+
+    const stringToVariant: Record<string, CardVariant> = {
+      'foil': CardVariant.FOIL,
+      'holographic': CardVariant.HOLOGRAPHIC,
+      'alternate_art': CardVariant.ALTERNATE_ART,
+      'special_edition': CardVariant.SPECIAL_EDITION,
+      'promo': CardVariant.PROMO,
+      'first_edition': CardVariant.FIRST_EDITION,
+      'limited': CardVariant.LIMITED,
+      'shiny': CardVariant.SHINY,
+      'rare': CardVariant.RARE
+    };
+
+    return stringToVariant[variant.toLowerCase()] || CardVariant.NORMAL;
+  },
+
+  /**
+   * Check if variant is special (not normal)
+   */
+  isSpecial(variant: CardVariant | number): boolean {
+    return variant !== CardVariant.NORMAL;
+  }
+};
 
 /**
  * Sync Status for offline/online functionality

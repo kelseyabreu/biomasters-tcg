@@ -269,6 +269,21 @@ export class KyselyMigrator {
       const workerManagementSql = readFileSync(workerManagementPath, 'utf8');
       await this.executeMigration('036_add_worker_management_schema', workerManagementSql);
 
+      // 037: Convert variant column to INTEGER for proper unique constraint handling
+      const convertVariantPath = join(__dirname, 'migrations/037_convert_variant_to_integer.sql');
+      const convertVariantSql = readFileSync(convertVariantPath, 'utf8');
+      await this.executeMigration('037_convert_variant_to_integer', convertVariantSql);
+
+      // 038: Create user_redemptions table for tracking redemptions
+      const userRedemptionsPath = join(__dirname, 'migrations/038_create_user_redemptions.sql');
+      const userRedemptionsSql = readFileSync(userRedemptionsPath, 'utf8');
+      await this.executeMigration('038_create_user_redemptions', userRedemptionsSql);
+
+      // 039: Add client_user_id tracking to device_sync_states for 3-ID architecture
+      const clientUserIdPath = join(__dirname, 'migrations/039_add_client_user_id_tracking.sql');
+      const clientUserIdSql = readFileSync(clientUserIdPath, 'utf8');
+      await this.executeMigration('039_add_client_user_id_tracking', clientUserIdSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

@@ -101,7 +101,7 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
     if (!isOpen) {
       hasTrackedCompletion.current = false;
     }
-  }, [isOpen, winner, isPlayerWinner, userId, trackGameCompletion]);
+  }, [isOpen, winner, isPlayerWinner, userId]); // Removed trackGameCompletion from deps to prevent infinite loop
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} className="end-game-modal">

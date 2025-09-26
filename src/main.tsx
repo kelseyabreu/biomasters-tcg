@@ -29,6 +29,12 @@ if (import.meta.env.DEV) {
   (window as any).useHybridGameStore = useHybridGameStore;
   (window as any).unifiedGameService = unifiedGameService;
   (window as any).offlineSecurityService = offlineSecurityService;
+
+  // Import and expose storage manager for debugging
+  import('./state/hybridGameStore').then(({ hybridGameStorageManager }) => {
+    (window as any).hybridGameStorageManager = hybridGameStorageManager;
+  });
+
   console.log('🧪 Development mode: Store and services exposed to window for testing');
 }
 

@@ -531,7 +531,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     timestamp: new Date().toISOString()
   });
 
-  const { device_id } = req.body;
+  const { device_id, client_user_id } = req.body;
   const firebaseUid = req.firebaseUser?.uid;
 
   if (!device_id) {
@@ -841,13 +841,23 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     }
   }
 
+  // Generate client_user_id if not provided (for Firebase users transitioning to 3-ID system)
+  const finalClientUserId = client_user_id || crypto.randomUUID();
+
+  console.log('🔑 [OFFLINE-KEY] Updating device sync state...', {
+    device_id,
+    user_id: user.id,
+    client_user_id: finalClientUserId,
+    provided_client_id: !!client_user_id
+  });
+
   // Update or create device sync state with current key version pointer
-  console.log('🔑 [OFFLINE-KEY] Updating device sync state...');
   await db
     .insertInto('device_sync_states')
     .values({
       device_id,
       user_id: user.id,
+      client_user_id: finalClientUserId, // Store client-generated stable ID
       current_key_version: BigInt(newKeyVersion),
       last_sync_timestamp: 0,
       last_used_at: new Date()
@@ -855,6 +865,7 @@ router.post('/offline-key', requireFirebaseAuth, asyncHandler(async (req, res) =
     .onConflict((oc) => oc
       .columns(['device_id', 'user_id'])
       .doUpdateSet({
+        client_user_id: finalClientUserId, // Update client ID if provided
         current_key_version: BigInt(newKeyVersion),
         last_used_at: new Date(),
         updated_at: new Date()

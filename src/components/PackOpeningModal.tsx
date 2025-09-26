@@ -40,9 +40,33 @@ import { useHybridGameStore } from '../state/hybridGameStore';
 import { Card as CardType, CONSERVATION_RARITY_DATA } from '../types';
 import { ConservationStatus } from '@kelseyabreu/shared';
 import { useLocalization } from '../contexts/LocalizationContext';
+import { useRedemptionStatus } from '../hooks/useRedemptionStatus';
 
 import OrganismRenderer from './OrganismRenderer';
 import './PackOpeningModal.css';
+
+// Create a heavily memoized version to prevent re-renders during animations
+const MemoizedOrganismRenderer = React.memo(OrganismRenderer, (prevProps, nextProps) => {
+  // Only re-render if the card ID actually changes
+  const shouldSkipRender = (
+    prevProps.card.cardId === nextProps.card.cardId &&
+    prevProps.size === nextProps.size &&
+    prevProps.showControls === nextProps.showControls &&
+    prevProps.className === nextProps.className
+  );
+
+  if (!shouldSkipRender) {
+    console.log(`🎭 [MemoizedOrganismRenderer] Did not skip render for ${nextProps.card.nameId}:`, {
+      shouldSkipRender,
+      cardIdChanged: prevProps.card.cardId !== nextProps.card.cardId,
+      sizeChanged: prevProps.size !== nextProps.size,
+      showControlsChanged: prevProps.showControls !== nextProps.showControls,
+      classNameChanged: prevProps.className !== nextProps.className
+    });
+  }
+
+  return shouldSkipRender;
+});
 
 interface PackOpeningModalProps {
   isOpen: boolean;
@@ -65,7 +89,8 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   packType,
   packName
 }) => {
-  const { openPack, openStarterPack, allSpeciesCards } = useHybridGameStore();
+  const { openPack, allSpeciesCards, syncCollection } = useHybridGameStore();
+  const { redeemStarterPack } = useRedemptionStatus();
   const localization = useLocalization();
   const [isOpening, setIsOpening] = useState(false);
   const [packResult, setPackResult] = useState<PackResult | null>(null);
@@ -124,11 +149,47 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       let newCardIds: number[] = [];
 
       if (packType === 'starter') {
-        console.log('🎁 Opening starter pack...');
-        newCardIds = await openStarterPack();
+        console.log('🎁 Opening starter pack (offline-first)...');
+
+        // For offline-first approach, open the pack locally first
+        // This ensures users can play immediately even when offline
+        newCardIds = await openPack('starter');
+        console.log('🎁 Starter pack opened locally with cards:', newCardIds);
+
+        // Try to redeem via API if online, but don't block on it
+        try {
+          console.log('🎁 Attempting server redemption...');
+          const result = await redeemStarterPack();
+          if (result.success) {
+            console.log('✅ Server redemption successful');
+          } else {
+            console.warn('⚠️ Server redemption failed, but pack already opened locally:', result.message);
+          }
+        } catch (redemptionError) {
+          console.warn('⚠️ Server redemption failed (likely offline), but pack already opened locally:', redemptionError);
+          // Don't throw - the pack was already opened locally
+
+          // Update local redemption status to prevent multiple redemptions
+          console.log('🎁 Updating local redemption status for offline starter pack...');
+          // This will be handled by the useRedemptionStatus hook detecting the offline action
+        }
+
+        // Trigger sync to update server (non-blocking)
+        try {
+          await syncCollection();
+          console.log('✅ Sync completed after starter pack opening');
+        } catch (syncError) {
+          console.warn('⚠️ Sync failed after starter pack opening (likely offline):', syncError);
+          // Don't fail the whole operation if sync fails
+        }
       } else {
         console.log(`🎁 Opening ${packType} pack...`);
         newCardIds = await openPack(packType);
+
+        // Special handling for Stage 10 Award Pack
+        if (packType === 'stage10award') {
+          console.log('🏆 Stage 10 Award Pack opened successfully!');
+        }
       }
       
       // Convert card IDs to Card objects
@@ -195,7 +256,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       // Don't reset hasOpenedRef here to prevent retry attempts
       onClose();
     }
-  }, [packType, openPack, openStarterPack, onClose]);
+  }, [packType, openPack, redeemStarterPack, onClose]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -361,7 +422,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 <IonGrid className="cards-grid">
                   <IonRow>
                     {packResult.cards.map((card, index) => (
-                      <IonCol size="6" sizeMd="4" sizeLg="3" sizeXl="2" key={`${card.cardId}-${index}`}>
+                      <IonCol size="6" sizeMd="4" sizeLg="3" sizeXl="2" key={`pack-card-${card.cardId}`}>
                         <motion.div
                           initial={{ opacity: 0, rotateY: 180 }}
                           animate={{ opacity: 1, rotateY: 0 }}
@@ -371,6 +432,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                             ease: "easeOut"
                           }}
                           className="card-reveal"
+                          style={{ willChange: 'transform, opacity' }} // Optimize for animations
                         >
                           <div className="species-card">
                             {/* Card Number Badge */}
@@ -381,7 +443,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                             <div className="card-content">
                               {/* Card Image - Use OrganismRenderer for emoji display */}
                               <div className="card-image-container">
-                                <OrganismRenderer
+                                <MemoizedOrganismRenderer
                                   card={card}
                                   size={80}
                                   showControls={false}

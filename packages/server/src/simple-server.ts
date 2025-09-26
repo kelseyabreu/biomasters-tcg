@@ -45,7 +45,7 @@ app.use(cors({
   origin: process.env['CORS_ORIGIN']?.split(',') || ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Client-User-Id']
 }));
 
 // Compression and parsing middleware

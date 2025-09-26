@@ -1,9 +1,16 @@
 // Service Worker for Biomasters TCG
 // Provides offline functionality and caching
 
-const CACHE_NAME = 'biomasters-tcg-v1';
-const STATIC_CACHE_NAME = 'biomasters-tcg-static-v1';
-const DYNAMIC_CACHE_NAME = 'biomasters-tcg-dynamic-v1';
+// Build-time variables (replaced by Vite during build)
+const APP_VERSION = '__APP_VERSION__';
+const BUILD_TIMESTAMP = '__BUILD_TIMESTAMP__';
+const isDev = location.hostname === 'localhost';
+
+// Dynamic cache names with version busting
+const CACHE_SUFFIX = isDev ? BUILD_TIMESTAMP : APP_VERSION;
+const CACHE_NAME = `biomasters-tcg-v${CACHE_SUFFIX}`;
+const STATIC_CACHE_NAME = `biomasters-tcg-static-v${CACHE_SUFFIX}`;
+const DYNAMIC_CACHE_NAME = `biomasters-tcg-dynamic-v${CACHE_SUFFIX}`;
 
 // Files to cache for offline use
 const STATIC_FILES = [
@@ -37,25 +44,85 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...');
-  
+
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE_NAME && cacheName !== DYNAMIC_CACHE_NAME) {
-              console.log('Service Worker: Deleting old cache', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-      .then(() => {
-        console.log('Service Worker: Activated');
-        return self.clients.claim();
-      })
+    Promise.all([
+      cleanOldCaches(),
+      smartCleanup(),
+      self.clients.claim()
+    ])
   );
 });
+
+// Clean old cache versions (keep only current)
+async function cleanOldCaches() {
+  const cacheNames = await caches.keys();
+
+  return Promise.all(
+    cacheNames.map((cacheName) => {
+      // Keep only current version caches
+      if (cacheName !== STATIC_CACHE_NAME &&
+          cacheName !== DYNAMIC_CACHE_NAME) {
+        console.log(`🧹 ${isDev ? '[DEV]' : '[PROD]'} Deleting old cache:`, cacheName);
+        return caches.delete(cacheName);
+      }
+    })
+  );
+}
+
+// Smart cleanup with offline action respect
+async function smartCleanup() {
+  // Don't clean if user has unsync'd offline actions
+  const hasOfflineActions = await checkOfflineActions();
+
+  if (hasOfflineActions) {
+    console.log('⏸️ Skipping cache cleanup - offline actions pending');
+    return;
+  }
+
+  await cleanExpiredCaches();
+}
+
+// Check for pending offline actions
+async function checkOfflineActions() {
+  try {
+    // Check your offline storage for pending actions
+    const offlineData = localStorage.getItem('biomasters-tcg-storage');
+    if (offlineData) {
+      const data = JSON.parse(offlineData);
+      return data.action_queue && data.action_queue.length > 0;
+    }
+  } catch (error) {
+    console.error('Error checking offline actions:', error);
+  }
+  return false;
+}
+
+// Clean caches older than 7 days
+async function cleanExpiredCaches() {
+  const CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const cacheNames = await caches.keys();
+  const now = Date.now();
+
+  for (const cacheName of cacheNames) {
+    try {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+
+      if (keys.length > 0) {
+        const response = await cache.match(keys[0]);
+        const cacheDate = new Date(response?.headers.get('date') || 0).getTime();
+
+        if (now - cacheDate > CACHE_MAX_AGE) {
+          console.log('🗓️ Deleting expired cache:', cacheName);
+          await caches.delete(cacheName);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking cache age:', error);
+    }
+  }
+}
 
 // Fetch event - serve cached files when offline
 self.addEventListener('fetch', (event) => {
@@ -234,11 +301,11 @@ self.addEventListener('notificationclick', (event) => {
 // Message handling from main thread
 self.addEventListener('message', (event) => {
   console.log('Service Worker: Message received', event.data);
-  
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   if (event.data && event.data.type === 'CACHE_GAME_DATA') {
     // Cache important game data
     caches.open(DYNAMIC_CACHE_NAME)
@@ -248,6 +315,22 @@ self.addEventListener('message', (event) => {
         });
         return cache.put('/game-data', response);
       });
+  }
+
+  if (event.data && event.data.type === 'CACHE_CLEANED') {
+    // Send notification to main thread
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({
+        type: 'SHOW_NOTIFICATION',
+        notification: {
+          type: 'system',
+          title: 'App Updated',
+          message: 'You have the latest version!',
+          color: 'success',
+          duration: 3000
+        }
+      });
+    }
   }
 });
 
@@ -283,6 +366,11 @@ async function backupGameData() {
     console.error('Service Worker: Error backing up game data', error);
   }
 }
+
+// Automatic cleanup schedule (every hour)
+setInterval(async () => {
+  await smartCleanup();
+}, 60 * 60 * 1000);
 
 // Error handling
 self.addEventListener('error', (event) => {

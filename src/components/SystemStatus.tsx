@@ -2,21 +2,18 @@ import React, { useState } from 'react';
 import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonItem, IonLabel, IonList } from '@ionic/react';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { getCollectionStats } from '@kelseyabreu/shared';
-import ConflictResolutionModal from './sync/ConflictResolutionModal';
 
 /**
  * System status component for monitoring the hybrid game store
  */
 export const SystemStatus: React.FC = () => {
-  const [showConflictModal, setShowConflictModal] = useState(false);
-  const [lastSyncResult, setLastSyncResult] = useState<any>(null);
+
 
   const {
     firebaseUser,
     isAuthenticated,
     userId,
     offlineCollection,
-    hasStarterPack,
     allSpeciesCards,
     speciesLoaded,
     isOnline,
@@ -25,8 +22,7 @@ export const SystemStatus: React.FC = () => {
     signInAsGuest,
     signOutUser,
     handleNewUser,
-    openPack,
-    initializeOfflineCollection
+    openPack
   } = useHybridGameStore();
 
   const handleSignInAsGuest = async () => {
@@ -54,13 +50,7 @@ export const SystemStatus: React.FC = () => {
     }
   };
 
-  const handleInitializeCollection = async () => {
-    try {
-      await initializeOfflineCollection();
-    } catch (error) {
-      console.error('Collection initialization failed:', error);
-    }
-  };
+
 
   const handleSetupNewUser = async () => {
     try {
@@ -72,12 +62,8 @@ export const SystemStatus: React.FC = () => {
 
   const handleSync = async () => {
     try {
-      const result = await syncCollection();
-      setLastSyncResult(result);
-
-      if (result.conflicts.length > 0 || result.discarded_actions.length > 0) {
-        setShowConflictModal(true);
-      }
+      await syncCollection();
+      // Conflicts are now handled by the main ConflictResolutionModal in App.tsx
     } catch (error) {
       console.error('Sync failed:', error);
     }
@@ -104,7 +90,6 @@ export const SystemStatus: React.FC = () => {
               <IonLabel>
                 <h3>Collection Status</h3>
                 <p>Collection: {offlineCollection ? '✅ Initialized' : '❌ Not initialized'}</p>
-                <p>Starter Pack: {hasStarterPack ? '✅ Opened' : '❌ Not opened'}</p>
                 <p>Species Loaded: {speciesLoaded ? `✅ ${allSpeciesCards.length} cards` : '❌ Not loaded'}</p>
                 <p>Credits: {offlineCollection?.eco_credits || 0}</p>
               </IonLabel>
@@ -157,14 +142,7 @@ export const SystemStatus: React.FC = () => {
             </IonButton>
 
             <h3>🎮 Game Actions</h3>
-            <IonButton 
-              expand="block" 
-              fill="outline" 
-              onClick={handleInitializeCollection}
-              disabled={!!offlineCollection}
-            >
-              Initialize Collection
-            </IonButton>
+
 
             <IonButton
               expand="block"
@@ -219,13 +197,7 @@ export const SystemStatus: React.FC = () => {
         </IonCardContent>
       </IonCard>
 
-      <ConflictResolutionModal
-        isOpen={showConflictModal}
-        conflicts={lastSyncResult?.conflicts || []}
-        discardedActions={lastSyncResult?.discarded_actions || []}
-        onClose={() => setShowConflictModal(false)}
-        onRetry={handleSync}
-      />
+
     </div>
   );
 };

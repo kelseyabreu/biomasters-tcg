@@ -67,8 +67,9 @@ export class BoosterPackSystem {
    * Generate a booster pack using IUCN conservation percentages
    * @param packName Name of the pack
    * @param cardCount Number of cards to generate (default: 8)
+   * @param packType Type of pack for special generation rules
    */
-  generateBoosterPack(packName: string = 'Species Conservation Pack', cardCount: number = 8): BoosterPack {
+  generateBoosterPack(packName: string = 'Species Conservation Pack', cardCount: number = 8, packType: string = 'basic'): BoosterPack {
     const packCards: Card[] = [];
     const rarityBreakdown: Record<ConservationStatus, number> = {} as Record<ConservationStatus, number>;
 
@@ -84,18 +85,24 @@ export class BoosterPackSystem {
       }
     });
 
-    // Generate specified number of cards based on IUCN percentages
-    for (let i = 0; i < cardCount; i++) {
-      const selectedRarity = this.selectRarityByIUCNPercentage();
-      const card = this.selectRandomCardFromRarity(selectedRarity);
+    // Generate specified number of cards based on pack type
+    if (packType === 'stage10award') {
+      // Stage 10 Award Pack - Guaranteed high-value cards
+      this.generateStage10AwardCards(packCards, rarityBreakdown, cardCount);
+    } else {
+      // Regular pack generation using IUCN percentages
+      for (let i = 0; i < cardCount; i++) {
+        const selectedRarity = this.selectRarityByIUCNPercentage();
+        const card = this.selectRandomCardFromRarity(selectedRarity);
 
-      console.log(`🎴 Card ${i + 1}: Rarity ${ConservationStatus[selectedRarity]}, Card: ${card?.nameId || 'null'}`);
+        console.log(`🎴 Card ${i + 1}: Rarity ${ConservationStatus[selectedRarity]}, Card: ${card?.nameId || 'null'}`);
 
-      if (card) {
-        packCards.push(card);
-        rarityBreakdown[selectedRarity]++;
-      } else {
-        console.warn(`⚠️ Failed to find card for rarity ${ConservationStatus[selectedRarity]}`);
+        if (card) {
+          packCards.push(card);
+          rarityBreakdown[selectedRarity]++;
+        } else {
+          console.warn(`⚠️ Failed to find card for rarity ${ConservationStatus[selectedRarity]}`);
+        }
       }
     }
 
@@ -108,6 +115,39 @@ export class BoosterPackSystem {
       openedAt: new Date(),
       rarityBreakdown
     };
+  }
+
+  /**
+   * Generate special Stage 10 Award Pack cards with guaranteed high-value content
+   */
+  private generateStage10AwardCards(packCards: Card[], rarityBreakdown: Record<ConservationStatus, number>, cardCount: number): void {
+    console.log('🏆 Generating Stage 10 Award Pack with premium cards');
+
+    // Guaranteed distribution for Stage 10 Award Pack:
+    // 2 Critically Endangered (rarest)
+    // 2 Endangered
+    // 2 Vulnerable
+    // 2 Near Threatened
+    // 2 Least Concern (for balance)
+
+    const guaranteedDistribution = [
+      { rarity: ConservationStatus.CRITICALLY_ENDANGERED, count: 2 },
+      { rarity: ConservationStatus.ENDANGERED, count: 2 },
+      { rarity: ConservationStatus.VULNERABLE, count: 2 },
+      { rarity: ConservationStatus.NEAR_THREATENED, count: 2 },
+      { rarity: ConservationStatus.LEAST_CONCERN, count: 2 }
+    ];
+
+    for (const { rarity, count } of guaranteedDistribution) {
+      for (let i = 0; i < count; i++) {
+        const card = this.selectRandomCardFromRarity(rarity);
+        if (card) {
+          packCards.push(card);
+          rarityBreakdown[rarity]++;
+          console.log(`🏆 Stage 10 Card: ${ConservationStatus[rarity]} - ${card.nameId}`);
+        }
+      }
+    }
   }
 
   /**

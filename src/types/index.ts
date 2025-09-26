@@ -51,7 +51,11 @@ export {
   TrophicCategoryId,
   ConservationStatus,
   GameActionType,
-  Domain
+  Domain,
+  CardVariant,
+  CardVariantUtils,
+  RedemptionType,
+  RedemptionStatus
 } from '@kelseyabreu/shared';
 
 // ============================================================================

@@ -26,6 +26,7 @@ import { HybridCollectionView } from './components/collection/HybridCollectionVi
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import TaxonomyDemo from './pages/TaxonomyDemo';
+import EcosystemChallenge from './components/challenge/EcosystemChallenge';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { useHybridGameStore } from './state/hybridGameStore';
 import { ActiveBattleIndicator } from './components/navigation/ActiveBattleIndicator';
@@ -40,6 +41,7 @@ import { ConflictResolutionModal } from './components/ui/ConflictResolutionModal
 import { ResumeGamePrompt } from './components/ui/ResumeGamePrompt';
 import NotificationCenter from './components/ui/NotificationCenter';
 import { useOnlineNotifications } from './hooks/useOnlineNotifications';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -226,6 +228,7 @@ const AppContent: React.FC = () => {
 
   return (
     <IonApp>
+      <ErrorBoundary>
         <IonReactRouter>
           {/* Global UI Components */}
           <OfflineBanner />
@@ -274,6 +277,9 @@ const AppContent: React.FC = () => {
               <Route exact path="/taxonomy">
                 <TaxonomyDemo />
               </Route>
+              <Route exact path="/challenge">
+                <EcosystemChallenge />
+              </Route>
               <Route exact path="/">
                 <Redirect to="/home" />
               </Route>
@@ -318,6 +324,7 @@ const AppContent: React.FC = () => {
           />
 
         </IonReactRouter>
+      </ErrorBoundary>
     </IonApp>
   );
 };

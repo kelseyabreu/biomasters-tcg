@@ -180,29 +180,55 @@ export function createUserScopedIndexedDBStorage(options: UserScopedStorageOptio
 
   return {
     getItem: async (name: string): Promise<string | null> => {
+      console.log('📦 IndexedDB getItem called:', { name });
       try {
         const userId = getUserId();
-        if (!userId) {
-          console.warn('⚠️ No userId available for IndexedDB access, returning null');
-          return null;
+        console.log('📦 IndexedDB getItem userId result:', { userId, hasUserId: !!userId });
+
+        if (!userId || userId === 'no-user-id' || userId === 'default-user') {
+          console.log('⚠️ Using default storage key for initial hydration');
+
+          const db = await getDB();
+          const transaction = db.transaction(['userData'], 'readonly');
+          const store = transaction.objectStore('userData');
+          const defaultKey = `user_default-user_${name}`;
+
+          return new Promise((resolve) => {
+            const request = store.get(defaultKey);
+            request.onerror = () => {
+              console.log('📦 No default data found, returning null for hydration');
+              resolve(null);
+            };
+            request.onsuccess = () => {
+              const result = request.result;
+              const value = result ? result.value : null;
+              console.log('📦 Default storage result:', { hasData: !!value });
+              resolve(value);
+            };
+          });
         }
 
         const db = await getDB();
         const transaction = db.transaction(['userData'], 'readonly');
         const store = transaction.objectStore('userData');
         const scopedKey = `user_${userId}_${name}`;
-        
+
         return new Promise((resolve, reject) => {
           const request = store.get(scopedKey);
-          request.onerror = () => reject(request.error);
+          request.onerror = () => {
+            console.error('❌ IndexedDB getItem error');
+            reject(request.error);
+          };
           request.onsuccess = () => {
             const result = request.result;
             const value = result ? result.value : null;
-            
+
             if (value) {
               console.log(`📦 Retrieved user-scoped IndexedDB data for ${userId}:`, { key: name, hasData: true });
+            } else {
+              console.log(`📦 No data found for ${userId}:`, { key: name });
             }
-            
+
             resolve(value);
           };
         });
@@ -215,8 +241,12 @@ export function createUserScopedIndexedDBStorage(options: UserScopedStorageOptio
     setItem: async (name: string, value: string): Promise<void> => {
       try {
         const userId = getUserId();
-        if (!userId) {
-          console.warn('⚠️ No userId available for IndexedDB, skipping save');
+        console.log('💾 IndexedDB setItem called:', { name, userId, hasUserId: !!userId, valueSize: value.length });
+
+        if (!userId || userId === 'no-user-id') {
+          console.warn('⚠️ No valid userId available for IndexedDB, deferring save until user is established');
+          // For now, we'll skip the save but not throw an error
+          // The store will retry saving once the user identity is established
           return;
         }
 
@@ -224,15 +254,15 @@ export function createUserScopedIndexedDBStorage(options: UserScopedStorageOptio
         const transaction = db.transaction(['userData'], 'readwrite');
         const store = transaction.objectStore('userData');
         const scopedKey = `user_${userId}_${name}`;
-        
+
         return new Promise((resolve, reject) => {
           const request = store.put({ key: scopedKey, value, userId, timestamp: Date.now() });
           request.onerror = () => reject(request.error);
           request.onsuccess = () => {
-            console.log(`💾 Saved user-scoped IndexedDB data for ${userId}:`, { 
-              key: name, 
+            console.log(`💾 Saved user-scoped IndexedDB data for ${userId}:`, {
+              key: name,
               dataSize: value.length,
-              scopedKey 
+              scopedKey
             });
             resolve();
           };

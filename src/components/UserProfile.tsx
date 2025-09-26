@@ -44,7 +44,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   compact = false
 }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const { getUIText } = useUILocalization();
 
   const {
@@ -53,7 +52,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     firebaseUser,
     userProfile,
     offlineCollection,
-    signOutUser
+    signOutUser,
+    isSigningOut // Use global signing out state from store
   } = useHybridGameStore();
 
   // Calculate collection stats
@@ -105,12 +105,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
   const handleSignOut = async () => {
     try {
-      setIsSigningOut(true);
       await signOutUser();
       // Navigation is handled in the store, no need to do anything here
     } catch (error) {
       console.error('Sign out failed:', error);
-      setIsSigningOut(false); // Reset loading state on error
+      // Error handling is done in the store, no need to reset local state
     }
   };
 

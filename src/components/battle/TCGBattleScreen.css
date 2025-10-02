@@ -401,19 +401,4 @@
   outline-offset: 2px;
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .tcg-grid {
-    background: var(--ion-color-dark-tint);
-    border-color: var(--ion-color-medium-shade);
-  }
-  
-  .hand-card {
-    background: var(--ion-color-dark);
-    border-color: var(--ion-color-medium-shade);
-  }
-  
-  .grid-cell.empty {
-    background-color: var(--ion-color-dark-shade);
-  }
-}
+/* Dark Mode Support - now handled by theme system */

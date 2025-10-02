@@ -260,25 +260,7 @@
   }
 }
 
-/* Dark Theme Support */
-@media (prefers-color-scheme: dark) {
-  .player-hand-card {
-    border-color: var(--ion-color-dark);
-    background: var(--ion-color-step-50);
-  }
-  
-  .hand-card.card-generic {
-    background: linear-gradient(135deg, #388E3C, #1B5E20);
-  }
-  
-  .hand-card.card-back {
-    background: linear-gradient(135deg, #1565C0, #0D47A1);
-  }
-  
-  .player-stats {
-    border-top-color: var(--ion-color-dark);
-  }
-}
+/* Dark Theme Support - now handled by theme system */
 
 /* Focus States for Accessibility */
 .hand-card.interactive:focus {

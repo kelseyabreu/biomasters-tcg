@@ -637,30 +637,7 @@
   }
 }
 
-/* Dark Theme Support */
-@media (prefers-color-scheme: dark) {
-  .player-card {
-    border-color: var(--ion-color-dark);
-    background: var(--ion-color-step-50);
-  }
-  
-  .player-card.current-player {
-    background: linear-gradient(135deg, var(--ion-color-success-shade), var(--ion-color-dark));
-  }
-  
-  .player-card.player-turn {
-    background: linear-gradient(135deg, var(--ion-color-primary-shade), var(--ion-color-dark));
-  }
-  
-  .player-stats-row {
-    border-top-color: var(--ion-color-dark);
-  }
-  
-  .player-card-hand-card.full {
-    background: var(--ion-color-step-100);
-    border-color: var(--ion-color-dark);
-  }
-}
+/* Dark Theme Support - now handled by theme system */
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {

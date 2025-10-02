@@ -168,22 +168,7 @@
   text-decoration: underline;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .auth-card {
-    background: var(--ion-color-dark);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-
-  .auth-input {
-    --background: var(--ion-color-dark-shade);
-    --border-color: var(--ion-color-medium-shade);
-  }
-
-  .auth-divider span {
-    background: var(--ion-color-dark);
-  }
-}
+/* Dark mode support - now handled by theme system */
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {

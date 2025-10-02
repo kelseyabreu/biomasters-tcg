@@ -184,45 +184,7 @@ ion-badge {
   text-transform: capitalize;
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .conflict-resolution-header {
-    background: rgba(var(--ion-color-warning-rgb), 0.2);
-  }
-  
-  .conflict-resolution-header h2 {
-    color: var(--ion-color-light);
-  }
-  
-  .manual-conflict {
-    background: rgba(var(--ion-color-dark-rgb), 0.3);
-    border-color: rgba(var(--ion-color-light-rgb), 0.2);
-  }
-  
-  .conflict-header {
-    border-bottom-color: rgba(var(--ion-color-light-rgb), 0.2);
-  }
-  
-  .conflict-info h3 {
-    color: var(--ion-color-light);
-  }
-  
-  .conflict-help {
-    background: rgba(var(--ion-color-dark-rgb), 0.4);
-  }
-  
-  .conflict-help strong {
-    color: var(--ion-color-light);
-  }
-  
-  .manual-conflict ion-radio-group ion-item ion-label h3 {
-    color: var(--ion-color-light);
-  }
-  
-  .conflict-section ion-list ion-item ion-label h3 {
-    color: var(--ion-color-light);
-  }
-}
+/* Dark mode adjustments - now handled by theme system */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

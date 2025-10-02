@@ -63,23 +63,9 @@
   --tcg-spacing-xl: 32px;
 }
 
-/* Dark Mode Variables */
+/* Dark Mode Variables - These are now set dynamically by the theme system */
+/* The .dark class is applied when a dark theme is selected */
 .dark {
-  --tcg-card-background: #1A1A1A;
-  --tcg-card-border: #404040;
-  --tcg-text-primary: #E0E0E0;
-  --tcg-text-secondary: #B0B0B0;
-  --tcg-background-primary: #0F0F0F;
-  --tcg-background-secondary: #1A1A1A;
-  --tcg-accent: #90EE90;
-  --tcg-accent-dark: #5FBF5F;
-  --tcg-highlight: #32CD32;
-
-  /* Dark mode status colors */
-  --tcg-error: #FF6B6B;
-  --tcg-success: #51CF66;
-  --tcg-warning: #FFD43B;
-
   /* Adjust shadows for dark mode */
   --tcg-shadow-small: 0 2px 4px rgba(0, 0, 0, 0.3);
   --tcg-shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.4);
@@ -144,8 +130,9 @@ ion-card-header {
   --color: var(--tcg-text-primary);
 }
 
-ion-card-title {
-  --color: var(--tcg-text-primary);
+ion-card ion-card-title {
+  --color: var(--tcg-accent) !important;
+  color: var(--tcg-accent) !important;
   font-weight: var(--tcg-font-weight-bold);
 }
 
@@ -160,7 +147,7 @@ ion-button {
 
 ion-button[fill="solid"] {
   --background: var(--tcg-accent);
-  --color: var(--tcg-text-primary);
+  --color: var(--ion-color-accent-contrast);
 }
 
 ion-button[fill="outline"] {

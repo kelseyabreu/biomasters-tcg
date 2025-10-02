@@ -298,34 +298,7 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .notification-card {
-    background: var(--ion-color-dark-tint);
-    border-color: rgba(255, 255, 255, 0.05);
-  }
-  
-  .notification-icon {
-    background: var(--ion-color-dark-shade);
-  }
-  
-  .notification-center-icon {
-    background: var(--ion-color-dark-shade);
-  }
-  
-  .notification-center-header {
-    background: var(--ion-color-dark-shade);
-    border-color: var(--ion-color-dark-tint);
-  }
-  
-  .notification-center-item {
-    border-color: var(--ion-color-dark-tint);
-  }
-  
-  .notification-center-item:hover {
-    background: var(--ion-color-dark-shade);
-  }
-}
+/* Dark Mode Support - now handled by theme system */
 
 /* Color Variants */
 .notification-card.notification-success {

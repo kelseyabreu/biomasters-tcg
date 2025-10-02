@@ -268,30 +268,7 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .winner-card.victory {
-    background: linear-gradient(135deg, var(--ion-color-success-shade), var(--ion-color-dark));
-  }
-  
-  .winner-card.defeat {
-    background: linear-gradient(135deg, var(--ion-color-medium-shade), var(--ion-color-dark));
-  }
-  
-  .winner-title,
-  .winner-name,
-  .winner-message {
-    color: var(--ion-color-light);
-  }
-  
-  .score-item {
-    background: var(--ion-color-dark-tint);
-  }
-  
-  .score-item.winner-score-item {
-    background: linear-gradient(135deg, var(--ion-color-success-shade), var(--ion-color-dark-tint));
-  }
-}
+/* Dark Mode Support - now handled by theme system */
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {

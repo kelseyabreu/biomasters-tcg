@@ -207,28 +207,7 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .deletion-steps {
-    background: var(--ion-color-dark-tint);
-  }
-
-  .step.active {
-    background: var(--ion-color-primary-shade);
-  }
-
-  .step.completed {
-    background: var(--ion-color-success-shade);
-  }
-
-  .password-reauth {
-    background: var(--ion-color-warning-shade);
-  }
-
-  .text-confirmation {
-    background: var(--ion-color-danger-shade);
-  }
-}
+/* Dark Mode Support - now handled by theme system */
 
 /* Animation for step transitions */
 .step {

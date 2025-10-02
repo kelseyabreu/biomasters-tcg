@@ -277,14 +277,4 @@
   }
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .collection-card.unowned {
-    opacity: 0.6;
-    filter: grayscale(0.5) brightness(0.7);
-  }
-  
-  .educational-info {
-    background: var(--ion-color-primary-shade);
-  }
-}
+/* Dark mode adjustments - now handled by theme system */

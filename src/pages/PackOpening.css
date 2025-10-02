@@ -143,22 +143,7 @@
   }
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .pack-card {
-    background: var(--ion-color-step-50);
-  }
-  
-  .pack-card.special-pack {
-    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-  }
-  
-  .credits-display {
-    background: var(--ion-color-step-100);
-    border-radius: 12px;
-    padding: 1.5rem;
-  }
-}
+/* Dark mode adjustments - now handled by theme system */
 
 /* Loading states */
 .open-pack-button[disabled] {

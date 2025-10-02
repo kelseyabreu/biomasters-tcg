@@ -71,7 +71,7 @@
 
 .bg-accent {
   background: var(--tcg-accent) !important;
-  color: var(--tcg-text-primary) !important;
+  color: var(--ion-color-accent-contrast) !important;
 }
 
 /* Border Utilities */
@@ -301,7 +301,7 @@
 /* Button Utilities */
 .btn-primary {
   background: var(--tcg-accent);
-  color: var(--tcg-text-primary);
+  color: var(--ion-color-accent-contrast);
   border: 1px solid var(--tcg-accent);
   border-radius: var(--tcg-border-radius-small);
   padding: var(--tcg-spacing-sm) var(--tcg-spacing-md);
@@ -321,7 +321,7 @@
 
 .btn-secondary:hover {
   background: var(--tcg-accent);
-  color: var(--tcg-text-primary);
+  color: var(--ion-color-accent-contrast);
 }
 
 /* List Utilities */

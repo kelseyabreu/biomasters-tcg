@@ -168,25 +168,7 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .player-stats-compact {
-    background: linear-gradient(135deg, var(--ion-color-dark-tint), var(--ion-color-medium-shade));
-  }
-  
-  .player-stats-compact .stat-item {
-    color: var(--ion-color-light);
-  }
-  
-  .player-stats-card.current-player {
-    background: linear-gradient(135deg, var(--ion-color-primary-shade), var(--ion-color-dark));
-  }
-  
-  .player-stats-card .player-header h3,
-  .player-stats-card .stat-item {
-    color: var(--ion-color-light);
-  }
-}
+/* Dark mode support - now handled by theme system */
 
 /* Mobile optimizations for side-by-side layout */
 @media (max-width: 768px) {

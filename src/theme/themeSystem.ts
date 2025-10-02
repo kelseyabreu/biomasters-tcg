@@ -507,7 +507,7 @@ export class ThemeManager {
    */
   applyTheme(theme: ThemeConfig): void {
     const root = document.documentElement;
-    
+
     // Apply Ionic color variables
     Object.entries(theme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--ion-color-${this.kebabCase(key)}`, value);
@@ -527,6 +527,23 @@ export class ThemeManager {
     root.style.setProperty('--tcg-background-secondary', theme.colors.backgroundSecondary);
     root.style.setProperty('--tcg-accent', theme.colors.accent);
     root.style.setProperty('--tcg-highlight', theme.colors.highlight);
+
+    // Apply trophic role colors
+    root.style.setProperty('--tcg-producer', theme.colors.producer);
+    root.style.setProperty('--tcg-herbivore', theme.colors.herbivore);
+    root.style.setProperty('--tcg-carnivore', theme.colors.carnivore);
+    root.style.setProperty('--tcg-omnivore', theme.colors.omnivore);
+    root.style.setProperty('--tcg-detritivore', theme.colors.detritivore);
+    root.style.setProperty('--tcg-decomposer', theme.colors.decomposer);
+    root.style.setProperty('--tcg-scavenger', theme.colors.scavenger);
+
+    // Apply conservation status colors
+    root.style.setProperty('--tcg-extinct', theme.colors.extinct);
+    root.style.setProperty('--tcg-critically-endangered', theme.colors.criticallyEndangered);
+    root.style.setProperty('--tcg-endangered', theme.colors.endangered);
+    root.style.setProperty('--tcg-vulnerable', theme.colors.vulnerable);
+    root.style.setProperty('--tcg-near-threatened', theme.colors.nearThreatened);
+    root.style.setProperty('--tcg-least-concern', theme.colors.leastConcern);
 
     // Set dark mode class
     document.body.classList.toggle('dark', theme.isDark);
@@ -585,8 +602,8 @@ export class ThemeManager {
   private getContrastColor(hex: string): string {
     const rgb = this.hexToRgb(hex).split(', ').map(Number);
     const brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
-    // Use a higher threshold for better contrast
-    return brightness > 140 ? '#000000' : '#ffffff';
+    // Use a higher threshold for better contrast - improved for accessibility
+    return brightness > 128 ? '#000000' : '#ffffff';
   }
 
   /**

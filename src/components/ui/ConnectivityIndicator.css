@@ -224,30 +224,7 @@
   }
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .connectivity-indicator--header {
-    background: rgba(var(--ion-color-dark-rgb), 0.2);
-  }
-  
-  .connectivity-indicator--footer {
-    background: rgba(var(--ion-color-light-rgb), 0.1);
-  }
-  
-  .connectivity-indicator--floating {
-    background: rgba(var(--ion-color-dark-rgb), 0.95);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-  
-  .sync-progress {
-    background: rgba(var(--ion-color-dark-rgb), 0.3);
-    border-color: rgba(var(--ion-color-light-rgb), 0.2);
-  }
-  
-  .connectivity-indicator__status {
-    color: var(--ion-color-light);
-  }
-}
+/* Dark mode adjustments - now handled by theme system */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

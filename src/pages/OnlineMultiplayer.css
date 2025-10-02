@@ -272,20 +272,7 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .matchmaking-status {
-    background: var(--ion-color-dark-tint);
-  }
-  
-  .rating-stat {
-    background: var(--ion-color-dark-tint);
-  }
-  
-  .quest-card.claimed {
-    background: var(--ion-color-dark-shade);
-  }
-}
+/* Dark Mode Support - now handled by theme system */
 
 /* Animation for matchmaking spinner */
 @keyframes pulse {

@@ -229,22 +229,7 @@
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .avatar-element {
-    border-color: var(--ion-color-dark-shade);
-  }
-  
-  .status-badge,
-  .account-type-badge {
-    border-color: var(--ion-background-color);
-  }
-  
-  .avatar-placeholder {
-    background: var(--ion-color-dark-shade);
-    color: var(--ion-color-light);
-  }
-}
+/* Dark Mode Support - now handled by theme system */
 
 /* Accessibility */
 .avatar-container:focus {

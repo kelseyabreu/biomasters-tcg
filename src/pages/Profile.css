@@ -167,55 +167,7 @@ ion-toggle {
   }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .profile-header-card {
-    background: var(--ion-color-dark);
-    border-color: var(--ion-color-dark-shade);
-  }
-
-  .profile-info h2 {
-    color: var(--ion-color-light);
-  }
-
-  .profile-info .email {
-    color: var(--ion-color-light-shade);
-  }
-
-  .account-status {
-    color: var(--ion-color-success);
-  }
-
-  .quick-stats {
-    background: var(--ion-color-dark-shade);
-    border-color: var(--ion-color-dark-tint);
-  }
-
-  .stat-value {
-    color: var(--ion-color-light);
-  }
-
-  .stat-label {
-    color: var(--ion-color-light-shade);
-  }
-
-  ion-card {
-    background: var(--ion-color-dark);
-    color: var(--ion-color-light);
-  }
-
-  ion-card-title {
-    color: var(--ion-color-light);
-  }
-
-  ion-item {
-    --background: var(--ion-color-dark-shade);
-  }
-
-  ion-label[position="stacked"] {
-    color: var(--ion-color-light);
-  }
-}
+/* Dark Mode Support - now handled by theme system */
 
 /* Animation */
 .profile-header-card {

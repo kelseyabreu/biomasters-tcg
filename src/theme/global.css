@@ -7,7 +7,7 @@
   --tcg-card-border: #8FBC8F;
   --tcg-text-primary: #2F4F2F;
   --tcg-text-secondary: #696969;
-  --tcg-background-primary: #F0FFF0;
+  --tcg-background-primary: #F5F5DC;
   --tcg-background-secondary: #E6FFE6;
   --tcg-accent: #2D5016;
   --tcg-accent-dark: #1A3009;
@@ -134,6 +134,11 @@ ion-card ion-card-title {
   --color: var(--tcg-accent) !important;
   color: var(--tcg-accent) !important;
   font-weight: var(--tcg-font-weight-bold);
+}
+
+ion-list {
+  --background: var(--tcg-background-primary) !important;
+  background: var(--tcg-background-primary) !important;
 }
 
 ion-card-content {

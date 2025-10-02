@@ -9,9 +9,9 @@
 }
 
 .collection-controls {
-  padding: var(--tcg-spacing-md);
-  background: var(--tcg-background-secondary);
-  border-bottom: 1px solid var(--tcg-card-border);
+    padding: var(--tcg-spacing-md);
+    background: var(--tcg-background-secondary);
+    border-bottom: 1px solid var(--tcg-card-border);
 }
 
 .control-row {

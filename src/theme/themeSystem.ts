@@ -88,7 +88,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#8FBC8F',
       textPrimary: '#1B3B1B',
       textSecondary: '#4A5A4A',
-      backgroundPrimary: '#F8FFF8',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#F0F8F0',
       accent: '#2D5016',
       highlight: '#ADFF2F'
@@ -131,7 +131,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#87CEEB',
       textPrimary: '#0F1F4F',
       textSecondary: '#4A5A6A',
-      backgroundPrimary: '#F0F8FF',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#E6F3FF',
       accent: '#006994',
       highlight: '#00CED1'
@@ -174,7 +174,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#D2691E',
       textPrimary: '#3D2817',
       textSecondary: '#6B4423',
-      backgroundPrimary: '#FFFBF7',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#FFF5E6',
       accent: '#8B4513',
       highlight: '#FF8C00'
@@ -217,7 +217,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#E6E6FA',
       textPrimary: '#2F4F4F',
       textSecondary: '#708090',
-      backgroundPrimary: '#F0F8FF',
+      backgroundPrimary: '#F8F8FF',
       backgroundSecondary: '#E0E6FF',
       accent: '#4682B4',
       highlight: '#87CEEB'
@@ -260,7 +260,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#404040',
       textPrimary: '#E0E0E0',
       textSecondary: '#B0B0B0',
-      backgroundPrimary: '#0F0F0F',
+      backgroundPrimary: '#1A1A1A',
       backgroundSecondary: '#1A1A1A',
       accent: '#90EE90',
       highlight: '#32CD32'
@@ -304,7 +304,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#FF7F50',
       textPrimary: '#4A2C17',
       textSecondary: '#8B4513',
-      backgroundPrimary: '#FFFAF7',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#FFF5EE',
       accent: '#CC5500',
       highlight: '#FF8C00'
@@ -348,7 +348,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#DDA0DD',
       textPrimary: '#2D1B3D',
       textSecondary: '#4B0082',
-      backgroundPrimary: '#FEFAFF',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#F5F0FF',
       accent: '#663399',
       highlight: '#9966CC'
@@ -392,7 +392,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#FFB3BA',
       textPrimary: '#4A1A2E',
       textSecondary: '#8B008B',
-      backgroundPrimary: '#FFFAFC',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#FFF0F5',
       accent: '#FF6B9D',
       highlight: '#FF8FA3'
@@ -436,7 +436,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#8B0000',
       textPrimary: '#FFE4E1',
       textSecondary: '#FFA07A',
-      backgroundPrimary: '#0F0505',
+      backgroundPrimary: '#1A0A0A',
       backgroundSecondary: '#1A0A0A',
       accent: '#FF4500',
       highlight: '#FF6347'
@@ -480,7 +480,7 @@ export const PREDEFINED_THEMES: Record<string, ThemeConfig> = {
       cardBorder: '#DAA520',
       textPrimary: '#3D2F1F',
       textSecondary: '#8B4513',
-      backgroundPrimary: '#FFFEF7',
+      backgroundPrimary: '#FFFFFF',
       backgroundSecondary: '#FFFACD',
       accent: '#B8860B',
       highlight: '#DAA520'

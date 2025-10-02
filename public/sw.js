@@ -18,13 +18,14 @@ const STATIC_FILES = [
   '/index.html',
   '/manifest.json',
   '/species/manifest.json',
+  '/favicon.png',
   // Add other static assets as needed
 ];
 
 // Install event - cache static files
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
-  
+  console.log(`🔧 Service Worker: Installing v${APP_VERSION}...`);
+
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
@@ -32,7 +33,7 @@ self.addEventListener('install', (event) => {
         return cache.addAll(STATIC_FILES);
       })
       .then(() => {
-        console.log('Service Worker: Static files cached');
+        console.log(`✅ Service Worker: v${APP_VERSION} static files cached`);
         return self.skipWaiting();
       })
       .catch((error) => {
@@ -140,34 +141,55 @@ self.addEventListener('fetch', (event) => {
   }
   
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        // Return cached version if available
-        if (cachedResponse) {
-          console.log('Service Worker: Serving from cache', request.url);
-          return cachedResponse;
-        }
-        
-        // Otherwise fetch from network
-        return fetch(request)
+    // For HTML files, always try network first to get updates
+    request.destination === 'document'
+      ? fetch(request)
           .then((networkResponse) => {
-            // Don't cache if not a valid response
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+            if (networkResponse && networkResponse.status === 200) {
+              // Cache the new version
+              const responseToCache = networkResponse.clone();
+              caches.open(STATIC_CACHE_NAME)
+                .then((cache) => {
+                  cache.put(request, responseToCache);
+                });
               return networkResponse;
             }
-            
-            // Clone the response
-            const responseToCache = networkResponse.clone();
-            
-            // Cache dynamic content
-            caches.open(DYNAMIC_CACHE_NAME)
-              .then((cache) => {
-                console.log('Service Worker: Caching dynamic content', request.url);
-                cache.put(request, responseToCache);
-              });
-            
-            return networkResponse;
+            // Fallback to cache if network fails
+            return caches.match(request) || caches.match('/index.html');
           })
+          .catch(() => {
+            // Network failed, serve from cache
+            return caches.match(request) || caches.match('/index.html');
+          })
+      : // For other resources, cache first strategy
+        caches.match(request)
+          .then((cachedResponse) => {
+            // Return cached version if available
+            if (cachedResponse) {
+              console.log('Service Worker: Serving from cache', request.url);
+              return cachedResponse;
+            }
+
+            // Otherwise fetch from network
+            return fetch(request)
+              .then((networkResponse) => {
+                // Don't cache if not a valid response
+                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                  return networkResponse;
+                }
+
+                // Clone the response
+                const responseToCache = networkResponse.clone();
+
+                // Cache dynamic content
+                caches.open(DYNAMIC_CACHE_NAME)
+                  .then((cache) => {
+                    console.log('Service Worker: Caching dynamic content', request.url);
+                    cache.put(request, responseToCache);
+                  });
+
+                return networkResponse;
+              })
           .catch((error) => {
             console.log('Service Worker: Network request failed', error);
             

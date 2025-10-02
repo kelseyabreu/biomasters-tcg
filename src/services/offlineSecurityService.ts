@@ -5,15 +5,43 @@
 
 import CryptoJS from 'crypto-js';
 import { createStorageAdapter } from './storageAdapter';
+import { SyncActionType } from '@kelseyabreu/shared';
 
 export interface OfflineAction {
   id: string;
-  action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened';
+  action: SyncActionType;  // Use shared enum instead of string literals
+
+  // Action-specific data (varies by action type)
   cardId?: number;
   quantity?: number;
   pack_type?: string;
   deck_id?: string;
   deck_data?: any;
+  battle_data?: {
+    opponent_id?: string;
+    stage_id?: string;
+    stage_name?: string;
+    deck_id?: string;
+    victory_points?: number;
+    turns_taken?: number;
+    rewards?: {
+      credits?: number;
+      xp?: number;
+      cards?: number[];
+    };
+  };
+  reward_data?: {
+    reward_type: string;
+    reward_id: string;
+    items_received: any[];
+  };
+  challenge_data?: {
+    challenge_id: string;
+    score: number;
+    completion_time: number;
+  };
+
+  // Cryptographic chain data
   timestamp: number;
   signature: string;
   api_version: string;
@@ -36,8 +64,12 @@ export interface SavedDeck {
 }
 
 export interface OfflineCollection {
-  user_id: string | null; // null for guest mode
+  // 3-ID Architecture: Always use all three IDs for clarity
+  client_user_id: string;           // Device-generated UUID (stable across guest→registered)
+  firebase_user_id: string | null;  // Firebase UID (null for guests)
+  db_user_id: string | null;        // Server-assigned UUID (null until first sync)
   device_id: string;
+
   cards_owned: {
     [cardId: number]: {
       quantity: number;
@@ -52,6 +84,11 @@ export interface OfflineCollection {
   collection_hash: string;
   last_sync: number;
   signing_key_version: number;
+
+  // Optimistic locking for sync conflict detection
+  collection_version: number;      // Increments on every local change
+  last_synced_version: number;     // Server's version at last successful sync
+
   activeDeck?: SavedDeck; // Currently selected deck for battles
   savedDecks?: SavedDeck[]; // All saved decks
 }
@@ -62,6 +99,7 @@ export interface SyncPayload {
   collection_state: OfflineCollection;
   client_version: string;
   last_known_server_state?: string;
+  transaction_id: string; // Unique ID for idempotency protection
 }
 
 export interface SyncResponse {
@@ -76,6 +114,7 @@ export interface SyncResponse {
     action_id: string;
     action_type: string;
     processed_at: string;
+    action_data: any; // Full action payload for queue reconstruction
   }>;
   new_server_state: {
     cards_owned: Record<number, any>;
@@ -104,28 +143,89 @@ class OfflineSecurityService {
   });
   private serverProcessedActionsCount: number = 0;
 
+  // Track pending actions that haven't been saved to collection yet
+  // This prevents nonce collisions when multiple actions are created rapidly
+  private pendingActionsCount: number = 0;
+  private lastPendingActionHash: string | null = null;
+
+  // Track the hash of the last synced action for chain continuity
+  // This is needed when the action queue is cleared after sync
+  private lastSyncedActionHash: string | null = null;
+
+  // Memoization: Track completed operations to prevent redundant work
+  private loadedSigningKeyForUser: string | null = null;
+  private initializedForUser: string | null = null;
+
+  // Promise to track initialization state
+  private initPromise: Promise<void> | null = null;
+
   constructor() {
-    this.deviceId = ''; // Will be initialized in init()
-    this.init();
+    this.deviceId = ''; // Will be initialized when ensureInitialized() is called
+    // Don't auto-initialize - require explicit initialization to prevent race conditions
+  }
+
+  /**
+   * Ensure the service is initialized before use
+   * This prevents race conditions where methods are called before async init completes
+   */
+  async ensureInitialized(): Promise<void> {
+    if (!this.initPromise) {
+      this.initPromise = this.init();
+    }
+    return this.initPromise;
   }
 
   /**
    * Initialize the service asynchronously
    */
   private async init(): Promise<void> {
+    console.log('🔧 [INIT] Starting offlineSecurityService initialization...');
     this.deviceId = await this.getOrCreateDeviceId();
     await this.loadSigningKey();
+    console.log('✅ [INIT] offlineSecurityService initialization completed:', {
+      deviceId: this.deviceId,
+      hasSigningKey: !!this.signingKey,
+      signingKeyVersion: this.signingKeyVersion
+    });
   }
 
   /**
    * Generate or retrieve device ID
+   * Device ID is stored per-user to avoid conflicts when switching users.
+   * For offline-first scenarios, we generate a client-side device ID.
+   * For online scenarios, the server will provide a device ID during registration.
    */
   private async getOrCreateDeviceId(): Promise<string> {
-    let deviceId = await this.storageAdapter.getItem('device_id');
+    // Try to get user-scoped device ID first
+    let deviceId = await this.storageAdapter.getUserScopedItem(this.currentUserId, 'device_id');
+
     if (!deviceId) {
-      deviceId = this.generateSecureId();
-      await this.storageAdapter.setItem('device_id', deviceId);
+      // Fallback to global device ID for backward compatibility
+      deviceId = await this.storageAdapter.getItem('device_id');
+
+      if (deviceId && this.currentUserId) {
+        // Migrate global device ID to user-scoped storage
+        console.log('🔄 [DEVICE-ID] Migrating global device ID to user-scoped storage');
+        await this.storageAdapter.setUserScopedItem(this.currentUserId, 'device_id', deviceId);
+        // Don't remove global device ID yet for backward compatibility
+      }
     }
+
+    if (!deviceId) {
+      // Generate a new device ID for offline-first scenarios
+      // This will be replaced by server's device ID during registration if online
+      deviceId = this.generateSecureId();
+      console.log('🆔 [DEVICE-ID] Generated new device ID for offline-first scenario:', deviceId);
+
+      // Store in user-scoped storage if we have a user ID
+      if (this.currentUserId) {
+        await this.storageAdapter.setUserScopedItem(this.currentUserId, 'device_id', deviceId);
+      } else {
+        // Store globally if no user ID yet
+        await this.storageAdapter.setItem('device_id', deviceId);
+      }
+    }
+
     return deviceId;
   }
 
@@ -144,31 +244,113 @@ class OfflineSecurityService {
    * Set current user ID for scoped storage operations
    */
   setCurrentUserId(userId: string | null): void {
+    const previousUserId = this.currentUserId;
+
+    // IDEMPOTENCY: Skip if setting the same user ID again
+    if (previousUserId === userId) {
+      console.log(`🔍 [IDEMPOTENT] User ID already set to ${userId}, skipping redundant operation`);
+      return;
+    }
+
     this.currentUserId = userId;
-    console.log(`🔑 Set current user ID for offline storage: ${userId || 'null'}`);
+    console.log(`🔑 Set current user ID for offline storage: ${userId || 'null'} (previous: ${previousUserId || 'null'})`);
+
+    // Reset memoization flags for new user
+    this.loadedSigningKeyForUser = null;
+    this.initializedForUser = null;
+
+    // IMPORTANT: Only regenerate device ID when switching between two DIFFERENT non-null users
+    // Do NOT regenerate when:
+    // - Setting user ID for the first time (null -> userId)
+    // - Clearing user ID (userId -> null)
+    if (previousUserId !== null && userId !== null && previousUserId !== userId) {
+      console.log(`🔄 User changed from ${previousUserId} to ${userId}, regenerating device ID...`);
+      this.regenerateDeviceId();
+    } else {
+      console.log(`🔍 Device ID kept: ${this.deviceId} (no regeneration needed)`);
+    }
+
+    // Reset server processed actions count for new user
+    this.serverProcessedActionsCount = 0;
+    this.pendingActionsCount = 0;
+    this.lastPendingActionHash = null;
+    this.lastSyncedActionHash = null;
+    console.log(`🔗 Reset action counters for new user (serverProcessed: 0, pending: 0, lastSyncedHash: null)`);
 
     // Reload signing key for the new user
     this.loadSigningKey();
   }
 
   /**
+   * Regenerate device ID (used when switching users)
+   */
+  private async regenerateDeviceId(): Promise<void> {
+    const newDeviceId = this.generateSecureId();
+
+    // Update in-memory device ID immediately
+    this.deviceId = newDeviceId;
+
+    // Use user-scoped storage if available, otherwise global storage
+    if (this.currentUserId) {
+      await this.storageAdapter.setUserScopedItem(this.currentUserId, 'device_id', newDeviceId);
+      console.log(`🆔 Regenerated device ID for user ${this.currentUserId}: ${newDeviceId}`);
+    } else {
+      await this.storageAdapter.setItem('device_id', newDeviceId);
+      console.log(`🆔 Regenerated global device ID: ${newDeviceId}`);
+    }
+  }
+
+  /**
    * Load signing key from storage (user-scoped)
    */
   private async loadSigningKey(): Promise<void> {
+    // MEMOIZATION: Skip if already loaded for this user
+    if (this.loadedSigningKeyForUser === this.currentUserId) {
+      console.log('🔍 [MEMOIZED] Signing key already loaded for user:', this.currentUserId);
+      return;
+    }
+
     const stored = await this.storageAdapter.getUserScopedItem(this.currentUserId, 'signing_key');
+    console.log('🔑 [LOAD-KEY] Loading signing key from storage:', {
+      userId: this.currentUserId,
+      hasStoredKey: !!stored,
+      timestamp: new Date().toISOString()
+    });
+
     if (stored) {
       try {
         const keyData = JSON.parse(stored);
+        console.log('🔑 [LOAD-KEY] Parsed key data:', {
+          hasKey: !!keyData.key,
+          keyPreview: keyData.key ? keyData.key.substring(0, 16) + '...' : null,
+          keyLength: keyData.key ? keyData.key.length : 0,
+          fullKey: keyData.key,
+          version: keyData.version,
+          expiresAt: new Date(keyData.expires_at).toISOString(),
+          isExpired: keyData.expires_at <= Date.now(),
+          currentTime: new Date().toISOString()
+        });
+
         if (keyData.expires_at > Date.now()) {
           this.signingKey = keyData.key;
           this.signingKeyVersion = keyData.version;
+          this.loadedSigningKeyForUser = this.currentUserId; // Mark as loaded
+          console.log('🔑 [LOAD-KEY] Signing key loaded successfully:', {
+            keyPreview: this.signingKey ? this.signingKey.substring(0, 16) + '...' : 'null',
+            keyLength: this.signingKey ? this.signingKey.length : 0,
+            version: this.signingKeyVersion
+          });
         } else {
           // Key expired, remove it
+          console.warn('🔑 [LOAD-KEY] Signing key expired, removing from storage');
           await this.storageAdapter.removeUserScopedItem(this.currentUserId, 'signing_key');
         }
       } catch (error) {
         console.warn('Failed to load signing key:', error);
       }
+    } else {
+      console.log('🔑 [LOAD-KEY] No signing key found in storage');
+      this.loadedSigningKeyForUser = this.currentUserId; // Mark as attempted (no key found)
     }
   }
 
@@ -197,8 +379,21 @@ class OfflineSecurityService {
    * Update signing key from server
    */
   async updateSigningKey(key: string, version: number, expiresAt: number): Promise<void> {
+    console.log('🔑 [UPDATE-KEY] Received new signing key from server:', {
+      keyPreview: key.substring(0, 16) + '...',
+      keyLength: key.length,
+      fullKey: key,
+      version: version,
+      expiresAt: new Date(expiresAt).toISOString(),
+      currentUserId: this.currentUserId,
+      previousKeyPreview: this.signingKey ? this.signingKey.substring(0, 16) + '...' : null,
+      previousVersion: this.signingKeyVersion
+    });
+
     this.signingKey = key;
     this.signingKeyVersion = version;
+    this.loadedSigningKeyForUser = this.currentUserId; // Mark as loaded
+    this.initializedForUser = this.currentUserId; // Mark as initialized
 
     const keyData = {
       key,
@@ -208,10 +403,15 @@ class OfflineSecurityService {
 
     // Use current user ID for scoped storage
     await this.storageAdapter.setUserScopedItem(this.currentUserId, 'signing_key', JSON.stringify(keyData));
-    console.log(`🔑 Updated signing key for user ${this.currentUserId}: version ${version}, expires ${new Date(expiresAt).toISOString()}`);
+    console.log(`🔑 [UPDATE-KEY] Signing key saved to storage for user ${this.currentUserId}: version ${version}, expires ${new Date(expiresAt).toISOString()}`);
 
     // Update existing collection's signing key version if it exists
     await this.updateCollectionSigningKeyVersion(version);
+
+    console.log('🔑 [UPDATE-KEY] Update complete:', {
+      currentKeyPreview: this.signingKey.substring(0, 16) + '...',
+      currentVersion: this.signingKeyVersion
+    });
   }
 
   /**
@@ -220,7 +420,29 @@ class OfflineSecurityService {
    */
   updateServerProcessedActionsCount(count: number): void {
     this.serverProcessedActionsCount = count;
-    console.log(`🔗 Updated server processed actions count: ${count}`);
+    // Reset pending actions count and hash when server processes actions
+    this.pendingActionsCount = 0;
+    this.lastPendingActionHash = null;
+    console.log(`🔗 Updated server processed actions count: ${count}, reset pending count`);
+  }
+
+  /**
+   * Get the current count of actions processed by the server
+   */
+  getServerProcessedActionsCount(): number {
+    return this.serverProcessedActionsCount;
+  }
+
+  /**
+   * Update the hash of the last synced action for chain continuity
+   * This should be called after successful sync with the hash of the last processed action
+   */
+  updateLastSyncedActionHash(actionHash: string | null): void {
+    console.log('🔗 [SYNC-HASH] Updating last synced action hash:', {
+      previousHash: this.lastSyncedActionHash ? this.lastSyncedActionHash.substring(0, 16) + '...' : null,
+      newHash: actionHash ? actionHash.substring(0, 16) + '...' : null
+    });
+    this.lastSyncedActionHash = actionHash;
   }
 
   /**
@@ -237,8 +459,10 @@ class OfflineSecurityService {
       };
 
       // Recalculate hash with new signing key version - exclude the collection_hash field
-      const collectionForHashing = {
-        user_id: updatedCollection.user_id,
+      const collectionForHashing: Omit<OfflineCollection, 'collection_hash'> = {
+        client_user_id: updatedCollection.client_user_id,
+        firebase_user_id: updatedCollection.firebase_user_id,
+        db_user_id: updatedCollection.db_user_id,
         device_id: updatedCollection.device_id,
         cards_owned: updatedCollection.cards_owned,
         eco_credits: updatedCollection.eco_credits,
@@ -246,6 +470,8 @@ class OfflineSecurityService {
         action_queue: updatedCollection.action_queue,
         last_sync: updatedCollection.last_sync,
         signing_key_version: updatedCollection.signing_key_version,
+        collection_version: updatedCollection.collection_version,
+        last_synced_version: updatedCollection.last_synced_version,
         activeDeck: updatedCollection.activeDeck,
         savedDecks: updatedCollection.savedDecks
       };
@@ -274,6 +500,7 @@ class OfflineSecurityService {
       this.signingKey = sessionKey;
       // For session keys, use a timestamp-based version to ensure uniqueness
       this.signingKeyVersion = Date.now();
+      this.initializedForUser = userId; // Mark as initialized
       console.log(`🔑 Session-based signing key initialized for user: ${userId} with version: ${this.signingKeyVersion}`);
 
       // Update existing collection's signing key version if it exists
@@ -283,6 +510,7 @@ class OfflineSecurityService {
       this.signingKey = await this.deriveKeyFromUserId(userId);
       // Set fallback version to 1 for offline-only mode
       this.signingKeyVersion = 1;
+      this.initializedForUser = userId; // Mark as initialized
       console.log(`🔑 Derived signing key initialized for user: ${userId} with fallback version 1`);
 
       // Update existing collection's signing key version if it exists
@@ -294,18 +522,37 @@ class OfflineSecurityService {
    * Get the hash of the last action in the chain for chain integrity
    */
   private async getLastActionHash(): Promise<string | null> {
+    // If there's a pending action that hasn't been saved yet, use its hash
+    if (this.lastPendingActionHash) {
+      console.log('🔗 [HASH] Using last pending action hash:', {
+        hash: this.lastPendingActionHash.substring(0, 16) + '...',
+        pendingCount: this.pendingActionsCount
+      });
+      return this.lastPendingActionHash;
+    }
+
     const collectionState = await this.getCollectionState();
     const actionQueue = collectionState.action_queue;
 
     console.log('🔗 [HASH] getLastActionHash called:', {
       queueLength: actionQueue.length,
+      pendingActionsCount: this.pendingActionsCount,
       deviceId: this.deviceId,
       signingKeyVersion: this.signingKeyVersion,
       timestamp: new Date().toISOString()
     });
 
     if (actionQueue.length === 0) {
-      console.log('🔗 [HASH] No actions in queue, returning null (first action)');
+      // If queue is empty but we have a last synced action hash, use that for chain continuity
+      if (this.lastSyncedActionHash) {
+        console.log('🔗 [HASH] No actions in queue, using last synced action hash:', {
+          hash: this.lastSyncedActionHash.substring(0, 16) + '...',
+          serverProcessedCount: this.serverProcessedActionsCount
+        });
+        return this.lastSyncedActionHash;
+      }
+
+      console.log('🔗 [HASH] No actions in queue and no last synced hash, returning null (first action)');
       return null; // First action in chain
     }
 
@@ -393,17 +640,21 @@ class OfflineSecurityService {
     const previousHash = await this.getLastActionHash();
 
     // Generate a nonce (sequential number for this device/user combination)
-    // Account for actions already processed by the server
+    // Account for:
+    // 1. Actions already processed by the server (serverProcessedActionsCount)
+    // 2. Pending actions being created in this session but not yet saved (pendingActionsCount)
+    // Note: We don't add localQueueLength because those actions already have nonces assigned
     const collectionState = await this.getCollectionState();
     const localQueueLength = collectionState.action_queue.length;
-    const nonce = this.serverProcessedActionsCount + localQueueLength + 1;
+    const nonce = this.serverProcessedActionsCount + this.pendingActionsCount + 1;
 
     console.log('✍️ [SIGN] Action chain details:', {
       previousHash: previousHash ? previousHash.substring(0, 16) + '...' : null,
       nonce: nonce,
       localQueueLength: localQueueLength,
+      pendingActionsCount: this.pendingActionsCount,
       serverProcessedCount: this.serverProcessedActionsCount,
-      calculation: `${this.serverProcessedActionsCount} + ${localQueueLength} + 1 = ${nonce}`
+      calculation: `${this.serverProcessedActionsCount} + ${this.pendingActionsCount} + 1 = ${nonce} (localQueue: ${localQueueLength} not counted)`
     });
 
     // Capture the key version at the time of signing - ensure it's valid (> 0)
@@ -450,7 +701,10 @@ class OfflineSecurityService {
       keyVersion: keyVersion,
       deviceId: this.deviceId,
       nonce: nonce,
-      previousHash: previousHash ? previousHash.substring(0, 16) + '...' : null
+      previousHash: previousHash ? previousHash.substring(0, 16) + '...' : null,
+      fullPayload: payload,
+      signingKeyPreview: this.signingKey.substring(0, 16) + '...',
+      signingKeyLength: this.signingKey.length
     });
 
     const signature = CryptoJS.HmacSHA256(payload, this.signingKey).toString();
@@ -465,6 +719,8 @@ class OfflineSecurityService {
 
   /**
    * Get current collection state (helper method)
+   * NOTE: This should only be called when a collection already exists
+   * For creating new collections, use createInitialCollection with proper 3-ID parameters
    */
   private async getCollectionState(): Promise<OfflineCollection> {
     const existing = await this.loadOfflineCollection();
@@ -472,17 +728,26 @@ class OfflineSecurityService {
       return existing;
     }
 
-    // Return initial collection if none exists
-    return this.createInitialCollection(this.currentUserId);
+    // Fallback: create minimal collection with client ID only
+    // This should not happen in normal flow - collections should be created explicitly
+    console.warn('⚠️ getCollectionState called without existing collection - creating fallback');
+    return this.createInitialCollection(
+      this.currentUserId || 'anonymous-' + Date.now(),
+      null,
+      null
+    );
   }
 
   /**
    * Create signed offline action with chain integrity
    */
   async createAction(
-    action: 'pack_opened' | 'card_acquired' | 'deck_created' | 'deck_updated' | 'deck_deleted' | 'starter_pack_opened',
+    action: SyncActionType,
     data: Partial<OfflineAction>
   ): Promise<OfflineAction> {
+    // Ensure service is initialized before creating actions
+    await this.ensureInitialized();
+
     console.log('🏭 [CREATE] createAction called:', {
       actionType: action,
       data: data,
@@ -519,13 +784,64 @@ class OfflineSecurityService {
       key_version
     };
 
+    // Calculate and store the hash of this action for the next action in the chain
+    // This must match the server's hash calculation exactly
+    const hashPayload: any = {
+      id: finalAction.id,
+      action: finalAction.action,
+      timestamp: finalAction.timestamp,
+      api_version: finalAction.api_version
+    };
+
+    // Only include optional fields if they exist (matching server behavior)
+    if (finalAction.cardId !== undefined) {
+      hashPayload.card_id = finalAction.cardId;
+    }
+    if (finalAction.quantity !== undefined) {
+      hashPayload.quantity = finalAction.quantity;
+    }
+    if (finalAction.pack_type !== undefined) {
+      hashPayload.pack_type = finalAction.pack_type;
+    }
+    if (finalAction.deck_id !== undefined) {
+      hashPayload.deck_id = finalAction.deck_id;
+    }
+    // NOTE: deck_data is NOT included in hash calculation (server doesn't include it either)
+
+    // Add chain integrity fields
+    hashPayload.device_id = this.deviceId;
+    hashPayload.key_version = finalAction.key_version;
+    hashPayload.previous_hash = finalAction.previous_hash;
+    hashPayload.nonce = finalAction.nonce;
+
+    const hashPayloadString = JSON.stringify(hashPayload);
+    const actionHash = CryptoJS.SHA256(hashPayloadString).toString();
+
+    console.log('🔍 [FRONTEND-HASH] Hash calculation for action:', {
+      actionId: finalAction.id,
+      actionType: finalAction.action,
+      hashPayload: hashPayload,
+      payloadString: hashPayloadString,
+      payloadLength: hashPayloadString.length,
+      calculatedHash: actionHash,
+      hashLength: actionHash.length,
+      hasDeckData: finalAction.deck_data !== undefined,
+      deckDataIncludedInHash: hashPayload.deck_data !== undefined
+    });
+
+    // Store this hash for the next action to use as previous_hash
+    this.lastPendingActionHash = actionHash;
+    this.pendingActionsCount++;
+
     console.log('🏭 [CREATE] Final action created:', {
       id: finalAction.id,
       action: finalAction.action,
       nonce: finalAction.nonce,
       key_version: finalAction.key_version,
       signature: finalAction.signature ? finalAction.signature.substring(0, 16) + '...' : null,
-      previous_hash: finalAction.previous_hash ? finalAction.previous_hash.substring(0, 16) + '...' : null
+      previous_hash: finalAction.previous_hash ? finalAction.previous_hash.substring(0, 16) + '...' : null,
+      calculatedHash: actionHash.substring(0, 16) + '...',
+      pendingActionsCount: this.pendingActionsCount
     });
 
     return finalAction;
@@ -533,13 +849,17 @@ class OfflineSecurityService {
 
   /**
    * Calculate collection hash for integrity
+   * Uses 3-ID architecture for consistent hashing
    */
   calculateCollectionHash(collection: Omit<OfflineCollection, 'collection_hash'>): string {
     const hashData = {
+      client_user_id: collection.client_user_id,
+      firebase_user_id: collection.firebase_user_id,
+      db_user_id: collection.db_user_id,
+      device_id: collection.device_id,
       cards_owned: collection.cards_owned,
       eco_credits: collection.eco_credits,
       xp_points: collection.xp_points,
-      device_id: collection.device_id,
       last_sync: collection.last_sync,
       signing_key_version: collection.signing_key_version
     };
@@ -548,23 +868,43 @@ class OfflineSecurityService {
   }
 
   /**
-   * Load offline collection from storage (user-scoped)
+   * Load offline collection from storage using deterministic 3-ID storage key
+   * @param firebaseUserId - Firebase UID (for registered users)
+   * @param dbUserId - Server-assigned UUID (for guest users)
+   * @param clientUserId - Device-generated UUID (for anonymous users)
    */
-  async loadOfflineCollection(userId?: string | null): Promise<OfflineCollection | null> {
+  async loadOfflineCollection(
+    firebaseUserId: string | null = null,
+    dbUserId: string | null = null,
+    clientUserId: string | null = null
+  ): Promise<OfflineCollection | null> {
+    // Ensure service is initialized before loading collection
+    await this.ensureInitialized();
+
     try {
-      const userIdToUse = userId !== undefined ? userId : this.currentUserId;
-      const stored = await this.storageAdapter.getUserScopedItem(userIdToUse, 'collection');
+      // Determine storage key using same priority as getStorageKey
+      // Priority: firebase_user_id > db_user_id > client_user_id
+      const storageKey = firebaseUserId || dbUserId || clientUserId || this.currentUserId;
+
+      if (!storageKey) {
+        console.warn('⚠️ No storage key available to load collection');
+        return null;
+      }
+
+      const stored = await this.storageAdapter.getUserScopedItem(storageKey, 'collection');
 
       if (!stored) {
-        console.log(`📦 No stored collection found for user: ${userIdToUse || 'global'}`);
+        console.log(`📦 No stored collection found with storage key: ${storageKey}`);
         return null;
       }
 
       const collection: OfflineCollection = JSON.parse(stored);
 
       // Verify collection integrity - exclude the collection_hash field from the calculation
-      const collectionForHashing = {
-        user_id: collection.user_id,
+      const collectionForHashing: Omit<OfflineCollection, 'collection_hash'> = {
+        client_user_id: collection.client_user_id,
+        firebase_user_id: collection.firebase_user_id,
+        db_user_id: collection.db_user_id,
         device_id: collection.device_id,
         cards_owned: collection.cards_owned,
         eco_credits: collection.eco_credits,
@@ -572,13 +912,15 @@ class OfflineSecurityService {
         action_queue: collection.action_queue,
         last_sync: collection.last_sync,
         signing_key_version: collection.signing_key_version,
+        collection_version: collection.collection_version || 1,
+        last_synced_version: collection.last_synced_version || 0,
         activeDeck: collection.activeDeck,
         savedDecks: collection.savedDecks
       };
 
       const expectedHash = this.calculateCollectionHash(collectionForHashing);
       if (collection.collection_hash !== expectedHash) {
-        console.warn(`⚠️ Collection integrity check failed for user: ${userIdToUse}. Data may have been tampered with.`, {
+        console.warn(`⚠️ Collection integrity check failed for storage key: ${storageKey}. Data may have been tampered with.`, {
           expectedHash,
           actualHash: collection.collection_hash,
           signingKeyVersion: collection.signing_key_version,
@@ -587,11 +929,32 @@ class OfflineSecurityService {
         return null;
       }
 
-      console.log(`📦 Loaded collection for user: ${userIdToUse}`, {
+      console.log(`📦 Loaded collection with storage key: ${storageKey}`, {
+        client_user_id: collection.client_user_id,
+        firebase_user_id: collection.firebase_user_id,
+        db_user_id: collection.db_user_id,
         cards_count: Object.keys(collection.cards_owned).length,
         credits: collection.eco_credits,
         pending_actions: collection.action_queue.length
       });
+
+      // CRITICAL: Sync device ID from collection to prevent mismatches
+      // The collection's device ID is the source of truth
+      if (collection.device_id && collection.device_id !== this.deviceId) {
+        console.log(`🔄 [DEVICE-ID-SYNC] Syncing device ID from collection:`, {
+          currentDeviceId: this.deviceId,
+          collectionDeviceId: collection.device_id
+        });
+        this.deviceId = collection.device_id;
+
+        // Save the synced device ID to storage
+        if (this.currentUserId) {
+          await this.storageAdapter.setUserScopedItem(this.currentUserId, 'device_id', this.deviceId);
+        } else {
+          await this.storageAdapter.setItem('device_id', this.deviceId);
+        }
+        console.log(`✅ [DEVICE-ID-SYNC] Device ID synced successfully: ${this.deviceId}`);
+      }
 
       return collection;
     } catch (error) {
@@ -602,18 +965,23 @@ class OfflineSecurityService {
 
   /**
    * Save offline collection to storage (user-scoped)
+   * Uses deterministic storage key based on 3-ID architecture
    */
-  async saveOfflineCollection(collection: Omit<OfflineCollection, 'collection_hash'>, userId?: string | null): Promise<void> {
-    const userIdToUse = userId !== undefined ? userId : this.currentUserId;
-
+  async saveOfflineCollection(collection: Omit<OfflineCollection, 'collection_hash'>): Promise<void> {
     const collectionWithHash: OfflineCollection = {
       ...collection,
       collection_hash: this.calculateCollectionHash(collection)
     };
 
-    await this.storageAdapter.setUserScopedItem(userIdToUse, 'collection', JSON.stringify(collectionWithHash));
+    // Use deterministic storage key: firebase_user_id > db_user_id > client_user_id
+    const storageKey = this.getStorageKey(collectionWithHash);
 
-    console.log(`💾 Saved collection for user: ${userIdToUse}`, {
+    await this.storageAdapter.setUserScopedItem(storageKey, 'collection', JSON.stringify(collectionWithHash));
+
+    console.log(`💾 Saved collection with storage key: ${storageKey}`, {
+      client_user_id: collection.client_user_id,
+      firebase_user_id: collection.firebase_user_id,
+      db_user_id: collection.db_user_id,
       cards_count: Object.keys(collection.cards_owned).length,
       credits: collection.eco_credits,
       pending_actions: collection.action_queue.length
@@ -622,11 +990,19 @@ class OfflineSecurityService {
 
   /**
    * Create initial collection for new user
+   * @param clientUserId - Device-generated UUID (always present)
+   * @param firebaseUserId - Firebase UID (null for anonymous/guest)
+   * @param dbUserId - Server-assigned UUID (null for anonymous, present after guest registration)
    */
-  createInitialCollection(userId: string | null = null): OfflineCollection {
-    // Ensure we have the correct user context and signing key loaded
-    if (userId && userId !== this.currentUserId) {
-      this.setCurrentUserId(userId);
+  createInitialCollection(
+    clientUserId: string,
+    firebaseUserId: string | null = null,
+    dbUserId: string | null = null
+  ): OfflineCollection {
+    // CRITICAL: Device ID must be initialized before creating collection
+    // This method should only be called after ensureInitialized()
+    if (!this.deviceId) {
+      throw new Error('Device ID not initialized. Call ensureInitialized() before creating collection.');
     }
 
     // Wait for signing key to be properly initialized before creating collection
@@ -643,20 +1019,78 @@ class OfflineSecurityService {
     }
 
     const collection: Omit<OfflineCollection, 'collection_hash'> = {
-      user_id: userId,
+      client_user_id: clientUserId,
+      firebase_user_id: firebaseUserId,
+      db_user_id: dbUserId,
       device_id: this.deviceId,
       cards_owned: {},
       eco_credits: 100, // Starting credits
       xp_points: 0,
       action_queue: [],
       last_sync: 0,
-      signing_key_version: signingKeyVersion
+      signing_key_version: signingKeyVersion,
+      collection_version: 1,        // Start at version 1
+      last_synced_version: 0        // Never synced yet
     };
+
+    console.log(`📦 Created initial collection with 3-ID architecture:`, {
+      client_user_id: clientUserId,
+      firebase_user_id: firebaseUserId,
+      db_user_id: dbUserId,
+      device_id: this.deviceId,
+      storage_key: this.getStorageKey(collection as OfflineCollection)
+    });
 
     return {
       ...collection,
       collection_hash: this.calculateCollectionHash(collection)
     };
+  }
+
+  /**
+   * Get deterministic storage key for a collection
+   * Priority: firebase_user_id > db_user_id > client_user_id
+   */
+  getStorageKey(collection: OfflineCollection): string {
+    return collection.firebase_user_id || collection.db_user_id || collection.client_user_id;
+  }
+
+  /**
+   * Increment collection version (for optimistic locking)
+   * Call this whenever the collection is modified locally
+   */
+  incrementCollectionVersion(collection: OfflineCollection): OfflineCollection {
+    const updatedCollection = {
+      ...collection,
+      collection_version: collection.collection_version + 1
+    };
+
+    // Recalculate hash with new version
+    const collectionForHashing: Omit<OfflineCollection, 'collection_hash'> = {
+      client_user_id: updatedCollection.client_user_id,
+      firebase_user_id: updatedCollection.firebase_user_id,
+      db_user_id: updatedCollection.db_user_id,
+      device_id: updatedCollection.device_id,
+      cards_owned: updatedCollection.cards_owned,
+      eco_credits: updatedCollection.eco_credits,
+      xp_points: updatedCollection.xp_points,
+      action_queue: updatedCollection.action_queue,
+      last_sync: updatedCollection.last_sync,
+      signing_key_version: updatedCollection.signing_key_version,
+      collection_version: updatedCollection.collection_version,
+      last_synced_version: updatedCollection.last_synced_version,
+      activeDeck: updatedCollection.activeDeck,
+      savedDecks: updatedCollection.savedDecks
+    };
+
+    updatedCollection.collection_hash = this.calculateCollectionHash(collectionForHashing);
+
+    console.log('📈 [VERSION] Collection version incremented:', {
+      oldVersion: collection.collection_version,
+      newVersion: updatedCollection.collection_version
+    });
+
+    return updatedCollection;
   }
 
   /**
@@ -690,8 +1124,10 @@ class OfflineSecurityService {
     });
 
     // Update collection hash - exclude the collection_hash field from the calculation
-    const collectionForHashing = {
-      user_id: updatedCollection.user_id,
+    const collectionForHashing: Omit<OfflineCollection, 'collection_hash'> = {
+      client_user_id: updatedCollection.client_user_id,
+      firebase_user_id: updatedCollection.firebase_user_id,
+      db_user_id: updatedCollection.db_user_id,
       device_id: updatedCollection.device_id,
       cards_owned: updatedCollection.cards_owned,
       eco_credits: updatedCollection.eco_credits,
@@ -699,6 +1135,8 @@ class OfflineSecurityService {
       action_queue: updatedCollection.action_queue,
       last_sync: updatedCollection.last_sync,
       signing_key_version: updatedCollection.signing_key_version,
+      collection_version: updatedCollection.collection_version,
+      last_synced_version: updatedCollection.last_synced_version,
       activeDeck: updatedCollection.activeDeck,
       savedDecks: updatedCollection.savedDecks
     };
@@ -743,6 +1181,135 @@ class OfflineSecurityService {
    */
   getDeviceId(): string {
     return this.deviceId;
+  }
+
+  /**
+   * Set device ID (used when server provides a device ID during registration)
+   */
+  async setDeviceId(deviceId: string): Promise<void> {
+    console.log('🔧 [DEVICE-ID] Setting device ID:', {
+      oldDeviceId: this.deviceId,
+      newDeviceId: deviceId,
+      userId: this.currentUserId
+    });
+    this.deviceId = deviceId;
+
+    // Store in user-scoped storage if we have a user ID
+    if (this.currentUserId) {
+      await this.storageAdapter.setUserScopedItem(this.currentUserId, 'device_id', deviceId);
+      console.log('✅ [DEVICE-ID] Device ID updated and saved to user-scoped storage');
+
+      // Update the collection's device ID if it exists
+      const collection = await this.getCollectionState();
+      if (collection) {
+        collection.device_id = deviceId;
+        await this.saveOfflineCollection(collection);
+        console.log('✅ [DEVICE-ID] Updated collection device ID');
+      }
+    } else {
+      // Fallback to global storage if no user ID yet
+      await this.storageAdapter.setItem('device_id', deviceId);
+      console.log('✅ [DEVICE-ID] Device ID updated and saved to global storage');
+    }
+  }
+
+  /**
+   * Decrypt signing key using AES-256-CBC (matching server encryption)
+   * @param encryptedData - Encrypted data in format "iv:encrypted"
+   * @param secret - Secret key for decryption (guest secret)
+   * @returns Decrypted signing key
+   */
+  private decryptSigningKey(encryptedData: string, secret: string): string {
+    try {
+      // Check if this is the new format (contains ':' separator)
+      if (!encryptedData.includes(':')) {
+        throw new Error('Invalid encrypted data format - missing IV separator');
+      }
+
+      const parts = encryptedData.split(':');
+      if (parts.length !== 2) {
+        throw new Error('Invalid encrypted data format - expected IV:encrypted');
+      }
+
+      const ivHex = parts[0]!;
+      const encryptedHex = parts[1]!;
+
+      // Normalize the secret key to 32 bytes using SHA-256 (matching server)
+      const normalizedKey = CryptoJS.SHA256(secret);
+
+      // Convert IV from hex to WordArray
+      const iv = CryptoJS.enc.Hex.parse(ivHex);
+
+      // Convert encrypted data from hex to WordArray
+      const encrypted = CryptoJS.enc.Hex.parse(encryptedHex);
+
+      // Create cipherParams object
+      const cipherParams = CryptoJS.lib.CipherParams.create({
+        ciphertext: encrypted
+      });
+
+      // Decrypt using AES-256-CBC
+      const decrypted = CryptoJS.AES.decrypt(cipherParams, normalizedKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+      });
+
+      // Convert to UTF-8 string
+      const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
+
+      if (!decryptedString) {
+        throw new Error('Decryption resulted in empty string');
+      }
+
+      return decryptedString;
+    } catch (error) {
+      console.error('❌ [DECRYPT] Decryption failed:', error);
+      throw new Error(`Failed to decrypt signing key: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Set signing key (used when server provides a signing key during registration)
+   * @param encryptedKey - Encrypted signing key from server
+   * @param keyVersion - Key version number
+   */
+  async setSigningKey(encryptedKey: string, keyVersion: number): Promise<void> {
+    console.log('🔑 [SIGNING-KEY] Setting signing key from server:', {
+      keyVersion,
+      encryptedKeyPreview: encryptedKey.substring(0, 20) + '...',
+      userId: this.currentUserId
+    });
+
+    if (!this.currentUserId) {
+      console.error('❌ [SIGNING-KEY] Cannot set signing key without user ID');
+      throw new Error('User ID required to set signing key');
+    }
+
+    // Get the encryption key from environment or use default
+    // This should match the server's ENCRYPTION_KEY
+    const encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || 'biomasters-dev-key-32-chars-long!';
+
+    try {
+      const decryptedKey = this.decryptSigningKey(encryptedKey, encryptionKey);
+      console.log('🔑 [SIGNING-KEY] Decrypted signing key:', {
+        decryptedKeyPreview: decryptedKey.substring(0, 16) + '...',
+        decryptedKeyLength: decryptedKey.length
+      });
+
+      // Update in-memory signing key
+      this.signingKey = decryptedKey;
+      this.signingKeyVersion = keyVersion;
+
+      // Store encrypted key in user-scoped storage
+      await this.storageAdapter.setUserScopedItem(this.currentUserId, 'signing_key', encryptedKey);
+      await this.storageAdapter.setUserScopedItem(this.currentUserId, 'signing_key_version', keyVersion.toString());
+
+      console.log('✅ [SIGNING-KEY] Signing key updated and saved');
+    } catch (error) {
+      console.error('❌ [SIGNING-KEY] Failed to decrypt signing key:', error);
+      throw new Error('Failed to decrypt signing key from server');
+    }
   }
 
   /**

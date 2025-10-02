@@ -121,7 +121,7 @@ export const EndGameModal: React.FC<EndGameModalProps> = ({
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <IonContent className="">
         {/* Winner Announcement */}
         <IonCard className={`winner-card ${isPlayerWinner ? 'victory' : 'defeat'}`}>
           <IonCardContent className="ion-text-center">

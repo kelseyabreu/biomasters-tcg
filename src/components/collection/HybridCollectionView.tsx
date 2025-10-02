@@ -241,7 +241,7 @@ export const HybridCollectionView: React.FC<CollectionViewProps> = ({
             <IonTitle>{getUIText(UITextId.UI_TAB_COLLECTION)}</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div style={{ textAlign: 'center', marginTop: '50px' }}>
             <h2>{getUIText(UITextId.UI_LOADING_FAILED)}</h2>
             <p>{getUIText(UITextId.UI_LOADING_FAILED_REASONS)}</p>

@@ -457,7 +457,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
+        <IonContent className="">
           {isDeleting && (
             <div className="deletion-progress" data-testid="deletion-progress">
               <IonText>

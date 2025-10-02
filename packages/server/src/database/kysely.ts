@@ -71,64 +71,154 @@ function getDbConfig() {
  */
 
 /**
- * Singleton pool manager to prevent multiple pool creation
+ * Separate connection pools for different workloads
  */
-let globalPool: Pool | null = null;
+let syncPool: Pool | null = null;      // High-priority user operations (sync, auth, etc.)
+let workerPool: Pool | null = null;    // Background worker operations (cleanup, health checks, etc.)
 
 /**
- * Create PostgreSQL pool with error handling (singleton pattern)
+ * Create PostgreSQL pool with error handling and workload-specific configuration
  */
-function createPool() {
+function createSyncPool() {
   // Return existing pool if already created
-  if (globalPool) {
-    console.log('♻️ Reusing existing PostgreSQL pool');
-    return globalPool;
+  if (syncPool) {
+    console.log('♻️ Reusing existing SYNC PostgreSQL pool');
+    return syncPool;
   }
 
   const config = getDbConfig();
-  console.log('🔗 Creating new PostgreSQL pool...');
-  globalPool = new Pool(config);
 
-  // Add comprehensive error handling for the pool
-  globalPool.on('error', (err) => {
-    console.error('🚨 PostgreSQL pool error:', err.message);
-    console.log('🔌 PostgreSQL connection error detected:', err.message);
+  // SYNC POOL: Optimized for user-facing operations (high priority, low latency)
+  const syncConfig = {
+    ...config,
+    max: 8,           // Higher connection limit for user operations
+    min: 3,           // Keep warm connections ready
+    idleTimeoutMillis: 30000,     // Keep connections alive longer
+    connectionTimeoutMillis: 5000, // Fast timeout for user operations
+    acquireTimeoutMillis: 8000,   // Reasonable wait for user operations
+    createTimeoutMillis: 8000,
+    destroyTimeoutMillis: 2000,
+    reapIntervalMillis: 10000,    // Less frequent cleanup
+    createRetryIntervalMillis: 500,
+  };
+
+  console.log('🔗 Creating new SYNC PostgreSQL pool...');
+  syncPool = new Pool(syncConfig);
+
+  // Add comprehensive error handling for the SYNC pool
+  syncPool.on('error', (err) => {
+    console.error('🚨 SYNC PostgreSQL pool error:', err.message);
+    console.log('🔌 SYNC PostgreSQL connection error detected:', err.message);
     // Don't crash the server on pool errors
   });
 
-  globalPool.on('connect', (client) => {
-    console.log('🔗 New PostgreSQL connection established');
+  syncPool.on('connect', (client) => {
+    console.log('🔗 New SYNC PostgreSQL connection established');
 
     // Handle client errors to prevent crashes
     client.on('error', (err) => {
-      console.error('🚨 PostgreSQL client error:', err.message);
+      console.error('🚨 SYNC PostgreSQL client error:', err.message);
     });
   });
 
-  globalPool.on('remove', () => {
+  syncPool.on('remove', () => {
     // Suppress logging during tests to prevent "Cannot log after tests are done" errors
     if (process.env['NODE_ENV'] !== 'test') {
-      console.log('🔌 PostgreSQL connection removed from pool');
+      console.log('🔌 SYNC PostgreSQL connection removed from pool');
     }
   });
 
-  globalPool.on('acquire', () => {
-    console.log('📥 PostgreSQL connection acquired from pool');
-  });
+  // DISABLE EXCESSIVE LOGGING for sync pool (performance critical)
+  // syncPool.on('acquire', () => {
+  //   console.log('📥 SYNC PostgreSQL connection acquired from pool');
+  // });
 
-  globalPool.on('release', () => {
-    console.log('📤 PostgreSQL connection released to pool');
-  });
+  // syncPool.on('release', () => {
+  //   console.log('📤 SYNC PostgreSQL connection released to pool');
+  // });
 
-  return globalPool;
+  return syncPool;
 }
 
 /**
- * Create Kysely database instance with singleton pool
+ * Create PostgreSQL pool for background workers
  */
+function createWorkerPool() {
+  // Return existing pool if already created
+  if (workerPool) {
+    console.log('♻️ Reusing existing WORKER PostgreSQL pool');
+    return workerPool;
+  }
+
+  const config = getDbConfig();
+
+  // WORKER POOL: Optimized for background operations (lower priority, can wait)
+  const workerConfig = {
+    ...config,
+    max: 3,           // Lower connection limit for background operations
+    min: 1,           // Keep minimal warm connections
+    idleTimeoutMillis: 60000,     // Longer idle timeout (workers can wait)
+    connectionTimeoutMillis: 10000, // Longer timeout for background operations
+    acquireTimeoutMillis: 15000,  // Workers can wait longer
+    createTimeoutMillis: 10000,
+    destroyTimeoutMillis: 5000,
+    reapIntervalMillis: 30000,    // More frequent cleanup for workers
+    createRetryIntervalMillis: 1000,
+  };
+
+  console.log('🔗 Creating new WORKER PostgreSQL pool...');
+  workerPool = new Pool(workerConfig);
+
+  // Add comprehensive error handling for the WORKER pool
+  workerPool.on('error', (err) => {
+    console.error('🚨 WORKER PostgreSQL pool error:', err.message);
+    console.log('🔌 WORKER PostgreSQL connection error detected:', err.message);
+    // Don't crash the server on pool errors
+  });
+
+  workerPool.on('connect', (client) => {
+    console.log('🔗 New WORKER PostgreSQL connection established');
+
+    // Handle client errors to prevent crashes
+    client.on('error', (err) => {
+      console.error('🚨 WORKER PostgreSQL client error:', err.message);
+    });
+  });
+
+  workerPool.on('remove', () => {
+    // Suppress logging during tests to prevent "Cannot log after tests are done" errors
+    if (process.env['NODE_ENV'] !== 'test') {
+      console.log('🔌 WORKER PostgreSQL connection removed from pool');
+    }
+  });
+
+  // Keep logging for worker pool (less performance critical)
+  workerPool.on('acquire', () => {
+    console.log('📥 WORKER PostgreSQL connection acquired from pool');
+  });
+
+  workerPool.on('release', () => {
+    console.log('📤 WORKER PostgreSQL connection released to pool');
+  });
+
+  return workerPool;
+}
+
+/**
+ * Create Kysely database instances with separate pools
+ */
+
+// Main database instance for user-facing operations (sync, auth, etc.)
 export const db = new Kysely<Database>({
   dialect: new PostgresDialect({
-    pool: () => Promise.resolve(createPool()), // Use singleton pool with Promise wrapper
+    pool: () => Promise.resolve(createSyncPool()), // Use SYNC pool for user operations
+  }),
+});
+
+// Worker database instance for background operations (cleanup, health checks, etc.)
+export const workerDb = new Kysely<Database>({
+  dialect: new PostgresDialect({
+    pool: () => Promise.resolve(createWorkerPool()), // Use WORKER pool for background operations
   }),
 });
 
@@ -164,18 +254,34 @@ export async function initializeKysely(): Promise<void> {
 }
 
 /**
- * Close the singleton pool (for test cleanup)
+ * Close both connection pools (for test cleanup)
  */
 export async function closeSingletonPool(): Promise<void> {
-  if (globalPool) {
-    try {
-      await globalPool.end();
-      globalPool = null;
-      console.log('✅ Singleton PostgreSQL pool closed');
-    } catch (error) {
-      console.error('❌ Error closing singleton pool:', error);
-    }
+  const closePromises: Promise<void>[] = [];
+
+  if (syncPool) {
+    closePromises.push(
+      syncPool.end().then(() => {
+        syncPool = null;
+        console.log('✅ SYNC PostgreSQL pool closed');
+      }).catch((error) => {
+        console.error('❌ Error closing SYNC pool:', error);
+      })
+    );
   }
+
+  if (workerPool) {
+    closePromises.push(
+      workerPool.end().then(() => {
+        workerPool = null;
+        console.log('✅ WORKER PostgreSQL pool closed');
+      }).catch((error) => {
+        console.error('❌ Error closing WORKER pool:', error);
+      })
+    );
+  }
+
+  await Promise.all(closePromises);
 }
 
 /**
@@ -218,10 +324,13 @@ export async function withRetry<T>(
 }
 
 /**
- * Close database connection
+ * Close database connections
  */
 export async function closeKysely(): Promise<void> {
-  await db.destroy();
+  await Promise.all([
+    db.destroy(),
+    workerDb.destroy()
+  ]);
 }
 
 export default db;

@@ -201,7 +201,7 @@ const Profile: React.FC = () => {
             <IonTitle>Profile</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard>
             <IonCardContent className="text-center">
               <IonIcon icon={person} size="large" color="medium" />
@@ -228,7 +228,7 @@ const Profile: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       
-      <IonContent className="ion-padding">
+      <IonContent className="">
         {/* Profile Header */}
         <IonCard className="profile-header-card">
           <IonCardContent>

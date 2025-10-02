@@ -11,6 +11,7 @@ import { syncService, SyncResult } from '../services/syncService';
 import { getGameSocket } from '../services/gameSocket';
 import { initializeCardMapping } from '@kelseyabreu/shared';
 
+import { UnifiedPackGenerationService, PackGenerationCardData, IUCN_CONSERVATION_DATA } from '@kelseyabreu/shared';
 import { BoosterPackSystem, PackOpeningResult } from '../utils/boosterPackSystem';
 import { RatingUpdate } from '../services/UnifiedGameService';
 import { Card, transformCardDataToCard } from '../types';
@@ -25,12 +26,13 @@ import { gameStateManager } from '../services/GameStateManager';
 import { PhyloGameState as SharedPhyloGameState, CardData, sharedDataLoader } from '@kelseyabreu/shared';
 import type { ClientGameState } from '../types/ClientGameTypes';
 import { nameIdToCardId } from '@kelseyabreu/shared';
+import { starterPackService } from '../services/starterPackService';
 
 // Import unified user types
 import type {
   AuthenticatedUser
 } from '@kelseyabreu/shared';
-import { SyncStatus, UserType } from '@kelseyabreu/shared';
+import { SyncStatus, UserType, SyncActionType } from '@kelseyabreu/shared';
 
 // Global reference to store for user ID access
 let storeRef: any = null;
@@ -38,6 +40,57 @@ let storeRef: any = null;
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Get the current UserType from the user profile
+ * Derives UserType from userProfile instead of maintaining separate boolean
+ */
+function getUserType(state: any): UserType {
+  if (!state.userProfile) {
+    return UserType.ANONYMOUS;
+  }
+  return state.userProfile.user_type || UserType.ANONYMOUS;
+}
+
+/**
+ * Check if the user can sync with the server
+ * ANONYMOUS users cannot sync (no server record)
+ * GUEST, REGISTERED, and ADMIN users can sync
+ */
+function canSync(state: any): boolean {
+  const userType = getUserType(state);
+
+  // ANONYMOUS users have no server record and cannot sync
+  if (userType === UserType.ANONYMOUS) {
+    return false;
+  }
+
+  // Must be online to sync
+  if (!state.isOnline) {
+    return false;
+  }
+
+  // Must have a collection to sync
+  if (!state.offlineCollection) {
+    return false;
+  }
+
+  // GUEST users can sync if they have completed registration
+  if (userType === UserType.GUEST) {
+    return !state.needsRegistration;
+  }
+
+  // REGISTERED and ADMIN users can always sync
+  return true;
+}
+
+/**
+ * Check if the user is in guest mode
+ * Derived from UserType instead of separate boolean
+ */
+function isGuestMode(state: any): boolean {
+  return getUserType(state) === UserType.GUEST;
+}
 
 /**
  * Check if quest is completed based on progress and target
@@ -424,6 +477,7 @@ export interface HybridGameState {
   allSpeciesCards: Card[];
   speciesLoaded: boolean;
   packSystem: BoosterPackSystem | null;
+  unifiedPackService: UnifiedPackGenerationService | null;
 
   // User Identity (new 3-ID system)
   identity: UserIdentity;
@@ -474,7 +528,7 @@ export interface HybridGameState {
   initializeOfflineCollection: (includeStarterPack?: boolean) => void;
   ensureCollectionExists: () => void;
   loadOfflineCollection: () => Promise<void>;
-  saveOfflineCollection: (collection: OfflineCollection) => void;
+  saveOfflineCollection: (collection: OfflineCollection) => Promise<void>;
   recoverActiveGame: () => Promise<void>;
   resumePausedGame: () => void;
   updateStorageManagerUserId: () => void;
@@ -1349,6 +1403,7 @@ export const useHybridGameStore = create<HybridGameState>()(
         allSpeciesCards: [],
         speciesLoaded: false,
         packSystem: null,
+        unifiedPackService: null,
 
         // Online Multiplayer State
         online: {
@@ -1454,18 +1509,31 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Initialize offline collection
-        initializeOfflineCollection: (includeStarterPack: boolean = false) => {
+        initializeOfflineCollection: async (includeStarterPack: boolean = false) => {
           const state = get();
-          const userId = state.userId || state.guestId;
 
-          console.log('🔄 Initializing collection for user:', {
-            userId,
+          // 3-ID Architecture
+          const clientUserId = state.identity.clientUserId;
+          const firebaseUserId = state.firebaseUser?.uid || null;
+          const dbUserId = state.identity.dbUserId || null;
+
+          console.log('🔄 Initializing collection with 3-ID architecture:', {
+            clientUserId,
+            firebaseUserId,
+            dbUserId,
             hasExisting: !!state.offlineCollection,
             includeStarterPack
           });
 
           if (!state.offlineCollection) {
-            const newCollection = offlineSecurityService.createInitialCollection(userId);
+            // Ensure offline security service is initialized before creating collection
+            await offlineSecurityService.ensureInitialized();
+
+            const newCollection = offlineSecurityService.createInitialCollection(
+              clientUserId,
+              firebaseUserId,
+              dbUserId
+            );
 
             // Add starter pack cards if requested
             if (includeStarterPack) {
@@ -1488,8 +1556,33 @@ export const useHybridGameStore = create<HybridGameState>()(
               offlineCollection: newCollection,
               isFirstLaunch: false
             });
-            offlineSecurityService.saveOfflineCollection(newCollection, userId).catch(console.error);
+            offlineSecurityService.saveOfflineCollection(newCollection).catch(console.error);
             console.log('✅ New collection initialized and saved', { includeStarterPack });
+          } else {
+            // Collection exists - update the 3 IDs if they've changed (e.g., after Firebase sign-in)
+            const existingCollection = state.offlineCollection;
+            const needsUpdate =
+              existingCollection.firebase_user_id !== firebaseUserId ||
+              existingCollection.db_user_id !== dbUserId;
+
+            if (needsUpdate) {
+              console.log('🔄 Updating existing collection with new IDs:', {
+                old_firebase_user_id: existingCollection.firebase_user_id,
+                new_firebase_user_id: firebaseUserId,
+                old_db_user_id: existingCollection.db_user_id,
+                new_db_user_id: dbUserId
+              });
+
+              const updatedCollection: OfflineCollection = {
+                ...existingCollection,
+                firebase_user_id: firebaseUserId,
+                db_user_id: dbUserId
+              };
+
+              set({ offlineCollection: updatedCollection });
+              offlineSecurityService.saveOfflineCollection(updatedCollection).catch(console.error);
+              console.log('✅ Collection IDs updated and saved');
+            }
           }
 
           // Also load species data if not already loaded
@@ -1504,22 +1597,27 @@ export const useHybridGameStore = create<HybridGameState>()(
         },
 
         // Ensure collection exists (lazy initialization)
-        ensureCollectionExists: () => {
+        ensureCollectionExists: async () => {
           const state = get();
           if (!state.offlineCollection) {
             console.log('🔧 Lazy-initializing empty collection...');
-            get().initializeOfflineCollection(false); // false = no starter pack
+            await get().initializeOfflineCollection(false); // false = no starter pack
           }
         },
 
         // Load offline collection from storage
         loadOfflineCollection: async () => {
           const state = get();
-          const userId = state.userId || state.guestId;
 
-          console.log('📦 [LoadCollection] Starting collection load...', {
-            userId,
-            hasUserId: !!userId,
+          // Use 3-ID architecture
+          const firebaseUserId = state.firebaseUser?.uid || null;
+          const dbUserId = state.identity.dbUserId || null;
+          const clientUserId = state.identity.clientUserId;
+
+          console.log('📦 [LoadCollection] Starting collection load with 3-ID architecture...', {
+            firebaseUserId,
+            dbUserId,
+            clientUserId,
             isAuthenticated: state.isAuthenticated,
             isGuestMode: state.isGuestMode,
             hasExistingCollection: !!state.offlineCollection,
@@ -1532,37 +1630,14 @@ export const useHybridGameStore = create<HybridGameState>()(
             return;
           }
 
-          // If no userId yet, try to load from any available storage
+          // Load using 3-ID architecture
           let stored: OfflineCollection | null = null;
 
-          if (userId) {
-            // Load for specific user
-            stored = await offlineSecurityService.loadOfflineCollection(userId);
-          } else {
-            // Fallback: try to load from default storage (for page refresh scenarios)
-            console.log('📦 No userId available, trying default storage...');
-            stored = await offlineSecurityService.loadOfflineCollection(null);
-
-            // Also check for any stored collections in localStorage
-            if (!stored) {
-              const allKeys = Object.keys(localStorage);
-              const collectionKeys = allKeys.filter(key => key.includes('biomasters_offline_collection'));
-              console.log('📦 Found collection keys in localStorage:', collectionKeys);
-
-              if (collectionKeys.length > 0) {
-                // Try to load the most recent collection
-                try {
-                  const collectionData = localStorage.getItem(collectionKeys[0]);
-                  if (collectionData) {
-                    stored = JSON.parse(collectionData);
-                    console.log('📦 Loaded collection from fallback key:', collectionKeys[0]);
-                  }
-                } catch (error) {
-                  console.warn('⚠️ Failed to parse fallback collection:', error);
-                }
-              }
-            }
-          }
+          stored = await offlineSecurityService.loadOfflineCollection(
+            firebaseUserId,
+            dbUserId,
+            clientUserId
+          );
 
           if (stored) {
             // Handle migration from old species_owned to new cards_owned format
@@ -1573,8 +1648,18 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               // Simple migration: reset collection to empty since old format is incompatible
               const newCardsOwned: Record<number, any> = {};
+
+              // Migrate to 3-ID architecture
+              // Old collections had user_id, which could be any of the 3 IDs
+              // We use current state to populate the 3 IDs
+              const clientUserId = state.identity.clientUserId;
+              const firebaseUserId = state.firebaseUser?.uid || null;
+              const dbUserId = state.identity.dbUserId || null;
+
               migratedCollection = {
-                user_id: oldStoredCollection.user_id,
+                client_user_id: clientUserId,
+                firebase_user_id: firebaseUserId,
+                db_user_id: dbUserId,
                 device_id: oldStoredCollection.device_id,
                 eco_credits: oldStoredCollection.eco_credits,
                 xp_points: oldStoredCollection.xp_points,
@@ -1582,12 +1667,14 @@ export const useHybridGameStore = create<HybridGameState>()(
                 collection_hash: oldStoredCollection.collection_hash,
                 last_sync: oldStoredCollection.last_sync,
                 signing_key_version: oldStoredCollection.signing_key_version,
+                collection_version: oldStoredCollection.collection_version || 1,
+                last_synced_version: oldStoredCollection.last_synced_version || 0,
                 activeDeck: oldStoredCollection.activeDeck,
                 savedDecks: oldStoredCollection.savedDecks,
                 cards_owned: newCardsOwned
               };
               // Save migrated collection
-              offlineSecurityService.saveOfflineCollection(migratedCollection, userId);
+              offlineSecurityService.saveOfflineCollection(migratedCollection);
             }
 
             const hasCards = Object.keys(migratedCollection.cards_owned || {}).length > 0;
@@ -1600,26 +1687,31 @@ export const useHybridGameStore = create<HybridGameState>()(
               credits: migratedCollection.eco_credits,
               pending_actions: migratedCollection.action_queue.length,
               has_starter_pack: hasCards,
-              user_id: migratedCollection.user_id
+              client_user_id: migratedCollection.client_user_id,
+              firebase_user_id: migratedCollection.firebase_user_id,
+              db_user_id: migratedCollection.db_user_id
             });
           } else {
             console.log('📦 No stored collection found');
-            // Don't initialize immediately if we don't have a userId yet
-            if (userId) {
-              console.log('📦 Initializing new collection for user:', userId);
-              get().initializeOfflineCollection(false); // false = no starter pack, use redemption system
+            // Initialize new collection if we have at least a client ID
+            if (clientUserId) {
+              console.log('📦 Initializing new collection with 3-ID architecture:', {
+                firebaseUserId,
+                dbUserId,
+                clientUserId
+              });
+              await get().initializeOfflineCollection(false); // false = no starter pack, use redemption system
             } else {
-              console.log('📦 Waiting for authentication before initializing collection...');
+              console.log('📦 Waiting for client ID before initializing collection...');
             }
           }
         },
 
         // Save offline collection to storage
-        saveOfflineCollection: (collection: OfflineCollection) => {
-          const state = get();
-          // Use stable client ID for guest users, server ID for registered users
-          const userId = state.isGuestMode ? state.identity.clientUserId : (state.identity.dbUserId || state.identity.clientUserId);
-          offlineSecurityService.saveOfflineCollection(collection, userId).catch(console.error);
+        saveOfflineCollection: async (collection: OfflineCollection) => {
+          // Storage key is now determined automatically by the collection's 3-ID architecture
+          // Priority: firebase_user_id > db_user_id > client_user_id
+          await offlineSecurityService.saveOfflineCollection(collection);
           set({
             offlineCollection: collection,
             pendingActions: collection.action_queue.length
@@ -1663,12 +1755,44 @@ export const useHybridGameStore = create<HybridGameState>()(
             // Initialize card mapping for nameId <-> cardId conversions
             initializeCardMapping(allCards.map(card => ({ cardId: card.cardId, nameId: card.nameId })));
 
+            // Convert Card data to PackGenerationCardData format for unified service
+            console.log('🔍 [DEBUG] Sample card data for pack generation:', {
+              sampleCard: allCards[0],
+              conservation_status: allCards[0]?.conservation_status,
+              conservationStatus: allCards[0]?.conservationStatus,
+              cardId: allCards[0]?.cardId,
+              nameId: allCards[0]?.nameId
+            });
+
+            // Check how many cards have null/undefined conservation_status
+            const cardsWithNullStatus = allCards.filter(card => card.conservation_status == null);
+            const cardsWithValidStatus = allCards.filter(card => card.conservation_status != null);
+            console.log('🔍 [DEBUG] Conservation status analysis:', {
+              totalCards: allCards.length,
+              cardsWithNullStatus: cardsWithNullStatus.length,
+              cardsWithValidStatus: cardsWithValidStatus.length,
+              sampleValidCard: cardsWithValidStatus[0] ? {
+                cardId: cardsWithValidStatus[0].cardId,
+                nameId: cardsWithValidStatus[0].nameId,
+                conservation_status: cardsWithValidStatus[0].conservation_status
+              } : 'None'
+            });
+
+            const packGenerationCards: PackGenerationCardData[] = allCards.map(card => ({
+              id: card.cardId,
+              card_id: card.cardId,
+              common_name: card.nameId, // Use nameId as common_name for now
+              conservation_status_id: card.conservation_status || card.conservationStatus // Handle both snake_case and camelCase
+            }));
+
             const packSystem = new BoosterPackSystem(allCards);
+            const unifiedPackService = new UnifiedPackGenerationService(packGenerationCards);
 
             set({
               allSpeciesCards: allCards,
               speciesLoaded: true,
-              packSystem: packSystem
+              packSystem: packSystem,
+              unifiedPackService: unifiedPackService
             });
           } catch (error) {
             console.error('❌ Failed to load species data:', error);
@@ -1858,6 +1982,7 @@ export const useHybridGameStore = create<HybridGameState>()(
                       guestToken: guestCredentials.guestToken || null,
                       userId: guestCredentials.guestId,
                       firebaseUser: null,
+                      needsRegistration: !guestCredentials.guestSecret || guestCredentials.guestSecret === '', // Only need registration if no secret
                       userProfile: {
                         id: guestCredentials.guestId,
                         username: `Guest-${guestCredentials.guestId.slice(-6).toUpperCase()}`,
@@ -1871,7 +1996,10 @@ export const useHybridGameStore = create<HybridGameState>()(
                         lastSyncTime: new Date()
                       }
                     });
-                    console.log('✅ Guest session restored from secure storage');
+                    console.log('✅ Guest session restored from secure storage', {
+                      hasGuestSecret: !!guestCredentials.guestSecret,
+                      needsRegistration: !guestCredentials.guestSecret || guestCredentials.guestSecret === ''
+                    });
                   } catch (error) {
                     console.warn('⚠️ Failed to restore guest session:', error);
                     await tokenManager.clearGuestCredentials();
@@ -1931,16 +2059,33 @@ export const useHybridGameStore = create<HybridGameState>()(
             console.log('🌐 Device came online');
             set({ isOnline: true });
 
-            // Auto-sync when coming online if authenticated (including guest registration)
+            // Auto-sync when coming online if user can sync
             const state = get();
-            if (state.isAuthenticated && state.offlineCollection) {
-              if (state.isGuestMode && state.needsRegistration) {
-                // Guest needs registration - trigger sync which will handle registration
-                setTimeout(() => state.syncCollection(), 2000);
-              } else if (!state.isGuestMode) {
-                // Regular user sync
-                setTimeout(() => state.syncCollection(), 2000);
-              }
+            const userType = getUserType(state);
+
+            console.log('🌐 [ONLINE] Device came online, checking sync eligibility:', {
+              userType,
+              canSync: canSync(state),
+              needsRegistration: state.needsRegistration
+            });
+
+            // ANONYMOUS users cannot sync (no server record)
+            if (userType === UserType.ANONYMOUS) {
+              console.log('⏭️ [ONLINE] ANONYMOUS user - skipping sync (no server record)');
+              return;
+            }
+
+            // GUEST users need registration first
+            if (userType === UserType.GUEST && state.needsRegistration) {
+              console.log('🔄 [ONLINE] GUEST user needs registration - triggering sync with registration');
+              setTimeout(() => state.syncCollection(), 2000);
+              return;
+            }
+
+            // REGISTERED/ADMIN users or registered GUEST users can sync
+            if (canSync(state)) {
+              console.log('✅ [ONLINE] User can sync - triggering auto-sync');
+              setTimeout(() => state.syncCollection(), 2000);
             }
           };
 
@@ -2039,8 +2184,15 @@ export const useHybridGameStore = create<HybridGameState>()(
             guestToken: undefined
           });
 
+          // CRITICAL: Initialize offline signing key BEFORE creating collection
+          // This ensures the collection is created with the correct signing key version
+          console.log('🔑 Initializing offline signing key for new guest...');
+          await get().initializeOfflineKey();
+          console.log('✅ Offline signing key initialized for guest');
+
           // Initialize offline collection immediately (empty for guest users)
-          get().initializeOfflineCollection(false); // false = no starter pack, use redemption system
+          // This must happen AFTER initializeOfflineKey() to use the correct signing key version
+          await get().initializeOfflineCollection(false); // false = no starter pack, use redemption system
 
           // Setup new guest user (including starter pack)
           await get().handleNewUser();
@@ -2135,8 +2287,62 @@ export const useHybridGameStore = create<HybridGameState>()(
               hasAuth: !!data.auth,
               hasToken: !!data.auth?.token,
               tokenLength: data.auth?.token?.length || 0,
-              tokenPreview: data.auth?.token ? `${data.auth.token.substring(0, 20)}...` : null
+              tokenPreview: data.auth?.token ? `${data.auth.token.substring(0, 20)}...` : null,
+              hasDeviceId: !!(data as any).device?.device_id,
+              deviceId: (data as any).device?.device_id
             });
+
+            // If server sent a device ID, update the offline security service to use it
+            if ((data as any).device?.device_id) {
+              console.log('🔧 Server provided device ID, updating offline security service:', {
+                oldDeviceId: offlineSecurityService.getDeviceId(),
+                newDeviceId: (data as any).device.device_id,
+                currentCollectionDeviceId: get().offlineCollection?.device_id
+              });
+              await offlineSecurityService.setDeviceId((data as any).device.device_id);
+
+              // Also update the in-memory collection's device ID
+              // IMPORTANT: We need to reload the collection from storage after setDeviceId() updates it
+              const firebaseUserId = state.firebaseUser?.uid || null;
+              const dbUserId = state.identity.dbUserId || null;
+              const clientUserId = state.identity.clientUserId;
+
+              const updatedCollection = await offlineSecurityService.loadOfflineCollection(
+                firebaseUserId,
+                dbUserId,
+                clientUserId
+              );
+              console.log('🔍 Reloaded collection from storage:', {
+                hasCollection: !!updatedCollection,
+                deviceId: updatedCollection?.device_id,
+                clientUserId: updatedCollection?.client_user_id,
+                firebaseUserId: updatedCollection?.firebase_user_id,
+                dbUserId: updatedCollection?.db_user_id
+              });
+
+              if (updatedCollection) {
+                set({ offlineCollection: updatedCollection });
+                console.log('✅ Updated in-memory collection device ID from storage:', {
+                  newDeviceId: updatedCollection.device_id,
+                  oldDeviceId: (data as any).device.device_id
+                });
+              } else {
+                console.warn('⚠️ Failed to reload collection from storage after device ID update');
+              }
+            }
+
+            // If server sent a signing key, update the offline security service to use it
+            if ((data as any).device?.signing_key && (data as any).device?.key_version) {
+              console.log('🔑 Server provided signing key, updating offline security service:', {
+                keyVersion: (data as any).device.key_version,
+                encryptedKeyPreview: (data as any).device.signing_key.substring(0, 20) + '...'
+              });
+              await offlineSecurityService.setSigningKey(
+                (data as any).device.signing_key,
+                (data as any).device.key_version
+              );
+              console.log('✅ Signing key updated from server');
+            }
 
             // Update identity with server-assigned user ID
             set((currentState) => ({
@@ -2196,9 +2402,18 @@ export const useHybridGameStore = create<HybridGameState>()(
             console.log('✅ Guest registered with server successfully');
           } catch (error: any) {
             // Handle specific error cases
-            if (error.message?.includes('Guest account already exists')) {
-              console.log('ℹ️ Guest account already exists on server - this is expected for returning users');
+            const errorMessage = error.message || '';
+            const errorResponse = error.response;
+
+            // Check if this is a 409 conflict (user already exists)
+            if (errorResponse?.status === 409 || errorMessage.includes('409') || errorMessage.includes('already exists') || errorMessage.includes('duplicate key')) {
+              console.log('ℹ️ Guest account already exists on server - clearing needsRegistration flag');
+
+              // Clear the needsRegistration flag so sync can proceed
+              set({ needsRegistration: false });
+
               // This is actually success - the guest exists and can sync normally
+              console.log('✅ Guest registration skipped (user already exists), sync can now proceed');
               return;
             }
 
@@ -2465,6 +2680,11 @@ export const useHybridGameStore = create<HybridGameState>()(
 
             console.log('✅ [SignOut] Sign-out process completed successfully');
 
+            // CRITICAL: Clear offline security service user ID to trigger device ID regeneration on next sign-in
+            console.log('🔓 [SignOut] Clearing offline security service user ID...');
+            offlineSecurityService.setCurrentUserId(null);
+            console.log('✅ [SignOut] Offline security service user ID cleared');
+
             // Reset storage manager to default user
             hybridGameStorageManager.setUserId('default-user');
 
@@ -2507,10 +2727,16 @@ export const useHybridGameStore = create<HybridGameState>()(
             throw new Error('User must be authenticated to initialize offline key');
           }
 
+          // IDEMPOTENCY: Check if we already have a signing key for this user
+          if (offlineSecurityService.isInitialized()) {
+            console.log('🔍 [IDEMPOTENT] Offline key already initialized, skipping device registration');
+            return;
+          }
+
           try {
             console.log('🔑 [DEVICE_REG] Starting offline key initialization...');
-            const deviceId = offlineSecurityService.getDeviceId();
-            console.log('🔑 [DEVICE_REG] Device ID:', deviceId, 'User ID:', state.userId);
+            const deviceIdBefore = offlineSecurityService.getDeviceId();
+            console.log('🔑 [DEVICE_REG] Device ID before:', deviceIdBefore, 'User ID:', state.userId);
 
             // Try to get signing key from server first (skip for guest mode)
             if (!state.isGuestMode) {
@@ -2530,7 +2756,7 @@ export const useHybridGameStore = create<HybridGameState>()(
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`
                   },
-                  body: JSON.stringify({ device_id: deviceId })
+                  body: JSON.stringify({ device_id: deviceIdBefore })
                 });
 
                 console.log('🔑 [DEVICE_REG] Server response status:', response.status);
@@ -2559,6 +2785,36 @@ export const useHybridGameStore = create<HybridGameState>()(
                 // Update signing key with version and expiry
                 offlineSecurityService.updateSigningKey(signing_key, signing_key_version || 1, expiresAtTimestamp);
                 console.log('🔑 [DEVICE_REG] ✅ Offline signing key initialized from server');
+
+                // CRITICAL: Check if device ID changed during server registration
+                const deviceIdAfter = offlineSecurityService.getDeviceId();
+                if (deviceIdBefore !== deviceIdAfter) {
+                  console.log('🔄 [DEVICE_REG] Device ID changed during registration:', {
+                    before: deviceIdBefore,
+                    after: deviceIdAfter
+                  });
+
+                  // Update the collection's device ID to match
+                  const firebaseUserId = state.firebaseUser?.uid || null;
+                  const dbUserId = state.identity.dbUserId || null;
+                  const clientUserId = state.identity.clientUserId;
+
+                  const collection = await offlineSecurityService.loadOfflineCollection(
+                    firebaseUserId,
+                    dbUserId,
+                    clientUserId
+                  );
+                  if (collection && collection.device_id !== deviceIdAfter) {
+                    console.log('🔄 [DEVICE_REG] Updating collection device ID:', {
+                      oldDeviceId: collection.device_id,
+                      newDeviceId: deviceIdAfter
+                    });
+                    collection.device_id = deviceIdAfter;
+                    await offlineSecurityService.saveOfflineCollection(collection);
+                    set({ offlineCollection: collection });
+                    console.log('✅ [DEVICE_REG] Collection device ID updated');
+                  }
+                }
 
                 // Handle existing action chain from server
                 if (existing_action_chain && existing_action_chain.length > 0) {
@@ -2610,7 +2866,12 @@ export const useHybridGameStore = create<HybridGameState>()(
             // Auto-initialize empty collection for new users (no starter pack)
             if (!state.offlineCollection) {
               console.log('🔧 Auto-initializing empty collection for new user...');
-              get().initializeOfflineCollection(false); // false = no starter pack
+              const deviceIdBeforeCollection = offlineSecurityService.getDeviceId();
+              console.log('🆔 [COLLECTION-INIT] Device ID before collection init:', deviceIdBeforeCollection);
+              await get().initializeOfflineCollection(false); // false = no starter pack
+              const deviceIdAfterCollection = offlineSecurityService.getDeviceId();
+              console.log('🆔 [COLLECTION-INIT] Device ID after collection init:', deviceIdAfterCollection);
+              console.log('🆔 [COLLECTION-INIT] Collection device ID:', get().offlineCollection?.device_id);
             }
 
             // For Firebase users, ensure backend registration before device registration
@@ -2670,6 +2931,27 @@ export const useHybridGameStore = create<HybridGameState>()(
                     hasOfflineKey: offlineSecurityService.isInitialized()
                   });
 
+                  // IMPORTANT: Reload collection to ensure it has the correct device ID
+                  // The device ID might have been updated during initializeOfflineKey()
+                  const firebaseUserId = state.firebaseUser?.uid || null;
+                  const dbUserId = state.identity.dbUserId || null;
+                  const clientUserId = state.identity.clientUserId;
+
+                  const updatedCollection = await offlineSecurityService.loadOfflineCollection(
+                    firebaseUserId,
+                    dbUserId,
+                    clientUserId
+                  );
+                  if (updatedCollection) {
+                    set({ offlineCollection: updatedCollection });
+                    console.log('✅ [NEW_USER] Reloaded collection with updated device ID:', {
+                      deviceId: updatedCollection.device_id,
+                      clientUserId: updatedCollection.client_user_id,
+                      firebaseUserId: updatedCollection.firebase_user_id,
+                      dbUserId: updatedCollection.db_user_id
+                    });
+                  }
+
                 } else if (response.status === 409) {
                   console.log('🔄 [NEW_USER] ℹ️ User already registered, initializing device...');
                   await get().initializeOfflineKey();
@@ -2677,6 +2959,28 @@ export const useHybridGameStore = create<HybridGameState>()(
                     deviceId: offlineSecurityService.getDeviceId(),
                     hasOfflineKey: offlineSecurityService.isInitialized()
                   });
+
+                  // IMPORTANT: Reload collection to ensure it has the correct device ID
+                  // The device ID might have been updated during initializeOfflineKey()
+                  const firebaseUserId = state.firebaseUser?.uid || null;
+                  const dbUserId = state.identity.dbUserId || null;
+                  const clientUserId = state.identity.clientUserId;
+
+                  const updatedCollection = await offlineSecurityService.loadOfflineCollection(
+                    firebaseUserId,
+                    dbUserId,
+                    clientUserId
+                  );
+                  if (updatedCollection) {
+                    set({ offlineCollection: updatedCollection });
+                    console.log('✅ [NEW_USER] Reloaded collection with updated device ID:', {
+                      deviceId: updatedCollection.device_id,
+                      clientUserId: updatedCollection.client_user_id,
+                      firebaseUserId: updatedCollection.firebase_user_id,
+                      dbUserId: updatedCollection.db_user_id
+                    });
+                  }
+
                 } else {
                   const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
                   console.error('❌ [NEW_USER] Backend registration failed:', {
@@ -2737,7 +3041,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             }
 
             // Create card acquisition action
-            const action = await offlineSecurityService.createAction('card_acquired', {
+            const action = await offlineSecurityService.createAction(SyncActionType.CARD_ACQUIRED, {
               cardId,
               quantity
             });
@@ -2774,7 +3078,7 @@ export const useHybridGameStore = create<HybridGameState>()(
           console.log('🎁 [HybridGameStore] openPack called with packType:', packType);
 
           // Ensure collection exists (lazy initialization)
-          get().ensureCollectionExists();
+          await get().ensureCollectionExists();
 
           // Get state after ensuring collection exists
           const state = get();
@@ -2796,12 +3100,13 @@ export const useHybridGameStore = create<HybridGameState>()(
           });
 
           // Ensure species data is loaded
-          if (!state.speciesLoaded || !state.packSystem) {
+          if (!state.speciesLoaded || !state.packSystem || !state.unifiedPackService) {
             await get().loadSpeciesData();
           }
 
           const packSystem = get().packSystem;
-          if (!packSystem) {
+          const unifiedPackService = get().unifiedPackService;
+          if (!packSystem || !unifiedPackService) {
             throw new Error('Pack system not initialized');
           }
 
@@ -2844,13 +3149,13 @@ export const useHybridGameStore = create<HybridGameState>()(
             let action;
             if (packType === 'starter') {
               // For starter packs, create a starter pack opened action
-              action = await offlineSecurityService.createAction('starter_pack_opened', {
+              action = await offlineSecurityService.createAction(SyncActionType.STARTER_PACK_OPENED, {
                 pack_type: packType
               });
               console.log('📝 Created starter pack opened action for offline sync');
             } else {
               // For regular packs, create a pack opening action
-              action = await offlineSecurityService.createAction('pack_opened', {
+              action = await offlineSecurityService.createAction(SyncActionType.PACK_OPENED, {
                 pack_type: packType
               });
             }
@@ -2866,24 +3171,29 @@ export const useHybridGameStore = create<HybridGameState>()(
             const updatedCards = { ...state.offlineCollection.cards_owned };
 
             if (packType === 'starter') {
-              // Starter pack contains specific cards (3, 4, 5, 6, 7)
-              newCardIds = [3, 4, 5, 6, 7];
+              // Starter pack contains specific cards from starterPackService
+              newCardIds = starterPackService.getStarterCardIds();
               console.log(`🎁 Starter pack contains fixed cards:`, newCardIds);
             } else {
-              // Regular packs use the random generation system
-              const pack = packSystem.generateBoosterPack(`${packType} pack`, config.cards, packType);
-              const packResult: PackOpeningResult = packSystem.generatePackStats(pack);
-              const newNameIds: string[] = packResult.pack.cards.map(card => card.nameId);
+              // Regular packs use the UNIFIED generation system with action ID as deterministic seed
+              console.log(`🎲 [UNIFIED] Using UnifiedPackGenerationService for deterministic pack generation`);
+              console.log(`🎲 [UNIFIED] Pack Type: ${packType}, Seed: ${action.id}, Card Count: ${config.cards}`);
 
-              console.log(`🎁 Pack generated with ${pack.cards.length} cards:`, pack.cards.map(c => c.nameId));
-
-              // Convert nameIds to CardIds
-              newNameIds.forEach(nameId => {
-                const cardId = nameIdToCardId(nameId);
-                if (cardId !== null) {
-                  newCardIds.push(cardId);
-                }
+              // Debug: Check the current card data being used for pack generation
+              const currentState = get();
+              console.log('🔍 [DEBUG-PACK] Frontend card data check:', {
+                totalCards: currentState.allSpeciesCards.length,
+                sampleCard: currentState.allSpeciesCards[0],
+                conservation_status: currentState.allSpeciesCards[0]?.conservation_status,
+                conservationStatus: currentState.allSpeciesCards[0]?.conservationStatus,
+                unifiedServiceExists: !!unifiedPackService
               });
+
+              const packResult = unifiedPackService.generatePack(packType, action.id, config.cards);
+              newCardIds = packResult.cardIds;
+
+              console.log(`🎁 [UNIFIED] Pack generated with ${newCardIds.length} cards: [${newCardIds.join(', ')}]`);
+              console.log(`🎁 [UNIFIED] Rarity breakdown:`, packResult.rarityBreakdown);
             }
 
             // Update collection with new cards
@@ -2948,7 +3258,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
           const deckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-          const action = await offlineSecurityService.createAction('deck_created', {
+          const action = await offlineSecurityService.createAction(SyncActionType.DECK_CREATED, {
             deck_id: deckId,
             deck_data: { name, cards }
           });
@@ -2977,7 +3287,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
         // Update deck
         updateDeck: async (deckId: string, name: string, cards: { cardId: number; quantity: number }[]): Promise<void> => {
-          const action = await offlineSecurityService.createAction('deck_updated', {
+          const action = await offlineSecurityService.createAction(SyncActionType.DECK_UPDATED, {
             deck_id: deckId,
             deck_data: { name, cards }
           });
@@ -3014,7 +3324,7 @@ export const useHybridGameStore = create<HybridGameState>()(
             throw new Error('No collection available');
           }
 
-          const action = await offlineSecurityService.createAction('deck_deleted', {
+          const action = await offlineSecurityService.createAction(SyncActionType.DECK_DELETED, {
             deck_id: deckId,
             deck_data: null
           });
@@ -3081,17 +3391,28 @@ export const useHybridGameStore = create<HybridGameState>()(
             timestamp: new Date().toISOString()
           });
 
-          // Pre-sync validation
-          if (!state.offlineCollection) {
-            throw new Error('Cannot sync: no offline collection available');
+          // Pre-sync validation using canSync() helper
+          const userType = getUserType(state);
+
+          console.log('🔍 [SYNC] Pre-sync validation:', {
+            userType,
+            canSync: canSync(state),
+            isOnline: state.isOnline,
+            hasCollection: !!state.offlineCollection,
+            needsRegistration: state.needsRegistration
+          });
+
+          // ANONYMOUS users cannot sync (no server record)
+          if (userType === UserType.ANONYMOUS) {
+            const error = 'Cannot sync: ANONYMOUS users have no server record. Please sign in or create a guest account.';
+            console.error('❌ [SYNC]', error);
+            throw new Error(error);
           }
 
-          if (!state.isOnline) {
-            throw new Error('Cannot sync: device is offline');
-          }
-
-          if (!state.isAuthenticated) {
-            throw new Error('Cannot sync: user not authenticated');
+          if (!canSync(state)) {
+            const error = 'Cannot sync: user is not eligible for sync (offline, no collection, or needs registration)';
+            console.error('❌ [SYNC]', error);
+            throw new Error(error);
           }
 
           // Check if sync is already in progress
@@ -3101,7 +3422,8 @@ export const useHybridGameStore = create<HybridGameState>()(
           }
 
           // Validate collection integrity before sync
-          const validationResult = syncService.validateCollectionForSync(state.offlineCollection);
+          // canSync() already verified offlineCollection exists, so safe to use non-null assertion
+          const validationResult = syncService.validateCollectionForSync(state.offlineCollection!);
           if (!validationResult.isValid) {
             console.error('❌ Collection validation failed:', validationResult.errors);
             set({
@@ -3202,8 +3524,9 @@ export const useHybridGameStore = create<HybridGameState>()(
             console.log('✅ [SYNC] Authentication token ready, proceeding with sync...');
 
             // Perform sync with comprehensive error handling
+            // canSync() already verified offlineCollection exists
             const result = await syncService.syncWithServer(
-              state.offlineCollection,
+              state.offlineCollection!,
               authToken,
               state.syncServiceState,
               conflictResolutions
@@ -3242,7 +3565,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               // Save collection with error handling
               try {
-                get().saveOfflineCollection(updatedCollection);
+                await get().saveOfflineCollection(updatedCollection);
                 console.log('✅ [SYNC] Collection saved locally successfully');
               } catch (saveError) {
                 console.error('❌ [SYNC] Failed to save synced collection:', saveError);
@@ -3278,7 +3601,7 @@ export const useHybridGameStore = create<HybridGameState>()(
 
               console.log('✅ Sync completed successfully:', {
                 conflictsResolved: (result.conflicts || []).length,
-                actionsProcessed: state.offlineCollection.action_queue.length,
+                actionsProcessed: state.offlineCollection!.action_queue.length,
                 newCredits: updatedCollection.eco_credits,
                 newXP: updatedCollection.xp_points
               });
@@ -3520,49 +3843,42 @@ export const useHybridGameStore = create<HybridGameState>()(
         // Force refresh collection state from storage
         refreshCollectionState: async () => {
           const state = get();
-          // Use the same user ID logic as saveOfflineCollection for consistency
-          const userId = state.isGuestMode ? state.identity.clientUserId : (state.identity.dbUserId || state.identity.clientUserId);
-          console.log('🔄 Refreshing collection state for user:', {
-            userId,
+
+          // Use 3-ID architecture to determine storage key
+          const firebaseUserId = state.firebaseUser?.uid || null;
+          const dbUserId = state.identity.dbUserId || null;
+          const clientUserId = state.identity.clientUserId;
+
+          console.log('🔄 Refreshing collection state with 3-ID architecture:', {
+            firebaseUserId,
+            dbUserId,
+            clientUserId,
             isGuestMode: state.isGuestMode,
-            clientUserId: state.identity.clientUserId,
-            dbUserId: state.identity.dbUserId
+            isAuthenticated: state.isAuthenticated
           });
 
-          const stored = await offlineSecurityService.loadOfflineCollection(userId);
+          const stored = await offlineSecurityService.loadOfflineCollection(
+            firebaseUserId,
+            dbUserId,
+            clientUserId
+          );
+
           if (stored) {
             set({
               offlineCollection: stored,
               pendingActions: stored.action_queue.length
             });
             console.log('🔄 Collection state refreshed:', {
-              user_id: stored.user_id,
+              client_user_id: stored.client_user_id,
+              firebase_user_id: stored.firebase_user_id,
+              db_user_id: stored.db_user_id,
               cards_count: Object.keys(stored.cards_owned).length,
               credits: stored.eco_credits,
               pending_actions: stored.action_queue.length
             });
           } else {
-            console.log('🔄 No collection found during refresh, trying fallback...');
-            // Try fallback with legacy user ID
-            const fallbackUserId = state.userId || state.guestId;
-            console.log('🔄 Trying fallback user ID:', fallbackUserId);
-
-            const fallbackStored = await offlineSecurityService.loadOfflineCollection(fallbackUserId);
-            if (fallbackStored) {
-              set({
-                offlineCollection: fallbackStored,
-                pendingActions: fallbackStored.action_queue.length
-              });
-              console.log('✅ Collection loaded with fallback user ID:', {
-                user_id: fallbackStored.user_id,
-                cards_count: Object.keys(fallbackStored.cards_owned).length,
-                credits: fallbackStored.eco_credits,
-                pending_actions: fallbackStored.action_queue.length
-              });
-            } else {
-              console.log('🔄 No collection found with fallback, initializing...');
-              get().loadOfflineCollection().catch(console.error);
-            }
+            console.log('🔄 No collection found during refresh, initializing new collection...');
+            await get().initializeOfflineCollection(false);
           }
         },
 

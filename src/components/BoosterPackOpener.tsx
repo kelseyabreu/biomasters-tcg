@@ -45,11 +45,13 @@ const BoosterPackOpener: React.FC<BoosterPackOpenerProps> = ({ allCards }) => {
 
   const openBoosterPack = async () => {
     setIsOpening(true);
-    
+
     // Simulate pack opening animation delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const pack = packSystem.generateBoosterPack('Species Conservation Pack');
+
+    // Generate a demo seed for this pack opening
+    const demoSeed = `demo-${Date.now()}-${Math.random()}`;
+    const pack = packSystem.generateBoosterPack('Species Conservation Pack', 8, 'basic', demoSeed);
     const result = packSystem.generatePackStats(pack);
     
     setLastOpenedPack(result);

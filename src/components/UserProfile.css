@@ -6,6 +6,9 @@
   margin: 0;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .profile-header {
@@ -138,7 +141,6 @@
 
 .account-actions ion-button {
   flex: 1;
-  min-width: 120px;
   margin: 0;
 }
 
@@ -193,21 +195,37 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .profile-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
+    gap: 8px;
   }
 
-  .user-info {
-    text-align: center;
+  .user-info ion-card-title {
+    font-size: 1.2rem;
+  }
+
+  .account-status ion-badge {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+
+  .cta-section {
+    margin: 12px 0;
+  }
+
+  .protection-cta {
+    font-size: 0.9rem;
+  }
+
+  .cta-subtitle {
+    font-size: 0.8rem;
   }
 
   .account-actions {
-    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
   }
 
   .account-actions ion-button {
-    min-width: auto;
+    font-size: 0.85rem;
   }
 }
 

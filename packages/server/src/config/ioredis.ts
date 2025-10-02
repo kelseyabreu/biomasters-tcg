@@ -334,10 +334,12 @@ export class CacheManager {
     }
 
     try {
+      // Serialize value to JSON string for Redis storage
+      const serializedValue = JSON.stringify(value);
       if (expirationSeconds) {
-        await client.setex(key, expirationSeconds, value);
+        await client.setex(key, expirationSeconds, serializedValue);
       } else {
-        await client.set(key, value);
+        await client.set(key, serializedValue);
       }
     } catch (error) {
       console.warn('Redis cache set failed, using memory fallback:', error);
@@ -358,7 +360,15 @@ export class CacheManager {
 
     try {
       const value = await client.get(key);
-      return value as T;
+      if (value === null) return null;
+
+      // Parse JSON string back to object
+      try {
+        return JSON.parse(value) as T;
+      } catch (parseError) {
+        console.warn('Failed to parse cached value, returning null:', parseError);
+        return null;
+      }
     } catch (error) {
       console.warn('Redis cache get failed, using memory fallback:', error);
       return MemoryCache.get<T>(key);

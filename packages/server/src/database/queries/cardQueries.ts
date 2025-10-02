@@ -8,7 +8,8 @@ import { db } from '../kysely';
 import { CardId } from '@kelseyabreu/shared';
 
 export interface CardWithRelations {
-  id: number;
+  id: string; // UUID primary key for database relationships
+  card_id: number; // Integer game logic identifier (required)
   card_name: string;
   trophic_level: number | null;
   trophic_category_id: number;
@@ -55,17 +56,30 @@ export interface AbilityWithEffects {
   description: string | null;
 }
 
+// Simple in-memory cache for cards (invalidated on server restart)
+let cardsCache: CardWithRelations[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Fetch all cards with their keywords and abilities using database-side aggregation
  * This is the most efficient way to get complete card data
+ * Includes simple caching to avoid repeated database queries
  */
 export async function getAllCardsWithRelations(): Promise<CardWithRelations[]> {
+  // Check if cache is valid
+  const now = Date.now();
+  if (cardsCache && (now - cacheTimestamp) < CACHE_TTL_MS) {
+    console.log(`📚 [CACHE] Using cached cards (${cardsCache.length} cards, age: ${Math.round((now - cacheTimestamp) / 1000)}s)`);
+    return cardsCache;
+  }
   const result = await db
     .selectFrom('cards as c')
     .leftJoin('card_keywords as ck', 'c.id', 'ck.card_id')
     .leftJoin('card_abilities as ca', 'c.id', 'ca.card_id')
     .select([
       'c.id',
+      'c.card_id',
       'c.card_name',
       'c.trophic_level',
       'c.trophic_category_id',
@@ -96,6 +110,7 @@ export async function getAllCardsWithRelations(): Promise<CardWithRelations[]> {
     ])
     .groupBy([
       'c.id',
+      'c.card_id',
       'c.card_name',
       'c.trophic_level',
       'c.trophic_category_id',
@@ -120,7 +135,14 @@ export async function getAllCardsWithRelations(): Promise<CardWithRelations[]> {
     .execute();
 
   // Convert DECIMAL fields to numbers
-  return result.map(processCardDecimalFields);
+  const processedCards = result.map(processCardDecimalFields);
+
+  // Update cache
+  cardsCache = processedCards;
+  cacheTimestamp = Date.now();
+  console.log(`📚 [CACHE] Cached ${processedCards.length} cards from database`);
+
+  return processedCards;
 }
 
 /**

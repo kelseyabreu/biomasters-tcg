@@ -208,7 +208,9 @@ export const CollectionDebugPanel: React.FC = () => {
             <IonText>
               <pre style={{ fontSize: '12px', overflow: 'auto' }}>
                 {JSON.stringify({
-                  user_id: offlineCollection.user_id,
+                  client_user_id: offlineCollection.client_user_id,
+                  firebase_user_id: offlineCollection.firebase_user_id,
+                  db_user_id: offlineCollection.db_user_id,
                   device_id: offlineCollection.device_id,
                   cards_count: Object.keys(offlineCollection.cards_owned).length,
                   eco_credits: offlineCollection.eco_credits,

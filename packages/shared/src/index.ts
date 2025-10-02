@@ -16,6 +16,11 @@ export * from './types';
 
 // Export shared utilities
 export * from './utils/cardIdHelpers';
+export { SeededRandom } from './utils/SeededRandom';
+
+// Export services
+export { UnifiedPackGenerationService } from './services/packGenerationService';
+export type { PackGenerationResult, PackGenerationCardData } from './services/packGenerationService';
 
 export * from './data/IServerDataLoader';
 export {

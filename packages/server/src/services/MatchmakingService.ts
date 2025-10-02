@@ -4,7 +4,7 @@
  */
 
 import { getIORedisClient, isIORedisAvailable } from '../config/ioredis';
-import { db } from '../database/kysely';
+import { workerDb as db } from '../database/kysely';
 import { getPubSubClient, PUBSUB_TOPICS, publishMessage } from '../config/pubsub';
 import { MatchmakingRequest, MatchmakingQueueEntry } from '@kelseyabreu/shared';
 

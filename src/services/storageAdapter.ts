@@ -320,17 +320,20 @@ function createWebStorageAdapter(
           // Large item - use IndexedDB
           await indexedDBHelper.setItem(prefixedKey, value);
 
-          // Remove from localStorage if it exists there
-          localStorage.removeItem(prefixedKey);
+          // Remove from localStorage if it exists there (synchronous, safe)
+          try {
+            localStorage.removeItem(prefixedKey);
+          } catch (e) {
+            // Ignore localStorage errors
+          }
 
           log(`Stored large item in IndexedDB: ${key}`, { size: value.length });
         } else {
           // Small item - use localStorage
           localStorage.setItem(prefixedKey, value);
 
-          // Remove from IndexedDB if it exists there
-          await indexedDBHelper.removeItem(prefixedKey);
-
+          // Don't remove from IndexedDB - it's not worth the transaction overhead
+          // The getItem method will prefer localStorage anyway
           log(`Stored item in localStorage: ${key}`, { size: value.length });
         }
       } catch (error) {
@@ -622,6 +625,12 @@ function createIndexedDBHelper(debug: boolean) {
           request.onsuccess = () => resolve();
         });
       } catch (error) {
+        // Don't throw if the database is closing or the item doesn't exist
+        // This is a non-critical operation that can fail gracefully
+        if (error instanceof Error && error.message.includes('closing')) {
+          console.warn(`⚠️ [IndexedDBHelper] Database closing while removing ${key}, ignoring`);
+          return;
+        }
         console.error(`❌ [IndexedDBHelper] Error removing item ${key}:`, error);
         throw error;
       }

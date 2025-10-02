@@ -204,6 +204,19 @@ export interface SyncActionsLogTable {
   processed_at: Generated<Date>;
   status: 'success' | 'conflict' | 'rejected';
   conflict_reason: string | null;
+  action_data: string | null; // JSONB stored as string, contains full action payload
+}
+
+export interface SyncTransactionsTable {
+  id: Generated<string>;
+  transaction_id: string;
+  user_id: string;
+  device_id: string;
+  status: 'pending' | 'completed' | 'failed';
+  actions_count: number;
+  created_at: Generated<Date>;
+  completed_at: Date | null;
+  error_message: string | null;
 }
 
 // BioMasters Engine Tables
@@ -577,6 +590,7 @@ export interface Database {
   device_sync_states: DeviceSyncStatesTable;
   device_signing_keys: DeviceSigningKeysTable;
   sync_actions_log: SyncActionsLogTable;
+  sync_transactions: SyncTransactionsTable;
   offline_action_queue: OfflineActionQueueTable;
 
   // BioMasters Engine tables

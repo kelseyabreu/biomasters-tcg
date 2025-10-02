@@ -280,6 +280,93 @@ const OnlineMultiplayer: React.FC = () => {
     }
   }, [isAuthenticated, isOnline]);
 
+  // Tab visibility tracking for matchmaking timeout
+  useEffect(() => {
+    const HIDDEN_TAB_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
+    let hiddenStartTime: number | null = null;
+    let accumulatedHiddenTime = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && online.matchmaking.isSearching) {
+        // Tab became hidden while matchmaking
+        console.log('⚠️ [OnlineMultiplayer] Tab hidden while matchmaking - starting timeout timer');
+        hiddenStartTime = Date.now();
+
+        // Set timeout for remaining time (2 minutes - already accumulated time)
+        const remainingTime = HIDDEN_TAB_TIMEOUT - accumulatedHiddenTime;
+
+        if (remainingTime > 0) {
+          timeoutId = setTimeout(() => {
+            if (online.matchmaking.isSearching) {
+              console.log('⏰ [OnlineMultiplayer] Tab hidden timeout reached - cancelling matchmaking');
+              cancelMatchmaking();
+              setShowToast({
+                show: true,
+                message: getUIText(UITextId.UI_MATCHMAKING_CANCELLED) + ' - Tab was hidden too long',
+                color: 'warning'
+              });
+            }
+          }, remainingTime);
+        } else {
+          // Already exceeded time limit, cancel immediately
+          console.log('⏰ [OnlineMultiplayer] Tab hidden time limit already exceeded - cancelling matchmaking');
+          cancelMatchmaking();
+          setShowToast({
+            show: true,
+            message: getUIText(UITextId.UI_MATCHMAKING_CANCELLED) + ' - Tab was hidden too long',
+            color: 'warning'
+          });
+        }
+      } else if (!document.hidden && hiddenStartTime !== null) {
+        // Tab became visible again
+        const sessionHiddenTime = Date.now() - hiddenStartTime;
+        accumulatedHiddenTime += sessionHiddenTime;
+
+        console.log(`✅ [OnlineMultiplayer] Tab visible again. Session hidden: ${Math.round(sessionHiddenTime / 1000)}s, Total hidden: ${Math.round(accumulatedHiddenTime / 1000)}s, Remaining time: ${Math.round((HIDDEN_TAB_TIMEOUT - accumulatedHiddenTime) / 1000)}s`);
+
+        // Clear the timeout since user is back
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
+        hiddenStartTime = null;
+
+        // Reset accumulated time if matchmaking stopped
+        if (!online.matchmaking.isSearching) {
+          accumulatedHiddenTime = 0;
+        }
+      }
+    };
+
+    // Reset accumulated time when matchmaking starts/stops
+    if (online.matchmaking.isSearching) {
+      // Reset when starting new search
+      if (accumulatedHiddenTime > 0) {
+        console.log('🔄 [OnlineMultiplayer] New matchmaking session - resetting hidden time tracker');
+        accumulatedHiddenTime = 0;
+      }
+    } else {
+      // Clear everything when not searching
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      hiddenStartTime = null;
+      accumulatedHiddenTime = 0;
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [online.matchmaking.isSearching, cancelMatchmaking, getUIText]);
+
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
@@ -503,7 +590,7 @@ const OnlineMultiplayer: React.FC = () => {
             <IonTitle>{getUIText(UITextId.UI_ONLINE_MULTIPLAYER)}</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div className="auth-required">
             <IonIcon icon={people} size="large" color="medium" />
             <h2>{getUIText(UITextId.UI_SIGN_IN_REQUIRED)}</h2>
@@ -588,6 +675,9 @@ const OnlineMultiplayer: React.FC = () => {
                     <h3>{getUIText(UITextId.UI_SEARCHING_FOR_MATCH)}</h3>
                     <p>{getUIText(UITextId.UI_GAME_MODE)}: {selectedGameMode}</p>
                     <p>{getUIText(UITextId.UI_QUEUE_TIME)}: {formatTime(online.matchmaking.queueTime)}</p>
+                    <p style={{ fontSize: '0.8em', color: 'var(--ion-color-medium)', marginTop: '8px' }}>
+                      💡 Keep this tab active - matchmaking will cancel after 2 minutes if tab is hidden
+                    </p>
                     <IonProgressBar type="indeterminate" color="primary" />
                     <IonButton
                       fill="outline"
@@ -599,6 +689,29 @@ const OnlineMultiplayer: React.FC = () => {
                       <IonIcon icon={close} slot="start" />
                       {getUIText(UITextId.UI_CANCEL_SEARCH)}
                     </IonButton>
+
+                    {/* Development test button - remove in production */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        onClick={() => {
+                          console.log('🧪 [TEST] Simulating tab visibility change');
+                          // Simulate tab becoming hidden
+                          Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+                          document.dispatchEvent(new Event('visibilitychange'));
+
+                          // Simulate tab becoming visible again after 1 second
+                          setTimeout(() => {
+                            Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+                            document.dispatchEvent(new Event('visibilitychange'));
+                          }, 1000);
+                        }}
+                        style={{ marginTop: '8px' }}
+                      >
+                        🧪 Test Tab Visibility
+                      </IonButton>
+                    )}
                   </div>
                 ) : (
                   <div className="matchmaking-ready">
@@ -838,7 +951,7 @@ const OnlineMultiplayer: React.FC = () => {
               <IonTitle>{getUIText(UITextId.UI_MATCH_FOUND)}</IonTitle>
             </IonToolbar>
           </IonHeader>
-          <IonContent className="ion-padding">
+          <IonContent className="">
             {matchFound && (
               <div style={{ textAlign: 'center' }}>
                 <IonIcon icon={gameController} size="large" color="success" style={{ marginBottom: '16px' }} />

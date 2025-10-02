@@ -1,7 +1,8 @@
 import { Redis } from 'ioredis';
-import { db } from '../database/kysely';
+import { workerDb as db } from '../database/kysely';
 import { SessionLeaseManager } from './SessionLeaseManager';
 import { DistributedStateManager } from './DistributedStateManager';
+import { SessionStatus, SessionEndReason } from '@kelseyabreu/shared';
 
 // Simple logger for now
 const logger = {
@@ -105,13 +106,75 @@ export class GameWorker {
 
   /**
    * Renew leases for all owned sessions
+   * Also validates that owned sessions should still be owned
    */
   private async renewAllLeases(): Promise<void> {
-    const renewalPromises = Array.from(this.ownedSessions).map(sessionId =>
+    const sessionsToCheck = Array.from(this.ownedSessions);
+
+    // Renew leases
+    const renewalPromises = sessionsToCheck.map(sessionId =>
       this.sessionLeaseManager.renewLease(sessionId)
     );
-
     await Promise.all(renewalPromises);
+
+    // Validate each owned session to see if it should be ended
+    for (const sessionId of sessionsToCheck) {
+      await this.validateOwnedSession(sessionId);
+    }
+  }
+
+  /**
+   * Validate an owned session to see if it should be ended
+   */
+  private async validateOwnedSession(sessionId: string): Promise<void> {
+    try {
+      const session = await db.selectFrom('game_sessions')
+        .selectAll()
+        .where('id', '=', sessionId)
+        .executeTakeFirst();
+
+      if (!session) {
+        logger.warn(`Owned session ${sessionId} not found in database, cleaning up`);
+        await this.cleanupSession(sessionId);
+        return;
+      }
+
+      // If already finished, clean up
+      if (session.status === SessionStatus.FINISHED ||
+          session.status === SessionStatus.CANCELLED ||
+          session.status === SessionStatus.ABANDONED) {
+        logger.info(`Owned session ${sessionId} is ${session.status}, cleaning up`);
+        await this.cleanupSession(sessionId);
+        return;
+      }
+
+      const timeSinceCreated = Date.now() - new Date(session.created_at).getTime();
+      const timeSinceUpdate = Date.now() - new Date(session.updated_at).getTime();
+
+      // Check waiting sessions
+      if (session.status === SessionStatus.WAITING) {
+        if (timeSinceCreated > 300000) { // 5 minutes
+          logger.info(`Owned session ${sessionId} in lobby for 5+ minutes, ending`);
+          await this.forceEndSession(sessionId, SessionEndReason.LOBBY_TIMEOUT);
+        } else if (timeSinceUpdate > 180000) { // 3 minutes
+          logger.info(`Owned session ${sessionId} in lobby with 3+ minutes inactivity, ending`);
+          await this.forceEndSession(sessionId, SessionEndReason.LOBBY_INACTIVITY);
+        }
+      }
+
+      // Check playing sessions
+      if (session.status === SessionStatus.PLAYING) {
+        if (timeSinceUpdate > 600000) { // 10 minutes
+          logger.info(`Owned session ${sessionId} inactive for 10+ minutes, ending`);
+          await this.forceEndSession(sessionId, SessionEndReason.ABANDONMENT_TIMEOUT);
+        } else if (timeSinceUpdate > 180000) { // 3 minutes
+          logger.info(`Owned session ${sessionId} inactive for 3+ minutes, ending`);
+          await this.forceEndSession(sessionId, SessionEndReason.CONNECTION_TIMEOUT);
+        }
+      }
+    } catch (error) {
+      logger.error(`Failed to validate owned session ${sessionId}:`, error);
+    }
   }
 
   async detectAndClaimOrphans(): Promise<void> {
@@ -124,8 +187,11 @@ export class GameWorker {
   // Layer 3: Dead worker detection
   const deadWorkerSessions = await this.findDeadWorkerSessions();
 
+  // Layer 4: Abandonment markers (sessions with no connected players)
+  const abandonedSessions = await this.checkAbandonmentMarkers();
+
   // Combine all detected orphans (remove duplicates)
-  const allOrphans = new Set([...expiredSessions, ...staleSessions, ...deadWorkerSessions]);
+  const allOrphans = new Set([...expiredSessions, ...staleSessions, ...deadWorkerSessions, ...abandonedSessions]);
 
   if (allOrphans.size > 0) {
     logger.info(`Found ${allOrphans.size} potential orphan sessions`);
@@ -163,18 +229,78 @@ async findDeadWorkerSessions(): Promise<string[]> {
 
 async findStaleSessionsInDatabase(): Promise<string[]> {
   try {
-    const staleThreshold = new Date(Date.now() - 300000); // 5 minutes
+    const now = Date.now();
+    const waitingStaleThreshold = new Date(now - 300000); // 5 minutes for waiting
+    const playingStaleThreshold = new Date(now - 600000); // 10 minutes for playing
 
-    const staleSessions = await db
+    // Find stale waiting sessions (lobby timeout)
+    const staleWaitingSessions = await db
       .selectFrom('game_sessions')
       .select('id')
-      .where('status', '=', 'playing')
-      .where('last_action_at' as any, '<', staleThreshold)
+      .where('status', '=', SessionStatus.WAITING)
+      .where('created_at', '<', waitingStaleThreshold)
       .execute();
 
-    return staleSessions.map(s => s.id);
+    // Find stale playing sessions (game timeout)
+    const stalePlayingSessions = await db
+      .selectFrom('game_sessions')
+      .select('id')
+      .where('status', '=', SessionStatus.PLAYING)
+      .where('updated_at', '<', playingStaleThreshold)
+      .execute();
+
+    const allStaleSessions = [
+      ...staleWaitingSessions.map(s => s.id),
+      ...stalePlayingSessions.map(s => s.id)
+    ];
+
+    if (allStaleSessions.length > 0) {
+      logger.info(`Found ${allStaleSessions.length} stale sessions (${staleWaitingSessions.length} waiting, ${stalePlayingSessions.length} playing)`);
+    }
+
+    return allStaleSessions;
   } catch (error) {
     logger.error(`Failed to find stale sessions:`, error);
+    return [];
+  }
+}
+
+/**
+ * Check Redis for abandonment markers (sessions with no connected players)
+ */
+async checkAbandonmentMarkers(): Promise<string[]> {
+  try {
+    const redis = this.sessionLeaseManager['redis']; // Access Redis from SessionLeaseManager
+    const keys = await redis.keys('session:*:abandonment_check');
+    const abandonedSessions: string[] = [];
+
+    for (const key of keys) {
+      const data = await redis.get(key);
+      if (!data) continue;
+
+      try {
+        const { sessionId, markedAt } = JSON.parse(data);
+        const timeSinceMarked = Date.now() - markedAt;
+
+        // If marked for 3+ minutes, consider abandoned
+        if (timeSinceMarked >= 180000) {
+          logger.info(`Session ${sessionId} marked for abandonment ${Math.round(timeSinceMarked / 1000)}s ago`);
+          abandonedSessions.push(sessionId);
+          await redis.del(key); // Clean up marker
+        }
+      } catch (parseError) {
+        logger.error(`Failed to parse abandonment marker ${key}:`, parseError);
+        await redis.del(key); // Clean up invalid marker
+      }
+    }
+
+    if (abandonedSessions.length > 0) {
+      logger.info(`Found ${abandonedSessions.length} sessions marked for abandonment`);
+    }
+
+    return abandonedSessions;
+  } catch (error) {
+    logger.error('Failed to check abandonment markers:', error);
     return [];
   }
 }
@@ -200,20 +326,49 @@ async recoverOrphanedSession(sessionId: string): Promise<void> {
     .where('id', '=', sessionId)
     .executeTakeFirst();
 
-  if (!session || session.status !== 'playing') {
+  if (!session) {
     await this.cleanupSession(sessionId);
     return;
   }
 
+  // Handle different statuses - cleanup if already finished
+  if (session.status === SessionStatus.FINISHED ||
+      session.status === SessionStatus.CANCELLED ||
+      session.status === SessionStatus.ABANDONED) {
+    await this.cleanupSession(sessionId);
+    return;
+  }
+
+  const timeSinceCreated = Date.now() - new Date(session.created_at).getTime();
   const timeSinceUpdate = Date.now() - new Date(session.updated_at).getTime();
 
-  if (timeSinceUpdate > 600000) { // 10 minutes - abandon
-    await this.forceEndSession(sessionId, 'abandonment_timeout');
-  } else if (timeSinceUpdate > 180000) { // 3 minutes - connection timeout
-    await this.forceEndSession(sessionId, 'connection_timeout');
-  } else {
-    // Recent activity - resume
-    await this.resumeSession(sessionId);
+  // Waiting status (lobby) - shorter timeout
+  if (session.status === SessionStatus.WAITING) {
+    if (timeSinceCreated > 300000) { // 5 minutes since creation
+      logger.info(`Session ${sessionId} in lobby for 5+ minutes, ending due to lobby timeout`);
+      await this.forceEndSession(sessionId, SessionEndReason.LOBBY_TIMEOUT);
+    } else if (timeSinceUpdate > 180000) { // 3 minutes no activity
+      logger.info(`Session ${sessionId} in lobby with 3+ minutes inactivity, ending`);
+      await this.forceEndSession(sessionId, SessionEndReason.LOBBY_INACTIVITY);
+    } else {
+      logger.debug(`Session ${sessionId} in lobby is recent, keeping alive`);
+    }
+    return;
+  }
+
+  // Playing status - longer timeout
+  if (session.status === SessionStatus.PLAYING) {
+    if (timeSinceUpdate > 600000) { // 10 minutes - abandon
+      logger.info(`Session ${sessionId} inactive for 10+ minutes, ending due to abandonment`);
+      await this.forceEndSession(sessionId, SessionEndReason.ABANDONMENT_TIMEOUT);
+    } else if (timeSinceUpdate > 180000) { // 3 minutes - connection timeout
+      logger.info(`Session ${sessionId} inactive for 3+ minutes, ending due to connection timeout`);
+      await this.forceEndSession(sessionId, SessionEndReason.CONNECTION_TIMEOUT);
+    } else {
+      // Recent activity - resume
+      logger.info(`Session ${sessionId} has recent activity, resuming`);
+      await this.resumeSession(sessionId);
+    }
   }
 }
 
@@ -256,13 +411,13 @@ private async cleanupSession(sessionId: string): Promise<void> {
 /**
  * Force end a session with a specific reason
  */
-private async forceEndSession(sessionId: string, reason: string): Promise<void> {
+private async forceEndSession(sessionId: string, reason: SessionEndReason): Promise<void> {
   try {
     // Update session status in database
     await db
       .updateTable('game_sessions')
       .set({
-        status: 'finished',
+        status: SessionStatus.FINISHED,
         end_reason: reason,
         ended_at: new Date(),
         updated_at: new Date()
@@ -293,7 +448,7 @@ private async resumeSession(sessionId: string): Promise<void> {
     logger.info(`Session ${sessionId} resumed successfully`);
   } catch (error) {
     logger.error(`Failed to resume session ${sessionId}:`, error);
-    await this.forceEndSession(sessionId, 'resume_failed');
+    await this.forceEndSession(sessionId, SessionEndReason.RESUME_FAILED);
   }
 }
 

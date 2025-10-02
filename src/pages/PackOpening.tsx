@@ -222,7 +222,7 @@ const PackOpening: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       
-      <IonContent className="ion-padding">
+      <IonContent className="">
         {/* Credits Display */}
         <IonCard>
           <IonCardContent>

@@ -187,20 +187,93 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
           <IonCardContent>
             <IonList>
               {syncConflicts.map((conflict: SyncConflict) => (
-                <IonItem key={conflict.action_id}>
-                  <IonIcon
-                    icon={getConflictIcon(conflict.reason)}
-                    color="warning"
-                    slot="start"
-                  />
-                  <IonLabel>
-                    <h3>{conflict.user_action.action.replace('_', ' ').toUpperCase()}</h3>
-                    <p>{syncService.getConflictExplanation(conflict)}</p>
-                  </IonLabel>
-                  <IonBadge color="warning" slot="end">
-                    {conflict.reason.replace('_', ' ')}
-                  </IonBadge>
-                </IonItem>
+                <div key={conflict.action_id}>
+                  <IonItem>
+                    <IonIcon
+                      icon={getConflictIcon(conflict.reason)}
+                      color="warning"
+                      slot="start"
+                    />
+                    <IonLabel>
+                      <h3>{conflict.user_action.action.replace('_', ' ').toUpperCase()}</h3>
+                      <p>{syncService.getConflictExplanation(conflict)}</p>
+                    </IonLabel>
+                    <IonBadge color="warning" slot="end">
+                      {conflict.reason.replace('_', ' ')}
+                    </IonBadge>
+                  </IonItem>
+
+                  {/* Show cascade impact if significant */}
+                  {conflict.cascade_impact && conflict.cascade_impact.total_actions_affected > 1 && (
+                    <IonCard className="cascade-impact-card" color="danger">
+                      <IonCardHeader>
+                        <IonCardTitle>
+                          ⚠️ Cascade Impact Warning
+                        </IonCardTitle>
+                      </IonCardHeader>
+                      <IonCardContent>
+                        <IonText color="danger">
+                          <p><strong>Rolling back this action will affect {conflict.cascade_impact.total_actions_affected} total actions:</strong></p>
+                        </IonText>
+
+                        {conflict.cascade_impact.cards_lost.length > 0 && (
+                          <div className="impact-section">
+                            <p><strong>Cards Lost:</strong></p>
+                            <ul>
+                              {conflict.cascade_impact.cards_lost.map((card, idx) => (
+                                <li key={idx}>Card #{card.cardId} (x{card.quantity})</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {conflict.cascade_impact.decks_invalidated.length > 0 && (
+                          <div className="impact-section">
+                            <p><strong>Decks Invalidated:</strong></p>
+                            <ul>
+                              {conflict.cascade_impact.decks_invalidated.map((deck, idx) => (
+                                <li key={idx}>
+                                  {deck.deck_name}
+                                  <br />
+                                  <small>{deck.reason}</small>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {conflict.cascade_impact.battles_invalidated.length > 0 && (
+                          <div className="impact-section">
+                            <p><strong>Battles Invalidated:</strong></p>
+                            <ul>
+                              {conflict.cascade_impact.battles_invalidated.map((battle, idx) => (
+                                <li key={idx}>
+                                  {battle.stage_name}
+                                  <br />
+                                  <small>{battle.reason}</small>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {(conflict.cascade_impact.credits_refunded > 0 || conflict.cascade_impact.xp_lost > 0) && (
+                          <div className="impact-section">
+                            <p><strong>Rewards Lost:</strong></p>
+                            <ul>
+                              {conflict.cascade_impact.credits_refunded > 0 && (
+                                <li>Credits: -{conflict.cascade_impact.credits_refunded}</li>
+                              )}
+                              {conflict.cascade_impact.xp_lost > 0 && (
+                                <li>XP: -{conflict.cascade_impact.xp_lost}</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </IonCardContent>
+                    </IonCard>
+                  )}
+                </div>
               ))}
             </IonList>
           </IonCardContent>
@@ -243,6 +316,7 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
         <div className="conflict-actions">
           <IonButton
             expand="block"
+            color="primary"
             onClick={handleResolveConflicts}
             disabled={isResolving}
             data-testid="conflict-apply-button"
@@ -253,7 +327,6 @@ export const ConflictResolutionModal: React.FC<ConflictResolutionModalProps> = (
           <IonButton
             expand="block"
             fill="outline"
-            color="medium"
             onClick={handleDismiss}
             disabled={isResolving}
             data-testid="conflict-dismiss-button"

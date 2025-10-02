@@ -5,6 +5,7 @@ import { SessionLeaseManager } from './SessionLeaseManager';
 import { DistributedStateManager } from './DistributedStateManager';
 import { TurnTimerManager } from './TurnTimerManager';
 import { db } from '../database/kysely';
+import { SessionStatus, SessionEndReason } from '@kelseyabreu/shared';
 
 // Simple logger for now
 const logger = {
@@ -254,19 +255,36 @@ export class WebSocketGameHandler {
   private async checkSessionPlayerCount(sessionId: string): Promise<void> {
     try {
       const connectedCount = this.sessionPlayers.get(sessionId)?.size || 0;
-      
+
       if (connectedCount === 0) {
-        // No players connected - start abandonment timer
-        logger.info(`No players connected to session ${sessionId}, starting abandonment timer`);
-        
-        // TODO: Start abandonment timer (3 minutes)
-        setTimeout(async () => {
-          const stillEmpty = (this.sessionPlayers.get(sessionId)?.size || 0) === 0;
-          if (stillEmpty) {
-            // Force end session due to abandonment
-            await this.forceEndSession(sessionId, 'player_abandonment');
-          }
-        }, 180000); // 3 minutes
+        // No players connected - mark for abandonment check
+        logger.info(`No players connected to session ${sessionId}, marking for abandonment check`);
+
+        // Store abandonment marker in Redis with TTL
+        // GameWorker will check these markers and end sessions that remain empty
+        await this.redis.setex(
+          `session:${sessionId}:abandonment_check`,
+          180, // 3 minutes TTL
+          JSON.stringify({
+            markedAt: Date.now(),
+            sessionId
+          })
+        );
+
+        // Update session's updated_at so orphan detection can find it
+        await db
+          .updateTable('game_sessions')
+          .set({ updated_at: new Date() })
+          .where('id', '=', sessionId)
+          .execute();
+
+        logger.debug(`Session ${sessionId} marked for abandonment, will be checked in 3 minutes`);
+      } else {
+        // Players reconnected - remove abandonment marker
+        const deleted = await this.redis.del(`session:${sessionId}:abandonment_check`);
+        if (deleted > 0) {
+          logger.info(`Session ${sessionId} has ${connectedCount} players, removed abandonment marker`);
+        }
       }
     } catch (error) {
       logger.error(`Failed to check session player count for ${sessionId}:`, error);
@@ -276,13 +294,13 @@ export class WebSocketGameHandler {
   /**
    * Force end a session
    */
-  private async forceEndSession(sessionId: string, reason: string): Promise<void> {
+  private async forceEndSession(sessionId: string, reason: SessionEndReason): Promise<void> {
     try {
       // Update database
       await db
         .updateTable('game_sessions')
         .set({
-          status: 'finished',
+          status: SessionStatus.FINISHED,
           end_reason: reason,
           ended_at: new Date(),
           updated_at: new Date()
@@ -295,6 +313,9 @@ export class WebSocketGameHandler {
 
       // Clean up tracking
       this.sessionPlayers.delete(sessionId);
+
+      // Clean up abandonment marker if it exists
+      await this.redis.del(`session:${sessionId}:abandonment_check`);
 
       logger.info(`Session ${sessionId} force ended: ${reason}`);
 

@@ -214,7 +214,7 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
   const existingGuest = await withRetry(async () => {
     return await db
       .selectFrom('users')
-      .select(['id', 'username', 'guest_id', 'coins', 'gems', 'dust'])
+      .select(['id', 'username', 'guest_id', 'guest_secret_hash', 'coins', 'gems', 'dust'])
       .where('guest_id', '=', guestId)
       .executeTakeFirst();
   });
@@ -269,8 +269,9 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
       user: existingGuest,
       auth: {
         token: guestJWT,
-        type: 'guest'
-        // Note: guestSecret not included for existing guests (client should have it stored)
+        type: 'guest',
+        // Return guestSecret (the hash) so client can store it and avoid needsRegistration on refresh
+        guestSecret: existingGuest.guest_secret_hash || ''
       },
       sync: {
         processed_actions: processedActions,
@@ -436,6 +437,31 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
   // Generate JWT for immediate use
   const guestJWT = generateGuestJWT(result.user.id, guestId);
 
+  // Fetch the signing key to send to the frontend
+  const signingKeyRecord = await db
+    .selectFrom('device_signing_keys')
+    .select(['signing_key', 'key_version'])
+    .where('device_id', '=', deviceId)
+    .where('user_id', '=', result.user.id)
+    .where('key_version', '=', BigInt(1))
+    .where('status', '=', 'ACTIVE')
+    .executeTakeFirst();
+
+  if (!signingKeyRecord) {
+    console.error('❌ Failed to fetch signing key for device:', deviceId);
+    return res.status(500).json({
+      error: 'SIGNING_KEY_ERROR',
+      message: 'Failed to retrieve signing key'
+    });
+  }
+
+  console.log('🔑 [GUEST-REGISTER] Sending signing key to frontend:', {
+    deviceId,
+    userId: result.user.id,
+    keyVersion: signingKeyRecord.key_version,
+    encryptedKeyPreview: signingKeyRecord.signing_key.substring(0, 20) + '...'
+  });
+
   res.status(201).json({
     success: true,
     message: 'Guest account created and synced successfully',
@@ -452,6 +478,11 @@ router.post('/register-and-sync', authRateLimiter, asyncHandler(async (req, res)
       type: 'guest',
       guestSecret, // Provided for new guest registrations
       expiresIn: '7d'
+    },
+    device: {
+      device_id: deviceId, // Send the device ID so frontend can use it for signing
+      signing_key: signingKeyRecord.signing_key, // Send encrypted signing key
+      key_version: Number(signingKeyRecord.key_version) // Send key version
     },
     sync: {
       actionsProcessed: result.processedActions,

@@ -93,7 +93,7 @@ export const BattleModeSelector: React.FC<BattleModeSelectorProps> = ({ onExit }
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <IonContent className="">
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
           
           {/* Mode Selection Header */}

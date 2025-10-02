@@ -53,6 +53,7 @@ import { offlineSecurityService } from '../../services/offlineSecurityService';
 import OrganismRenderer from '../OrganismRenderer';
 import { Card as CardType } from '../../types';
 import { motion } from 'framer-motion';
+import { SyncActionType } from '@kelseyabreu/shared';
 
 interface ChallengeLevel {
   id: number;
@@ -200,7 +201,7 @@ export const EcosystemChallenge: React.FC = () => {
         if (offlineCollection) {
           try {
             // Create a proper offline action using the security service
-            const newAction = await offlineSecurityService.createAction('pack_opened', {
+            const newAction = await offlineSecurityService.createAction(SyncActionType.PACK_OPENED, {
               pack_type: 'stage10award'
             });
 
@@ -718,7 +719,7 @@ export const EcosystemChallenge: React.FC = () => {
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard>
             <IonCardHeader>
               <IonCardTitle>{currentQuestion.question}</IonCardTitle>
@@ -848,7 +849,7 @@ export const EcosystemChallenge: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <IonContent className="">
         {/* Progress Overview */}
         <IonCard className="challenge-progress-card">
           <IonCardHeader>

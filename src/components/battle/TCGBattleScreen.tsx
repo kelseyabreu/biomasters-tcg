@@ -1143,7 +1143,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
             </IonButtons>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -1204,7 +1204,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
             <IonTitle>BioMasters TCG</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div style={{
             display: 'flex',
             justifyContent: 'center',

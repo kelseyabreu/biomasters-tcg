@@ -4,7 +4,7 @@
  */
 
 import { getFirebaseAuth } from '../config/firebase';
-import admin from 'firebase-admin';
+import * as admin from 'firebase-admin';
 
 export interface RetryConfig {
   maxRetries: number;
@@ -298,8 +298,8 @@ export class ScalableFirebaseAuth {
     );
 
     // Combine results
-    const combinedUsers = results.flatMap(result => result.users);
-    const combinedNotFound = results.flatMap(result => result.notFound || []);
+    const combinedUsers = results.flatMap((result: any) => result.users);
+    const combinedNotFound = results.flatMap((result: any) => result.notFound || []);
 
     return {
       users: combinedUsers,

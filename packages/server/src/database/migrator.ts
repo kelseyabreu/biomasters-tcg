@@ -284,6 +284,21 @@ export class KyselyMigrator {
       const clientUserIdSql = readFileSync(clientUserIdPath, 'utf8');
       await this.executeMigration('039_add_client_user_id_tracking', clientUserIdSql);
 
+      // 040: Add action_data column for full action reconstruction
+      const actionDataPath = join(__dirname, 'migrations/040_add_action_data_column.sql');
+      const actionDataSql = readFileSync(actionDataPath, 'utf8');
+      await this.executeMigration('040_add_action_data_column', actionDataSql);
+
+      // 041: Add collection version for optimistic locking
+      const collectionVersionPath = join(__dirname, 'migrations/041_add_collection_version.sql');
+      const collectionVersionSql = readFileSync(collectionVersionPath, 'utf8');
+      await this.executeMigration('041_add_collection_version', collectionVersionSql);
+
+      // 042: Add sync_transactions table for idempotency
+      const syncTransactionsPath = join(__dirname, 'migrations/042_add_sync_transactions.sql');
+      const syncTransactionsSql = readFileSync(syncTransactionsPath, 'utf8');
+      await this.executeMigration('042_add_sync_transactions', syncTransactionsSql);
+
       console.log('✅ All Kysely migrations completed successfully');
 
     } catch (error) {

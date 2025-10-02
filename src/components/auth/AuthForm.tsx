@@ -212,7 +212,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, onCancel, isGuest
       await signInAsGuest();
       authRequest.setSuccess(getUIText(UITextId.UI_GUEST_SIGNIN_SUCCESS));
       if (onSuccess) {
-        setTimeout(onSuccess, 1500);
+        onSuccess();
       }
     } catch (error: any) {
       authRequest.setError(getUIText(UITextId.UI_GUEST_SIGNIN_FAILED));

@@ -68,7 +68,7 @@ const AuthPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       
-      <IonContent className="ion-padding auth-page-content">
+      <IonContent className=" auth-page-content">
         {/* Welcome Section */}
         <div className="welcome-section">
           <div className="logo-section">

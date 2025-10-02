@@ -268,6 +268,44 @@ export enum GameEndReason {
   FORFEIT = 'forfeit'
 }
 
+/**
+ * Game Session Status - Database session lifecycle states
+ * Used for online multiplayer game sessions
+ */
+export enum SessionStatus {
+  WAITING = 'waiting',       // Lobby - waiting for players to connect
+  PLAYING = 'playing',       // Game in progress
+  FINISHED = 'finished',     // Game completed normally
+  CANCELLED = 'cancelled',   // Cancelled before starting
+  ABANDONED = 'abandoned',   // Players abandoned mid-game
+  ERROR = 'error'            // Error state
+}
+
+/**
+ * Session End Reasons - Why a session ended
+ * Used for tracking and analytics of session termination
+ */
+export enum SessionEndReason {
+  // Normal endings
+  GAME_COMPLETE = 'game_complete',
+  PLAYER_VICTORY = 'player_victory',
+
+  // Timeouts
+  LOBBY_TIMEOUT = 'lobby_timeout',              // Players didn't connect to lobby
+  LOBBY_INACTIVITY = 'lobby_inactivity',        // No activity in lobby
+  CONNECTION_TIMEOUT = 'connection_timeout',     // Players disconnected during game
+  ABANDONMENT_TIMEOUT = 'abandonment_timeout',   // No activity for extended period
+
+  // Player actions
+  PLAYER_ABANDONMENT = 'player_abandonment',     // All players left
+  PLAYER_FORFEIT = 'player_forfeit',             // Player forfeited
+
+  // System
+  WORKER_FAILURE = 'worker_failure',             // Worker crashed
+  RESUME_FAILED = 'resume_failed',               // Failed to resume after recovery
+  SYSTEM_ERROR = 'system_error'                  // Other system error
+}
+
 // ============================================================================
 // CARD SPECIFIC ENUMS
 // ============================================================================
@@ -1060,6 +1098,46 @@ export enum SyncStatus {
 }
 
 /**
+ * Sync Action Types - All actions that can be synced with the server
+ * These actions are performed offline and synced when online
+ */
+export enum SyncActionType {
+  // Collection Management
+  PACK_OPENED = 'pack_opened',
+  STARTER_PACK_OPENED = 'starter_pack_opened',
+  CARD_ACQUIRED = 'card_acquired',
+
+  // Deck Management
+  DECK_CREATED = 'deck_created',
+  DECK_UPDATED = 'deck_updated',
+  DECK_DELETED = 'deck_deleted',
+  DECK_ACTIVATED = 'deck_activated',  // Set as active deck
+
+  // Battle/Game Completion
+  BATTLE_WON = 'battle_won',
+  BATTLE_LOST = 'battle_lost',
+  STAGE_COMPLETED = 'stage_completed',
+  ECOSYSTEM_CHALLENGE_COMPLETED = 'ecosystem_challenge_completed',
+
+  // Rewards
+  REWARD_CLAIMED = 'reward_claimed',
+  DAILY_REWARD_CLAIMED = 'daily_reward_claimed',
+  ACHIEVEMENT_UNLOCKED = 'achievement_unlocked',
+
+  // Progression
+  XP_GAINED = 'xp_gained',
+  LEVEL_UP = 'level_up',
+
+  // Economy
+  CREDITS_SPENT = 'credits_spent',
+  CREDITS_EARNED = 'credits_earned',
+
+  // Social/Profile
+  PROFILE_UPDATED = 'profile_updated',
+  AVATAR_CHANGED = 'avatar_changed'
+}
+
+/**
  * Action Types for game actions
  */
 export enum GameActionType {
@@ -1168,17 +1246,44 @@ export const GAME_CONSTANTS = {
 } as const;
 
 /**
+ * Unified Conservation Rarity Interface
+ * Combines all functionality needed by frontend (UI) and server (game mechanics)
+ */
+export interface ConservationRarityData {
+  // Core rarity data
+  percentage: number;
+  packRarity: number; // per 100,000 packs for maximum precision
+  description: string;
+
+  // Game mechanics (server)
+  color: string;
+  emoji: string;
+  rarityName: string;
+
+  // UI styling (frontend)
+  borderColor: string;
+  glowEffect: string;
+
+  // Status reference (frontend compatibility)
+  status: ConservationStatus;
+}
+
+/**
  * IUCN Conservation Data - Based on October 28, 2024 Red List Update
  * Real conservation percentages drive the rarity system (per 100,000 packs for maximum precision)
+ * UNIFIED: Contains all properties needed by both frontend and server
  */
-export const IUCN_CONSERVATION_DATA = {
+export const IUCN_CONSERVATION_DATA: Record<ConservationStatus, ConservationRarityData> = {
   [ConservationStatus.EXTINCT]: {
     percentage: 0.54,
     packRarity: 540, // per 100,000 packs
     description: 'No known individuals remaining',
     color: '#000000', // 🖤 Black - Ultra Rare
     emoji: '🖤',
-    rarityName: 'Ultra Rare'
+    rarityName: 'Ultra Rare',
+    borderColor: '#000000',
+    glowEffect: 'shadow-black',
+    status: ConservationStatus.EXTINCT
   },
   [ConservationStatus.EXTINCT_IN_WILD]: {
     percentage: 0.054,
@@ -1186,7 +1291,10 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Known only to survive in captivity',
     color: '#800080', // 💜 Purple - Legendary
     emoji: '💜',
-    rarityName: 'Legendary'
+    rarityName: 'Legendary',
+    borderColor: '#4A0E4E',
+    glowEffect: 'shadow-purple',
+    status: ConservationStatus.EXTINCT_IN_WILD
   },
   [ConservationStatus.CRITICALLY_ENDANGERED]: {
     percentage: 5.95,
@@ -1194,7 +1302,10 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Extremely high risk of extinction',
     color: '#FF0000', // ❤️ Red - Epic
     emoji: '❤️',
-    rarityName: 'Epic'
+    rarityName: 'Epic',
+    borderColor: '#8B0000',
+    glowEffect: 'shadow-red',
+    status: ConservationStatus.CRITICALLY_ENDANGERED
   },
   [ConservationStatus.ENDANGERED]: {
     percentage: 10.92,
@@ -1202,7 +1313,10 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Very high risk of extinction',
     color: '#FF8C00', // 🧡 Orange - Rare
     emoji: '🧡',
-    rarityName: 'Rare'
+    rarityName: 'Rare',
+    borderColor: '#FF4500',
+    glowEffect: 'shadow-orange',
+    status: ConservationStatus.ENDANGERED
   },
   [ConservationStatus.VULNERABLE]: {
     percentage: 13.19,
@@ -1210,7 +1324,10 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'High risk of extinction',
     color: '#FFD700', // 💛 Yellow - Uncommon
     emoji: '💛',
-    rarityName: 'Uncommon'
+    rarityName: 'Uncommon',
+    borderColor: '#FFD700',
+    glowEffect: 'shadow-yellow',
+    status: ConservationStatus.VULNERABLE
   },
   [ConservationStatus.NEAR_THREATENED]: {
     percentage: 5.73,
@@ -1218,7 +1335,10 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Close to qualifying for threatened status',
     color: '#90EE90', // 💚 Light Green - Uncommon
     emoji: '💚',
-    rarityName: 'Uncommon'
+    rarityName: 'Uncommon',
+    borderColor: '#32CD32',
+    glowEffect: 'shadow-green',
+    status: ConservationStatus.NEAR_THREATENED
   },
   [ConservationStatus.LEAST_CONCERN]: {
     percentage: 50.51,
@@ -1226,7 +1346,10 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Widespread and abundant',
     color: '#008000', // 💚 Green - Common
     emoji: '💚',
-    rarityName: 'Common'
+    rarityName: 'Common',
+    borderColor: '#228B22',
+    glowEffect: 'shadow-light-green',
+    status: ConservationStatus.LEAST_CONCERN
   },
   [ConservationStatus.DATA_DEFICIENT]: {
     percentage: 12.97,
@@ -1234,15 +1357,21 @@ export const IUCN_CONSERVATION_DATA = {
     description: 'Inadequate information for assessment',
     color: '#808080', // 🩶 Gray - Special
     emoji: '🩶',
-    rarityName: 'Special'
+    rarityName: 'Special',
+    borderColor: '#708090',
+    glowEffect: 'shadow-gray',
+    status: ConservationStatus.DATA_DEFICIENT
   },
   [ConservationStatus.NOT_EVALUATED]: {
-    percentage: 0.25,
-    packRarity: 250, // per 100,000 packs
+    percentage: 15.0,
+    packRarity: 15000, // per 100,000 packs (FIXED: Match frontend percentage)
     description: 'Not yet evaluated against the criteria',
     color: '#C0C0C0', // 🤍 Silver - Special
     emoji: '🤍',
-    rarityName: 'Special'
+    rarityName: 'Special',
+    borderColor: '#9e9e9e',
+    glowEffect: 'rgba(158, 158, 158, 0.3)',
+    status: ConservationStatus.NOT_EVALUATED
   }
 } as const;
 

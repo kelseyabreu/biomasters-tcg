@@ -40,6 +40,9 @@ const MainMenu: React.FC = () => {
   // Component cleanup tracking
   const mountedRef = useRef(true);
 
+  // Track if guest CTA is dismissed (session-only, resets on refresh)
+  const [isGuestCtaDismissed, setIsGuestCtaDismissed] = React.useState(false);
+
   const {
     offlineCollection,
     isAuthenticated,
@@ -93,12 +96,24 @@ const MainMenu: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
-        {/* Enhanced User Profile Section */}
-        <UserProfile showStats={false} />
-
-        {/* Guest Registration CTA - only shows for guest users */}
-        <GuestRegistrationCTA variant="card" dismissible={true} />
+      <IonContent className="">
+        {/* User Profile and Guest CTA Row - Dynamic layout based on dismissal */}
+        <IonGrid>
+          <IonRow>
+            <IonCol size={isGuestCtaDismissed || !isGuestMode ? "12" : "6"}>
+              <UserProfile showStats={false} />
+            </IonCol>
+            {isGuestMode && !isGuestCtaDismissed && (
+              <IonCol size="6">
+                <GuestRegistrationCTA
+                  variant="card"
+                  dismissible={true}
+                  onDismiss={() => setIsGuestCtaDismissed(true)}
+                />
+              </IonCol>
+            )}
+          </IonRow>
+        </IonGrid>
 
 
 
@@ -216,7 +231,7 @@ const MainMenu: React.FC = () => {
                     disabled={!isAuthenticated}
                   >
                     <IonIcon icon={school} slot="start" />
-                    Ecosystem Challenge
+                    Daily Challenge
                   </IonButton>
                 </IonCol>
                 <IonCol size="12" sizeMd="6">

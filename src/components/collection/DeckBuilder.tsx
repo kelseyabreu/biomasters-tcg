@@ -438,7 +438,7 @@ const DeckBuilder: React.FC = () => {
 
   // Render deck list view
   const renderDeckListView = () => (
-    <IonContent className="ion-padding">
+    <IonContent className="">
       <IonCard>
         <IonCardHeader>
           <IonCardTitle>
@@ -573,7 +573,7 @@ const DeckBuilder: React.FC = () => {
       </IonHeader>
 
       {currentView === 'list' ? renderDeckListView() : (
-        <IonContent className="ion-padding">
+        <IonContent className="">
           {/* Area 1: Top Controls */}
           <div className="deck-editor-header compact">
             {/* Row 1: Deck Name and Options */}

@@ -160,6 +160,17 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
             </div>
           </div>
 
+          <IonButton
+            expand="block"
+            color="warning"
+            size="default"
+            onClick={handleProtectProgress}
+            className="protection-button"
+          >
+            <IonIcon icon={shield} slot="start" />
+            {getUIText(UITextId.UI_CREATE_FREE_ACCOUNT_BUTTON)}
+          </IonButton>
+          
           {/* Progress Stats */}
           {(ownedSpecies > 0 || credits > 100) && (
             <div className="progress-stats">
@@ -196,17 +207,6 @@ export const GuestRegistrationCTA: React.FC<GuestRegistrationCTAProps> = ({
               </IonGrid>
             </div>
           )}
-
-          <IonButton
-            expand="block"
-            color="warning"
-            size="large"
-            onClick={handleProtectProgress}
-            className="protection-button"
-          >
-            <IonIcon icon={shield} slot="start" />
-            {getUIText(UITextId.UI_CREATE_FREE_ACCOUNT_BUTTON)}
-          </IonButton>
 
           <div className="benefits-list">
             <div className="benefit-item">

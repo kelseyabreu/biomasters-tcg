@@ -2,7 +2,7 @@
 // Uses real-world conservation percentages to determine card rarity
 
 import { Card, CONSERVATION_RARITY_DATA } from '../types';
-import { ConservationStatus } from '@kelseyabreu/shared';
+import { ConservationStatus, SeededRandom } from '@kelseyabreu/shared';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BoosterPack {
@@ -27,6 +27,7 @@ export interface PackOpeningResult {
 export class BoosterPackSystem {
   private allCards: Card[] = [];
   private cardsByRarity: Map<ConservationStatus, Card[]> = new Map();
+  private rng: SeededRandom | null = null;
 
   constructor(cards: Card[]) {
     this.allCards = cards;
@@ -68,12 +69,16 @@ export class BoosterPackSystem {
    * @param packName Name of the pack
    * @param cardCount Number of cards to generate (default: 8)
    * @param packType Type of pack for special generation rules
+   * @param seed Required seed for deterministic generation (use action.id)
    */
-  generateBoosterPack(packName: string = 'Species Conservation Pack', cardCount: number = 8, packType: string = 'basic'): BoosterPack {
+  generateBoosterPack(packName: string = 'Species Conservation Pack', cardCount: number = 8, packType: string = 'basic', seed: string): BoosterPack {
+    // Initialize seeded RNG for deterministic pack generation
+    this.rng = new SeededRandom(seed);
+
     const packCards: Card[] = [];
     const rarityBreakdown: Record<ConservationStatus, number> = {} as Record<ConservationStatus, number>;
 
-    console.log(`🎁 Generating ${packName} with ${cardCount} cards`);
+    console.log(`🎁 Generating ${packName} with ${cardCount} cards using seed: ${seed.substring(0, 20)}...`);
     console.log(`📊 Available cards by rarity:`, Array.from(this.cardsByRarity.entries()).map(([status, cards]) =>
       `${ConservationStatus[status]}: ${cards.length} cards`
     ));
@@ -152,9 +157,14 @@ export class BoosterPackSystem {
 
   /**
    * Select rarity based on real IUCN Red List percentages
+   * Uses seeded RNG for deterministic generation
    */
   private selectRarityByIUCNPercentage(): ConservationStatus {
-    const random = Math.random() * 100; // 0-100%
+    if (!this.rng) {
+      throw new Error('SeededRandom not initialized. Call generateBoosterPack with a seed first.');
+    }
+
+    const random = this.rng.next() * 100; // 0-100%
     let cumulative = 0;
 
     // Sort by rarity (rarest first) for dramatic pack openings
@@ -174,18 +184,23 @@ export class BoosterPackSystem {
 
   /**
    * Select a random card from a specific rarity tier
+   * Uses seeded RNG for deterministic generation
    */
   private selectRandomCardFromRarity(rarity: ConservationStatus): Card | null {
+    if (!this.rng) {
+      throw new Error('SeededRandom not initialized. Call generateBoosterPack with a seed first.');
+    }
+
     const cards = this.cardsByRarity.get(rarity) || [];
-    
+
     if (cards.length === 0) {
       // Fallback to Least Concern if no cards in this rarity
       const fallbackCards = this.cardsByRarity.get(ConservationStatus.LEAST_CONCERN) || [];
       if (fallbackCards.length === 0) return null;
-      return fallbackCards[Math.floor(Math.random() * fallbackCards.length)];
+      return fallbackCards[Math.floor(this.rng.next() * fallbackCards.length)];
     }
 
-    return cards[Math.floor(Math.random() * cards.length)];
+    return cards[Math.floor(this.rng.next() * cards.length)];
   }
 
   /**
@@ -249,7 +264,7 @@ export class BoosterPackSystem {
   /**
    * Simulate opening multiple packs for statistics
    */
-  simulatePackOpenings(numPacks: number): {
+  simulatePackOpenings(numPacks: number, baseSeed: string = 'simulation'): {
     packs: BoosterPack[];
     averageValue: number;
     rarityStats: Record<ConservationStatus, number>;
@@ -269,7 +284,7 @@ export class BoosterPackSystem {
 
     // Generate packs
     for (let i = 0; i < numPacks; i++) {
-      const pack = this.generateBoosterPack(`Simulation Pack ${i + 1}`);
+      const pack = this.generateBoosterPack(`Simulation Pack ${i + 1}`, 8, 'basic', `${baseSeed}-${i}`);
       packs.push(pack);
       
       totalValue += this.calculatePackValue(pack);

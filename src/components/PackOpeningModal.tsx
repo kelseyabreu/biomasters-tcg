@@ -90,7 +90,6 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   packName
 }) => {
   const { openPack, allSpeciesCards, syncCollection } = useHybridGameStore();
-  const { redeemStarterPack } = useRedemptionStatus();
   const localization = useLocalization();
   const [isOpening, setIsOpening] = useState(false);
   const [packResult, setPackResult] = useState<PackResult | null>(null);
@@ -156,23 +155,10 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         newCardIds = await openPack('starter');
         console.log('🎁 Starter pack opened locally with cards:', newCardIds);
 
-        // Try to redeem via API if online, but don't block on it
-        try {
-          console.log('🎁 Attempting server redemption...');
-          const result = await redeemStarterPack();
-          if (result.success) {
-            console.log('✅ Server redemption successful');
-          } else {
-            console.warn('⚠️ Server redemption failed, but pack already opened locally:', result.message);
-          }
-        } catch (redemptionError) {
-          console.warn('⚠️ Server redemption failed (likely offline), but pack already opened locally:', redemptionError);
-          // Don't throw - the pack was already opened locally
-
-          // Update local redemption status to prevent multiple redemptions
-          console.log('🎁 Updating local redemption status for offline starter pack...');
-          // This will be handled by the useRedemptionStatus hook detecting the offline action
-        }
+        // NOTE: We do NOT call redeemStarterPack() here because that would create
+        // a duplicate redemption. The offline action will be synced to the server,
+        // and the server will process it during sync.
+        console.log('🎁 Starter pack opened offline, will sync to server...');
 
         // Trigger sync to update server (non-blocking)
         try {
@@ -256,7 +242,7 @@ export const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       // Don't reset hasOpenedRef here to prevent retry attempts
       onClose();
     }
-  }, [packType, openPack, redeemStarterPack, onClose]);
+  }, [packType, openPack, onClose]);
 
   // Reset state when modal opens
   useEffect(() => {

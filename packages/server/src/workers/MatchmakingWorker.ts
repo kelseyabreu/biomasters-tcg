@@ -6,9 +6,9 @@
 import { Message, Subscription } from '@google-cloud/pubsub';
 import { getIORedisClient, isIORedisAvailable } from '../config/ioredis';
 import crypto from 'crypto';
-import { db } from '../database/kysely';
+import { workerDb as db } from '../database/kysely';
 import { getSubscription, publishMessage, PUBSUB_TOPICS, PUBSUB_SUBSCRIPTIONS } from '../config/pubsub';
-import { MatchmakingRequest, MatchFound, MatchmakingQueueEntry } from '@kelseyabreu/shared';
+import { MatchmakingRequest, MatchFound, MatchmakingQueueEntry, SessionStatus } from '@kelseyabreu/shared';
 
 export class MatchmakingWorker {
     private isRunning = false;
@@ -586,7 +586,7 @@ export class MatchmakingWorker {
                     is_private: false,
                     max_players: match.players.length,
                     current_players: match.players.length,
-                    status: 'waiting',
+                    status: SessionStatus.WAITING,
                     players: playersJson as any, // Store players as JSON string for JSONB
                     game_state: initialGameState,
                     settings: gameSettings
@@ -594,6 +594,20 @@ export class MatchmakingWorker {
                 .execute();
 
             console.log(`💾 Stored match ${match.sessionId} in database`);
+
+            // Set lobby timeout marker in Redis (5 minutes)
+            // GameWorker will clean up sessions that stay in waiting status too long
+            await this.getRedis().setex(
+                `session:${match.sessionId}:lobby_timeout`,
+                300, // 5 minutes
+                JSON.stringify({
+                    sessionId: match.sessionId,
+                    createdAt: Date.now(),
+                    expectedPlayers: match.players.length
+                })
+            );
+
+            console.log(`⏰ Set lobby timeout marker for session ${match.sessionId} (5 minutes)`);
         } catch (error) {
             console.error(`❌ Failed to store match in database:`, error);
             throw error;

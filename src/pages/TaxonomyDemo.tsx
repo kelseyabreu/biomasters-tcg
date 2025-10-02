@@ -158,7 +158,7 @@ export const TaxonomyDemo: React.FC = () => {
             <IonTitle>Taxonomy Demo</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div className="loading-container">
             <IonSpinner name="crescent" />
             <p>Loading taxonomy data...</p>
@@ -179,7 +179,7 @@ export const TaxonomyDemo: React.FC = () => {
             <IonTitle>Taxonomy Demo</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard color="danger">
             <IonCardHeader>
               <IonCardTitle>Error Loading Data</IonCardTitle>

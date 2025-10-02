@@ -2,7 +2,7 @@ import { Redis } from 'ioredis';
 import { Server as SocketIOServer } from 'socket.io';
 import { GameWorker } from './GameWorker';
 import { WebSocketGameHandler } from './WebSocketGameHandler';
-import { db } from '../database/kysely';
+import { workerDb as db } from '../database/kysely';
 
 // Simple logger for now
 const logger = {

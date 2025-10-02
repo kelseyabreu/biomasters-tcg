@@ -262,10 +262,6 @@ ion-text[slot="helper"] {
   margin-top: 4px;
 }
 
-/* Button Spacing */
-ion-button + ion-button {
-  margin-top: 12px;
-}
 
 /* Focus States */
 ion-input:focus-within,

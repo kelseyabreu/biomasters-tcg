@@ -845,7 +845,7 @@ export const BattlePage: React.FC = () => {
             <IonTitle>Loading Battle...</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -875,7 +875,7 @@ export const BattlePage: React.FC = () => {
             <IonTitle>Battle Error</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <div style={{
             display: 'flex',
             flexDirection: 'column',

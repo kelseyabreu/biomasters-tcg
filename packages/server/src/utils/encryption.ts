@@ -2,13 +2,13 @@
  * Encryption utilities for sensitive data storage
  */
 
-import crypto from 'crypto';
+import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 
 // Use environment variable or fallback for development
 const ENCRYPTION_KEY = process.env['ENCRYPTION_KEY'] || 'biomasters-dev-key-32-chars-long!';
 
 // Ensure key is exactly 32 bytes for AES-256
-const NORMALIZED_KEY = crypto.createHash('sha256').update(ENCRYPTION_KEY).digest();
+const NORMALIZED_KEY = createHash('sha256').update(ENCRYPTION_KEY).digest();
 
 // Algorithm and IV length for AES-256-CBC
 const ALGORITHM = 'aes-256-cbc';
@@ -20,8 +20,8 @@ const IV_LENGTH = 16; // For AES, this is always 16
 export function encrypt(text: string): string {
   try {
     // Generate a random IV for each encryption
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, NORMALIZED_KEY, iv);
+    const iv = randomBytes(IV_LENGTH);
+    const cipher = createCipheriv(ALGORITHM, NORMALIZED_KEY, iv);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -51,7 +51,7 @@ export function decrypt(encryptedData: string): string {
       const iv = Buffer.from(parts[0]!, 'hex');
       const encrypted = parts[1]!;
 
-      const decipher = crypto.createDecipheriv(ALGORITHM, NORMALIZED_KEY, iv);
+      const decipher = createDecipheriv(ALGORITHM, NORMALIZED_KEY, iv);
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
 
@@ -72,5 +72,5 @@ export function decrypt(encryptedData: string): string {
  * Generate a secure random signing key
  */
 export function generateSigningKey(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return randomBytes(32).toString('hex');
 }

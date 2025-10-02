@@ -54,7 +54,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const xpPoints = offlineCollection?.xp_points || 0;
 
   // Determine if this is a guest conversion flow
-  const isGuestConversion = mode === 'guest-conversion' || isGuestMode;
+  // Only show guest conversion UI if explicitly in guest-conversion mode
+  // OR if user is already a guest with a collection (not first-time guest sign-in)
+  const isGuestConversion = mode === 'guest-conversion' || (isGuestMode && offlineCollection !== null);
 
   const handleSuccess = () => {
     if (onSuccess) {
@@ -91,7 +93,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <IonContent className="">
         {/* Guest Conversion Header */}
         {isGuestConversion && (
           <IonCard className="conversion-info-card">

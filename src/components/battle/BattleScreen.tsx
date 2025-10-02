@@ -636,7 +636,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard>
             <IonCardHeader>
               <IonCardTitle>Choose Your Adventure</IonCardTitle>
@@ -744,7 +744,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard>
             <IonCardHeader>
               <IonCardTitle>{getUIText(UITextId.UI_ECOSYSTEM_MASTERY_CAMPAIGN)}</IonCardTitle>
@@ -827,7 +827,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard>
             <IonCardContent className="ion-text-center">
               <IonIcon icon={rocket} size="large" color="primary" />
@@ -1211,7 +1211,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
           </IonToolbar>
         </IonHeader>
 
-        <IonContent className="ion-padding">
+        <IonContent className="">
           <IonCard>
             <IonCardContent className="ion-text-center">
               <IonIcon
@@ -1279,7 +1279,7 @@ const BattleScreen: React.FC<BattleScreenProps> = ({ onExit }) => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <IonContent className="">
         <IonCard>
           <IonCardContent className="ion-text-center">
             <IonIcon icon={rocket} size="large" />

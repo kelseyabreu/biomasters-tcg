@@ -73,11 +73,14 @@
 /* Card Variant */
 .guest-cta-card {
   position: relative;
-  margin: 16px 0;
-  border-radius: 16px;
+  margin: 0;
+  border-radius: 12px;
   overflow: hidden;
   background: linear-gradient(135deg, #fff3cd, #ffeaa7);
   border: 2px solid #ffc409;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .guest-cta-card.urgency-high {
@@ -88,12 +91,12 @@
 .cta-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .cta-icon {
-  font-size: 32px;
+  font-size: 28px;
   color: #ffc409;
   flex-shrink: 0;
 }
@@ -108,14 +111,14 @@
 
 .cta-title {
   margin: 0 0 4px 0;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--ion-color-dark);
 }
 
 .cta-subtitle {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--ion-color-medium);
   font-weight: 500;
 }
@@ -123,26 +126,43 @@
 .progress-stats {
   background: rgba(255, 255, 255, 0.6);
   border-radius: 12px;
-  padding: 16px;
-  margin: 16px 0;
+  padding: 16px 12px;
+  margin: 12px 0;
+}
+
+.progress-stats ion-grid {
+  padding: 0;
+}
+
+.progress-stats ion-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
 }
 
 .stat-highlight {
   text-align: center;
-  padding: 8px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
 }
 
 .stat-highlight ion-icon {
-  font-size: 20px;
+  font-size: 24px;
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .stat-value {
   display: block;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--ion-color-dark);
   margin-bottom: 2px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .stat-label {
@@ -150,32 +170,33 @@
   font-size: 0.75rem;
   color: var(--ion-color-medium);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .protection-button {
   --border-radius: 12px;
   font-weight: 700;
-  margin: 16px 0;
+  margin: 12px 0;
   height: 48px;
 }
 
 .benefits-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .benefit-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: 6px;
+  font-size: 0.85rem;
   color: var(--ion-color-dark);
 }
 
 .benefit-item ion-icon {
-  font-size: 16px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
@@ -279,21 +300,54 @@
   }
 
   .cta-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
+    gap: 8px;
+  }
+
+  .cta-icon {
+    font-size: 24px;
+  }
+
+  .cta-title {
+    font-size: 1rem;
+  }
+
+  .cta-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .progress-stats {
+    padding: 12px 8px;
+    margin: 8px 0;
+  }
+
+  .stat-highlight {
+    padding: 6px 2px;
+  }
+
+  .stat-highlight ion-icon {
+    font-size: 20px;
+    margin-bottom: 3px;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
   }
 
   .benefits-list {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 4px;
+    margin-top: 8px;
   }
 
   .benefit-item {
-    flex: 1;
-    min-width: 120px;
-    justify-content: center;
+    font-size: 0.8rem;
+  }
+
+  .benefit-item ion-icon {
+    font-size: 12px;
   }
 }
 

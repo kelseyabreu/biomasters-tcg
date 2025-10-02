@@ -284,24 +284,24 @@ const AppContent: React.FC = () => {
                 <Redirect to="/home" />
               </Route>
             </IonRouterOutlet>
-          <IonTabBar slot="bottom">
-            <IonTabButton tab="home" href="/home">
+          <IonTabBar slot="bottom" className="main-tab-bar">
+            <IonTabButton tab="home" href="/home" className="main-tab-home">
               <IonIcon aria-hidden="true" icon={trophy} />
               <IonLabel>{getUIText(UITextId.UI_TAB_HOME)}</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="collection" href="/collection">
+            <IonTabButton tab="collection" href="/collection" className='main-tab-collection'>
               <IonIcon aria-hidden="true" icon={library} />
               <IonLabel>{getUIText(UITextId.UI_TAB_COLLECTION)}</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="online" href="/online" data-testid="online-multiplayer-button">
+            <IonTabButton tab="online" href="/online" className="main-tab-online" data-testid="online-multiplayer-button">
               <IonIcon aria-hidden="true" icon={people} />
               <IonLabel>{getUIText(UITextId.UI_TAB_ONLINE)}</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="deck-builder" href="/deck-builder">
+            <IonTabButton tab="deck-builder" href="/deck-builder" className='main-tab-deck-builder'>
               <IonIcon aria-hidden="true" icon={construct} />
               <IonLabel>{getUIText(UITextId.UI_TAB_DECK_BUILDER)}</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="settings" href="/settings">
+            <IonTabButton tab="settings" href="/settings" className='main-tab-settings'>
               <IonIcon aria-hidden="true" icon={settings} />
               <IonLabel>{getUIText(UITextId.UI_TAB_SETTINGS)}</IonLabel>
             </IonTabButton>

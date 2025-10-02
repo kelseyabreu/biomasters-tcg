@@ -56,7 +56,6 @@
 
 /* Pack Results */
 .pack-results {
-  padding: 1rem;
   animation: slideUp 0.5s ease-out;
 }
 
@@ -92,7 +91,6 @@
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 1.5rem;
 }
 
 .pack-stats ion-badge {
@@ -111,7 +109,6 @@
 
 /* Cards Grid */
 .cards-grid {
-  margin-top: 1rem;
   padding: 0;
 }
 
@@ -448,7 +445,7 @@
 
 .educational-note {
   margin-top: 1rem;
-  padding: 1rem;
+  padding: .4rem;
   background: rgba(var(--ion-color-primary-rgb), 0.1);
   border-radius: 8px;
   border-left: 4px solid var(--ion-color-primary);

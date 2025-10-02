@@ -3,9 +3,9 @@
  * Separate from Firebase auth to support offline-first guest accounts
  */
 
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
+import { randomBytes, randomUUID } from 'crypto';
 
 const JWT_SECRET = process.env['JWT_SECRET'] || 'your-super-secret-jwt-key-change-in-production';
 const JWT_EXPIRES_IN = '7d'; // Guest tokens last 7 days
@@ -34,8 +34,8 @@ export interface GuestCredentials {
  */
 export function generateGuestCredentials(): GuestCredentials {
   return {
-    guestId: crypto.randomUUID(),
-    guestSecret: crypto.randomUUID()
+    guestId: randomUUID(),
+    guestSecret: randomUUID()
   };
 }
 

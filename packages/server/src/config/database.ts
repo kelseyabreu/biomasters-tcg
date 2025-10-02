@@ -48,18 +48,19 @@ export async function initializeDatabase(): Promise<void> {
       const dbConfig = getDbConfig();
       console.log(`🐘 [Database] Attempt ${attempt}/${maxRetries} - Connecting to PostgreSQL...`);
 
-      // Create connection pool with enhanced configuration
+      // Create connection pool with OPTIMIZED configuration for performance
       pool = new Pool({
         ...dbConfig,
-        // Enhanced connection pool settings for Railway
-        max: 15, // Reduced from 20 to be more conservative
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000, // Increased from 5000
-        acquireTimeoutMillis: 60000, // Time to wait for a connection from pool
-        createTimeoutMillis: 30000, // Time to wait for new connection creation
-        destroyTimeoutMillis: 5000,
-        reapIntervalMillis: 1000,
-        createRetryIntervalMillis: 200,
+        // PERFORMANCE OPTIMIZED settings
+        max: 5, // Reduced pool size to minimize connection overhead
+        min: 2, // Keep minimum connections warm
+        idleTimeoutMillis: 60000, // Keep connections alive longer
+        connectionTimeoutMillis: 5000, // Faster timeout for failed connections
+        acquireTimeoutMillis: 10000, // Reduced wait time for pool acquisition
+        createTimeoutMillis: 10000, // Faster connection creation timeout
+        destroyTimeoutMillis: 2000, // Faster cleanup
+        reapIntervalMillis: 5000, // Less frequent cleanup checks
+        createRetryIntervalMillis: 500, // Slower retry to reduce churn
         // Connection validation
         allowExitOnIdle: false,
       });
@@ -93,7 +94,10 @@ export async function initializeDatabase(): Promise<void> {
       });
 
       pool.on('connect', (client) => {
-        console.log('🔗 [Database] New client connected');
+        // Only log in development mode to reduce production overhead
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔗 [Database] New client connected');
+        }
 
         // Set up client-level error handling
         client.on('error', (err) => {
@@ -101,13 +105,14 @@ export async function initializeDatabase(): Promise<void> {
         });
       });
 
-      pool.on('acquire', () => {
-        console.log('📤 [Database] Client acquired from pool');
-      });
+      // DISABLE EXCESSIVE LOGGING - These events fire on every query and cause performance overhead
+      // pool.on('acquire', () => {
+      //   console.log('📤 [Database] Client acquired from pool');
+      // });
 
-      pool.on('release', () => {
-        console.log('📥 [Database] Client released back to pool');
-      });
+      // pool.on('release', () => {
+      //   console.log('📥 [Database] Client released back to pool');
+      // });
 
       console.log('✅ [Database] PostgreSQL connection pool initialized successfully');
       return;

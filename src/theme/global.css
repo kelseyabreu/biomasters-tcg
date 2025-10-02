@@ -544,3 +544,12 @@ ion-modal[aria-hidden="false"] {
   outline: 2px solid var(--tcg-accent);
   outline-offset: 2px;
 }
+
+/* Tab Bar Navigation Styles */
+.main-tab-home::part(native),
+.main-tab-collection::part(native),
+.main-tab-online::part(native),
+.main-tab-deck-builder::part(native),
+.main-tab-settings::part(native) {
+  padding: 0;
+}

@@ -3,7 +3,7 @@
  * BioMasters Trading Card Game battle interface using ClientGameEngine
  */
 
-import React, { useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import './TCGBattleScreen.css';
 import '../game/EcosystemBoard.css';
 import {
@@ -23,7 +23,8 @@ import {
   IonRow,
   IonCol,
   IonAlert,
-  IonProgressBar
+  IonProgressBar,
+  IonToast
 } from '@ionic/react';
 import { motion } from 'framer-motion';
 import {
@@ -31,7 +32,13 @@ import {
   checkmarkCircle,
   time,
   chevronBackOutline,
-  chevronForwardOutline
+  chevronForwardOutline,
+  chevronUpOutline,
+  chevronDownOutline,
+  documentTextOutline,
+  playOutline,
+  swapHorizontalOutline,
+  checkmarkOutline
 } from 'ionicons/icons';
 
 // Import the battle store instead of game engine
@@ -47,7 +54,6 @@ import { AIStrategyFactory } from '@kelseyabreu/shared';
 import EndGameModal from '../ui/EndGameModal';
 import EcosystemGrid from '../game/EcosystemGrid';
 import PlayerCard from './PlayerCard';
-import TurnTimer from './TurnTimer';
 import GameLog, { GameLogEntry } from './GameLog';
 import '../ui/PlayerStatsDisplay.css';
 import '../ui/EndGameModal.css';
@@ -129,9 +135,39 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   const [gameLogEntries, setGameLogEntries] = React.useState<GameLogEntry[]>([]);
   const [showGameLog, setShowGameLog] = React.useState(false);
   const [turnStartTime, setTurnStartTime] = React.useState<number>(Date.now());
+  const [timeRemaining, setTimeRemaining] = React.useState<number>(60);
+  const [isTimerWarning, setIsTimerWarning] = React.useState<boolean>(false);
+
+  // Action notification state
+  const [actionNotification, setActionNotification] = useState<{
+    isOpen: boolean;
+    message: string;
+    color: string;
+    icon: string;
+  }>({
+    isOpen: false,
+    message: '',
+    color: 'primary',
+    icon: ''
+  });
 
   // Player cards navigation state (moved to top level to follow Rules of Hooks)
   const [currentCardIndex, setCurrentCardIndex] = React.useState(0);
+
+  // Action buttons collapse state
+  const [actionsExpanded, setActionsExpanded] = React.useState(false);
+
+  // Helper function to show action notifications
+  const showActionNotification = useCallback((message: string, color: string = 'primary', icon: string = checkmarkOutline) => {
+    setActionNotification({
+      isOpen: true,
+      message,
+      color,
+      icon
+    });
+  }, []);
+
+
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Get last drawn cards from store for animation
@@ -334,12 +370,19 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       if (currentPlayer && currentPlayer.id !== 'human' && (gameState as any).actionsRemaining > 0) {
         // Create AI strategy (for now, always use EASY - will be configurable later)
         const aiStrategy = AIStrategyFactory.createStrategy(AIDifficulty.EASY);
+
+        // Set notification callback for AI actions
+        aiStrategy.setNotificationCallback(showActionNotification);
+
         const thinkingDelay = aiStrategy.getThinkingDelay();
 
         setTimeout(async () => {
           try {
             // Check if AI should pass turn
             if (aiStrategy.shouldPassTurn(currentPlayer.hand, (gameState as any).actionsRemaining, gameState as any, currentPlayer.id)) {
+              // Notify about pass turn
+              aiStrategy.notifyPassTurn(gameState as any, currentPlayer.id);
+
               // AI needs to pass turn with its own player ID
               const currentBattleState = useHybridGameStore.getState().battle;
               const result = await unifiedGameService.executeAction({
@@ -743,6 +786,8 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
   useEffect(() => {
     if (gameState?.gamePhase === GamePhase.PLAYING) {
       setTurnStartTime(Date.now());
+      setTimeRemaining(60);
+      setIsTimerWarning(false);
       console.log('⏰ [TURN TIMER] Turn changed, resetting timer');
 
       // Add game start entry if this is the first turn
@@ -751,6 +796,8 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       }
     }
   }, [gameState?.currentPlayerIndex, gameState?.gamePhase, gameState?.turnNumber, gameLogEntries.length, addGameLogEntry]);
+
+
 
   // Handle card placement on grid
   const handleGridPositionClick = useCallback(async (x: number, y: number) => {
@@ -816,8 +863,13 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       position: { x, y }
     });
 
+    // Show action notification
+    const userProfile = useHybridGameStore.getState().userProfile;
+    const playerName = userProfile?.username || userProfile?.display_name || 'Player';
+    showActionNotification(`${playerName} played ${cardName}`, 'success', playOutline);
+
     console.log('✅ Card placement requested');
-  }, [gameState, selectedHandCardId, highlightedPositions, playCard, isOnlineGame, gameSessionId]);
+  }, [gameState, selectedHandCardId, highlightedPositions, playCard, isOnlineGame, gameSessionId, showActionNotification, addGameLogEntry]);
 
   // Handle pass turn
   const handlePassTurn = useCallback(async () => {
@@ -845,8 +897,13 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
     // Add to game log
     addGameLogEntry('pass_turn');
 
+    // Show action notification
+    const userProfile = useHybridGameStore.getState().userProfile;
+    const playerName = userProfile?.username || userProfile?.display_name || 'Player';
+    showActionNotification(`${playerName} passed turn`, 'secondary', checkmarkOutline);
+
     console.log('✅ Pass turn requested');
-  }, [gameState, passTurn, isOnlineGame, gameSessionId, addGameLogEntry]);
+  }, [gameState, passTurn, isOnlineGame, gameSessionId, addGameLogEntry, showActionNotification]);
 
   // Handle drop and draw three
   const handleDropAndDraw = useCallback(async () => {
@@ -914,7 +971,12 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
         console.log('🚨 [Animation] No cards drawn, skipping animation');
       }
     }
-  }, [gameState, selectedHandCardId, dropAndDrawThree, lastDrawnCards, isOnlineGame, gameSessionId]);
+
+    // Show action notification
+    const userProfile = useHybridGameStore.getState().userProfile;
+    const playerName = userProfile?.username || userProfile?.display_name || 'Player';
+    showActionNotification(`${playerName} dropped card, drew 3`, 'primary', swapHorizontalOutline);
+  }, [gameState, selectedHandCardId, dropAndDrawThree, lastDrawnCards, isOnlineGame, gameSessionId, showActionNotification]);
 
 
 
@@ -972,6 +1034,34 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
       loadSpeciesData();
     }
   }, [speciesLoaded, loadSpeciesData]);
+
+  // Timer countdown logic
+  useEffect(() => {
+    if (gameState?.gamePhase !== GamePhase.PLAYING || timeRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        const newTime = prev - 1;
+
+        // Warning when 15 seconds or less
+        if (newTime <= 15 && !isTimerWarning) {
+          setIsTimerWarning(true);
+          console.log(`⚠️ [TURN TIMER] Warning: ${newTime} seconds remaining`);
+        }
+
+        // Time's up
+        if (newTime <= 0) {
+          console.log(`⏰ [TURN TIMER] Time's up!`);
+          handleTurnTimeout();
+          return 0;
+        }
+
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameState?.gamePhase, timeRemaining, isTimerWarning, handleTurnTimeout]);
 
   // Memoize game progress to prevent infinite loops
   const gameProgress = useMemo(() => {
@@ -1398,6 +1488,74 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
 
 
 
+        {/* Collapsible Action Buttons */}
+        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && isPlayerTurn && (
+          <IonCard className="action-buttons-card collapsible">
+            {/* Actions Header */}
+            <IonCardHeader
+              className="actions-header"
+              onClick={() => setActionsExpanded(!actionsExpanded)}
+            >
+              <IonCardTitle className="actions-title">
+                <span>Actions</span>
+                <IonIcon
+                  icon={actionsExpanded ? chevronDownOutline : chevronUpOutline}
+                  className="collapse-icon"
+                />
+              </IonCardTitle>
+            </IonCardHeader>
+
+            {/* Collapsible Content */}
+            {actionsExpanded && (
+              <IonCardContent className='action-buttons-content'>
+                <IonGrid>
+                  <IonRow>
+                    <IonCol>
+                      <IonButton
+                        expand="block"
+                        fill="outline"
+                        onClick={handlePassTurn}
+                      >
+                        Pass Turn
+                      </IonButton>
+                    </IonCol>
+                    <IonCol>
+                      <IonButton
+                        expand="block"
+                        fill="outline"
+                        disabled={!selectedHandCardId || highlightedPositions.length === 0}
+                      >
+                        Play Card
+                      </IonButton>
+                    </IonCol>
+                  </IonRow>
+                  <IonRow>
+                    <IonCol>
+                      <IonButton
+                        expand="block"
+                        fill="outline"
+                        onClick={handleDropAndDraw}
+                        disabled={!selectedHandCardId || (gameState as any)?.actionsRemaining <= 0}
+                      >
+                        Drop & Draw 3
+                      </IonButton>
+                    </IonCol>
+                    <IonCol>
+                      <IonButton
+                        expand="block"
+                        fill="outline"
+                        onClick={() => setShowGameLog(!showGameLog)}
+                      >
+                        <IonIcon icon={documentTextOutline} slot="start" />
+                        {showGameLog ? 'Hide Log' : 'Show Log'}
+                      </IonButton>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </IonCardContent>
+            )}
+          </IonCard>
+        )}
         {/* NEW: Responsive Player Cards with Navigation */}
         {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && (() => {
           const allPlayers = gameState.players;
@@ -1437,7 +1595,6 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
                   display: 'flex',
                   flexDirection: 'row',
                   overflowX: 'auto',
-                  padding: '8px 0'
                 }}
               >
                 {/* All Player Cards as Siblings */}
@@ -1454,6 +1611,10 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
                       isCurrentPlayer={isCurrentPlayerCard}
                       isPlayerTurn={isPlayerTurnCard}
                       actionsRemaining={playerActionsRemaining}
+                      showTimer={isPlayerTurnCard && (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN)}
+                      timerDuration={60}
+                      timeRemaining={timeRemaining}
+                      isTimerWarning={isTimerWarning}
                       isCollapsible={!isCurrentPlayerCard}
                       isExpanded={isCurrentPlayerCard || oppositionHandState.isExpanded}
                       onToggleExpansion={!isCurrentPlayerCard ? toggleOppositionHandExpansion : undefined}
@@ -1607,50 +1768,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           </div>
         )}
 
-        {/* Action Buttons */}
-        {(gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && isPlayerTurn && (
-          <IonCard className="action-buttons-card">
-            <IonCardContent>
-              <IonGrid>
-                <IonRow>
-                  <IonCol>
-                    <IonButton
-                      expand="block"
-                      fill="outline"
-                      onClick={handlePassTurn}
-                    >
-                      Pass Turn
-                    </IonButton>
-                  </IonCol>
-                  <IonCol>
-                    <IonButton
-                      expand="block"
-                      fill="outline"
-                      disabled={!selectedHandCardId || highlightedPositions.length === 0}
-                    >
-                      Play Card
-                    </IonButton>
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  <IonCol>
-                    <IonButton
-                      expand="block"
-                      fill="outline"
-                      onClick={handleDropAndDraw}
-                      disabled={!selectedHandCardId || (gameState as any)?.actionsRemaining <= 0}
-                    >
-                      Drop & Draw 3
-                    </IonButton>
-                  </IonCol>
-                  <IonCol>
-                    {/* Future action button can go here */}
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </IonCardContent>
-          </IonCard>
-        )}
+
 
         {/* Error display */}
         {error && (
@@ -1694,22 +1812,29 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           onReturnHome={handleCloseEndGameModal}
         />
 
-        {/* Turn Timer */}
-        {gameState && (gameState.gamePhase === GamePhase.PLAYING || gameState.gamePhase === GamePhase.FINAL_TURN) && (
-          <TurnTimer
-            isActive={true}
-            duration={60} // 1 minute
-            onTimeUp={handleTurnTimeout}
-            playerName={gameState.players[gameState.currentPlayerIndex]?.name || 'Player'}
-            actionsRemaining={gameState.actionsRemaining}
-          />
-        )}
+
 
         {/* Game Log */}
         <GameLog
           entries={gameLogEntries}
           isVisible={showGameLog}
           onToggleVisibility={() => setShowGameLog(!showGameLog)}
+        />
+
+        {/* Action Notification Toast */}
+        <IonToast
+          isOpen={actionNotification.isOpen}
+          onDidDismiss={() => setActionNotification(prev => ({ ...prev, isOpen: false }))}
+          message={actionNotification.message}
+          duration={2000}
+          position="bottom"
+          color={actionNotification.color}
+          buttons={[
+            {
+              icon: actionNotification.icon,
+              role: 'cancel'
+            }
+          ]}
         />
       </IonContent>
     </IonPage>

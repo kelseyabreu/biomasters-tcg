@@ -15,7 +15,7 @@ interface EnhancedHandCardProps {
   onDragStart?: (cardId: string) => void;
   onDragEnd?: (cardId: string, position: { x: number; y: number }) => void;
   isPlayerTurn: boolean;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'thumbnail';
 }
 
 const EnhancedHandCard: React.FC<EnhancedHandCardProps> = ({

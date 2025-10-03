@@ -9,7 +9,7 @@ import {
   IonText,
   IonBadge
 } from '@ionic/react';
-import { chevronUp, chevronDown, eyeOff, eye } from 'ionicons/icons';
+import { chevronUp, chevronDown, eyeOff } from 'ionicons/icons';
 import './GameLog.css';
 
 export interface GameLogEntry {
@@ -89,22 +89,9 @@ const GameLog: React.FC<GameLogProps> = ({
     }
   };
 
-  // If not visible, show a small toggle button
+  // If not visible, don't render anything (toggle is now in action buttons)
   if (!isVisible) {
-    return (
-      <div className="game-log-toggle-button">
-        <IonButton
-          fill="solid"
-          size="small"
-          color="primary"
-          onClick={onToggleVisibility}
-          title="Show game log"
-        >
-          <IonIcon icon={eye} />
-          Log
-        </IonButton>
-      </div>
-    );
+    return null;
   }
 
   return (

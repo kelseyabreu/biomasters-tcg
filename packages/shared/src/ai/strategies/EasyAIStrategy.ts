@@ -43,11 +43,18 @@ export class EasyAIStrategy extends BaseAIStrategy {
    */
   override selectCard(hand: string[], gameState: GameState, playerId: string): string {
     console.log(`🤖 [EASY] AI has ${hand.length} cards in hand`);
-    
+
     // Use base class random selection
     const selectedCard = super.selectCard(hand, gameState, playerId);
-    
+
     console.log(`🤖 [EASY] AI selected card: ${selectedCard}`);
+
+    // Notify about card selection (will be followed by position selection)
+    const aiPlayer = gameState.players?.find(p => p.id === playerId);
+    if (aiPlayer) {
+      this.notify(`${aiPlayer.name} is thinking...`, 'primary');
+    }
+
     return selectedCard;
   }
 
@@ -57,11 +64,18 @@ export class EasyAIStrategy extends BaseAIStrategy {
    */
   override selectPosition(validPositions: Position[], gameState: GameState, cardId: string, playerId: string): Position {
     console.log(`🤖 [EASY] AI has ${validPositions.length} valid positions for card ${cardId}`);
-    
+
     // Use base class random selection
     const selectedPosition = super.selectPosition(validPositions, gameState, cardId, playerId);
-    
+
     console.log(`🤖 [EASY] AI selected position: (${selectedPosition.x}, ${selectedPosition.y})`);
+
+    // Notify about card play
+    const aiPlayer = gameState.players?.find(p => p.id === playerId);
+    if (aiPlayer) {
+      this.notify(`${aiPlayer.name} played a card`, 'success', 'play-outline');
+    }
+
     return selectedPosition;
   }
 

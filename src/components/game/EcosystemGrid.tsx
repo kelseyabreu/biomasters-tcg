@@ -192,8 +192,9 @@ const EcosystemGrid: React.FC<EcosystemGridProps> = ({
       style={{
         position: 'relative',
         width: '100%',
-        maxWidth: '90vw',
-        maxHeight: '70vh',
+        height: '100%',
+        // maxWidth: '90vw',
+        //maxHeight: '70vh',
         overflow: 'hidden',
         margin: '0 auto',
         display: 'flex',

@@ -5,6 +5,11 @@
 import { GameState, Position } from '../types';
 
 /**
+ * Notification callback for AI actions
+ */
+export type AINotificationCallback = (message: string, type: 'success' | 'secondary' | 'primary', icon?: string) => void;
+
+/**
  * AI Difficulty levels
  */
 export enum AIDifficulty {
@@ -17,6 +22,16 @@ export enum AIDifficulty {
  * AI Strategy Interface - defines all AI decision-making methods
  */
 export interface AIStrategy {
+  /**
+   * Set notification callback for AI actions
+   */
+  setNotificationCallback(callback: AINotificationCallback | null): void;
+
+  /**
+   * Notify when AI passes turn
+   */
+  notifyPassTurn(gameState: GameState, playerId: string): void;
+
   /**
    * Select a card from the AI's hand to play
    */
@@ -48,9 +63,36 @@ export interface AIStrategy {
  */
 export abstract class BaseAIStrategy implements AIStrategy {
   protected difficulty: AIDifficulty;
+  protected notificationCallback: AINotificationCallback | null = null;
 
   constructor(difficulty: AIDifficulty) {
     this.difficulty = difficulty;
+  }
+
+  /**
+   * Set notification callback for AI actions
+   */
+  setNotificationCallback(callback: AINotificationCallback | null): void {
+    this.notificationCallback = callback;
+  }
+
+  /**
+   * Helper method to send notifications
+   */
+  protected notify(message: string, type: 'success' | 'secondary' | 'primary' = 'secondary', icon?: string): void {
+    if (this.notificationCallback) {
+      this.notificationCallback(message, type, icon);
+    }
+  }
+
+  /**
+   * Notify when AI passes turn
+   */
+  notifyPassTurn(gameState: GameState, playerId: string): void {
+    const aiPlayer = gameState.players?.find(p => p.id === playerId);
+    if (aiPlayer) {
+      this.notify(`${aiPlayer.name} passed turn`, 'secondary', 'checkmark-outline');
+    }
   }
 
   /**

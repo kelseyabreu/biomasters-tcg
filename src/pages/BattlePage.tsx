@@ -19,9 +19,8 @@ import {
 import { arrowBack } from 'ionicons/icons';
 
 import UnifiedBattleInterface from '../components/battle/UnifiedBattleInterface';
-import TurnTimer from '../components/battle/TurnTimer';
-import GameLog, { GameLogEntry } from '../components/battle/GameLog';
 import EndGameModal from '../components/ui/EndGameModal';
+import { GameLogEntry } from '../components/battle/GameLog';
 import { useHybridGameStore } from '../state/hybridGameStore';
 import { gameApi } from '../services/apiClient';
 import { TCGGameState, TCGGameSettings } from '@kelseyabreu/shared';
@@ -926,24 +925,6 @@ export const BattlePage: React.FC = () => {
         title={`Online Battle - ${sessionData.gameMode}`}
         sessionId={sessionId}
         userId={userId || undefined}
-      />
-
-      {/* Turn Timer */}
-      {sessionData.gameState && (sessionData.gameState.gamePhase === GamePhase.PLAYING || sessionData.gameState.gamePhase === GamePhase.FINAL_TURN) && (
-        <TurnTimer
-          isActive={true}
-          duration={60} // 1 minute
-          onTimeUp={handleTurnTimeout}
-          playerName={sessionData.gameState.players[sessionData.gameState.currentPlayerIndex]?.name || 'Player'}
-          actionsRemaining={sessionData.gameState.actionsRemaining}
-        />
-      )}
-
-      {/* Game Log */}
-      <GameLog
-        entries={gameLogEntries}
-        isVisible={showGameLog}
-        onToggleVisibility={() => setShowGameLog(!showGameLog)}
       />
 
       {/* End Game Modal */}

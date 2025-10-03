@@ -3,7 +3,7 @@
  * Reusable battle component that works for both online and offline games
  */
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -20,14 +20,18 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonProgressBar
+  IonProgressBar,
+  IonToast
 } from '@ionic/react';
 import { motion } from 'framer-motion';
 import {
   arrowBack,
   checkmarkCircle,
   chevronBackOutline,
-  chevronForwardOutline
+  chevronForwardOutline,
+  documentTextOutline,
+  swapHorizontalOutline,
+  checkmarkOutline
 } from 'ionicons/icons';
 
 import { GamePhase } from '@kelseyabreu/shared';
@@ -36,6 +40,7 @@ import EcosystemGrid from '../game/EcosystemGrid';
 import PlayerCard from './PlayerCard';
 import DeckSelectionComponent from './DeckSelectionComponent';
 import EndGameModal from '../ui/EndGameModal';
+import GameLog, { GameLogEntry } from './GameLog';
 
 // Import CSS files
 import './TCGBattleScreen.css';
@@ -106,6 +111,21 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
   // Timer state for deck selection countdown
   const [deckSelectionTimeRemaining, setDeckSelectionTimeRemaining] = useState<number>(60);
 
+  // Game log and action notification state
+  const [gameLogEntries, setGameLogEntries] = useState<GameLogEntry[]>([]);
+  const [showGameLog, setShowGameLog] = useState(false);
+  const [actionNotification, setActionNotification] = useState<{
+    isOpen: boolean;
+    message: string;
+    color: string;
+    icon: string;
+  }>({
+    isOpen: false,
+    message: '',
+    color: 'primary',
+    icon: ''
+  });
+
   // Component cleanup tracking
   const mountedRef = useRef(true);
 
@@ -115,6 +135,35 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
       mountedRef.current = false;
     };
   }, []);
+
+  // Helper function to show action notifications
+  const showActionNotification = useCallback((message: string, color: string = 'primary', icon: string = checkmarkOutline) => {
+    setActionNotification({
+      isOpen: true,
+      message,
+      color,
+      icon
+    });
+  }, []);
+
+  // Helper function to add game log entries
+  const addGameLogEntry = useCallback((action: GameLogEntry['action'], details: GameLogEntry['details'] = {}) => {
+    if (!gameState) return;
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const entry: GameLogEntry = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: Date.now(),
+      turn: gameState.turnNumber || 1,
+      playerId: currentPlayer?.id || 'unknown',
+      playerName: currentPlayer?.name || 'Player',
+      action,
+      details
+    };
+
+    console.log('📝 [GAME LOG] Adding entry:', entry);
+    setGameLogEntries(prev => [...prev, entry]);
+  }, [gameState]);
 
   // Countdown timer effect for deck selection
   useEffect(() => {
@@ -679,7 +728,6 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                   display: 'flex',
                   flexDirection: 'row',
                   overflowX: 'auto',
-                  padding: '8px 0'
                 }}
               >
                 {/* All Player Cards as Siblings */}
@@ -781,7 +829,13 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                     <IonButton
                       expand="block"
                       color="secondary"
-                      onClick={onPassTurn}
+                      onClick={() => {
+                        onPassTurn?.();
+                        const humanPlayer = gameState.players?.find((p: any) => p.id === 'human');
+                        const playerName = humanPlayer?.name || 'Player';
+                        showActionNotification(`${playerName} passed turn`, 'secondary', checkmarkOutline);
+                        addGameLogEntry('pass_turn');
+                      }}
                       disabled={actionsRemaining <= 0}
                     >
                       Pass Turn
@@ -791,17 +845,62 @@ export const UnifiedBattleInterface: React.FC<UnifiedBattleInterfaceProps> = ({
                     <IonButton
                       expand="block"
                       fill="outline"
-                      onClick={onDropAndDraw}
+                      onClick={() => {
+                        onDropAndDraw?.();
+                        const humanPlayer = gameState.players?.find((p: any) => p.id === 'human');
+                        const playerName = humanPlayer?.name || 'Player';
+                        showActionNotification(`${playerName} dropped card, drew 3`, 'primary', swapHorizontalOutline);
+                        addGameLogEntry('use_ability', { abilityName: 'Drop and Draw' });
+                      }}
                       disabled={!selectedHandCardId || actionsRemaining <= 0}
                     >
                       Drop & Draw 3
                     </IonButton>
                   </IonCol>
                 </IonRow>
+                <IonRow>
+                  <IonCol>
+                    <IonButton
+                      expand="block"
+                      fill="outline"
+                      color="tertiary"
+                      onClick={() => setShowGameLog(!showGameLog)}
+                    >
+                      <IonIcon icon={documentTextOutline} slot="start" />
+                      {showGameLog ? 'Hide Log' : 'Show Log'}
+                    </IonButton>
+                  </IonCol>
+                  <IonCol>
+                    {/* Future action button can go here */}
+                  </IonCol>
+                </IonRow>
               </IonGrid>
             </IonCardContent>
           </IonCard>
         )}
+
+        {/* Game Log */}
+        <GameLog
+          entries={gameLogEntries}
+          isVisible={showGameLog}
+          onToggleVisibility={() => setShowGameLog(!showGameLog)}
+        />
+
+        {/* Action Notification Toast */}
+        <IonToast
+          isOpen={actionNotification.isOpen}
+          onDidDismiss={() => setActionNotification(prev => ({ ...prev, isOpen: false }))}
+          message={actionNotification.message}
+          duration={2000}
+          position="bottom"
+          color={actionNotification.color}
+          buttons={[
+            {
+              icon: actionNotification.icon,
+              role: 'cancel'
+            }
+          ]}
+        />
 
         {/* End Game Modal */}
         <EndGameModal isOpen={false} onClose={() => {}} />

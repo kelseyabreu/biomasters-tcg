@@ -14,6 +14,7 @@
 .tcg-battle-screen ion-content {
   --background: var(--ion-background-color, var(--ion-color-light));
   --color: var(--ion-text-color, var(--ion-color-dark));
+  --padding-bottom: 260px; /* Space for fixed action buttons + player cards */
 }
 
 /* Enhanced Player Stats Display */
@@ -107,7 +108,8 @@
 
 /* Game Grid */
 .tcg-battle-screen .game-grid-card {
-  margin: 8px;
+  margin: 0px;
+  height: 100%;
 }
 
 .tcg-battle-screen .tcg-grid {
@@ -226,15 +228,116 @@
   }
 }
 
-/* Action Buttons */
+/* Fixed Bottom UI Stack - Action Buttons + Player Cards */
+
+/* Player Cards Wrapper - Fixed at Bottom */
+.player-cards-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--tcg-background-secondary);
+  border-top: 2px solid var(--tcg-card-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  padding: 0px;
+  overflow: hidden;
+  height: 230px; /* Fixed height for player cards */
+}
+
+/* Collapsible Action Buttons - Fixed Above Player Cards */
+
+.action-buttons-content {
+  padding: 0px 5px;
+}
+
 .tcg-battle-screen .action-buttons-card {
-  margin: 8px;
-  background: var(--ion-color-secondary-tint);
+  margin: 0px;
+  background: var(--tcg-card-background);
+  border: 1px solid var(--tcg-card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 0px;
+}
+
+.tcg-battle-screen .action-buttons-card.collapsible {
+  position: fixed;
+  bottom: 230px; /* Position above player cards (200px height) */
+  left: -10px;
+  right: -10px;
+  z-index: 999;
+  margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tcg-battle-screen .actions-header {
+  cursor: pointer;
+  padding: 5px 15px;
+  margin: 0;
+  border-bottom: 1px solid var(--tcg-card-border);
+  transition: none;
+}
+
+/* Disable all hover effects on action buttons card */
+.tcg-battle-screen .action-buttons-card.collapsible:hover,
+.tcg-battle-screen .actions-header:hover,
+.tcg-battle-screen .action-buttons-card.collapsible ion-card-header:hover {
+  transform: none !important;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15) !important;
+  background-color: var(--tcg-card-background) !important;
+}
+
+
+
+.tcg-battle-screen .actions-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tcg-text-primary);
+}
+
+.tcg-battle-screen .collapse-icon {
+  font-size: 20px;
+  color: var(--tcg-text-secondary);
+  transition: transform 0.2s ease;
+}
+
+/* Remove border-bottom when expanded */
+.tcg-battle-screen .action-buttons-card.collapsible .actions-header:has(+ ion-card-content) {
+  border-bottom: 1px solid var(--tcg-card-border);
 }
 
 .tcg-battle-screen .action-buttons-card ion-button {
   --border-radius: 8px;
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--tcg-card-border);
   font-weight: 600;
+  margin: 2px;
+}
+
+.tcg-battle-screen .action-buttons-card ion-button[fill="clear"] {
+  --border-color: transparent;
+  --color: var(--tcg-text-primary);
+}
+
+.tcg-battle-screen .action-buttons-card ion-button[fill="outline"] {
+  --border-color: var(--tcg-accent);
+  --color: var(--tcg-accent);
+}
+
+.tcg-battle-screen .action-buttons-card ion-button[color="tertiary"] {
+  --border-color: var(--tcg-text-secondary);
+  --color: var(--tcg-text-secondary);
+}
+
+.tcg-battle-screen .action-buttons-card ion-button[color="tertiary"]:hover {
+  --background: var(--tcg-text-secondary);
+  --color: var(--tcg-card-background);
 }
 
 /* Game Phase Indicators */
@@ -394,11 +497,40 @@
   }
 }
 
+
+
 /* Accessibility */
 .grid-cell:focus,
 .hand-card:focus {
   outline: 2px solid var(--ion-color-primary);
   outline-offset: 2px;
+}
+
+/* Player Cards Container Scrolling */
+.player-cards-wrapper .player-cards-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  height: calc(100% - 16px); /* Full height minus padding */
+}
+
+/* Hide scrollbar but keep functionality */
+.player-cards-wrapper .player-cards-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.player-cards-wrapper .player-cards-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.player-cards-wrapper .player-cards-container::-webkit-scrollbar-thumb {
+  background: var(--tcg-text-secondary);
+  border-radius: 2px;
+  opacity: 0.3;
+}
+
+.player-cards-wrapper .player-cards-container::-webkit-scrollbar-thumb:hover {
+  opacity: 0.6;
 }
 
 /* Dark Mode Support - now handled by theme system */

@@ -254,7 +254,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         className={`player-card ${isCurrentPlayer ? 'current-player' : ''} ${isPlayerTurn ? 'player-turn' : ''} ${onClick ? 'clickable' : ''}`}
         onClick={onClick}
       >
-        <IonCardHeader>
+        <IonCardHeader className='player-card-header-ion'>
           <div className="player-card-header">
             <div className="player-info">
               <IonCardTitle className="player-name">
@@ -267,20 +267,6 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
                 )}
               </IonCardTitle>
               
-              {/* Player Status Indicators - Removed TURN and YOU chips for cleaner design */}
-              {/* <div className="status-indicators">
-                {isPlayerTurn && (
-                  <IonChip color="primary">
-                    <IonIcon icon={star} />
-                    <IonLabel>Turn</IonLabel>
-                  </IonChip>
-                )}
-                {isCurrentPlayer && (
-                  <IonChip color="success">
-                    <IonLabel>You</IonLabel>
-                  </IonChip>
-                )}
-              </div> */}
             </div>
             
             {/* Header Controls */}
@@ -304,7 +290,18 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
               )}
             </div>
           </div>
-          
+
+          {/* Turn Timer Progress Bar */}
+          {showTimer && isPlayerTurn && (
+            <div className="timer-progress-container">
+              <IonProgressBar
+                value={timeRemaining / timerDuration}
+                color={isTimerWarning ? 'danger' : 'primary'}
+                className="turn-timer-progress"
+              />
+            </div>
+          )}
+
           {/* Player Stats Row - Horizontal Layout */}
           <div className="player-stats-row">
             <div className="stats-container">
@@ -330,17 +327,6 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Turn Timer Progress Bar */}
-          {showTimer && isPlayerTurn && (
-            <div className="timer-progress-container">
-              <IonProgressBar
-                value={timeRemaining / timerDuration}
-                color={isTimerWarning ? 'danger' : 'primary'}
-                className="turn-timer-progress"
-              />
-            </div>
-          )}
         </IonCardHeader>
 
         <AnimatePresence>

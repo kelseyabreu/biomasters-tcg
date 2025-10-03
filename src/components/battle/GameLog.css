@@ -8,21 +8,7 @@
   transition: all 0.3s ease;
 }
 
-/* Toggle button when log is hidden */
-.game-log-toggle-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
-.game-log-toggle-button ion-button {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  height: 36px;
-  font-size: 0.8rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
+/* Toggle button when log is hidden - REMOVED: Now using action button instead */
 
 .game-log.minimized {
   width: 200px;

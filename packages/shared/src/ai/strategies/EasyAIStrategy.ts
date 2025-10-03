@@ -70,10 +70,12 @@ export class EasyAIStrategy extends BaseAIStrategy {
 
     console.log(`🤖 [EASY] AI selected position: (${selectedPosition.x}, ${selectedPosition.y})`);
 
-    // Notify about card play
+    // Notify about card play with specific card name
     const aiPlayer = gameState.players?.find(p => p.id === playerId);
     if (aiPlayer) {
-      this.notify(`${aiPlayer.name} played a card`, 'success', 'play-outline');
+      const cardData = this.getCardDataById(cardId);
+      const cardName = this.getLocalizedCardName(cardData);
+      this.notify(`${aiPlayer.name} played ${cardName}`, 'success', 'play-outline');
     }
 
     return selectedPosition;

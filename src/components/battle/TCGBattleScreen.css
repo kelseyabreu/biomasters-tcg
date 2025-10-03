@@ -340,6 +340,60 @@
   --color: var(--tcg-card-background);
 }
 
+/* Action Notification Theming */
+.tcg-battle-screen .tcg-action-notification {
+  --background: var(--tcg-card-background);
+  --color: var(--tcg-text-primary);
+  --border-color: var(--tcg-accent);
+  border: 2px solid var(--tcg-accent);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  margin-bottom: 280px; /* Position above fixed UI elements */
+}
+
+.tcg-battle-screen .tcg-action-notification .toast-button {
+  --color: var(--tcg-accent);
+}
+
+.tcg-battle-screen .tcg-action-notification .toast-message {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Success notification variant */
+.tcg-battle-screen .tcg-action-notification.toast-color-success {
+  --background: var(--tcg-card-background);
+  --border-color: var(--tcg-success);
+  border-color: var(--tcg-success);
+}
+
+.tcg-battle-screen .tcg-action-notification.toast-color-success .toast-button {
+  --color: var(--tcg-success);
+}
+
+/* Secondary notification variant */
+.tcg-battle-screen .tcg-action-notification.toast-color-secondary {
+  --background: var(--tcg-card-background);
+  --border-color: var(--tcg-text-secondary);
+  border-color: var(--tcg-text-secondary);
+}
+
+.tcg-battle-screen .tcg-action-notification.toast-color-secondary .toast-button {
+  --color: var(--tcg-text-secondary);
+}
+
+/* Primary notification variant */
+.tcg-battle-screen .tcg-action-notification.toast-color-primary {
+  --background: var(--tcg-card-background);
+  --border-color: var(--tcg-accent);
+  border-color: var(--tcg-accent);
+}
+
+.tcg-battle-screen .tcg-action-notification.toast-color-primary .toast-button {
+  --color: var(--tcg-accent);
+}
+
 /* Game Phase Indicators */
 .setup-phase {
   background: linear-gradient(135deg, var(--ion-color-warning-tint), var(--ion-color-warning-shade));

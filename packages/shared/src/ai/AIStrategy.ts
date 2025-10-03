@@ -28,6 +28,11 @@ export interface AIStrategy {
   setNotificationCallback(callback: AINotificationCallback | null): void;
 
   /**
+   * Set card data and localization functions
+   */
+  setCardDataFunctions(getCardData: CardDataLookup, getCardName: CardNameLookup): void;
+
+  /**
    * Notify when AI passes turn
    */
   notifyPassTurn(gameState: GameState, playerId: string): void;
@@ -59,14 +64,34 @@ export interface AIStrategy {
 }
 
 /**
+ * Card data lookup function type
+ */
+export type CardDataLookup = (cardId: string) => any;
+
+/**
+ * Card name lookup function type
+ */
+export type CardNameLookup = (cardData: any) => string;
+
+/**
  * Base AI Strategy - provides default implementations that can be overridden
  */
 export abstract class BaseAIStrategy implements AIStrategy {
   protected difficulty: AIDifficulty;
   protected notificationCallback: AINotificationCallback | null = null;
+  protected getCardData: CardDataLookup | null = null;
+  protected getCardName: CardNameLookup | null = null;
 
   constructor(difficulty: AIDifficulty) {
     this.difficulty = difficulty;
+  }
+
+  /**
+   * Set card data and localization functions
+   */
+  setCardDataFunctions(getCardData: CardDataLookup, getCardName: CardNameLookup): void {
+    this.getCardData = getCardData;
+    this.getCardName = getCardName;
   }
 
   /**
@@ -200,12 +225,25 @@ export abstract class BaseAIStrategy implements AIStrategy {
   }
 
   /**
-   * Protected helper: Get card data from game state
+   * Protected helper: Get card data using injected lookup function
    */
-  protected getCardData(_cardId: string, _gameState: GameState): any {
-    // Helper method for subclasses to access card data
-    // Implementation depends on how card data is stored in gameState
-    return null; // Placeholder - implement based on actual game state structure
+  protected getCardDataById(cardId: string): any {
+    if (!this.getCardData) {
+      console.warn('Card data lookup function not set in AI strategy');
+      return null;
+    }
+    return this.getCardData(cardId);
+  }
+
+  /**
+   * Protected helper: Get localized card name using injected lookup function
+   */
+  protected getLocalizedCardName(cardData: any): string {
+    if (!this.getCardName) {
+      console.warn('Card name lookup function not set in AI strategy');
+      return 'Unknown Card';
+    }
+    return this.getCardName(cardData);
   }
 
   /**

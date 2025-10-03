@@ -374,6 +374,9 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
         // Set notification callback for AI actions
         aiStrategy.setNotificationCallback(showActionNotification);
 
+        // Set card data and localization functions for AI strategy
+        aiStrategy.setCardDataFunctions(getCardData, getLocalizedCardName);
+
         const thinkingDelay = aiStrategy.getThinkingDelay();
 
         setTimeout(async () => {
@@ -402,6 +405,9 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
                     tcgGameState: result.newState as any
                   }
                 }));
+
+                // Add AI pass turn to game log
+                addGameLogEntry('pass_turn');
               } else {
                 console.error(`❌ [TCG] AI failed to pass turn:`, result.errorMessage);
               }
@@ -431,6 +437,9 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
                   }
                 }));
                 console.log(`✅ [TCG] AI successfully passed turn (no cards)`);
+
+                // Add AI pass turn to game log
+                addGameLogEntry('pass_turn', { reason: 'No cards in hand' });
               } else {
                 console.error(`❌ [TCG] AI failed to pass turn (no cards):`, result.errorMessage);
               }
@@ -469,6 +478,15 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
                   }
                 }));
                 console.log(`✅ [TCG] AI successfully played card ${selectedCardId}`);
+
+                // Add AI card play to game log
+                const cardData = getCardData(selectedCardId);
+                const cardName = cardData ? getLocalizedCardName(cardData) : `Card ${selectedCardId}`;
+                addGameLogEntry('play_card', {
+                  cardName,
+                  cardId: selectedCardId,
+                  position: selectedPosition
+                });
               } else {
                 console.error(`❌ [TCG] AI failed to play card:`, result.errorMessage);
                 // If can't play card, pass turn with AI player ID
@@ -754,12 +772,24 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
     if (!gameState) return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+
+    // Get actual username instead of fallback player name
+    let playerName = 'Unknown Player';
+    if (currentPlayer?.id === 'human') {
+      // For human player, get username from user profile
+      const userProfile = useHybridGameStore.getState().userProfile;
+      playerName = userProfile?.username || userProfile?.display_name || 'Player';
+    } else {
+      // For AI player, use the player name from game state
+      playerName = currentPlayer?.name || 'AI Player';
+    }
+
     const entry: GameLogEntry = {
       id: `${Date.now()}-${Math.random()}`,
       timestamp: Date.now(),
       turn: gameState.turnNumber,
       playerId: currentPlayer?.id || 'unknown',
-      playerName: currentPlayer?.name || 'Unknown Player',
+      playerName,
       action,
       details
     };
@@ -1829,6 +1859,7 @@ export const TCGBattleScreen: React.FC<TCGBattleScreenProps> = ({
           duration={2000}
           position="bottom"
           color={actionNotification.color}
+          className="tcg-action-notification"
           buttons={[
             {
               icon: actionNotification.icon,
